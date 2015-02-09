@@ -187,6 +187,22 @@ void Tree_Insert(Tree_t *t, Node_t *z) {
 	}
 }
 
+void Tree_Insert_Recursive(Tree_t *t, Node_t *p, Node_t *x, Node_t *z) {
+	if (x == NULL) {
+		z->p = p;
+		if (p == NULL)
+			t->root = z;
+		else if (z->key < p->key)
+			p->l = z;
+		else
+			p->r = z;
+	} else if (z->key < x->key) {
+		Tree_Insert_Recursive(t, x, x->l, z);
+	} else {
+		Tree_Insert_Recursive(t, x, x->r, z);
+	}
+}
+
 // use subTree v replace subTree v
 void Transplant(Tree_t *t, Node_t *u, Node_t *v) {
 	if (u->p == NULL) {
@@ -297,15 +313,62 @@ void test_1201_04() {
 	printf("\n");
 }
 
+void test_1203_04() {
+	int buf[6] = {15,6,3,8,7,9};
+	int n = 6;
+	Tree_t *tr = new Tree_t();
+	Node_t *p;
+	
+	for (int i=0; i<n; ++i) {
+		p = new Node_t(buf[i]);
+		Tree_Insert(tr, p);
+	}
+	
+	printf("first 6 then 3:\n");
+	p = Tree_Search(tr->root, 6);
+	Tree_Delete(tr, p);
+	p = Tree_Search(tr->root, 3);
+	Tree_Delete(tr, p);
+	Preorder_Tree_Walk(tr->root);
+	printf("\n");
+	delete tr;
+	
+	tr = new Tree_t();
+	
+	for (int i=0; i<n; ++i) {
+		p = new Node_t(buf[i]);
+		Tree_Insert(tr, p);
+	}
+	
+	printf("first 3 then 6:\n");
+	p = Tree_Search(tr->root, 3);
+	Tree_Delete(tr, p);
+	p = Tree_Search(tr->root, 6);
+	Tree_Delete(tr, p);
+	Preorder_Tree_Walk(tr->root);
+	printf("\n");
+	delete tr;
+}
+
 void test_1201() {
+	printf("\n\ntest 12.1\n");
+	printf("test 12.1-3\n");
 	test_1201_03();
+	printf("test 12.1-4\n");
 	test_1201_04();
+}
+
+void test_1203() {
+	printf("\n\ntest 12.3\n");
+	printf("test 12.3-4\n");
+	test_1203_04();
 }
 
 int main() {
 
 	init();
 	test_1201();
+	test_1203();
 	
 	return 0;
 }

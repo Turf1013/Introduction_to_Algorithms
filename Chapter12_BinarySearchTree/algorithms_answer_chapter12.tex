@@ -6,6 +6,12 @@
 \usepackage{amsmath}
 \usepackage{listings} %插入代码
 \usepackage{xcolor} %代码高亮
+\usepackage{diagbox}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
 
 % Some setup
 \pagestyle{plain}
@@ -51,7 +57,7 @@
 		假设p的后继节点$p_0$且$p_0->left = q$, 则中序遍历该树（或子树）时q一定出现在$p_0$前，\\
 		故p的后继节点至少不是$p_0$，因此可知假设错误。从而后继节点没左孩子的证。同理，前驱节点
 		没右孩子使用反证法可证。
-    
+
 	\item 12.2-6 \\
 	证明：\\
 		题目的结论非常显然，使用反证法证明。不妨先假设y不是x的最顶层祖先，又因为y是x的后继，
@@ -83,7 +89,58 @@
 		因为x为叶子结点，因此当p为T树中大于x.key的最小关键字，p只可能等于x。因此假设1错误，
 		同理，q也只能等于x。因此假设2错误。\\
 		故原结论成立。
-
+		
+	\item 12.3-2 \\
+	证明：\\
+		这个题目很无聊，设想插入一个元素x的插入过程其实就是一个搜索x的最恰当插入位置的过程，
+		从而当真正查找元素x时，走过原来的路径，再查找元素x即可以从查找过程返回。\\
+		因此，查找检查的结点数目是插入检查的结点数目加1。
+	
+	\item 12.3-3 \\
+	解：\\
+		最坏情况，就是元素有序，$T(n) = 1+2+\cdots+n = O(n^2)$,
+		最好情况就是元素平衡，此时时间复杂度为$O(nlgn)$。
+		
+	\item 12.3-4 \\
+	解: \\
+		不可交换。\\
+		\begin{figure}[H]
+		\centering
+        \caption{12.3两种删除方式的反例示意图}
+		\includegraphics[scale=0.65]{1203_4.png}
+		\end{figure}
+	
+	\item 12.3-5 \\
+	解：\\
+		中文的算法导论这个题目翻译错了，英文的题目的意识是使用x.succ属性代替s.p属性。
+		如提示所示，就是利用后继的属性重新实现插入、删除、查找函数。\\
+		求结点p的父节点的思路是先求得p所在子树的最大值，该值所在结点的后继就是p的父节点。
+		其余操作均需要利用后继的性质。以插入为例。\\
+		\begin{lstlisting}[language=]
+			void Tree_Insert(Tree_t *t, Node_t *z) {
+				Node_t *y = NULL;
+				Node_t *x = t->root;
+				while (x != NULL) {
+					y = x;
+					if (z->key < x->key)
+						x = x->l;
+					else
+						x = x->r;
+				}
+				if (y == NULL) {
+					t->root = z;	// tree t was empty
+					z->succ = NULL;
+				} else if (z->key < y->key) {
+					Node_t *p = ParentOf(y);
+					z.succ = y;
+					p.succ = z;
+				} else {
+					z->succ = y->succ
+					y->succ = z;
+				}
+			}
+        \end{lstlisting}
+		
 \end{enumerate}
 
 
