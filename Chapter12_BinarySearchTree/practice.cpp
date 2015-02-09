@@ -297,11 +297,15 @@ void test_1201_04() {
 	printf("\n");
 }
 
+void test_1201() {
+	test_1201_03();
+	test_1201_04();
+}
+
 int main() {
 
 	init();
-	test_1201_03();
-	test_1201_04();
+	test_1201();
 	
 	return 0;
 }
