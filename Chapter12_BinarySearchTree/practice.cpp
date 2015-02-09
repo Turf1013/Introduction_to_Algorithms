@@ -127,10 +127,22 @@ Node_t *Tree_Minimum(Node_t *x) {
 	return x;
 }
 
+Node_t *Tree_Minimum_2(Node_t *x) {
+	if (x->l == NULL)
+		return x;
+	return Tree_Minimum_2(x->l);
+}
+
 Node_t *Tree_Maximum(Node_t *x) {
 	while (x->r != NULL)
 		x = x->r;
 	return x;
+}
+
+Node_t *Tree_Maximum_2(Node_t *x) {
+	if (x->r == NULL)
+		return x;
+	return Tree_Maximum_2(x->r);
 }
 
 Node_t *Tree_Successor(Node_t *x) {
@@ -285,15 +297,11 @@ void test_1201_04() {
 	printf("\n");
 }
 
-void test_1201() {
-	test_1201_03();
-	test_1201_04();
-}
-
 int main() {
 
 	init();
-	test_1201();
+	test_1201_03();
+	test_1201_04();
 	
 	return 0;
 }
