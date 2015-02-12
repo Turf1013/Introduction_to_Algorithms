@@ -95,7 +95,7 @@ Node_t *RBTree_Maximum(Tree_t *t, Node_t *x) {
 
 Node_t *RBTree_Search(Tree_t *t, int key) {
 	Node_t *x = t->root;
-	while (x != t->NIL) {
+	while (x!=t->NIL && x->key!=key) {
 		if (key < x->key) {
 			x = x->left;
 		} else {
@@ -290,10 +290,10 @@ void RBTree_Delete(Tree_t *t, Node_t *z) {
 	
 	if (z->left == t->NIL) {
 		x = z->right;
-		RBTree_Transplant(t, z, x);
+		RBTree_Transplant(t, y, x);
 	} else if (z->right == t->NIL) {
-		x = z->right;
-		RBTree_Transplant(t, z, x);
+		x = z->left;
+		RBTree_Transplant(t, y, x);
 	} else {
 		y = RBTree_Minimum(t, z->right);
 		y_original_color = y->color;
@@ -402,6 +402,47 @@ void test_1304_07() {
 	}
 }
 
+void test_1303_02() {
+	Tree_t *t = new Tree_t();
+	int a[] = {41, 38, 31, 12, 19, 8};
+	int n = sizeof(a) / sizeof(int);
+	Node_t *p;
+	
+	printf("n = %d\n", n);
+	for (int i=0; i<n; ++i) {
+		p = new Node_t(a[i]);
+		RBTree_Insert(t, p);
+		printf("\n\nafter insert %d nums(%d):\n", i+1, a[i]);
+		Inorder_RBTree_Walk_WithColor(t, t->root);
+	}
+}
+
+void test_1304_03() {
+	Tree_t *t = new Tree_t();
+	int a[] = {41, 38, 31, 12, 19, 8};
+	int b[] = {8, 12, 19, 31, 38, 41};
+	int n = sizeof(a) / sizeof(int);
+	Node_t *p;
+	
+	printf("n = %d\n", n);
+	for (int i=0; i<n; ++i) {
+		p = new Node_t(a[i]);
+		RBTree_Insert(t, p);
+	}
+	
+	Inorder_RBTree_Walk_WithColor(t, t->root);
+	for (int i=0; i<n; ++i) {
+		p = RBTree_Search(t, b[i]);
+		printf("\n\nafter delete %d, RBTree is ", p->key);
+		RBTree_Delete(t, p);
+		if (check_RBTree(t))
+			puts("Right.");
+		else
+			puts("Wrong.");
+		Inorder_RBTree_Walk_WithColor(t, t->root);
+	}
+}
+
 int main() {
 	
 	#ifdef LOCAL_DEBUG
@@ -409,8 +450,9 @@ int main() {
 		freopen("data.out", "w", stdout);
 	#endif
 	
-	init();
-	test_1304_07();
+	//init();
+	test_1304_03();
+	//test_1304_07();
 	
 	return 0;
 }
