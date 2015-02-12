@@ -31,6 +31,7 @@ typedef struct Tree_t {
 	}
 } Tree_t;
 
+Tree_t *t;
 
 void Inorder_RBTree_Walk(Tree_t *t, Node_t *x) {
 	if (x != t->NIL) {
@@ -314,8 +315,52 @@ void RBTree_Delete(Tree_t *t, Node_t *z) {
 		RBTree_Delete_Fixup(t, x);	// use x replace y
 }
 
+int check_BHeight(Tree_t *t, Node_t *x, bool &f) {
+	if (x == t->NIL)
+		return 1;
+	int lBH = check_BHeight(t, x->left, f);
+	int rBH = check_BHeight(t, x->right, f);
+	
+	if (f == false)
+		return 0;
+	
+	if (lBH != rBH)
+		f = false;
+	if (x->color == BLACK)
+		return lBH+1;
+	return lBH;
+}
+
+bool check_RNode(Tree_t *t, Node_t *x) {
+	if (x == t->NIL)
+		return true;
+	if (x->color==RED && (x->left->color!=BLACK || x->right->color!=BLACK)) {
+		return false;
+	}
+	return check_RNode(t, x->left) && check_RNode(t, x->right);
+}
+
+bool check_RBTree(Tree_t *t) {
+	bool ret = true;
+	
+	if (t->NIL->color != BLACK)
+		return false;
+	if (t->root == t->NIL)
+		return ret;
+	if (t->root->color != BLACK)
+		return false;
+	
+	ret = check_RNode(t, t->root);
+	if (ret == false)
+		return false;
+	
+	check_BHeight(t, t->root, ret);
+	
+	return ret;
+}
+
 void init() {
-	Tree_t *t = new Tree_t();
+	t = new Tree_t();
 	int a[] = {26, 17, 41, 14, 21, 30, 47, 10, 16, 19, 23, 28, 38, 7, 12, 15, 20, 35, 39, 3};
 	int n = sizeof(a) / sizeof(int);
 	Node_t *p;
@@ -327,7 +372,34 @@ void init() {
 		printf("\n\nafter insert %d nums(%d):\n", i+1, a[i]);
 		Inorder_RBTree_Walk_WithColor(t, t->root);
 	}
+	
 	Inorder_RBTree_Walk_WithColor(t, t->root);
+	
+	printf("\n");
+	if (check_RBTree(t))
+		puts("Right");
+	else
+		puts("Wrong");
+}
+
+void test_1304_07() {
+	int n = 10;
+	int x;
+	Node_t *p;
+	
+	Inorder_RBTree_Walk_WithColor(t, t->root);
+	while (n--) {
+		x = rand()%50;
+		p = new Node_t(x);
+		RBTree_Insert(t, p);
+		RBTree_Delete(t, p);
+		printf("\n\nx=%d\n", x);
+		Inorder_RBTree_Walk_WithColor(t, t->root);
+		if (check_RBTree(t))
+			puts("Right");
+		else
+			puts("Wrong");
+	}
 }
 
 int main() {
@@ -338,6 +410,7 @@ int main() {
 	#endif
 	
 	init();
+	test_1304_07();
 	
 	return 0;
 }
