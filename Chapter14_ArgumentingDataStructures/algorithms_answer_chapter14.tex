@@ -1,0 +1,109 @@
+%-*- coding:UTF-8 -*-
+% 算法导论-第14章 数据结构的扩张.tex
+\documentclass[UTF8]{ctexart}
+\usepackage{geometry}
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{listings} %插入代码
+\usepackage{xcolor} %代码高亮
+\usepackage{diagbox}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+
+% Some setup
+\pagestyle{plain}
+\geometry{a4paper, top=2cm, bottom=2cm, left=2cm, right=2cm}
+\CTEXsetup[format={\raggedright\bfseries\Large}]{section}
+\lstset{numbers=left, %设置行号位置
+        numberstyle=\small, %设置行号大小
+        keywordstyle=\color{blue}, %设置关键字颜色
+        commentstyle=\color{purple}, %设置注释颜色
+        %frame=single, %设置边框格式
+        escapeinside=``, %逃逸字符(1左面的键)，用于显示中文
+        breaklines, %自动折行
+        extendedchars=false, %解决代码跨页时，章节标题，页眉等汉字不显示的问题
+        %xleftmargin=2em,xrightmargin=2em, aboveskip=1em, %设置边距
+        tabsize=4, %设置tab空格数
+        showspaces=false %不显示空格
+       }
+
+% About math
+\newcommand{\rmnum}[1]{\romannumeral #1}
+
+\begin{document}
+
+\title{\Huge算法导论习题\\}
+\vspace{2cm}
+\author{\Large曾宇祥\\SY1406122}
+\date{}
+\maketitle
+
+%\newpage
+\section*{第14章\quad数据结构的扩张}
+\begin{enumerate}
+    \item 14.1-5 \\
+    解：\\
+        先使用Search函数找到关键字为x的结点p，再从p.right的子树中找到第i个数。\\
+		$T(n) = T_{search}(x) + T_{select}(i) = O(lgn) + O(lgn) = O(lgn)$.
+		
+	
+	\item 14.1-6 \\
+	解：\\
+		注意在新的秩的定义下, $x.size = x.left.size + 1$. 因此，相关函数修改为\\
+	\begin{lstlisting}[language=C++]
+		void RBTree_Insert(Tree_t *t, Node_t *z) {
+			......
+			while (x != t->NIL) {
+				y = x;
+				if (z->key < x->key) {
+					++x->size;
+					x = x->left;
+				} else {
+					x = x->right;
+				}
+			}
+			......
+		}
+
+		void Left_Rotate(Tree_t *t, Node_t *x) {
+			......
+			y->size += x->left->size;
+		}
+
+		void Right_Rotate(Tree_t *t, Node_t *y) {
+			......
+			y->size -= x->left->size;
+		}
+
+		void RBTree_Delete(Tree_t *t, Node_t *z) {
+			......
+			while (q != t->NIL) {
+				if (q == q->p->left)
+					--q->size;
+				q = q->p;
+			}
+		}
+	\end{lstlisting}
+	
+	\item 14.1-7 \\
+	解：\\
+		这道题英文参考答案说的很清楚。\\
+		假定数组元素为A[1...n], 
+		Inv(A[j])(元素A[j]的逆序数)=$\#\{i|i<j, A[i]>A[j]\}$. \\
+		因此，$j = rank(A[j]) + Inv(A[j])$. 
+		故$Inv(A[j]) = j - rank(A[j])$. 从而使用如下算法计算逆序对：
+		\begin{enumerate}[(1)]
+			\item 将元素A[1...n]插入到OS-Tree中;
+			\item 对1...n的n个元素，使用Search与OS-Rank求得元素A[j]的rank值，从而求得$Inv[j] = j - rank_j$.
+		\end{enumerate}
+		时间复杂度$T(n) = n(T_{search} + T_{rank}) = O(nlgn)$.
+		
+	
+\end{enumerate}
+
+
+\end{document}
+

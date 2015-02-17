@@ -116,7 +116,7 @@
 		如提示所示，就是利用后继的属性重新实现插入、删除、查找函数。\\
 		求结点p的父节点的思路是先求得p所在子树的最大值，该值所在结点的后继就是p的父节点。
 		其余操作均需要利用后继的性质。以插入为例。\\
-		\begin{lstlisting}[language=]
+		\begin{lstlisting}[language=C++]
 			void Tree_Insert(Tree_t *t, Node_t *z) {
 				Node_t *y = NULL;
 				Node_t *x = t->root;
