@@ -16,6 +16,9 @@ typedef struct interval_t {
 	interval_t(int l, int h) {
 		low = l; high = h;
 	}
+	friend bool operator ==(const interval_t &a, const interval_t &b) {
+		return a.low==b.low && a.high==b.high;
+	}
 } interval_t;
 
 typedef struct Node_t {
@@ -368,6 +371,67 @@ void RBTree_Delete(Tree_t *t, Node_t *z) {
 		RBTree_Delete_Fixup(t, x);	// use x replace y
 }
 
+Node_t *RBTree_Search_Min(Tree_t *t, Node_t *z, interval_t intr) {
+	Node_t *x;	
+	
+	if (z == t->NIL)
+		return t->NIL;
+	
+	if (z->left!=t->NIL && z->left->mmax>=intr.low) {
+		x = RBTree_Search_Min(t, z->left, intr);
+		if (x != t->NIL)
+			return x;
+	}
+	
+	if (overlap(intr, z->intr))
+		return z;
+	
+	if (z->right != t->NIL)
+		return RBTree_Search_Min(t, z->right, intr);
+	
+	return t->NIL;
+}
+
+void RBTree_Search_All(Tree_t *t, Node_t *z, interval_t intr) {
+	Node_t *x;
+	
+	if (z == t->NIL)
+		return ;
+	
+	if (z->left!=t->NIL && z->left->mmax>=intr.low) {
+		RBTree_Search_All(t, z->left, intr);
+	}
+	
+	if (overlap(intr, z->intr)) {
+		printf("[%d, %d]\n", z->intr.low, z->intr.high);
+	}
+	
+	if (z->right!=t->NIL && z->right->mmax>=intr.low) {
+		RBTree_Search_All(t, z->right, intr);
+	}
+}
+
+Node_t *RBTree_Seach_Exactly(Tree_t *t, interval_t intr) {
+	Node_t *x = t->root;
+	
+	while (x != t->NIL) {
+		if (overlap(intr, x->intr)) {
+			if (intr == x->intr)
+				break;
+			if (x->left!=t->NIL && intr.low<x->key)
+				x = x->left;
+			else
+				x = x->right;
+		} else {
+			if (x->left!=t->NIL && x->left->mmax>=intr.low)
+				x = x->left;
+			else
+				x = x->right;
+		}
+	}
+	return x;
+}
+
 int check_BHeight(Tree_t *t, Node_t *x, bool &f) {
 	if (x == t->NIL)
 		return 1;
@@ -439,6 +503,7 @@ bool check_RBTree(Tree_t *t) {
 }
 
 void init() {
+	int i, j, k;
 	Tree_t *t = new Tree_t();
 	interval_t intrs[10] = {
 		interval_t(16, 21),
@@ -456,7 +521,7 @@ void init() {
 	Node_t *p;
 	
 	printf("n = %d\n", n);
-	for (int i=0; i<n; ++i) {
+	for (i=0; i<n; ++i) {
 		p = new Node_t(intrs[i]);
 		printf("key=%d, intr=[%d, %d]\n", p->key, p->intr.low, p->intr.high);
 		RBTree_Insert(t, p);
@@ -471,6 +536,102 @@ void init() {
 	printf("\n");
 }
 
+void check_delete() {
+	int i, j, k;
+	Tree_t *t = new Tree_t();
+	interval_t intrs[10] = {
+		interval_t(16, 21),
+		interval_t(8 , 9 ),
+		interval_t(25, 30),
+		interval_t(5 , 8 ),
+		interval_t(15, 23),
+		interval_t(17, 19),
+		interval_t(26, 26),
+		interval_t(0 , 3 ),
+		interval_t(6 , 10),
+		interval_t(19, 20)
+	};
+	Node_t *nds[10];
+	bool visit[10];
+	int n = sizeof(intrs) / sizeof(interval_t);
+	Node_t *p;
+	
+	printf("n = %d\n", n);
+	for (i=0; i<n; ++i) {
+		p = new Node_t(intrs[i]);
+		nds[i] = p;
+		RBTree_Insert(t, p);
+	}
+	
+	memset(visit, false, sizeof(visit));
+	for (i=0; i<n; ++i) {
+		while (1) {
+			j = rand()%n;
+			if (!visit[j])
+				break;
+		}
+		visit[j] = true;
+		RBTree_Delete(t, nds[j]);
+		if (check_RBTree(t))
+			puts("Right");
+		else
+			puts("Wrong");
+	}
+}
+
+void check_Search() {
+	int i, j, k;
+	Tree_t *t = new Tree_t();
+	interval_t intrs[10] = {
+		interval_t(16, 21),
+		interval_t(8 , 9 ),
+		interval_t(25, 30),
+		interval_t(5 , 8 ),
+		interval_t(15, 23),
+		interval_t(17, 19),
+		interval_t(26, 26),
+		interval_t(0 , 3 ),
+		interval_t(6 , 10),
+		interval_t(19, 20)
+	};
+	int n = sizeof(intrs) / sizeof(interval_t);
+	Node_t *p;
+	
+	printf("n = %d\n", n);
+	for (i=0; i<n; ++i) {
+		p = new Node_t(intrs[i]);
+		RBTree_Insert(t, p);
+	}
+	
+	interval_t tmp = interval_t(15, 28);
+	// // test 14.3-3
+	// p = RBTree_Search_Min(t, t->root, tmp);
+	// if (p == t->NIL) {
+		// puts("no overlap interval");
+	// } else {
+		// printf("[%d, %d]\n", p->intr.low, p->intr.high);
+	// }
+	
+	// // test 14.3-4
+	// RBTree_Search_All(t, t->root, tmp);
+	// test 14.3-5
+	printf("\n\nInorder the tree with color:\n");
+	Inorder_RBTree_Walk_WithColor(t, t->root);
+	printf("\n\nsearch exactly [%d, %d]\n", tmp.low, tmp.high);
+	p = RBTree_Seach_Exactly(t, tmp);
+	if (p == t->NIL)
+		puts("not found such exactly intr");
+	else
+		puts("found a exactly intr");
+	tmp = interval_t(17, 19);
+	printf("\n\nsearch exactly [%d, %d]\n", tmp.low, tmp.high);
+	p = RBTree_Seach_Exactly(t, tmp);
+	if (p == t->NIL)
+		puts("not found such exactly intr");
+	else
+		puts("found a exactly intr");
+}
+
 int main() {
 	
 	#ifdef LOCAL_DEBUG
@@ -478,7 +639,9 @@ int main() {
 		freopen("data.out", "w", stdout);
 	#endif
 	
-	init();
+	// init();
+	// check_delete();
+	check_Search();
 	
 	return 0;
 }

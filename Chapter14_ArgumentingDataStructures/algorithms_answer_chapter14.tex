@@ -52,55 +52,184 @@
 	
 	\item 14.1-6 \\
 	解：\\
-		注意在新的秩的定义下, $x.size = x.left.size + 1$. 因此，相关函数修改为\\
+		注意在新的秩的定义下, $x.size = x.left.size + 1$. 因此，相关函数修改为
 	\begin{lstlisting}[language=C++]
-		void RBTree_Insert(Tree_t *t, Node_t *z) {
-			......
-			while (x != t->NIL) {
-				y = x;
-				if (z->key < x->key) {
-					++x->size;
-					x = x->left;
-				} else {
-					x = x->right;
-				}
-			}
-			......
-		}
-
-		void Left_Rotate(Tree_t *t, Node_t *x) {
-			......
-			y->size += x->left->size;
-		}
-
-		void Right_Rotate(Tree_t *t, Node_t *y) {
-			......
-			y->size -= x->left->size;
-		}
-
-		void RBTree_Delete(Tree_t *t, Node_t *z) {
-			......
-			while (q != t->NIL) {
-				if (q == q->p->left)
-					--q->size;
-				q = q->p;
+	void RBTree_Insert(Tree_t *t, Node_t *z) {
+		......
+		while (x != t->NIL) {
+			y = x;
+			if (z->key < x->key) {
+				++x->size;
+				x = x->left;
+			} else {
+				x = x->right;
 			}
 		}
+		......
+	}
+
+	void Left_Rotate(Tree_t *t, Node_t *x) {
+		......
+		y->size += x->left->size;
+	}
+
+	void Right_Rotate(Tree_t *t, Node_t *y) {
+		......
+		y->size -= x->left->size;
+	}
+
+	void RBTree_Delete(Tree_t *t, Node_t *z) {
+		......
+		while (q != t->NIL) {
+			if (q == q->p->left)
+				--q->size;
+			q = q->p;
+		}
+	}
 	\end{lstlisting}
 	
 	\item 14.1-7 \\
 	解：\\
 		这道题英文参考答案说的很清楚。\\
-		假定数组元素为A[1...n], 
+		假定数组元素为A[1...n],
 		Inv(A[j])(元素A[j]的逆序数)=$\#\{i|i<j, A[i]>A[j]\}$. \\
-		因此，$j = rank(A[j]) + Inv(A[j])$. 
+		因此，$j = rank(A[j]) + Inv(A[j])$.
 		故$Inv(A[j]) = j - rank(A[j])$. 从而使用如下算法计算逆序对：
 		\begin{enumerate}[(1)]
 			\item 将元素A[1...n]插入到OS-Tree中;
 			\item 对1...n的n个元素，使用Search与OS-Rank求得元素A[j]的rank值，从而求得$Inv[j] = j - rank_j$.
 		\end{enumerate}
 		时间复杂度$T(n) = n(T_{search} + T_{rank}) = O(nlgn)$.
+	
+	\item 14.2-1 \\
+	解：\\
+		其实就和线索树一样，增加4个指针并进行维护。
 		
+	\item 14.2-2 \\
+	解：\\
+		可以，算法导论参考答案说的很清楚了。
+		
+	\item 14.3-1 \\
+	解：
+	\begin{lstlisting}[language=C++]
+	void Left_Rotate(Tree_t *t, Node_t *x) {
+		Node_t *y = x->right;
+		x->right = y->left;
+		if (y->left != t->NIL)
+			y->left->p = x;
+		y->p = x->p;
+		if (x->p == t->NIL) {
+			// x is root
+			t->root = y;	
+		} else if (x == x->p->left) {
+			x->p->left = y;
+		} else {
+			x->p->right = y;
+		}
+		y->left = x;
+		x->p = y;
+		// maintenance attr mmax
+		x->mmax = max(
+			max(x->left->mmax, x->right->mmax), x->intr.high
+		);
+		y->mmax = max(
+			max(y->left->mmax, y->right->mmax), y->intr.high
+		);
+	}
+	\end{lstlisting}
+	
+	\item 14.3-2 \\
+	解：
+	\begin{lstlisting}[language=c++]
+	bool overlap(interval_t a, interval_t b) {
+		return b.low<a.high && a.low<b.high;	// <= -> <
+	}
+	
+	Node_t *RBTree_Search(Tree_t *t, interval_t intr) {
+		Node_t *x = t->root;
+		while (x!=t->NIL && !overlap(intr, x->intr)) {
+			if (x->left!=t->NIL && x->left->mmax>intr.low) {	// >= -> >
+				x = x->left;
+			} else {
+				x = x->right;
+			}
+		}
+		return x;
+	}
+	\end{lstlisting}
+	
+	\item 14.3-3 \\
+	解：
+	\begin{lstlisting}[language=c++]
+	Node_t *RBTree_Search_Min(Tree_t *t, Node_t *z, interval_t intr) {
+		Node_t *x;	
+		
+		if (z == t->NIL)
+			return t->NIL;
+		
+		if (z->left!=t->NIL && z->left->mmax>=intr.low) {
+			x = RBTree_Search_Min(t, z->left, intr);
+			if (x != t->NIL)
+				return x;
+		}
+		
+		if (overlap(intr, z->intr))
+			return z;
+		
+		if (z->right != t->NIL)
+			return RBTree_Search_Min(t, z->right, intr);
+		
+		return t->NIL;
+	}
+	\end{lstlisting}
+	
+	\item 14.3-4 \\
+	解：
+	\begin{lstlisting}[language=C++]
+	void RBTree_Search_All(Tree_t *t, Node_t *z, interval_t intr) {
+		Node_t *x;
+		
+		if (z == t->NIL)
+			return ;
+		
+		if (z->left!=t->NIL && z->left->mmax>=intr.low) {
+			RBTree_Search_All(t, z->left, intr);
+		}
+		
+		if (overlap(intr, z->intr)) {
+			printf("[%d, %d]\n", z->intr.low, z->intr.high);
+		}
+		
+		if (z->right!=t->NIL && z->right->mmax>=intr.low) {
+			RBTree_Search_All(t, z->right, intr);
+		}
+	}
+	\end{lstlisting}
+	
+	\item 14.3-5 \\
+	解：
+	\begin{lstlisting}[language=C++]
+	Node_t *RBTree_Seach_Exactly(Tree_t *t, interval_t intr) {
+		Node_t *x = t->root;
+		
+		while (x != t->NIL) {
+			if (overlap(intr, x->intr)) {
+				if (intr == x->intr)
+					break;
+				if (x->left!=t->NIL && intr.low<x->key)
+					x = x->left;
+				else
+					x = x->right;
+			} else {
+				if (x->left!=t->NIL && x->left->mmax>=intr.low)
+					x = x->left;
+				else
+					x = x->right;
+			}
+		}
+		return x;
+	}
+	\end{lstlisting}
 	
 \end{enumerate}
 
