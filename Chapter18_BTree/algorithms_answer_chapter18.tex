@@ -1,0 +1,193 @@
+%-*- coding:UTF-8 -*-
+% 算法导论-第18章 B树.tex
+\documentclass[UTF8]{ctexart}
+\usepackage{geometry}
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{listings} %插入代码
+\usepackage{xcolor} %代码高亮
+\usepackage{diagbox}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+
+% Some setup
+\pagestyle{plain}
+\geometry{a4paper, top=2cm, bottom=2cm, left=2cm, right=2cm}
+\CTEXsetup[format={\raggedright\bfseries\Large}]{section}
+\lstset{numbers=left, %设置行号位置
+        numberstyle=\small, %设置行号大小
+        keywordstyle=\color{blue}, %设置关键字颜色
+        commentstyle=\color{purple}, %设置注释颜色
+        %frame=single, %设置边框格式
+        escapeinside=``, %逃逸字符(1左面的键)，用于显示中文
+        breaklines, %自动折行
+        extendedchars=false, %解决代码跨页时，章节标题，页眉等汉字不显示的问题
+        %xleftmargin=2em,xrightmargin=2em, aboveskip=1em, %设置边距
+        tabsize=4, %设置tab空格数
+        showspaces=false %不显示空格
+       }
+
+% About math
+\newcommand{\rmnum}[1]{\romannumeral #1}
+
+\begin{document}
+
+\title{\Huge算法导论习题\\}
+\vspace{2cm}
+\author{\Large曾宇祥\\SY1406122}
+\date{}
+\maketitle
+
+%\newpage
+\section*{第18章\quad B树}
+\begin{enumerate}
+    \item 18.1-1 \\
+	当t=1时，结点势必不包含任何元素。
+	
+	\item 18.1-2 \\
+	当t=2或3时，图18-1所示的树是一棵合法的B树。
+	
+	\item 18.1-4 \\
+	相当于每个结点含有$2t-1$个元素，每个结点共有$2t$的分支。则
+	$n = (2t)^{h+1}-1$。
+	
+	\item 18.1-5 \\
+	其实就是$t=2$时的B树。
+	
+	\item 18.2-2 \\
+	仅想到了包含重复元素的时候，存在冗余读写的情况。
+	
+	\item 18.2-3 \\
+	\begin{lstlisting}[language=c++]
+	int BTree_Minimum(Node_t *x) {
+		if (x->leaf)
+			return x->key[1];
+		else
+			return BTree_Minimum(x->c[1]);
+	}
+
+	int BTree_Maximum(Node_t *x) {
+		if (x->leaf)
+			return x->key[x->n];
+		else
+			return BTree_Minimum(x->c[x->n+1]);
+	}
+
+	int BTree_Predecessor(Node_t *x, int i) {
+		if (x->leaf) {
+			if (i == 1)
+				return -INF;
+			else
+				return x->key[i-1];
+		} else {
+			return BTree_Maximum(x->c[i]);
+		}
+	}
+
+	int BTree_Successor(Node_t *x, int i) {
+		if (x->leaf) {
+			if (i == x->n)
+				return INF;
+			else
+				return x->key[i+1];
+		} else {
+			return BTree_Minimum(x->c[i+1]);
+		}
+	}
+	\end{lstlisting}
+	
+	\item 18.2-4 \\
+	规律没找到。
+	
+	\item 18.2-5 \\
+	在B-TREE-InSERT以及B-TREE-InSERT-NONFULL函数中都需要加入判断当前结点是否为叶子结点，
+	若为叶子结点则根据$t'$值split。否则，依然按照旧$t$值split。
+	
+	\item 18.2-6 \\
+	\[
+		T(n) = O(\log t*\log_t n) = O(lgn)
+	\]
+	
+	\item 18.3-2 \\
+	\begin{lstlisting}[language=c++]
+	void BTree_Delete(BTree_t *t, Node_t *x, int key) {
+		int i = 1, j, k;
+		Node_t *y, *z;
+
+		while (i<=x->n && key>x->key[i])
+			++i;
+		if (i<=x->n && key==x->key[i]) {
+			if (x->leaf) {
+				--x->n;
+				while (i <= x->n) {
+					x->key[i] = x->key[i+1];
+					++i;
+				}
+			} else {
+				if (x->c[i]->n >= BTREE_TN) {
+					// y is the predessor of x->c[]
+					k = BTree_Predecessor(x, i);
+					BTree_Delete(t, x->c[i], k);
+					x->key[i] = k;
+				} else if (i<=x->n && x->c[i+1]->n >= BTREE_TN) {
+					k = BTree_Successor(x, i);
+					BTree_Delete(t, x->c[i+1], k);
+					x->key[i] = k;
+				} else {
+					BTree_Merge_Child(x, i);
+					BTree_Delete(t, x->c[i], key);
+				}
+			}
+		} else {
+			if (x->c[i]->n == BTREE_TN-1) {
+				y = x->c[i];
+				if (i<=x->n && x->c[i+1]->n >= BTREE_TN) {
+					z = x->c[i+1];
+					// push x->key[i] to y
+					++y->n;
+					y->key[y->n] = x->key[i];
+					x->key[i] = z->key[1];
+					y->c[y->n+1] = z->c[1];
+					// adjust x->c[i+1]
+					--z->n;
+					for (j=1; j<=z->n; ++j)
+						z->key[j] = z->key[j+1];
+					for (j=1; j<=z->n+1; ++j)
+						z->c[j] = z->c[j+1];
+				} else if (i>1 && x->c[i-1]->n >= BTREE_TN) {
+					z = x->c[i-1];
+					// push x->key[i] to y
+					++y->n;
+					for (j=y->n; j>1; --j)
+						y->key[j] = y->key[j-1];
+					y->key[1] = x->key[i-1];
+					x->key[i-1] = z->key[z->n];
+					for (j=y->n+1; j>1; --j)
+						y->c[j] = y->c[j-1];
+					y->c[1] = z->c[z->n+1];
+					// adjust x->c[i-1];
+					--z->n;
+				} else {
+					if (i <= x->n) {
+						BTree_Merge_Child(x, i);
+					} else {
+						--i;
+						BTree_Merge_Child(x, i);
+					}
+					if (x==t->root && x->n==0)
+						t->root = x->c[i];
+				}
+			}
+			BTree_Delete(t, x->c[i], key);
+		}
+	}	
+	\end{lstlisting}
+	
+\end{enumerate}
+
+
+\end{document}
+
