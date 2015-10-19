@@ -52,11 +52,12 @@ typedef struct node_t {
 const int INF = 0x1f1f1f1f;
 const int maxv = 205;
 const int maxe = maxv * maxv + 5;
-int dis[maxv], inS[maxv];
+node_t ND[maxe];
+int dis[maxv];
+bool inS[maxv];
 int nv, ne;
 int V[maxe], W[maxe], nxt[maxe];
 int head[maxv], head_[maxv];
-node_t ND[maxe];
 
 void addEdge(int u, int v, int w) {
 	V[ne] = v;
