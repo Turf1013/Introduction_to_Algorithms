@@ -1,0 +1,234 @@
+%-*- coding:UTF-8 -*-
+% 字符串匹配.tex
+\documentclass[UTF8]{ctexart}
+\usepackage{geometry}
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{listings} %插入代码
+\usepackage{xcolor} %代码高亮
+\usepackage{blkarray}
+\usepackage{diagbox}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{color}
+\usepackage{multirow}
+\usepackage{color}
+\usepackage[all,pdf]{xy}
+\usepackage{verbatim}   %comment
+\usepackage{cases}
+
+% THEOREM Environments --------------------------------------------------------
+\newtheorem{thm}{Theorem}[subsection]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\theoremstyle{definition}
+\newtheorem{defn}[thm]{Definition}
+\theoremstyle{remark}
+\newtheorem{rem}[thm]{Remark}
+\numberwithin{equation}{subsection}
+% MATH ------------------------------------------------------------------------
+\DeclareMathOperator{\RE}{Re}
+\DeclareMathOperator{\IM}{Im}
+\DeclareMathOperator{\ess}{ess}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\To}{\longrightarrow}
+\newcommand{\h}{\mathcal{H}}
+\newcommand{\s}{\mathcal{S}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\J}{\mathcal{J}}
+\newcommand{\M}{\mathcal{M}}
+\newcommand{\W}{\mathcal{W}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\BOP}{\mathbf{B}}
+\newcommand{\BH}{\mathbf{B}(\mathcal{H})}
+\newcommand{\KH}{\mathcal{K}(\mathcal{H})}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Complex}{\mathbb{C}}
+\newcommand{\Field}{\mathbb{F}}
+\newcommand{\RPlus}{\Real^{+}}
+\newcommand{\Polar}{\mathcal{P}_{\s}}
+\newcommand{\Poly}{\mathcal{P}(E)}
+\newcommand{\EssD}{\mathcal{D}}
+\newcommand{\Lom}{\mathcal{L}}
+\newcommand{\States}{\mathcal{T}}
+\newcommand{\abs}[1]{\left\vert#1\right\vert}
+\newcommand{\set}[1]{\left\{#1\right\}}
+\newcommand{\seq}[1]{\left<#1\right>}
+\newcommand{\norm}[1]{\left\Vert#1\right\Vert}
+\newcommand{\essnorm}[1]{\norm{#1}_{\ess}}
+
+
+% Some setup
+\pagestyle{plain}
+\geometry{a4paper, top=2cm, bottom=2cm, left=2cm, right=2cm}
+\CTEXsetup[format={\raggedright\bfseries\Large}]{section}
+\lstset{numbers=left, %设置行号位置
+        numberstyle=\small, %设置行号大小
+        keywordstyle=\color{blue}, %设置关键字颜色
+        commentstyle=\color{purple}, %设置注释颜色
+        %frame=single, %设置边框格式
+        escapeinside=``, %逃逸字符(1左面的键)，用于显示中文
+        breaklines, %自动折行
+        extendedchars=false, %解决代码跨页时，章节标题，页眉等汉字不显示的问题
+        %xleftmargin=2em,xrightmargin=2em, aboveskip=1em, %设置边距
+        tabsize=4, %设置tab空格数
+        showspaces=false %不显示空格
+       }
+
+% About math
+\newcommand{\rmnum}[1]{\romannumeral #1}
+\newcommand\Emph{\textbf}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\newcommand{\resetcounter}{\setcounter{equation}{0}}
+
+\begin{document}
+
+\title{\Huge 基于自动机原理的字符串匹配}
+\vspace{2cm}
+\author{\Large Trasier}
+\date{\today}
+\maketitle
+
+
+\section{前言}
+
+	字符串匹配的相关算法旨在解决在一个较大规模的文本中查询模式串的匹配情况。
+	这里的模式串可能是一系列单词，也可能是一个强大的正则表达式。有许许多多
+	的算法可以解决字符串匹配的相关问题，而这些算法往往包括\Emph{预处理}以及\Emph{搜索}
+	两个阶段。其中一部分算法在搜索阶段往往采用\Emph{自动机}这一载体，自动机的优势
+	主要在于通过状态的跃迁加快查找的速度，同时支持在线查找，可以处理大文件。
+	
+	文中涉及的算法主要使用\Emph{最小化的确定性有穷自动机}，用来处理\Emph{re-matching}、
+    \Emph{dictinoary-matching}以及\Emph{index-matching}等问题。
+
+\section{符号说明}
+	
+	简单规定一下使用的符号说明，后面的自动机算法都尽量以形式化的方法说明。
+	
+\subsection{Alphabet and words}
+	
+	\noindent
+    $A$表示一个字符集合，$a$表示$A$的一个元素。				\\
+	$u$表示一个单词，$|u|$表示长度，$u_j$表示第$j$个字符。	\\
+	$u \cdot v$或$uv$表示单词$u$连接单词$v$，$u^0 = \varepsilon$，$uw^-1$表示单词$v, u=wv$。\\
+	当$\exists u^0, u^1, u=u^0vu^1$成立时，称$v$是$u$的factor。
+	此时若$v \neq u$并且$u^0=\varepsilon or u^1=\varepsilon$，我们称$v$是$u$的proper factor。
+	
+\subsection{Languages}
+	
+	\noindent
+	$U$表示一个集合，$U \subset A^*$.	\\
+	$Pref(U), Fact(U), Suff(U)$分别表示语言的前缀、子串、后缀。	\\
+	$|U| = \sum_{u \in U} |u|$。
+	
+\subsection{Regular expressions}
+
+	就是平时用的RE。
+	
+\subsection{Finite automata}
+	
+	通常FA的定义是一个五元组，因为符号集合其实就是$A$。因此，这里简化一下，使用四元组来定义一个FA。
+	$Q$表示状态集合，$i$表示初始状态，$T, T \subset Q$表示终结态，$E$表示状态转换函数。
+	如果把一个FA理解成一个图的话，$Q, i, T$其实都是点，而$E$则表示边的集合。
+	同时，$i$的入度为0。
+	边往往采用三元组描述$(p, a, q)$，$p,q \in Q$，表示当前字符为$a$时，可由状态$p$转换为状态$q$。
+	也可以表示为$\delta(p, a)=q$，从而可以得到如下递推式
+	\[
+		\delta(p, u) =
+		\left\{
+		\begin{aligned}
+			&p,		  &if\ u=\varepsilon,	\\
+			&\delta(\delta(p, a), v), &if\ u=av,	\\
+			&undefined,  &otherwise.
+		\end{aligned}
+		\right .
+	\]
+	其实这个递推式就是描述了一个在自动机上搜索$u$的过程。
+	
+\section{DFA的抽象数据结构}
+
+	很多模式匹配的算法都依赖于DFA的具体实现的数据结构，重点是能够实现DFA的转换函数。
+	下面列举了主要的五种方法：
+	transition matrix, adjacency lists, transition list, failure function, table-compression。
+	
+	我们将不同方法查询$\delta(p,a)$的时间花费称为$delay$, $delay$表示在查询下一个字符前花费在查询$a$的时间。
+	一般来说，允许状态分支的数据结构的$delay$为常数，如transition matrix；而基于比较的数据结构的查询时间为
+	$O(log |A|)$。
+	
+\subsection{Transition matrix}
+
+	转移矩阵式最简单的DFA的实现方式，这也不难想象。
+	还是讲DFA想象成一个directed graph，这其实就是个邻接矩阵。
+	显然它的空间复杂度为$O(|Q| \times |A|)$，延迟为$O(1)$。
+	它的缺陷和优势与邻接矩阵几乎相同。
+	
+\subsection{Adjancy lists}
+	
+	这个邻接表其实也和普通Graph里的邻接表是一致的。
+	因此，它的空间复杂度为$O(|Q| + |E|)$，延迟为$O(log \min(|Q|, |A|))$。
+	其实这里一般携程$O(log |A|)$就好了，当$|Q|<|A|$时，导致每个结点的出度至多为$|Q|$。
+	因此，综合起来就是$O(log \min(|Q|, |A|))$。
+	
+\subsection{Transition list}
+	
+	这东西实际上就是个hash。（当发现没有比hash好很多的数据结构时，很多工程和算法都会用hash代替复杂数据结构）
+	显然，可以把$e \in E$看成一个三元组$(p, a, q)$。
+	这个hash的主要任务就是快速地映射$(p,a)$。
+	空间至少是$O(|E|)$，时间平均为常量。
+	
+\subsection{Failure function}
+	
+	\Emph{Failure function}挺重要的，也挺有效的，后面的几种自动机模型都一定程度上使用了failure function。
+	其实FA包括DFA, NFA, $\varepsilon$-NFA，对于NFA而言，可能存在$\delta(p,a)=q_0, \delta(p,a)=q_1$。
+	然而DFA，对于给定的输入字符$a$以及当前状态$p$，仅存在唯一的$q, \delta(p,a)=q$。
+	它的空间复杂度和时间复杂度都是线性的。	\\
+	
+	failure function是AC自动机算法中最不好理解的部分，一直没有弄懂fail都低是干嘛的，其实就是个线索树。
+	我是这么理解fail函数的：
+	使用确定化将NFA转化为DFA时，DFA的结点可能代表了NFA的几个状态集合，因为$\delta$函数指向的新的状态可能
+	也是原始状态的集合。若还使用上述的方法就会造成空间爆炸。因此，这里使用fail函数将相关的状态关联起来，
+	不断的递归进行检索，可以一定程度上降低空间复杂度。
+	
+	\begin{defn}
+		$\gamma$表示函数$Q \times A \rightarrow Q$, $f$表示函数$Q \rightarrow Q$。
+		通过$\gamma f$可重写$\delta$的递推式。
+		\[
+			\delta(p,a) =
+			\left\{
+			\begin{aligned}
+				&\gamma(p, a), 		&if\ \gamma(p, a) \neq Null,	              \\
+				&\delta(f(p), a), 	&if\ \gamma(p, a) = \text{Null and } f(p) \neq Null,	\\
+				&i,					&otherwise.
+			\end{aligned}
+			\right .
+		\]
+	\end{defn}
+	假设使用adjancy lists表示$\gamma$，则空间复杂度为$O(|Q| + |E'|)$。
+	这里$E' = \{(p,a,q) | (p,a,q) \in E \ and\ \gamma(p,a) is defined \}$.
+	时间复杂度为$O(|Q| \times log |A|)$。
+	
+\subsection{Table-compression}
+
+	这个模型其实没什么，就是在failure function的基础上使用了邻接矩阵。
+	$fail, |fail|=|Q|$还是原来的failure函数，$base, |base|=|Q|$表示状态$p$对应的出边对应的其实地址，
+	$check, |check|=|Q|\times|A|$表示对应结点的状态，$target, |target|=|Q|\times|A|$表示下一状态。
+	重写递推式
+	\[
+		\delta(p, a) = 
+		\left\{
+		\begin{aligned}
+			&target[base[p]+a], 	&if\ check[base[p]+a] = p		\\
+			&\delta(fail(p), a),	&if\ check[base[p]+a] \neq p
+		\end{aligned}
+		\right .
+	\]
+	显然空间复杂度为$|Q| \times |A|$，时间复杂度降低为$O(|Q|)$。
+	
+	个人感觉，并没好到哪里去。
+	
+\end{document}
