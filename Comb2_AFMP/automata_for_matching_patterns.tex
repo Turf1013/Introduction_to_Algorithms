@@ -26,6 +26,8 @@
 \newtheorem{cor}[thm]{Corollary}
 \newtheorem{lem}[thm]{Lemma}
 \newtheorem{prop}[thm]{Proposition}
+\newtheorem{prob}[thm]{Problem}
+\newtheorem{mthm}[thm]{Main Theorem}
 \theoremstyle{definition}
 \newtheorem{defn}[thm]{Definition}
 \theoremstyle{remark}
@@ -219,7 +221,7 @@
 	$check, |check|=|Q|\times|A|$表示对应结点的状态，$target, |target|=|Q|\times|A|$表示下一状态。
 	重写递推式
 	\[
-		\delta(p, a) = 
+		\delta(p, a) =
 		\left\{
 		\begin{aligned}
 			&target[base[p]+a], 	&if\ check[base[p]+a] = p		\\
@@ -231,4 +233,109 @@
 	
 	个人感觉，并没好到哪里去。
 	
+\section{Matching regular expressions}
+
+\subsection{前言}
+
+    \begin{prob}
+        (正则表达式匹配) 给定一个正则表达式x, 找到x表示的所有字符串在目标串y上的位置。
+    \end{prob}
+	经典的算法是构建表达式$x$的$NFA$，将$y$作为自动机上的搜索串，
+	查找所有可能的$y$的前缀，满足$Pref(y) \in A*Lang(x)$。
+	构建这个自动机的时间和空间均是$O(|x|)$，匹配$y$的时间是$O(|x||y|)$，
+	识别$y$的每个字符的时间是$O(|x|)$。
+	
+\subsection{RE自动机}
+
+	\begin{thm} $x$表示一个正则表达式，一定存在一个可以识别$x$并满足如下条件的$\varepsilon-NFA$：
+		\begin{enumerate}[(1)]
+		
+			\item 状态总数上界为$2|x|$；
+			
+			\item 标号为$a$的边的上界为$|x|$，标号为$\varepsilon$的边的上界为$4|x|$；
+			
+			\item 每个状态的入度和出度的总和不超过2，并且当且仅当标号为$\varepsilon$时总和为2。
+			
+		\end{enumerate}
+	\end{thm}
+	
+	这个定理还是比较重要的，这个为RE自动机算法的空间复杂度$O(|x|)$和时间复杂度$O(|x||y|)$奠定了基调。
+	这个定理也比较好证明，基本思路是对两个表达式$x,y$进行数学归纳。证明$x+y, x \cdot y, x^*$也满足上述定理。
+	
+	\begin{thm}
+		$\delta(x)$表示由正则表达式$x$构建的$\varepsilon-NFA$，空间和时间复杂度均满足$O(|x|)$。
+	\end{thm}
+	
+\subsection{使用RE自动机搜索}
+
+	这里面有个稍微难理解的东西$\varepsilon闭包$。因为$\varepsilon-NFA$中的状态转移可能由$\varepsilon$引发，
+	因此，对于$\delta(p,\varepsilon) = q$，当搜素到$p$时，同时也要把$q$加入带搜索集合中。
+	因为，这个状态发生的可能。（DFA可以这个东西，但是会产生状态爆炸的问题。）
+	
+	使用RE自动机搜素主要包括\Emph{Closure}和\Emph{Transitions}两个过程。
+	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
+		Closure(E, S)
+			R \leftarrow S
+			\vartheta \leftarrow EmptyQueue
+			for each state p in S
+				loop Enqueue(\vartheta, p)
+			while not QueueIsEmpty(\vartheta)
+				loop p \leftarrow Dequeue(\vartheta)
+					for each state q such that(p, \varepsilon, q) is in E
+						loop if q is not in R
+							then R \leftarrow R + {q}
+								Enqueue(\vartheta, q)
+			return R
+	\end{lstlisting}
+	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
+		Transitions(E, S, a)
+			R \leftarrow \emptyset
+			for each state p in S
+				loop for each state q such that (p, a, q) is in E
+					loop R \leftarrow R + {q}
+			return R
+	\end{lstlisting}
+	
+	这样一个自动机的基本功能是用来检测字符串$y$是否可以被正则表达式$x$所表示，这样一个过程称为\Emph{Tester}。
+	\begin{lstlisting}[frame=shadowbox,frameleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
+		Tester(x, y)
+			Build RE (Q, i, {t}, E) of x
+			C \leftarrow Closure(E, {i})
+			for letter a from first to last letter of y
+				loop C \leftarrow Closure(E, Transition(E, C, a))
+			return t \in C
+	\end{lstlisting}
+	
+	\begin{prop}
+		给定一个正则表达还是$x$，$测试单词$y$属于$Lang(x)$的时间复杂度为$O(|x||y|)$，空间复杂度为$O(|x|)$。
+	\end{prop}
+	
+	\begin{proof}
+		其实只能说Transitions和Closure可以在$O(|Q|)=O(|x|)$中实现，这样Tester的复杂度就是$O(|y||x|)$。
+	\end{proof}
+	
+	Tester只能做判定，还是回到最初的问题，识别所有可以匹配$x$的$fact(y)$，将这样的$fact(y)$在y中的右边界的位置称为$end-point$。
+	做法很简单，在每次Tester的循环中都将初始状态$i$加入$C$中，表示每次搜索可能都是从初始状态开始。
+	这样就得到了过程Matcher。
+	
+	\begin{lstlisting}[frame=shadowbox,frameleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
+		Matcher(x, y)
+			Build RE (Q, i, {t}, E) of x
+			C \leftarrow Closure(E, {i})
+			occurrence if t \in C
+			for letter a from first to laster letter of y
+				loop C \leftarrow Closure(E, Transition(E,c,a))
+					occurrence if t \in C
+	\end{lstlisting}
+	
+\subsection{时间和空间的trade-off}
+	
+	上述方法是使用了$\varepsilon-NFA$这种自动机模型，其实也可以使用$DFA$。
+	但是在对状态进行确定化时，往往会产生空间爆炸。
+	如$x = a(a+b)^{m-1}$，识别$A*Long(x)$的$DFA$需要$2^m$个状态。
+	因为，它需要记录$m$个后缀字符。在构建$DFA$时往往采用延迟构建技巧。
+	
+	% Lazy Construction这东西在vEB里面就见到了，在那里面还比较好理解
+	% 但在DFA的建立里面就理解乏力了？莫非等价于failure function。
+
 \end{document}
