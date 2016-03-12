@@ -436,5 +436,28 @@
 	\begin{proof}
 		$p = h_X(v_1v_2 \cdots v_p), \delta(p, a) = h_X(h_X(v_1v_2 \cdots v_p)a) = h_X(v_1v_2 \cdot v_p a)=h_X(pa)$
 	\end{proof}
-
+	
+\subsection{线性dictionary-matching automata}
+	
+	为了基于failure function的自动机$D(x)$，引入$f_U(u)$（其实就是$h_U(u)$）。
+	\begin{lem}
+		令$U \subseteq A^*$. $\forall (u,a) \in Pref(U) \times A$，可得
+		\[
+			h_U(ua) =
+			\left\{
+				\begin{align*}
+					&ua, &\text{ if } ua \in Pref(U),
+					&h_U(f_U(u)a), &\text{ if } u \neq \varepsilon \text{ and } ua \notin Pref(U),
+					&\varepsilon, &\text{ otherwise }.
+				\end{align*}
+			\right .
+		\]
+	\end{lem}
+	这其实就是对$$h_U(va) = h_U(h_U(v)a)$的详细讨论，分三种情况进行，证明还是挺容易的，此处略过。
+	进而，我们定义函数$\gamma X$对应于情况1，$fX$对应于$f_X(u)$。从而$(\gamma X, fX)$就构成了$DFA$的转换函数。
+	
+	再回到$DFA$的定义$\Big( Pref(X), \varepsilon, Pref(X) \cap A^*X, \{(p,a,h_X(pa) | p \in Pref(X), a \in A\} \Big)$
+	其实就是$\Big( Pref(X), \varepsilon, X, fX \cap \gamma X \Big)$。
+	由于这里的所有状态都是一个前缀，因此使用$trie$(information retrieval)可以表示$X$的所有前缀。
+	
 \end{document}
