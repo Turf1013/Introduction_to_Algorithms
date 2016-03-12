@@ -4,6 +4,7 @@
 \usepackage{geometry}
 \usepackage{enumerate}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage{listings} %插入代码
 \usepackage{xcolor} %代码高亮
@@ -211,6 +212,16 @@
 			\right .
 		\]
 	\end{defn}
+	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
+		FailureFunction-Transition(p, a)
+			while p \neq NIL and \gamma(p,a) = NIL
+				loop p \leftarrow F[p]
+			if p \neq NIL
+				then p \leftarrow \gamma(p,a)
+				else p \leftarrow i
+			% In fact, when p = NIL, should return i instead.
+			return p	
+	\end{lstlisting}
 	假设使用adjancy lists表示$\gamma$，则空间复杂度为$O(|Q| + |E'|)$。
 	这里$E' = \{(p,a,q) | (p,a,q) \in E \ and\ \gamma(p,a) is defined \}$.
 	时间复杂度为$O(|Q| \times log |A|)$。
@@ -437,7 +448,7 @@
 		$p = h_X(v_1v_2 \cdots v_p), \delta(p, a) = h_X(h_X(v_1v_2 \cdots v_p)a) = h_X(v_1v_2 \cdot v_p a)=h_X(pa)$
 	\end{proof}
 	
-\subsection{线性dictionary-matching automata}
+\subsection{线性dictionary-matching automata的建立}
 	
 	为了基于failure function的自动机$D(x)$，引入$f_U(u)$（其实就是$h_U(u)$）。
 	\begin{lem}
@@ -445,19 +456,146 @@
 		\[
 			h_U(ua) =
 			\left\{
-				\begin{align*}
-					&ua, &\text{ if } ua \in Pref(U),
-					&h_U(f_U(u)a), &\text{ if } u \neq \varepsilon \text{ and } ua \notin Pref(U),
+				\begin{aligned}
+					&ua, &\text{ if } ua \in Pref(U),  \\
+					&h_U(f_U(u)a), &\text{ if } u \neq \varepsilon \text{ and } ua \notin Pref(U), \\
 					&\varepsilon, &\text{ otherwise }.
-				\end{align*}
+				\end{aligned}
 			\right .
 		\]
 	\end{lem}
-	这其实就是对$$h_U(va) = h_U(h_U(v)a)$的详细讨论，分三种情况进行，证明还是挺容易的，此处略过。
-	进而，我们定义函数$\gamma X$对应于情况1，$fX$对应于$f_X(u)$。从而$(\gamma X, fX)$就构成了$DFA$的转换函数。
+	这其实就是对$h_U(va) = h_U(h_U(v)a)$的详细讨论，分三种情况进行，证明还是挺容易的，此处略过。
+	进而，我们定义函数$\gamma_X$对应于情况1，$f_X$对应于$f_X(u)$。从而$(\gamma_X, f_X)$就构成了$DFA$的转换函数。
 	
 	再回到$DFA$的定义$\Big( Pref(X), \varepsilon, Pref(X) \cap A^*X, \{(p,a,h_X(pa) | p \in Pref(X), a \in A\} \Big)$
-	其实就是$\Big( Pref(X), \varepsilon, X, fX \cap \gamma X \Big)$。
+	其实就是$\Big( Pref(X), \varepsilon, X, f_X \cap \gamma_X \Big)$。
 	由于这里的所有状态都是一个前缀，因此使用$trie$(information retrieval)可以表示$X$的所有前缀。
+	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
+		Trie(X)
+			let \delta be the transition function of (Q, i, T, E)
+			(Q, T, E) \leftarrow  (\emptyset, \emptyset, \emptyset)
+			i \leftarrow State-Creation()
+			for word x from first to last word of X
+				loop t \leftarrow i
+					for letter a from first to last letter of x
+						loop q \leftarrow \delta(t, a)
+							if q = NIL
+								then q \leftarrow State-Creation()
+									 E \leftarrow E + {(t, a, q)}
+							t \leftarrow q
+					T \leftarrow T + {t}
+			return (Q, i, T, E)
+	\end{lstlisting}
+	
+	\begin{lem}
+		不妨令$U \subseteq A^*$，$\forall (u,a) \in Pref(U) \times A$，如下等式成立：
+		\[
+			f_U(ua) =
+			\left\{
+				\begin{aligned}
+					&h_U(f_U(u)a), &\text{ if } u \neq \varepsilon,
+					&\varepsilon, &\text{ otherwise }.
+				\end{aligned}
+			\right .
+		\]
+	\end{lem}
+	\begin{proof}
+		把之前的定理整理归并一下就好了，证略。
+	\end{proof}
+	
+	%
+	% 下面这个伪代码有错误！！！！！！！
+	%
+	构建好$trie$可以得到线性时间的搜索匹配算法。
+	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
+		LinearDictionaryMatchingAutomata(X)
+			left \gamma be the transition of (Q, i, T, E')
+			left \delta be the transition of (Q, i, T, E)
+			(Q, i, T, E') \leftarrow Trie(X)
+			F[i] \leftarrow NIL
+			\vartheta \leftarrow EmtpyQueue
+			EnQueue(\vartheta, i)
+			while not QueueIsEmpty(\vartheta)
+				loop p \leftarrow DeQueue(\vartheta)
+					for each letter a such that \gamma(p, a) \neq NIL
+						loop q \leftarrow \gamma(p, a)
+							F[q] \leftarrow \delta(F[p], a)
+							% \delta \equiv FailureFunction-Transition
+							if F[q] is in T
+							% obviously, if q is in T, then append q into T, F[q] has checked already.
+								then T \leftarrow T + {q}
+							EnQueue(\vartheta, q)
+			return (Q, i, T, (\gamma, F))
+	\end{lstlisting}
+	\begin{lem}
+		LinearDictionaryMatchingAutomata表示基于$X$的dictionary-matching自动机$D(X)$的建立过程，
+		时间复杂度为$O(|X|\times|A|)$，空间复杂度为$O(|X|\times|A|)$。
+	\end{lem}
+	
+	这块儿稍微难以理解的是这个均摊。显然$trie$上共有$O(|X|)$个结点，
+	这也就意味着有$O(|X|)$个元素出队，然而内层循环$FailureFunction-Tranision$的时间复杂度也是$O(|X|)$。
+	那么，总的时间复杂度为什么不是$O(|X|\times|X|)$?
+	\begin{proof}
+		显然只有满足均摊条件才会这样，那么到底哪里存在均摊呢？
+		考虑$\gamma(p,a) = q, r = \delta(F[p], a)$，那么一定有$|r| \le |q|$。
+		那么，假如$\gamma(r,a) \neq NIL$，$r$的这次内层循环至多$|r|$次，而$p$的这次循环至多$|p|-|r|$。
+		因此，不妨假设$\forall a \in A, \gamma(p,a) \neq NIL$，
+		那么从$trie$的每个叶子$p_{leaf}$结点开始，
+		沿着failure function经过的结点不断的查询$\forall a \in A$的$\delta$转换函数，
+		这多总共进行$|p_{leaf}|$次，因此，$trie$上所有结点的内层循环总共进行不超过$|X| \times |A|$次。
+		故内层循环的均摊时间复杂度为$O(|A|)$，从而得到整体的时间复杂度为$O(|X|\times|A|)$。
+	\end{proof}
+	
+	\begin{lem}
+		不妨令$U \subseteq A^*$, $\forall (u,a) \in Pref(U) \times A$, 下列等式成立：
+		\[
+			f_U(ua) =
+			\left\{
+				\begin{aligned}
+					&f_U(u)a, 		&\text{ if } u \neq \varepsilon \text{ and } ua \in Pref(U),       \\
+					&f_U(f_U(u)a), 	&\text{ if } u \neq \varepsilon \text{ and } ua \notin Pref(U),    \\
+					&\varepsilon,	&\text{ otherwise }.
+				\end{aligned}
+			\right .
+		\]
+	\end{lem}
+	
+\subsection{线性dictionary-matching automata的搜索}
+
+	\begin{thm}
+		$X$表示有限单词的集合，$y$表示一个字符串，
+		$\ell$表示$\forall x \in X$的最大长度，$d$表示$trie$的最大出度，
+		使用基于$X$的$DFA$搜索$X$中的字符串在$y$中匹配的位置，
+		可以在时间复杂度$O(|y| \times d)$和空间复杂度$O(\ell \times \log d)$内实现。
+	\end{thm}
+	\begin{proof}
+		时间复杂度还是采用前面的均摊方法，此处证略。
+		% 均摊还是会挺不好理解的，后面可以补上。
+	\end{proof}
+	
+	更泛化的做，对于给定有限语言$X$和failure函数$f_X$，
+	自动机$D(X)$可以使用另一个failure函数$\hat{f_X}$进行优化。
+	引入$Follow_U(u)$表示$\forall u \in Pref(U)$的下一个字符：
+	\[
+		Follow_U(u) = \{a | a \in A, u \in Pref(U), ua \in Pref(U) \}
+	\]
+	进一步可以得到$\hat{f_X}$的递推式：
+	\begin{lem}
+		\[
+			\hat{f_X(p)} =
+			\left\{
+				\begin{aligned}
+					&f_X(p),			&\text{ if } p \neq \varepsilon \text{ and } Follow_X(f_X(p)) \nsubseteq Follow_X(p),   \\
+					&\hat{f_X(f_X(p))},	&\text{ if } p \neq \varepsilon \text{ and } Follow_X(f_X(p)) \subseteq Follow_X(p),    \\   
+					&NIL,				&\text{ otherwise }.
+				\end{aligned}
+			\right .
+		\]
+	\end{lem}
+	做这个优化可以考虑对$|A|$进行状态压缩，然后用位运算实现集合的关系。
+	但实际上最坏情况下的时间复杂度与不使用$\hat{f_X}$是一样的，并没有任何卵用。
+	
+\section*{Matching words}
+\subsection{前言}	
 	
 \end{document}
