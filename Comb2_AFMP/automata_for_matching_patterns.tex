@@ -124,8 +124,9 @@
 \subsection{Languages}
 	
 	\noindent
-	$U$表示一个集合，$U \subset A^*$.	\\
-	$Pref(U), Fact(U), Suff(U)$分别表示语言的前缀、子串、后缀。	\\
+	$U$表示一个语言集合，$U \subseteq A^*$.	\\
+	$pref(U), fact(U), suff(U)$分别表示语言$U$的某个前缀、子串、后缀。	\\
+	$Pref(U), Fact(U), Suff(U)$分别表示语言$U$的所有前缀、子串、后缀的集合。	\\
 	$|U| = \sum_{u \in U} |u|$。
 	
 \subsection{Regular expressions}
@@ -135,7 +136,7 @@
 \subsection{Finite automata}
 	
 	通常FA的定义是一个五元组，因为符号集合其实就是$A$。因此，这里简化一下，使用四元组来定义一个FA。
-	$Q$表示状态集合，$i$表示初始状态，$T, T \subset Q$表示终结态，$E$表示状态转换函数。
+	$Q$表示状态集合，$i$表示初始状态，$T, T \subseteq Q$表示终结态，$E$表示状态转换函数。
 	如果把一个FA理解成一个图的话，$Q, i, T$其实都是点，而$E$则表示边的集合。
 	同时，$i$的入度为0。
 	边往往采用三元组描述$(p, a, q)$，$p,q \in Q$，表示当前字符为$a$时，可由状态$p$转换为状态$q$。
@@ -241,7 +242,7 @@
         (正则表达式匹配) 给定一个正则表达式x, 找到x表示的所有字符串在目标串y上的位置。
     \end{prob}
 	经典的算法是构建表达式$x$的$NFA$，将$y$作为自动机上的搜索串，
-	查找所有可能的$y$的前缀，满足$Pref(y) \in A*Lang(x)$。
+	查找所有可能的$y$的前缀，满足$Pref(y) \in A^*Lang(x)$。
 	构建这个自动机的时间和空间均是$O(|x|)$，匹配$y$的时间是$O(|x||y|)$，
 	识别$y$的每个字符的时间是$O(|x|)$。
 	
@@ -268,7 +269,7 @@
 	
 \subsection{使用RE自动机搜索}
 
-	这里面有个稍微难理解的东西$\varepsilon闭包$。因为$\varepsilon-NFA$中的状态转移可能由$\varepsilon$引发，
+	这里面有个稍微难理解的东西$\varepsilon 闭包$。因为$\varepsilon-NFA$中的状态转移可能由$\varepsilon$引发，
 	因此，对于$\delta(p,\varepsilon) = q$，当搜素到$p$时，同时也要把$q$加入带搜索集合中。
 	因为，这个状态发生的可能。（DFA可以这个东西，但是会产生状态爆炸的问题。）
 	
@@ -297,7 +298,7 @@
 	\end{lstlisting}
 	
 	这样一个自动机的基本功能是用来检测字符串$y$是否可以被正则表达式$x$所表示，这样一个过程称为\Emph{Tester}。
-	\begin{lstlisting}[frame=shadowbox,frameleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
+	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
 		Tester(x, y)
 			Build RE (Q, i, {t}, E) of x
 			C \leftarrow Closure(E, {i})
@@ -307,7 +308,7 @@
 	\end{lstlisting}
 	
 	\begin{prop}
-		给定一个正则表达还是$x$，$测试单词$y$属于$Lang(x)$的时间复杂度为$O(|x||y|)$，空间复杂度为$O(|x|)$。
+		给定一个正则表达还是$x$，测试单词$y$属于$Lang(x)$的时间复杂度为$O(|x||y|)$，空间复杂度为$O(|x|)$。
 	\end{prop}
 	
 	\begin{proof}
@@ -318,7 +319,7 @@
 	做法很简单，在每次Tester的循环中都将初始状态$i$加入$C$中，表示每次搜索可能都是从初始状态开始。
 	这样就得到了过程Matcher。
 	
-	\begin{lstlisting}[frame=shadowbox,frameleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
+	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
 		Matcher(x, y)
 			Build RE (Q, i, {t}, E) of x
 			C \leftarrow Closure(E, {i})
@@ -332,10 +333,108 @@
 	
 	上述方法是使用了$\varepsilon-NFA$这种自动机模型，其实也可以使用$DFA$。
 	但是在对状态进行确定化时，往往会产生空间爆炸。
-	如$x = a(a+b)^{m-1}$，识别$A*Long(x)$的$DFA$需要$2^m$个状态。
+	如$x = a(a+b)^{m-1}$，识别$A^*Long(x)$的$DFA$需要$2^m$个状态。
 	因为，它需要记录$m$个后缀字符。在构建$DFA$时往往采用延迟构建技巧。
 	
 	% Lazy Construction这东西在vEB里面就见到了，在那里面还比较好理解
 	% 但在DFA的建立里面就理解乏力了？莫非等价于failure function。
+
+\section{Matching Dictonary}
+
+\subsection{前言}
+	
+	\begin{prob}
+		（字典匹配问题）给定有限的单词集合$X$，找到$\forall x \in X$在字符串$y$中匹配的所有位置。
+	\end{prob}
+	
+	解决这个问题的经典算法是Aho and Corasick（AC自动机）。
+	它的基本思路思路是实现一个基于线性空间复杂度的$DFA$识别语言$A^*X$。
+	这个$DFA$的实现往往会结合邻接表和failure function。
+	
+	\begin{mthm}
+		\Emph{(Aho and Corasick 1975).} 面向单词集合$X$和字符串$y$的字典匹配问题，可以在如下条件内实现：
+		\begin{itemize}
+			\item 在预处理阶段，构建基于$X$的可识别语言$A^*X$的$DFA$，时间复杂度为$O(|X|\times|A|)$，空间复杂度为$O(|X|)$
+			\item 在搜索阶段，使用$y$在$DFA$上进行搜索，时间复杂度为$O(|y|\times|A|)$，空间复杂度为常量，$delay$的时间花销为$O(|X|\times|A|)$
+		\end{itemize}
+	\end{mthm}
+	% delay很有可能比整体的时间复杂度大，怎么破？
+	
+	首先思考问什么一直强调这个自动机是能够识别语言$A^*X$的。
+	\begin{proof}
+		若$\forall x \in X$并且$x$出现在$y$中，即$x \in fact(y) \Rightarrow y=uxv \Rightarrow y=A^*xv$。
+		这也意味着，使用$y$在自动机$DFA$中进行搜索时，遇到的任何对应终$A^*x$终结态的位置即为所求。
+	\end{proof}
+	
+\subsection{Dictionary-matching automata}
+	
+	为了形式化的定义识别语言$A^*X$的$DFA$，引入基于语言$U$、字符串$v$的映射$h_U: A^* \rightarrow Pref(U) $, 并且
+	\[
+		h_U(v) = v', v' \in Suff(v) \cap Pref(U), |v'| \ge \max_{vv \in Suff(v)\cap Pref(U)} {|vv|}
+	\]
+	从而，可以得到字典匹配问题的$DFA$的形式化定义
+	\begin{defn}
+		若$X$表示一个有限语言集合，那么可以识别语言$A^*X$的确定性有限自动机可以表示为
+		\[
+			\Big( Pref(X), \varepsilon, Pref(X) \cap A^*X, \{(p,a,h_X(pa) | p \in Pref(X), a \in A\} \Big)
+		\]
+	\end{defn}
+	这个定义很重要也很有意思，想要理解AC自动机到底在干嘛主要需要理解好这个定义。
+	$(Q, i, T, E)$四元组表示一个$FA$。
+	首先，最好理解的是初始状态为$\varepsilon$表示一个空串，这是显然的。
+	
+	其次，状态集合为$Pref(X)$，表示$X$的所有前缀。这里$X$并不是一个正则表达式，
+	因此也可以比表示为$X = \bigcap_{x \in X} Pref(x)$，（这也就意味着其实AC自动机上的每个结点其实表示的是一个前缀而非一个字符，
+	但是只存一个字符显然可以省空间，因此仅存一个字符，从trie的根一直搜索到当前结点的路径就是这个前缀，这是后话，留个印象）。
+	那为什么要用前缀呢？
+	关键是要识别$A^*X$。不妨想象$X={x}$，因此，问题转化成两个字符串的匹配。
+	可以直接使用$O(|x||y|)$的朴素算法在字符串$y$的每个位置，搜索是否可以匹配一个$x$，
+	其实就是一个字符一个字符的比较是否和$x$中对应的字符相等，
+	因此，$\forall i,j < |x|, i<j$当且仅当搜索到了$i$才可以搜索到后续位置$j$。
+	不难发现，$i,j$其实代表的都是$x$的位置。
+	那么，对于$|X|>1$，其实我们也要找到能匹配的所有前缀，才会最终判定是否匹配完整的$x, x \in X$。
+	
+	从而我们可以理解终结状态是一个集合，即$Pref(X) \cap A^*X$，
+	其实就是$\forall x \in X$对应的状态。（可以理解成匹配字典中一个完整的单词）
+	
+	最后，是转换函数${(p,a,h_X(pa) | p \in Pref(X), a \in A}$，这里使用了$h_U$的定义，不妨令$\delta(p,a)=q$
+	$q \in Pref(X)$这个最好理解，因为$q \in Q$这是必然的，因此$q \in Pref(X)$。
+	$q \in Suff(pa)$这个也还好理解，毕竟是要匹配$A^*X$，可以把任何$pa$的前缀字符归为$A^*$，我们只需要后缀。
+	关键是为什么我们需要这个新的前缀$q, q \in Pref(X)$最长。
+	（这也是为什么Dictionary-matching时，failure function是靠谱的，这也是为什么很多人都说AC自动机=trie+kmp，确实可以从kmp的next数组这儿理解）。
+	
+	\begin{lem}
+		不妨令$U \subseteq A$，那么有
+		\begin{enumerate}[(1)]
+			\item $v \in A^*U \text{iff } h_U(v) \in A^*U, \text{for each } v \in A^*$;
+			\item $h_U(\varepsilon) = \varepsilon$;
+			\item $h_U(va) = h_U(h_U(v)a), \text{ for each } (v, a) \in A^* \times A$.
+		\end{enumerate}
+	\end{lem}
+	\begin{proof}
+		前两个性质是显然的，关键是第三个。这也是为什么$Dictionary-matching problem$可以配合使用failure function的原因。
+		显然$h_U(va) \in Suff(va), h_U(v)a \in Suff(va)$，进而其中之一必是另一个的后缀。因此，可以分两种情况讨论：
+		\begin{enumerate}[(1)]
+			\item $h_U(v)a$是$h_U(va), h_U(va) \neq \varepsilon$的后缀。
+			
+			不妨令$wa = h_U(va), w \in Pref(U)$，因此，$h_U(v)$是$w$的后缀，
+			而由$|h_U(v)| > |w|$，因此，$w$又是$h_U(v)$的后缀，两者矛盾，显然这种情况不成立。
+			% 其实这从另一个角度证明了$|h_U(v)a| \ge |h_U(va)|$的。
+			
+			\item $h_U(va)$是$h_U(v)a$的后缀。
+			
+			$h_U(va) \in Pref(U), h_U \in Suff(h_U(v)a)$，应用$h_U$的定义可知。
+			$|h_U(va)| \le |h_U(h_U(v)a)|$，因此$h_U(va)$必定是$h_U(h_U(v)a)$的后缀。
+			而$h_U(h_U(v)a) \in Pref(U), h_U(h_U(v)a) \in Suff(va)$，再次应用$h_U$的定义可知。
+			$|h_U(va)| \ge |h_U(h_U(v)a)|$，因此，当且仅当$h_U(va) = h_U(h_U(v)a)$成立时，才满足条件。
+			% 条件三是不是和kmp的next数组的使用很像，这个定理还是挺重要的。
+			
+		\end{enumerate}
+	\end{proof}
+
+	这个定理$(3)$还是挺重要的，这也从侧面证明了为什么$\delta(p,a)=h_X(pa)$。
+	\begin{proof}
+		$p = h_X(v_1v_2 \cdots v_p), \delta(p, a) = h_X(h_X(v_1v_2 \cdots v_p)a) = h_X(v_1v_2 \cdot v_p a)=h_X(pa)$
+	\end{proof}
 
 \end{document}
