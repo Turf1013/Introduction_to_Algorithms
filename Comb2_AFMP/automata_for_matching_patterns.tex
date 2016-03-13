@@ -587,7 +587,7 @@
 			\left\{
 				\begin{aligned}
 					&f_X(p),			&\text{ if } p \neq \varepsilon \text{ and } Follow_X(f_X(p)) \nsubseteq Follow_X(p),   \\
-					&\hat{f_X(f_X(p))},	&\text{ if } p \neq \varepsilon \text{ and } Follow_X(f_X(p)) \subseteq Follow_X(p),    \\   
+					&\hat{f_X(f_X(p))},	&\text{ if } p \neq \varepsilon \text{ and } Follow_X(f_X(p)) \subseteq Follow_X(p),    \\
 					&NIL,				&\text{ otherwise }.
 				\end{aligned}
 			\right .
@@ -607,7 +607,7 @@
 	其实可以把这个问题看成仅包含一个单词的字典匹配问题，同时这其实也是经典算法KMP需要解决的问题。
 	
 	\begin{thm}
-		\Emph{(Knuth, Morris, and Pratt, 1977).} 
+		\Emph{(Knuth, Morris, and Pratt, 1977).}
 		基于模式串$x$和目标串$y$的字符串匹配问题可以在时间复杂度$O(|x|+|y|)$和空间复杂度$O(|x|)$内实现，
 		最坏情况下$delay$的时间复杂度是$\Theta(log|x|)$。
 	\end{thm}
@@ -637,7 +637,7 @@
 	引入助记符$border$，当$v \in Pref(u) \cap Suff(u)$成立时，我们称$v$是$u$的$border$。
 	使用$Bord(u)$表示非空字符$u$的最长$border$。通过引入$border$，我们可以重写$h_x$的等式：
 	\[
-		\forall (p,a) \in Pref(x) \times A, h_x(pa) = 
+		\forall (p,a) \in Pref(x) \times A, h_x(pa) =
 		\left\{
 			\begin{aligned}
 				&pa, 		&\text{ if } pa \in Pref(x),	\\
@@ -659,5 +659,38 @@
 			E_{ua}''&= \{ (ua,b,w) | (h_u(ua), b, w) \in E_{ua}' \}
 		\end{align}
 	\end{lem}
+	\begin{proof}
+		显然$E_\varepsilon$满足上式。
+		
+		不妨令$u \in A^*, a \in A, v = h_u(ua)$.
+		当满足$\forall (p,b), p \in Pref(u), b \in A, |p|<|u|$时，
+		$\delta(p,b) \in E_u$显然成立，又因为$|p| < |u|, p \neq u$，故$\delta(p,b) \neq \delta(u,a)$。
+		因此$\delta(p,b) \in E_{ua}'$。而$\delta(u,a) = ua \in E_{ua}‘$显然成立。
+		
+		因此仅需证明$\delta(ua,b) \in E_{ua}''$，即等式$E_{ua}'' = \{ (ua,b,w) | (h_u(ua), b, w) \in E_{ua}' \}$。\\
+		即证$\forall b \in A$, $\delta(v,b)=w,\delta(ua,b)=w' \in E_{ua}$并且$w = w'$。
+		因为$w,w' \in Pref(ua)$，故仅需证明$|w| = |w'|$。
+		
+		$v = h_u(ua) \le |ua|$，回想failure function的转移函数$h_u(ua)$表示的状态一定在$ua$表示状态的failure路径上，
+		因此，我们有$|w| \le |w'|$，从而进行如下推导
+		\begin{align*}
+			|w| \le |w'|, |w'| \le |vb| 	&\Rightarrow 	|w| \le |vb|			\\
+			v = Border(ua)					&\Rightarrow	v \in Pref(ua), v \in Suff(ua)	\\
+			v \in Suff(ua) 					&\Rightarrow 	vb \in Suff(uab)	\\
+			w' = Border(uab) 				&\Rightarrow 	w' \in Pref(uab), w' \in Suff(uab)	\\
+			vb \in Suff(uab), w' \in Suff(uab), |w'| \le |vb| &\Rightarrow w' \in Suff(vb)	\\
+			|w'| < |uab|, w' \in Pref(uab)	&\Rightarrow	w' \in Pref(ua)		\\
+			v \in Pref(ua), w' \in Pref(ua), |w'| \le |vb|	&\Rightarrow w' \in Pref(vb)	\\
+			w' \in Suff(vb), w' \in Pref(vb) &\Rightarrow 	w' \in border(vb)	\\
+			w = Border(vb), w' \in border(vb) &\Rightarrow 	|w| \ge |w'|	\\
+			|w|\le|w'|, |w|\ge|w'|			&\Rightarrow 	|w| = |w'|    
+		\end{align*}
+		从而我们知道$w \equiv w'$。	
+	\end{proof}
+	上式恰恰说明了如何使用增量法由自动机$(Pref(u), i, {u}, E_u)$得到新的自动机$(Pref(ua), i, {ua}, E_{ua})$。
+	即增加一个新的状态表示前缀$ua$，保留一部分转换函数的边并新增加一些边。显然，整个构建过程是在线进行的。
+	其实，这也是SAM使用增量构法建自动机的基本思路。
+	
+\subsection{线性string-matching automata}
 	
 \end{document}
