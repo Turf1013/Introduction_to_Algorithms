@@ -354,6 +354,7 @@
 
 \subsection{前言}
 	
+	% dictionary-matching problem
 	\begin{prob}
 		（字典匹配问题）给定有限的单词集合$X$，找到$\forall x \in X$在字符串$y$中匹配的所有位置。
 	\end{prob}
@@ -595,7 +596,68 @@
 	做这个优化可以考虑对$|A|$进行状态压缩，然后用位运算实现集合的关系。
 	但实际上最坏情况下的时间复杂度与不使用$\hat{f_X}$是一样的，并没有任何卵用。
 	
-\section*{Matching words}
+\section{Matching words}
+
 \subsection{前言}	
+	
+	% String-matching problem
+	\begin{prob}
+		（字符串匹配问题）给定一个单词$x$，找到$x$在$y$上出现的所有位置。
+	\end{prob}
+	其实可以把这个问题看成仅包含一个单词的字典匹配问题，同时这其实也是经典算法KMP需要解决的问题。
+	
+	\begin{thm}
+		\Emph{(Knuth, Morris, and Pratt, 1977).} 
+		基于模式串$x$和目标串$y$的字符串匹配问题可以在时间复杂度$O(|x|+|y|)$和空间复杂度$O(|x|)$内实现，
+		最坏情况下$delay$的时间复杂度是$\Theta(log|x|)$。
+	\end{thm}
+	为了讨论字符串匹配问题的时间复杂度，
+	不得不引入Knuth, Morris和Pratt有关在$trie$上搜索$delay$的边界
+	$\left\lfloor \log_\Phi(|x|+1) \right\rfloor$，这里$\Phi = (1+\sqrt5)/2$（黄金分割点）。
+	
+	\begin{mthm}
+		基于模式串$x$和目标串$y$的字符串匹配问题可以按照如下步骤解决：
+		\begin{itemize}
+			\item 构建基于$x$的自动机$M(A^*x)$可以在时间复杂度$O(|x|)$和空间复杂度$O(|x|)$内实现；
+			\item 使用$y$进行搜索的时间复杂度为$O(|y|)$，空间复杂度为$O(\log \min \{ 1+\left\lfloor \log_2|x| \right\rfloor, |A| \})$。
+		\end{itemize}
+	\end{mthm}
+	\begin{thm}
+		\Emph{(Galil and Seiferas, 1983).}
+		基于预先存储的$x$和$y$的字符串匹配问题可以在时间复杂度$O(|x|+|y|)$和空间复杂度$O(1)$内实现。
+	\end{thm}
+	
+\subsection{String-matching automata}
+
+	因为字符串匹配问题可以看成特殊的字典匹配问题，从而可以使用相似的方式对字符串匹配对应的自动机进行形式化定义
+	\[
+		\Big( Pref(x), \varepsilon, \{x\}, \{(p, a, h_x(pa)) | p \in Pref(x), a \in A \} \Big)
+	\]
+	由于字符串匹配问题的特殊性，可以再用增量法构建满足上式的自动机（增量法还是经常得到应用的）。
+	引入助记符$border$，当$v \in Pref(u) \cap Suff(u)$成立时，我们称$v$是$u$的$border$。
+	使用$Bord(u)$表示非空字符$u$的最长$border$。通过引入$border$，我们可以重写$h_x$的等式：
+	\[
+		\forall (p,a) \in Pref(x) \times A, h_x(pa) = 
+		\left\{
+			\begin{aligned}
+				&pa, 		&\text{ if } pa \in Pref(x),	\\
+				&Bord(pa),	&\text{ otherwise }
+			\end{aligned}
+		\right .
+	\]
+	自动机$M(A^*x)$的在线建立，可以依据如下引理：
+	\begin{lem}
+		$\forall u \in A^*$，不妨令$E_u$表示$M(A^*u)$上的边集，我们有：
+		\[
+			E_\varepsilon = \{ (\varepsilon, b, \varepsilon) | b \in A \}.
+		\]
+		此外，$\forall (u,a) \in A^* \times A$，我们有：
+		\resetcounter
+		\begin{align}
+			E_{ua} 	&= E_{ua}' \cup E_{ua}''		\\
+			E_{ua}' &= \big( E_u \setminus \{(u,a,h_u(ua))\} \big) \cup {(u, a, ua)}	\\
+			E_{ua}''&= \{ (ua,b,w) | (h_u(ua), b, w) \in E_{ua}' \}
+		\end{align}
+	\end{lem}
 	
 \end{document}
