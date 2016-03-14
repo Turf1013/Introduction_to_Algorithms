@@ -675,22 +675,218 @@
 		因此，我们有$|w| \le |w'|$，从而进行如下推导
 		\begin{align*}
 			|w| \le |w'|, |w'| \le |vb| 	&\Rightarrow 	|w| \le |vb|			\\
-			v = Border(ua)					&\Rightarrow	v \in Pref(ua), v \in Suff(ua)	\\
+			v = Bord(ua)					&\Rightarrow	v \in Pref(ua), v \in Suff(ua)	\\
 			v \in Suff(ua) 					&\Rightarrow 	vb \in Suff(uab)	\\
-			w' = Border(uab) 				&\Rightarrow 	w' \in Pref(uab), w' \in Suff(uab)	\\
+			w' = Bord(uab) 				&\Rightarrow 	w' \in Pref(uab), w' \in Suff(uab)	\\
 			vb \in Suff(uab), w' \in Suff(uab), |w'| \le |vb| &\Rightarrow w' \in Suff(vb)	\\
 			|w'| < |uab|, w' \in Pref(uab)	&\Rightarrow	w' \in Pref(ua)		\\
 			v \in Pref(ua), w' \in Pref(ua), |w'| \le |vb|	&\Rightarrow w' \in Pref(vb)	\\
 			w' \in Suff(vb), w' \in Pref(vb) &\Rightarrow 	w' \in border(vb)	\\
-			w = Border(vb), w' \in border(vb) &\Rightarrow 	|w| \ge |w'|	\\
-			|w|\le|w'|, |w|\ge|w'|			&\Rightarrow 	|w| = |w'|    
+			w = Bord(vb), w' \in border(vb) &\Rightarrow 	|w| \ge |w'|	\\
+			|w|\le|w'|, |w|\ge|w'|			&\Rightarrow 	|w| = |w'|
 		\end{align*}
 		从而我们知道$w \equiv w'$。	
 	\end{proof}
 	上式恰恰说明了如何使用增量法由自动机$(Pref(u), i, {u}, E_u)$得到新的自动机$(Pref(ua), i, {ua}, E_{ua})$。
 	即增加一个新的状态表示前缀$ua$，保留一部分转换函数的边并新增加一些边。显然，整个构建过程是在线进行的。
-	其实，这也是SAM使用增量构法建自动机的基本思路。
+	其实，这也是SAM使用增量构法建自动机的基本思路。基于邻接矩阵的自动机的构建过程的伪代码如下：
+	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
+		StringMatchingAutomata(x)
+			let \delta be the transition function of (Q, i, \Phi, E)
+			(Q, E) \leftarrrow (\Phi, \Phi)
+			i \leftarrow State-Creation()
+			for each letter b in A
+				loop E \leftarrow E + {(i, b, i)}
+			t \leftarrow i
+			for letter a from first to last letter of x
+				loop r \leftarrow \delta(t, a)
+					q \leftarrow State-Creation()
+					E \leftarrow E - {(t, a, r)} + {(t, a, q)}
+					for each letter b in A
+						loop E \leftarrow E + {(q, b, \delta(r, b))}
+					t \leftarrow q
+			return (Q, i, \{t\}, E)
+	\end{lstlisting}
 	
 \subsection{线性string-matching automata}
+	
+	那么到底如实使用增量法建立一个基于邻接表并且时间和空间复杂度都是线性的自动机呢？
+	
+	这里有个概念，\Emph{关键边（significant edges）}。
+	若满足$\delta(p,a)=q, q \neq \varepsilon q \neq NIL$，我们称这样的边是关键边。
+	如果一条边是关键边，当$q=pa$时我们称这样的边为\Emph{前向边（forward）}，否则我们称为\Emph{后向边（backward）}。
+	
+	\begin{prop}
+		基于任意字符串$x$的string-matching自动机的关键便的上界为$2|x|$；
+		更确切的说，前向边的数量恰好为$|x|$，后向边的数量的上界为$O(|x|)$。
+		（当$x$的第一个字符仅仅出现在$x$的开始位置时，达到边界。）
+		% 这个边界后奇特？？？
+	\end{prop}
+	为了证明上述命题，提出如下引理：
+	\begin{lem}
+		$(p,a,q)$和$(p',a',q')$表示字符串$u$的string-matching自动机的两条不同的后向边，那么必有
+		$|p| - |q| \neq |p'| - |q'|$。
+	\end{lem}
+	这个引理很特殊，刚看到觉得挺费解的，需要简单证明一下。
+	\begin{proof}
+		使用反证法，即$\exists (p,a,q),(p',a',q') \in E$并且$|p|-|q| = |p'|-|q'|$。
+		
+		若$|p|=|p'|$，又$p \in Pref(u), p' \in Pref(u)$，因此，$p = p'$，同理$q = q'$。
+		由于这是两条关键边，则一定有$a=a'$，与两边不同相矛盾。
+		
+		若$|p| \neq |p'|$，不失一般性，我们令$|p| > |p'|$，故$|q| > |q'|$，故有如下推导
+		\begin{align*}
+			q = Bord(pa)	&\Rightarrow q \in Pref(pa), q \in Suff(pa)	\\
+			qa^{-1} \in Pref(p), qa^{-1} \in Suff(p)	&\Rightarrow qa^{-1} \in border(p)	\\
+			q \in Pref(u), q' \in Pref(u), |q|>|q'| &\Rightarrow q' \in Pref(q)	\\
+			a' = u_{|q'|} = u_{|q'|+|p|+1-|q|}, |p'|=|p|-|q|+|q'| &\Rightarrow a' = u_{|p'|+1}	\\
+			\because q' = Bord(p'a') &\Rightarrow |q'|=|p'|+1
+		\end{align*}
+		显然$(p',a',q')$是一条前向边，与条件矛盾。
+		
+		综上可知，结论成立。
+	\end{proof}
+	这个结论证明了对于后向前$|p|-|q|$互不相等，又因为取值在$[1,|x|]$区间内，故后向边的上界一定为$O(|x|)$。
+	而前向边恰好为$(|x|)$更好理解，因为从$\varepsilon \leftarrow p_{x}$恰好是包含所有的前向边，即字符串$x$本身。
+	
+	因此，基于邻接表并只建立关键边的string-matching自动机的建立过程如下：
+	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
+		LinearStringMatchingAutoma(x)
+			let \delta be the transition function of (Q, i, \Phi, G)
+			Q \leftarrow \Phi
+			i \leftarrow State-Creation()
+			G[i] \leftarrow \Phi
+			t \leftarrow i
+			for letter a from first to last letter of x
+				loop r \leftarrow \delta(t, a)
+					q \leftarrow State-Creation()
+					if r \neq i
+						then G[t] \leftarrow G[t] - \{(a, r)\}
+					G[t] \leftarrow G[t] + \{(a, q)\}
+					G[q] \leftarrow G[r]
+					t \leftarrow q
+			return (Q, i, {t}, G)
+	\end{lstlisting}
+	
+	显然上述建立自动机$M(A^*x)$的空间复杂度为$O(|x|)$，时间复杂度为$O(|x| \times |A|)$。
+	
+\subsection{string-matching自动机的性质}
+
+	给定一个单词$u$，使用$se_u(p)$表示string-matching状态机的状态$p$的关键边的数量。
+	若$p \in Pref(u), q \in Pref(p)$，$se_u(p,q)$表示从$u$的前缀的$q$到$p$的关键边的集合。
+	\[
+		se_u(p,q) = se_u(q) + se_u(q \cdot p_{|q|+1}) + \cdots + se_u(q \cdot p_{|q|+1} \cdots p_{|p|-1}) + se_u(p).
+	\]
+	\begin{lem}
+		不妨令$(u,a) \in A^* \times A$，$\forall v \in Pref(ua)$，有
+		\[
+			se_{ua}(v) =
+			\left\{
+				\begin{aligned}
+					&se_u(Bord(ua)),	&\text{ if } v = ua,	\\
+					&se_u(u) + \chi(Bord(ua) = \varepsilon),	&\text{ if } v = u,	\\
+					&se_u(v),			&\text{ otherwise }.
+				\end{aligned}
+			\right .
+		\]
+	\end{lem}
+	\begin{proof}
+		$se_u(p)$表示的是数量，所以这个性质还是挺显然的，证略。
+	\end{proof}
+	
+	\begin{lem}
+		不妨令$u \in A^+$，$\forall v \in Pref(u)$，有
+		\[
+			se_u(v) =
+			\left\{
+				\begin{aligned}
+					&se_u(Bord(u)),		&\text{ if } v = u, \\
+					&se_u(Bord(v)) + \chi(Bord(va) = \varepsilon),	&\text{ if } va \in Pref(u), a \in A,	\\
+					&1,					&\text{ if } v = \varepsilon.
+				\end{aligned}
+			\right .
+		\]
+	\end{lem}
+	\begin{proof}
+		这个其实等价于前面的性质，证略。
+	\end{proof}
+	
+	\begin{lem}
+		不妨令$u \in A^+$, $\forall v \in Pref(u) \setminus \{\varepsilon\}$，有
+		\[
+			2|Bord(v)| \ge |v| \Rightarrow se_u(Bord(v)) = se_u(Bord^2(v)).
+		\]
+	\end{lem}
+	\begin{proof}
+		当$v=u$时，结论显然成立；
+		
+		当$v \neq u$时，
+		不妨令$k = 2|Bord(v)| - |v|, k\ge0, |Bord(v)|=l$，这个可以想象成两个$Bord(v)$形成$v$，形如
+		\[
+			\begin{matrix}
+				v_1 & v_2 & v_3  & \cdots & v_{l-k+1} & v_{l-k+2} & v_{l-k+3} & \cdots & v_l  &  \\
+					&     &      &        & v_1       & v_2       & v_3       & \cdots & v_k  & \cdots \ v_l
+			\end{matrix}
+		\]
+		因此$k$其实就是重叠部分的长度，不妨令$w = v_1v_2v_3 \cdots v_k, a = v_{k+1}$，那么$wa \in border(Bord(v)a)$。
+		
+		不妨令$v' = Bord(v), wa \in border(v'a), v'a \in Pref(u)$，\\
+		从而$Bord(v'a) \ge |wa| = k+1$，
+		显然$Bord(v'a)=Bord^2(va) \neq \varepsilon$，故此时条件亦成立。
+		
+		综上所述，证毕。
+	\end{proof}
+	
+	\begin{prop}
+		$u \in A^*, \forall p \in Q_{M(A^*u)}$，有结论
+		\[
+			se_u(p) \le 1 + \left\lfloor \log_2(|p|+1) \right\lfloor
+		\]
+	\end{prop}
+	\begin{proof}
+		当$|p|=0$时，结论显然成立。
+		
+		对$|p|\le1$，采用数学归纳法进行证明。不妨引入$j$，满足
+		\[
+			2^j \le |p| + 1 < 2^{j+1}
+		\]
+		继续引入$k$，满足
+		\[
+			|Bord^{k+1}(p)|+1 < 2^j \le |Bord^k(p)|+1
+		\]
+		因此$\forall l \in [0, k-1]$，有
+		\[
+			2|Bord^{l+1}(p)| \ge 2 \times (2^j-1) = 2^{j+1}-2 \ge |p| \ge |Bord^l(p)|
+		\]
+		由前面的引理可知$se_u(Bord^{l+1}(p)) = se_u(Bord^{l+2}(p))$，由于$l \in [0,k-1]$，从而
+		\[
+			se_u(Bord(p)) = se_u(Bord^{k+1}(p))
+		\]
+		因为$|Bord^{k+1}(p)| < |p|$，故由数学归纳法假设可知
+		\begin{align*}
+			&\quad\ \  	se_u(Bord^{k+1}(p)) \le 1 + \left\lfloor \log_2(|Bord^{k+1}(p)|+1) \right\rfloor	\\
+			&\Rightarrow 	se_u(Bord^{k+1}(p)) < 1 + \left\lfloor \log_2(2^j) \right\rfloor					\\
+			&\Rightarrow	se_u(Bord(p))		< 1 + j	\\
+			&\Rightarrow	se_u(Bord(p))		\le j
+		\end{align*}
+		又因为$se_u(p) \le se_u(Bord(p)) + 1$，从而有$se_u(p) \le j+1$。
+		
+		综上所示，结论成立。
+		
+	\end{proof}
+	\begin{prop}
+		$\forall u \in A^*$, 对于$M(A^*x)$的所有后向边或者非关键边，有
+		\[
+			se_u(p, q) \le 2|p| - 2|q| + 2 - \chi(p=u) - \chi(q=\varepsilon)
+		\]
+	\end{prop}
+	\begin{proof}
+		采用数学归纳法结合上面几个引理可证，证略。
+		% 没看出有什么用
+	\end{proof}
+	
+\subsection{线性string-matching自动机的搜索}
+
+	
 	
 \end{document}
