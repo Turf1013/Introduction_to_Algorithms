@@ -973,17 +973,17 @@
 	\begin{thm}
 		$\forall x \in A^+, |y| = n > 0$，考虑算法$\lambda \in L(x)$采用如下策略：
 		当从状态$p$进行状态转换时，最后查询状态$p$的前向出边。
-		那么，在比较模型中$\lambda$进行不超过$\left\lfoor (2 - 1 \backslash |x|) \times (|p|-|q|+1)$次比较。
+		那么，在比较模型中$\lambda$进行不超过$\left\lfloor (2 - 1 / |x|) \times n \right\rfloor$次比较。
 	\end{thm}
 	\begin{proof}
 		不妨令$(p, a, q)$表示自动机$M(A^*x)$的后向边或者空边，因此，
 		从状态$q$经过状态$p$后返回状态$q$的比较上界为$se_x(p,q) - \chi(q \neq x)$，
 		使用命题$se_u(p, q) \le 2|p| - 2|q| + 2 - \chi(p=u) - \chi(q=\varepsilon)$，
-		代入有上界为$(2 - 1 \backslash |x|) \times (|p| - |q| + 1)$。
-		因此，上界为$(2 - 1 \backslash |x|) \times n$。
+		代入有上界为$(2 - 1 / |x|) \times (|p| - |q| + 1)$。
+		因此，上界为$(2 - 1 / |x|) \times n$。
 	\end{proof}
 	这可以对于给定长度$m$的模式串，在搜索过程中$delay$的界为
-	$\min \{1+\left\lfloor \log_2|x| \right\rfloor, |A| \}$， 系数$2-1 \backslash m$。
+	$\min \{1+\left\lfloor \log_2|x| \right\rfloor, |A| \}$， 系数$2-1 / m$。
 	
 	\begin{prop}
 		$\forall m \ge 1, n \ge m$，在比较模型中，$\exists x \in A^m, y \in A^n$
@@ -996,7 +996,7 @@
 		\]
 		比如$\xi(abcd) = abacabadabacaba$，显然是个回文串。
 		
-		令$k = \min\{1 + \left\lfoor \log_2 m, |A|\}$，选择$k$个不同的字符$a_1, a_2, \cdots, a_k$，
+		令$k = \min\{1 + \left\lfloor \log_2 m \right\rfloor, |A|\}$，选择$k$个不同的字符$a_1, a_2, \cdots, a_k$，
 		并且假定$\xi(a_1 a_2 \cdots a_{k-1})a_k \in Pref(x)$，
 		若$\xi(a_1 a_2 \cdots a_{k-1})$已经是$y$的前缀，
 		可知$x$的匹配起始位置一定满足$2^{k-\ell}, 1 \le \ell \le k$。
@@ -1005,10 +1005,21 @@
 	
 	\begin{prop}
 		$\forall m \ge 1, n \ge 0$，在比较模型中，$\exists x \in A^m, y \in A^n$
-		满足$S(x)$中的任何算法在最坏情况下执行至少$\left\lfloor (2 - 1 \backslash |m|) \times n \right\rfloor$次字符比较。
+		满足$S(x)$中的任何算法在最坏情况下执行至少$\left\lfloor (2 - 1 / |m|) \times n \right\rfloor$次字符比较。
 	\end{prop}
 	\begin{proof}
+		不妨假定$x = ab^{m-1}, y \in Pref((a{a,b}^{m-1})^*), j \in [1, n]$，
+		$v$是$y_1 y_2 \cdots y_{j-1}$的最长后缀同时也是$x$的前缀。
 		
+		若$v \neq \varepsilon$，为了能够检测$x$在位置$j$或$j-|v|$一定要查询$y_j=a$和$y_j=b$，
+		而这恰恰是最坏情况；若$v = \varepsilon$，算法可以仅仅查询$y_j = a$。
+		但是根据$y$的定义，$v=\varepsilon$仅仅发生在$j \equiv 1 (\mod m)$。
+		从而，比较的字符次数不会超过$2n - \left\lceil n / m \right\rceil = \left\lfloor (2 - 1 / m) \right\rfloor$。
+        % 虽然不是特别懂，但是大概知道在干嘛，关键问题是$x$和$y$的构造
 	\end{proof}
+	
+\section{Suffix automata}
+
+\subsection{前言}
 	
 \end{document}
