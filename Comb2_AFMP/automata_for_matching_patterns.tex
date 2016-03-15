@@ -875,7 +875,7 @@
 		
 	\end{proof}
 	\begin{prop}
-		$\forall u \in A^*$, 对于$M(A^*x)$的所有后向边或者非关键边，有
+		$\forall u \in A^*$, 对于$M(A^*x)$的所有后向边或者空边，有
 		\[
 			se_u(p, q) \le 2|p| - 2|q| + 2 - \chi(p=u) - \chi(q=\varepsilon)
 		\]
@@ -887,6 +887,128 @@
 	
 \subsection{线性string-matching自动机的搜索}
 
+	考虑基于字符串$x$的线性string-matching自动机执行$Matcher$函数。
+	对于自动机的每条后向边或者空边，使用$c_x(p,q)$表示从状态$q$经过状态$p$再回到状态$q$的变化时间。
+	例如，从状态$q$开始接受字符序列$x_{|q|+1}, x_{|q|+2}, \cdots, x_{|p|}, a$。
+	使用$C_x(y)$表示在基于字符串$x$的自动机上搜索字符串$y$所用时间。
 	
+	\begin{lem}
+		$\forall x,y \in A^*$，
+		自动机$M(A^*x)$存在有限的后向边或空边$(p_j, a_j, q_j)_{1 \le j \le k}$满足如下三个条件：
+		\begin{enumerate}[i]
+			\item $q_k = \varepsilon$;
+			\item $\sum_{j=1}^{k}(|p_j|-|q_j|+1) = |y|$;
+			\item $C_x(y) \le \sum_{j=1}^{k} c_x(p_j, q_j)$.
+		\end{enumerate}
+	\end{lem}
+	\begin{proof}
+		显然当$|y| = 0$时，结论成立。
+		
+		当$|y| \ge 1$时，采用数学归纳法进行证明。
+		考虑条件$(i)$什么情况下成立，即当$y_|y| \notin \{x_i | i \in [1,|x|]\}$，
+		即$y$的最后一个不在$x$中出现，显然，存在且有限。
+		
+		由于$(p_l)_{0 \le l \le y}$表示状态$p$代表的$x$的前缀，即$p_l = h_x(y_1y_2 \cdots y_l)$。
+		不妨令$m, 0 \le m \le |y|-1, m' \le m$是满足$p_{m+1} = p_{m'}$的最小$m$，注意这里$m$必须是最小的。
+		因此，$(p_m, y_{m+1}, p_{m'})$一定是后向边或者空边。
+		并且从状态$p_{m'}$经过状态$p_{m}$再返回状态$p_{m'}$一定经过长为$m-m'+1$的字符序列
+		$y_{m'+1}, y_{m'+2}, \cdots, y_{m}, y_{m+1}$。
+		
+		故不妨令$y' = y_1y_2 \cdots y_{m'} \cdot y_{m+2} y_{m+3} \cdots y_{|y|}$，即从$y$中截取上述$m-m'+1$的字符序列。
+		显然有$C_x(y) \le C_x(y') + c_x(p_{m}, p_{m'})$，而$|y'| < |y|$。
+		由数学归纳法可知
+		\[
+			m\text{最小的反向边} \Rightarrow |y| = |y'| + m - m'+1 = |y'| + (|p_m|-|p_{m'}|+1)	
+        \]
+        \[
+			\sum_{j=1}^{k} (|p'_j|-|q'_j|+1) = |y'| \Rightarrow  |y| = \sum_{j=1}^{k} (|p_j|-|q_j|+1)	
+        \]
+        \[
+			C_x(y) \le C_x(y') + c_x(p_{m}, p_{m'}), C_x(y') \le \sum_{j=1}^{k} c_x(p'_j, q'_j) \Rightarrow C_x(y) \le \sum_{j=1}^{k} c_x(p_j, q_j)
+		\]
+		其实都是在$y'$的基础上增加一条后向边$(p_m, y_{m+1}, p_{m'})$。
+
+        综上三个结论均成立。
+	\end{proof}
+	
+	\begin{thm}
+		使用线性string-matching自动机可以在时间复杂度$O(y)$和空间复杂度$O(1)$内，解决$x$和$y$的字符串匹配问题。
+		$delay$的时间复杂度为$O(\log \min \{1 + \left\lfloor \log_2|x| \right\rfloor, |A| \})$。
+	\end{thm}
+	\begin{proof}
+		无论实现一个多么高效的邻接表，我们都可以认为从当前状态转换到下一状态的时间渐进线性于当前状态的关键出边的总数。
+		从而对于后向边或空边$(p,a,q)$，有
+		\[
+			c_x(p, q) = O(se_x(p, q))
+		\]
+		由上述引理可知
+		\[
+			c_x(p, q) = O(|p|-|q|+1)
+		\]
+		从而我们知道总的时间复杂度为$O(|y|)$。
+		
+		由前面的引理，我们知道任何一个邻接表的大小的上界为$O(\min\{1+\left\lfloor \log_2|x| \right\rfloor, |A|\})$。
+		进而，我们构建线性自动机时，可以将邻接表结点维护成一棵平衡树。从而说明自动机的状态时间可以在$\log$级别内实现，
+		从而证明了$delay$的时间上界。
+	\end{proof}
+	上面的平衡树是个好思路，因为树不会特别高$\log_2|A|$，这样搜素还是很快的，关键是节省了大量的空间。
+	
+	上面的模型都是基于字符是有序的、可比较的前提，下面我们假设若字符是无序的。
+	对于给定的字符串$x$，使用$S(x)$表示搜索阶段是在线进行并且字符增量大小为1的字符串匹配算法的集合。
+	字符串匹配算法本身是基于字符比较的，否则如何谈比较？那么这里如何处理，可以使用出现过的字符频度等进行比较。
+	使用$L(x)$表示使用线性string-matching自动机搜索模式串$x$在目标串$y$上出现次数的算法。
+	
+	\begin{thm}
+		$\forall x \in A^+, |y| = n > 0$，考虑算法$\lambda \in L(x)$，
+		在比较模型中$\lambda$进行不超过$2n-1$次字符比较，
+		其中每个字符进行不超过$\min \{1+\left\lfloor \log_2|x| \right\rfloor, |A| \}$次比较。
+	\end{thm}
+	\begin{proof}
+		每个字符进行不超过$\min \{1+\left\lfloor \log_2|x| \right\rfloor, |A| \}$次比较这是显然的，
+		因为对于$\forall p \in Q_{A^*x}$，这就是关键出边的上界。
+		然而，总的比较次数$2n-1$中的$-1$恰恰是$\exists (p_j,a_j,p_k), p_k=\varepsilon$。
+		% 其实我还是不懂为什么有空边上界就不是$2n$ ?
+	\end{proof}
+	
+	\begin{thm}
+		$\forall x \in A^+, |y| = n > 0$，考虑算法$\lambda \in L(x)$采用如下策略：
+		当从状态$p$进行状态转换时，最后查询状态$p$的前向出边。
+		那么，在比较模型中$\lambda$进行不超过$\left\lfoor (2 - 1 \backslash |x|) \times (|p|-|q|+1)$次比较。
+	\end{thm}
+	\begin{proof}
+		不妨令$(p, a, q)$表示自动机$M(A^*x)$的后向边或者空边，因此，
+		从状态$q$经过状态$p$后返回状态$q$的比较上界为$se_x(p,q) - \chi(q \neq x)$，
+		使用命题$se_u(p, q) \le 2|p| - 2|q| + 2 - \chi(p=u) - \chi(q=\varepsilon)$，
+		代入有上界为$(2 - 1 \backslash |x|) \times (|p| - |q| + 1)$。
+		因此，上界为$(2 - 1 \backslash |x|) \times n$。
+	\end{proof}
+	这可以对于给定长度$m$的模式串，在搜索过程中$delay$的界为
+	$\min \{1+\left\lfloor \log_2|x| \right\rfloor, |A| \}$， 系数$2-1 \backslash m$。
+	
+	\begin{prop}
+		$\forall m \ge 1, n \ge m$，在比较模型中，$\exists x \in A^m, y \in A^n$
+		满足$S(x)$中的任何算法在最坏情况下执行至少$\min \{1+\left\lfloor \log_2|x| \right\rfloor, |A| \}$次字符比较。
+	\end{prop}
+	\begin{proof}
+		定义递归的映射函数$\xi : A^* \leftarrow A^*$：
+		\[
+			\forall (u,a) \in A^* \times A, \xi(ua) = \xi(u) \cdot a \cdot \xi(u), \xi(\varepsilon) = \varepsilon
+		\]
+		比如$\xi(abcd) = abacabadabacaba$，显然是个回文串。
+		
+		令$k = \min\{1 + \left\lfoor \log_2 m, |A|\}$，选择$k$个不同的字符$a_1, a_2, \cdots, a_k$，
+		并且假定$\xi(a_1 a_2 \cdots a_{k-1})a_k \in Pref(x)$，
+		若$\xi(a_1 a_2 \cdots a_{k-1})$已经是$y$的前缀，
+		可知$x$的匹配起始位置一定满足$2^{k-\ell}, 1 \le \ell \le k$。
+		故最坏情况下在$2^{k-1}$位置上算法至少进行$k$个字符的比较。
+	\end{proof}
+	
+	\begin{prop}
+		$\forall m \ge 1, n \ge 0$，在比较模型中，$\exists x \in A^m, y \in A^n$
+		满足$S(x)$中的任何算法在最坏情况下执行至少$\left\lfloor (2 - 1 \backslash |m|) \times n \right\rfloor$次字符比较。
+	\end{prop}
+	\begin{proof}
+		
+	\end{proof}
 	
 \end{document}
