@@ -5,6 +5,7 @@
 \usepackage{enumerate}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{dsfont}
 \usepackage{amsthm}
 \usepackage{listings} %插入代码
 \usepackage{xcolor} %代码高亮
@@ -85,9 +86,14 @@
 
 % About math
 \newcommand{\rmnum}[1]{\romannumeral #1}
-\newcommand\Emph{\textbf}
+\newcommand{\Emph}{\textbf}
 \newcolumntype{Y}{>{\centering\arraybackslash}X}
 \newcommand{\resetcounter}{\setcounter{equation}{0}}
+\newcommand{\equsuf}{\equiv_{\textit{Suff(x)}}}	
+\newcommand{\Suff}{\textit{Suff}}
+
+% section deeep to 3 1.1.1
+\setcounter{secnumdepth}{3}
 
 \begin{document}
 
@@ -118,7 +124,8 @@
 	\noindent
     $A$表示一个字符集合，$a$表示$A$的一个元素。				\\
 	$u$表示一个单词，$|u|$表示长度，$u_j$表示第$j$个字符。	\\
-	$u \cdot v$或$uv$表示单词$u$连接单词$v$，$u^0 = \varepsilon$，$uw^-1$表示单词$v, u=wv$。\\
+	$u \cdot v$或$uv$表示单词$u$连接单词$v$，$u^0 = \varepsilon$。\\
+	当$u,v,w$满足$u = wv$时，有$uw^{-1} = v, vu^{-1} = w$	\\
 	当$\exists u^0, u^1, u=u^0vu^1$成立时，称$v$是$u$的factor。
 	此时若$v \neq u$并且$u^0=\varepsilon or u^1=\varepsilon$，我们称$v$是$u$的proper factor。
 	
@@ -127,8 +134,19 @@
 	\noindent
 	$U$表示一个语言集合，$U \subseteq A^*$.	\\
 	$pref(U), fact(U), suff(U)$分别表示语言$U$的某个前缀、子串、后缀。	\\
-	$Pref(U), Fact(U), Suff(U)$分别表示语言$U$的所有前缀、子串、后缀的集合。	\\
+	$Pref(U), Fact(U), \Suff(U)$分别表示语言$U$的所有前缀、子串、后缀的集合。	\\
 	$|U| = \sum_{u \in U} |u|$。
+	
+	基于语言$W$的字符串$u$的右端上下文表示集合$\{ u^{-1}w | w \in W \}$。使用$\equiv_W$表示如下等价关系：
+	\[
+		\forall u,v \in A^*, u^{-1} W = v^{-1} W
+	\]
+	这就是语言集$W$上的右端同余关系。
+	
+	$\equiv_W$这个符号还是挺重要的，需要搞清楚定义，后面后缀自动机通篇都在使用同余关系
+	（同余关系与商代数是离散数学的知识，没印象的可以恶补一下）。	\\
+	举个例子，$W = {abcbc}$，那么字符串$abc$的右端上下文就是$\{ \varepsilon, b, bc \}$
+	
 	
 \subsection{Regular expressions}
 
@@ -382,7 +400,7 @@
 	
 	为了形式化的定义识别语言$A^*X$的$DFA$，引入基于语言$U$、字符串$v$的映射$h_U: A^* \rightarrow Pref(U) $, 并且
 	\[
-		h_U(v) = v', v' \in Suff(v) \cap Pref(U), |v'| \ge \max_{vv \in Suff(v)\cap Pref(U)} {|vv|}
+		h_U(v) = v', v' \in \Suff(v) \cap Pref(U), |v'| \ge \max_{vv \in \Suff(v)\cap Pref(U)} {|vv|}
 	\]
 	从而，可以得到字典匹配问题的$DFA$的形式化定义
 	\begin{defn}
@@ -411,7 +429,7 @@
 	
 	最后，是转换函数${(p,a,h_X(pa) | p \in Pref(X), a \in A}$，这里使用了$h_U$的定义，不妨令$\delta(p,a)=q$
 	$q \in Pref(X)$这个最好理解，因为$q \in Q$这是必然的，因此$q \in Pref(X)$。
-	$q \in Suff(pa)$这个也还好理解，毕竟是要匹配$A^*X$，可以把任何$pa$的前缀字符归为$A^*$，我们只需要后缀。
+	$q \in \Suff(pa)$这个也还好理解，毕竟是要匹配$A^*X$，可以把任何$pa$的前缀字符归为$A^*$，我们只需要后缀。
 	关键是为什么我们需要这个新的前缀$q, q \in Pref(X)$最长。
 	（这也是为什么Dictionary-matching时，failure function是靠谱的，这也是为什么很多人都说AC自动机=trie+kmp，确实可以从kmp的next数组这儿理解）。
 	
@@ -425,7 +443,7 @@
 	\end{lem}
 	\begin{proof}
 		前两个性质是显然的，关键是第三个。这也是为什么$Dictionary-matching problem$可以配合使用failure function的原因。
-		显然$h_U(va) \in Suff(va), h_U(v)a \in Suff(va)$，进而其中之一必是另一个的后缀。因此，可以分两种情况讨论：
+		显然$h_U(va) \in \Suff(va), h_U(v)a \in \Suff(va)$，进而其中之一必是另一个的后缀。因此，可以分两种情况讨论：
 		\begin{enumerate}[(1)]
 			\item $h_U(v)a$是$h_U(va), h_U(va) \neq \varepsilon$的后缀。
 			
@@ -435,9 +453,9 @@
 			
 			\item $h_U(va)$是$h_U(v)a$的后缀。
 			
-			$h_U(va) \in Pref(U), h_U \in Suff(h_U(v)a)$，应用$h_U$的定义可知。
+			$h_U(va) \in Pref(U), h_U \in \Suff(h_U(v)a)$，应用$h_U$的定义可知。
 			$|h_U(va)| \le |h_U(h_U(v)a)|$，因此$h_U(va)$必定是$h_U(h_U(v)a)$的后缀。
-			而$h_U(h_U(v)a) \in Pref(U), h_U(h_U(v)a) \in Suff(va)$，再次应用$h_U$的定义可知。
+			而$h_U(h_U(v)a) \in Pref(U), h_U(h_U(v)a) \in \Suff(va)$，再次应用$h_U$的定义可知。
 			$|h_U(va)| \ge |h_U(h_U(v)a)|$，因此，当且仅当$h_U(va) = h_U(h_U(v)a)$成立时，才满足条件。
 			% 条件三是不是和kmp的next数组的使用很像，这个定理还是挺重要的。
 			
@@ -613,7 +631,7 @@
 	\end{thm}
 	为了讨论字符串匹配问题的时间复杂度，
 	不得不引入Knuth, Morris和Pratt有关在$trie$上搜索$delay$的边界
-	$\left\lfloor \log_\Phi(|x|+1) \right\rfloor$，这里$\Phi = (1+\sqrt5)/2$（黄金分割点）。
+	$\left\lfloor \log_{\o}(|x|+1) \right\rfloor$，这里${\o} = (1+\sqrt5)/2$（黄金分割点）。
 	
 	\begin{mthm}
 		基于模式串$x$和目标串$y$的字符串匹配问题可以按照如下步骤解决：
@@ -634,7 +652,7 @@
 		\Big( Pref(x), \varepsilon, \{x\}, \{(p, a, h_x(pa)) | p \in Pref(x), a \in A \} \Big)
 	\]
 	由于字符串匹配问题的特殊性，可以再用增量法构建满足上式的自动机（增量法还是经常得到应用的）。
-	引入助记符$border$，当$v \in Pref(u) \cap Suff(u)$成立时，我们称$v$是$u$的$border$。
+	引入助记符$border$，当$v \in Pref(u) \cap \Suff(u)$成立时，我们称$v$是$u$的$border$。
 	使用$Bord(u)$表示非空字符$u$的最长$border$。通过引入$border$，我们可以重写$h_x$的等式：
 	\[
 		\forall (p,a) \in Pref(x) \times A, h_x(pa) =
@@ -675,13 +693,13 @@
 		因此，我们有$|w| \le |w'|$，从而进行如下推导
 		\begin{align*}
 			|w| \le |w'|, |w'| \le |vb| 	&\Rightarrow 	|w| \le |vb|			\\
-			v = Bord(ua)					&\Rightarrow	v \in Pref(ua), v \in Suff(ua)	\\
-			v \in Suff(ua) 					&\Rightarrow 	vb \in Suff(uab)	\\
-			w' = Bord(uab) 				&\Rightarrow 	w' \in Pref(uab), w' \in Suff(uab)	\\
-			vb \in Suff(uab), w' \in Suff(uab), |w'| \le |vb| &\Rightarrow w' \in Suff(vb)	\\
+			v = Bord(ua)					&\Rightarrow	v \in Pref(ua), v \in \Suff(ua)	\\
+			v \in \Suff(ua) 					&\Rightarrow 	vb \in \Suff(uab)	\\
+			w' = Bord(uab) 				&\Rightarrow 	w' \in Pref(uab), w' \in \Suff(uab)	\\
+			vb \in \Suff(uab), w' \in \Suff(uab), |w'| \le |vb| &\Rightarrow w' \in \Suff(vb)	\\
 			|w'| < |uab|, w' \in Pref(uab)	&\Rightarrow	w' \in Pref(ua)		\\
 			v \in Pref(ua), w' \in Pref(ua), |w'| \le |vb|	&\Rightarrow w' \in Pref(vb)	\\
-			w' \in Suff(vb), w' \in Pref(vb) &\Rightarrow 	w' \in border(vb)	\\
+			w' \in \Suff(vb), w' \in Pref(vb) &\Rightarrow 	w' \in border(vb)	\\
 			w = Bord(vb), w' \in border(vb) &\Rightarrow 	|w| \ge |w'|	\\
 			|w|\le|w'|, |w|\ge|w'|			&\Rightarrow 	|w| = |w'|
 		\end{align*}
@@ -692,8 +710,8 @@
 	其实，这也是SAM使用增量构法建自动机的基本思路。基于邻接矩阵的自动机的构建过程的伪代码如下：
 	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
 		StringMatchingAutomata(x)
-			let \delta be the transition function of (Q, i, \Phi, E)
-			(Q, E) \leftarrrow (\Phi, \Phi)
+			let \delta be the transition function of (Q, i, {\o}, E)
+			(Q, E) \leftarrrow ({\o}, {\o})
 			i \leftarrow State-Creation()
 			for each letter b in A
 				loop E \leftarrow E + {(i, b, i)}
@@ -736,8 +754,8 @@
 		
 		若$|p| \neq |p'|$，不失一般性，我们令$|p| > |p'|$，故$|q| > |q'|$，故有如下推导
 		\begin{align*}
-			q = Bord(pa)	&\Rightarrow q \in Pref(pa), q \in Suff(pa)	\\
-			qa^{-1} \in Pref(p), qa^{-1} \in Suff(p)	&\Rightarrow qa^{-1} \in border(p)	\\
+			q = Bord(pa)	&\Rightarrow q \in Pref(pa), q \in \Suff(pa)	\\
+			qa^{-1} \in Pref(p), qa^{-1} \in \Suff(p)	&\Rightarrow qa^{-1} \in border(p)	\\
 			q \in Pref(u), q' \in Pref(u), |q|>|q'| &\Rightarrow q' \in Pref(q)	\\
 			a' = u_{|q'|} = u_{|q'|+|p|+1-|q|}, |p'|=|p|-|q|+|q'| &\Rightarrow a' = u_{|p'|+1}	\\
 			\because q' = Bord(p'a') &\Rightarrow |q'|=|p'|+1
@@ -752,10 +770,10 @@
 	因此，基于邻接表并只建立关键边的string-matching自动机的建立过程如下：
 	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
 		LinearStringMatchingAutoma(x)
-			let \delta be the transition function of (Q, i, \Phi, G)
-			Q \leftarrow \Phi
+			let \delta be the transition function of (Q, i, {\o}, G)
+			Q \leftarrow {\o}
 			i \leftarrow State-Creation()
-			G[i] \leftarrow \Phi
+			G[i] \leftarrow {\o}
 			t \leftarrow i
 			for letter a from first to last letter of x
 				loop r \leftarrow \delta(t, a)
@@ -1017,9 +1035,195 @@
 		从而，比较的字符次数不会超过$2n - \left\lceil n / m \right\rceil = \left\lfloor (2 - 1 / m) \right\rfloor$。
         % 虽然不是特别懂，但是大概知道在干嘛，关键问题是$x$和$y$的构造
 	\end{proof}
-	
+
 \section{Suffix automata}
 
 \subsection{前言}
+
+	字符串$x$的后缀自动机是一种能够识别所有$x$后缀的确定化、最小化的自动机。可以将其表示为$M(\Suff(x))$。
+	一个后缀自动机的例子如下图所示：
+	后缀自动机$M(\Suff(x))$可以使用$x$的下标解决如下问题：
+	\begin{prob}
+		\Emph{(Index Problem.)} 给定字符串$x$，对它进行预处理使得能够识别$x$的所有子串。
+	\end{prob}
+	这个问题的另一种可行解是构建基于$x$后缀集合的$trie$树，通过对给定字符串$x$进行旋转也会得到一个空间高效的解。
+	
+	然而后缀自动机的优势在于它的空间复杂度是线性的，尽管子串的数量近似于字符串长度的平方。
+	并且这个自动机的构造过程也是线性的。
+	
+	\begin{mthm}
+		基于字符串$x$的后缀自动机的空间复杂度是$O(|x|)$的，
+		并可以在时间复杂度$O(|x| \times |A|)$内构建。
+	\end{mthm}
+	
+\subsection{后缀自动机的性质}
+
+\subsubsection{End-positions.}
+	
+	\begin{lem}
+	\label{lem:u_in_sufv}
+		不妨令$u,v \in A^*$，若$u \in \Suff(v)$，则有$v^{-1} \Suff(x) \subseteq u^{-1} \Suff(x)$.
+	\end{lem}
+	\begin{proof}
+		若$v^{-1} \Suff(x) = {\o}$，那么$v^{-1} \Suff(x) \subseteq u^{-1} \Suff(x)$是显然的。
+		
+		若$v^{-1} \Suff(x) \neq {\o}$，则不妨令$\forall z \in v^{-1} \Suff(x)$，从而有$vz \in \Suff(x)$，
+		因为$u \in \Suff(v)$，则必定有$uz \in \Suff(x) \Rightarrow z \in u^{-1} \Suff(x)$。
+		故有
+		\[
+			u \in \Suff(v) \Rightarrow v^{-1} \Suff(x) \subseteq u^{-1} \Suff(x).
+		\]
+	\end{proof}
+	
+	右端上下文满足类似相反的性质，为了形式化定义右端上下文，引入函数$endpos_x: Fact(x) \rightarrow \mathbb{N}$
+	\[
+		endpos_x(u) = \min \{ |w| | w \in Pref(x) \text{ and } u \in \Suff(w) \}.
+	\]
+	$endpos_x(u)$表示字符串$u$出现在$x$上的最早位置。
+	比如，$x = abcbc, u=bc$，那么$endpos_{abcbc}(bc) = \min \{ |abc|, |abcbc| \} = 3$。
+	
+	\begin{lem}
+	\label{lem:u_equsuf_v}
+		不妨令$u,v \in Fact(x)$，当$u \equsuf v$时，必定有结论$endpos_x(u) = endpos_x(v)$。
+		同时，等价于$u$和$v$其中之一必定是另一个的后缀。
+	\end{lem}
+	\begin{proof}
+		不妨令$y,z \in A^*$，同时满足$x = yz, endpos_x(u) = |y|$，
+		那么$z$一定是$u^{-1} \Suff(x)$集合中最长的一个串。
+		（注意，这其实是一个极大-极小定理的简单应用，$z$最大，则证明$y$一定最小，显然这是满足$endpos_x(u)$的定义的）
+		由$u \equsuf v$可知，$u^{-1} \Suff(x) = v^{-1} \Suff(x)$，那么$y \in v^{-1} \Suff(x)$，
+		并且一定是$v^{-1} \Suff(x)$中长度最长的，否则必定有$|y'| > |y|, y' \in v^{-1} \Suff(x) = u^{-1} \Suff(x)$。
+		显然，由$endpos_x$的定义可以知道$endpos_x(u) = endpos_x(v)$。
+		那么一定有$u \in \Suff(y), v \in \Suff(y)$。
+		显然可知，$u \in \Suff(v)$或者$v \in \Suff(u)$。
+	\end{proof}
+	
+	另一个$\Suff(x)$的常用性质是它的句法同余关系，即它将子串的后缀分割成区间（恰好对应于后缀的长度）。
+	% Another often used property of the syntatic congruence associated with \Suff(x) is that is partitions
+	% the suffixes of factors into intervals (with respect of the lengths of suffixes).
+	% 至今还是不明白这到底是什么意思？
+	
+	\begin{lem}
+	\label{lem:suf_congruence}
+		不妨令$u,v,w \in Fact(x)$. 若$u \in \Suff(v), v \in \Suff(w), u \equsuf w$，
+		则有$u \equsuf v \equsuf w$.
+	\end{lem}
+	\begin{proof}
+		\begin{align*}
+			u \in \Suff(v)		&\Rightarrow 	v^{-1} \Suff(x) \subseteq u^{-1} \Suff(x)	\\
+			v \in \Suff(w)		&\Rightarrow	w^{-1} \Suff(x) \subseteq v^{-1} \Suff(x)	\\
+			u \equsuf w			&\Rightarrow	u^{-1} \Suff(w) = w^{-1} \Suff(u)
+		\end{align*}
+		从而我们可知$w^{-1} \Suff(x) = v^{-1} \Suff(v) = w^{-1} \Suff(w)$。
+		由$\equsuf$的定义可知，$u \equsuf v \equsuf w$.
+	\end{proof}
+	
+	\begin{cor}	
+	\label{cor:3_cond}
+		不妨令$u,v \in A^*$，下面三个条件中至少有一个条件成立：
+		\begin{enumerate}[(1)]
+			\item $u^{-1} \Suff(x) \subseteq v^{-1} \Suff(x)$;
+			
+			\item $v^{-1} \Suff(x) \subseteq u^{-1} \Suff(x)$;
+			
+			\item $u^{-1} \Suff(x) \cap v^{-1} \Suff(x) = {\o}$.
+		\end{enumerate}
+	\end{cor}
+	\begin{proof}
+		因为三个条件中至少一个成立，故仅仅需要证明当$u^{-1} \Suff(x) \cap v^{-1} \Suff(x) \neq {\o}$时，
+		可以得到结论$u^{-1} \Suff(x) \subseteq v^{-1} \Suff(x)$或者$v^{-1} \Suff(x) \subseteq u^{-1} \Suff(x)$。
+		
+		不妨令$z \in u^{-1} \Suff(x) \cap v^{-1} \Suff(x)$，从而有$uz \in \Suff(x), vz \in \Suff(x)$。
+		那么$u \in \Suff(xz^{-1}), v \in \Suff(xz^{-1})$。从而可知$u,v$中的其中一个必定是另一个后缀。
+		\begin{align*}	
+			u \in \Suff(v)	&\Rightarrow v^{-1} \Suff(x) \in u^{-1} \Suff(x)	\\
+			v \in \Suff(u)	&\Rightarrow u^{-1} \Suff(x) \in v^{-1} \Suff(x)
+		\end{align*}
+	\end{proof}
+	这个引理表明$\forall u,v$的右端上下文要么不相交，要么其中一个必是另一个的子集。
+	这个推论的成立对后面的$suffix\ function$非常重要。
+	
+\subsubsection{Suffix function}
+	
+	\begin{defn}
+	\label{defn:sx}
+	函数$s_x: Fact(x) \leftarrow Fact(x)$定义如下：
+	\[
+		\forall v \in Fact(x), s_x(v) = \text{ the longest } u \in \Suff(v) \text{ and } u \neq_{\textit{\Suff(x)}} v.
+	\]
+	\end{defn}
+	由引理~\ref{cor:3_cond}可知，$s_x$的函数定义等价于：
+	\[
+		\forall v \in Fact(x), s_x(v) = \text{ the longest } u \in \Suff(v) \text{ and } v^{-1} \Suff(x) \subset u^{-1} \Suff(x).
+	\]
+	函数$s_x$也称为字符串$x$的$suffix\ function$，而引理~\ref{lem:sx_eq}将说明$suffix\ function$与自动机$M(\Suff(x))$中所谓$suffix\ link$ 间的关系。
+	
+	\begin{lem}
+	\label{lem:sx_eq}
+		假定$x \neq \varepsilon$，不妨令$u,v \in Fact(x) \setminus \{ \varepsilon \}$。
+		若$u \equsuf v$，则结论$s_x(u) = s_x(v)$一定成立。
+	\end{lem}
+	\begin{proof}
+		\begin{align*}
+			u,v \in Fact(x)	&\Rightarrow u^{-1} \Suff(x), v^{-1} \Suff(x) \neq {\o}	\\
+			u \equsuf v		&\Rightarrow u^{-1} \Suff(x) = v^{-1} \Suff(x)
+		\end{align*}
+		而由引理~\ref{cor:3_cond}可知条件三一定不成立，则条件一或条件二至少成立一个。
+		不失一般性，假设$u \in \Suff(v)$。
+		
+		因为$s_x(v) \in \Suff(v), u \equsuf v$，那么$u \notin \Suff(s_x(v))$，
+		否则一定有$s_x(v) \equsuf v$与函数$s_x$的定义矛盾。
+		又因为$u \in \Suff(v), s_x(v) \in \Suff(v)$，那么$s_x(v) \in \Suff(u)$。
+		注意，此时$u \in \Suff(v)$，因此由$s_x(v)$定义可知$s_x(v) = s_x(u)$。
+	\end{proof}
+	
+	\begin{lem}
+	\label{lem:sx_twice}
+		假定$x \neq \varepsilon$, $s_x(x)$是在$x$中出现至少两次的最长后缀。
+	\end{lem}
+	\begin{proof}
+		因为$x^{-1} \Suff(x) = \{ \varepsilon \}, x \neq_{suff(x)} s_x(x)$，
+		则$\exists z \neq \varepsilon, z \in s_x(x)^{-1} \Suff(x)$。
+		故$s_x(x)z, s_x(x) \in \Suff(x)$，这证明了$s_x(x)$在$x$中出现至少两次。
+		
+		$\forall w \in \Suff(x), |w| > |s_x(x)|$，
+		由$s_x$的定义可知$w$一定满足$w^{-1} \Suff(x) = x^{-1} \Suff(x) = \{ \varepsilon \}$
+		因此，$w$一定仅出现1次。
+	\end{proof}
+	定理~\ref{lem:sx_twice}说明了$s_x(x)$存在时，一定在$x$出现了至少两次，并且长度是最长的。
+	
+	\begin{lem}
+	\label{lem:suf_sxu}
+		假定$x \neq \varepsilon$，不妨令$u \in Fact(x) \setminus \{\varepsilon\}$，
+		那么任何等价于$s_x(u)$的串都是$s_x(u)$的后缀。
+	\end{lem}
+	注意这里的等价是$\equsuf$。
+	\begin{proof}
+		不妨令$w = s_x(u), v \equsuf s_x(u)$。易知$v \equsuf w, w \in \Suff(u)$。
+		
+		若$v = w$，那么结论显然成立。仅需讨论$v \neq w$的情况。
+		
+		这里使用反证法，如果$v \notin \Suff(w)$，由引理~\ref{cor:3_cond}可知，$w \in \Suff(v)$。
+		不妨令$z \in u^{-1} \Suff(x)$，
+		由$w \in Suff(u)$及~\ref{lem:u_in_sufv}可知$u^{-1} \Suff(x) \subseteq w^{-1} \Suff(x)$，
+		从而有$z \in w^{-1} \Suff(x)$，又因为$v \equsuf w$，从而有$z \in v^{-1} \Suff(x)$。
+		
+		从而$u \in \Suff(xz^{-1}), v \in \Suff(xz^{-1})$，则$u$和$v$其中之一必定是另一个的后缀。
+		
+		若$u \in \Suff(v)$，由定理~\ref{lem:u_in_sufv}可得$v^{-1} \Suff(x) \subseteq u^{-1} \Suff(x)$。
+		由$v \equsuf w$可知$v^{-1} \Suff(x) = w^{-1} \Suff(x)$。
+		从而$w^{-1} \Suff(x) \subseteq u^{-1} \Suff(x)$，而这与~\ref{defn:sx}矛盾，故此时最初假设错误。
+		
+		若$v \in \Suff(u)$，同理可得$u^{-1} \Suff(x) \subseteq v^{-1} \Suff(x)$。
+		而$w \in \Suff(v), v \neq w$，故$|v| > |w|$，并且$v$满足$s_x(u)$的定义，
+		这也导致与$s_x(u) = w \neq v$向矛盾，故此时最初假设同样错误。
+		
+		从而易知假设错误，故$v \in \Suff(w)$。
+	\end{proof}
+	定理~\ref{lem:suf_sxu}告诉我们$\forall v \equsuf s_x(u)$，那么$v \in \Suff(s_x(u))$。
+	
+\subsubsection{State splitting.}
+
+	
 	
 \end{document}
