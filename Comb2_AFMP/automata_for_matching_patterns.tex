@@ -89,7 +89,7 @@
 \newcommand{\Emph}{\textbf}
 \newcolumntype{Y}{>{\centering\arraybackslash}X}
 \newcommand{\resetcounter}{\setcounter{equation}{0}}
-\newcommand{\equsuf}{\equiv_{\textit{Suff(x)}}}	
+\newcommand{\equsuf}[1][x]{\equiv_{\textit{Suff(#1)}}}	
 \newcommand{\Suff}{\textit{Suff}}
 
 % section deeep to 3 1.1.1
@@ -1223,7 +1223,95 @@
 	定理~\ref{lem:suf_sxu}告诉我们$\forall v \equsuf s_x(u)$，那么$v \in \Suff(s_x(u))$。
 	
 \subsubsection{State splitting.}
-
+	本小节主要介绍后缀自动机在线构建的相关性质和引理。
 	
+	\begin{lem}
+	\label{lem:sam_build_suff}
+		不妨令$w \in A^*, a \in A$, $\forall u in A^*$，有：
+		\[
+			u^{-1} \Suff(wa) =
+			\left\{
+				\begin{aligned}
+					&u^{-1} \Suff(w)a \cup \{ \varepsilon \},	&\text{ if } u \in \Suff(wa),	\\
+					&u^{-1} \Suff(w)a,							&\text{ otherwise }
+				\end{aligned}
+			\right .
+		\]
+	\end{lem}
+	\begin{proof}
+		首先考虑$\varepsilon \in u^{-1} \Suff(wa)$，这等价于$u \in \Suff(wa)$。
+		因此，仅需证明$u^{-1} \Suff(wa) = u^{-1} \Suff(w)a$。
+		
+		不妨令$z \neq \varepsilon, z \in u^{-1} \Suff(wa)$，可知$uz \in \Suff(wa)$。
+		因此，不妨令$uz = uz'a$，从而有$uz' \in \Suff(w)$，故$z' \in u^{-1} \Suff(w)$。
+		从而有$z \in u^{-1} \Suff(w)a$，可知$u^{-1} \Suff(wa) \subseteq u^{-1} \Suff(w)a$。
+		
+		不妨令$z \neq \varepsilon, z \in u^{-1} \Suff(w)a$，可知$uz \in \Suff(w)a$。
+		因此，不妨令$uz = uz'a$，从而有$uz' \in \Suff(w)$，故$z' \in u^{-1} \Suff(w)$。
+		这说明$z'a \in u^{-1} \Suff(wa)$，可知$uz \in \Suff(wa), z \in u^{-1} \Suff(wa)$。
+		可知$u^{-1} \Suff(w)a \subseteq u^{-1} \Suff(wa)$
+		
+		综上所述$u^{-1} \Suff(wa) = u^{-1} \Suff(w)a$。
+	\end{proof}
+	其实~\ref{lem:sam_build_suff}想想看，还是挺显然的。这也是增量法在线构建后缀自动机的基础。
+	
+	\begin{lem}
+	\label{lem:sam_build_cong}
+		不妨令$w \in A^*, a \in A$。同余关系$\equsuf[wa]$是同余关系$\equsuf[w]$的进一步细化，即
+		\[
+			\forall u,v \in A^*, u \equsuf[wa] v \Longrightarrow u \equsuf[w] v.
+		\]
+	\end{lem}
+	\begin{proof}
+		由$u \equsuf[wa] v$可知$u^{-1} \Suff(wa) = v^{-1} \Suff(wa)$，即证$u^{-1} \Suff(w) = v^{-1} \Suff(w)$。
+		因此，仅需证明$u^{-1} \Suff(w) \subseteq v^{-1} \Suff(w)$，另一方向的证明过程对称（交换一下$u,v$就好了）。
+		
+		若$u^{-1} \Suff(w) = {\o}$，则结论显然成立。
+		
+		否则，可令$z \in u^{-1} \Suff(w)$，由定理~\ref{lem:sam_build_suff}可知$za \in u^{-1} \Suff(wa)$。
+		从而有$za \in v^{-1} \Suff(wa)$，从而可知$z \in v^{-1} \Suff(w)$，从而得到
+		$u^{-1} \Suff(w) \subseteq v^{-1} \Suff(w)$，证毕。
+	\end{proof}
+	
+	给定字符串$w$的同余关系$\equsuf[w]$将$A^*$分成若干个等价类，定理~\ref{lem:sam_build_cong}
+	说明$\equsuf[w]$表示的等价类是$\equsuf[wa], a \in A$表示等价类的并集。
+	而事实上仅将一个或者两个等价类由于同余关系$\equsuf[wa]$会分割成两个子类，
+	其中一个子类包含$w$中未出现的子串，它至少要包含字符串$wa$，$wa$这个串对类别和状态均有提升。
+	定理~\ref{thm:sam_state_split}和它的推论说明另一个类别如何分割。
+	
+	\begin{lem}
+	\label{lem:longest_suf_equ}
+		不妨令$w \in A^*, a \in A$，$z$是$w$中出现的$wa$的最长后缀，
+		若$u$是$wa$的后缀并且$|u| > |z|$，则$u \equsuf[wa] wa$。
+	\end{lem}
+	\begin{proof}
+		由题意易知$z \in \Suff(w)$，故$z^{-1} \Suff(wa) \neq (wa)^{-1} \Suff(wa) = \{ \varepsilon \}$。
+		由~\ref{defn:sx}可知$s_{wa}(wa) = z$。
+		
+		而$u \in \Suff(wa), |u| > |z|$，由~\ref{defn:sx}可知必有$u \equsuf[wa] wa$，否则$s_{wa}(wa) = u \neq z$矛盾。
+	\end{proof}
+	% 这个定理的重要性在于划分等价类，显然说明了任何超过$z$属于$wa$后缀的串一定与$z$不属于一个等价类的。
+	
+	\begin{thm}
+		不妨令$w \in A^*, a \in A$，$z$是$w$中出现的$wa$的最长后缀，
+		$z'$是$w$中的最长子串并且满足$z' \equsuf[w] z$. 
+		$\forall u,v \in Fact(w)$，有结论：
+		\[
+			u \equsuf[w] v \text{ and } u \neq_{\Suff(w)} z \Longrightarrow u \equsuf[wa] v.
+		\]
+		进一步说，$\forall u \in A^*$，有结论：
+		\[
+			u \equsuf[w] z \Longrightarrow 
+			\begin\{
+				\begin{aligned}
+					&u \equsuf[wa] z,	&\text{ if } |u| \le z,	\\
+					&u \equsuf[wa] z',	&\text{ otherwise }
+				\end{aligned}
+			\right .
+		\]
+	\end{thm}
+	\begin{proof}
+		
+	\end{proof}
 	
 \end{document}
