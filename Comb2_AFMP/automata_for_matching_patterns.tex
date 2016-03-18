@@ -1293,16 +1293,17 @@
 	% 这个定理的重要性在于划分等价类，显然说明了任何超过$z$属于$wa$后缀的串一定与$z$不属于一个等价类的。
 	
 	\begin{thm}
+	\label{thm:sam_ec}
 		不妨令$w \in A^*, a \in A$，$z$是$w$中出现的$wa$的最长后缀，
-		$z'$是$w$中的最长子串并且满足$z' \equsuf[w] z$. 
+		$z'$是$w$中的最长子串并且满足$z' \equsuf[w] z$.
 		$\forall u,v \in Fact(w)$，有结论：
 		\[
 			u \equsuf[w] v \text{ and } u \neq_{\Suff(w)} z \Longrightarrow u \equsuf[wa] v.
 		\]
 		进一步说，$\forall u \in A^*$，有结论：
 		\[
-			u \equsuf[w] z \Longrightarrow 
-			\begin\{
+			u \equsuf[w] z \Longrightarrow
+			\left\{
 				\begin{aligned}
 					&u \equsuf[wa] z,	&\text{ if } |u| \le z,	\\
 					&u \equsuf[wa] z',	&\text{ otherwise }
@@ -1311,7 +1312,75 @@
 		\]
 	\end{thm}
 	\begin{proof}
+		由$u \equsuf[w] v$可知，$u^{-1} \Suff(w) = v^{-1} \Suff(w)$，
+		仅需证当$u \neq_{\Suff(w)} z$时，有$u \equsuf[wa] v$，
+		即$u^{-1} \Suff(wa) = v^{-1} \Suff(wa)$。
 		
+		而由定理~\ref{lem:sam_build_suff}可知可以将证明结论转化为仅需证明
+		$u \in \Suff(wa) \Longrightarrow v \in \Suff(wa)$。
+		
+		不妨假设$u \in \Suff(wa)$，由于$u \in Fact(w)$，从而可知$u^{-1} Suff(wa) \neq (wa)^{-1} Suff(wa)$。
+		而$s_{w}(wa) = z$及定义~\ref{defn:sam_build_suff}可知$|u| < |z|$，
+		从而有$u \in \Suff(z)$。则一定存在最大的整数$k$使得$|u| \le |S_w^k(z)|$。
+		而$s_w^k(z) \in \Suff(z)$，则一定有$s_w^k(z) \in \Suff(wa)$。
+		故再次应用定义~\ref{defn:sam_build_suff}可知$u \equsuf[w] s_w^k(z)$。而$u \equsuf[w] v$。
+		则有$v \equsuf[w] s_w^k(z)$，显然$v \in \Suff(z), v \in \Suff(wa)$。
+		
+		再考虑对于单个字符串$u$的结论。\\
+		由$u \equsuf[w] z$及定理~\ref{lem:u_equsuf_v}可知$u \in \Suff(z)$或者$z \in \Suff(u)$。
+		
+		当$|u| \le |z|$时，显然满足$u \in \Suff(z)$，故可知$u \in \Suff(wa)$，
+		由定理~\ref{lem:sam_build_suff}可知$u^{-1} Suff(wa) = u^{-1} Suff(w)a \cap \{ \varepsilon \}$.
+		同理，$v^{-1} Suff(wa) = v^{-1} Suff(w)a \cap \{ \varepsilon \}$，而$u^{-1} Suff(w) = v^{-1} Suff(w)$。
+		因此，有$u \equsuf[w] z$。
+		
+		而当$|u| > |z|$时，$u \in w, u \equsuf z$，由定义~\ref{defn:sam_build_suff}可知，
+		$u \notin \Suff(wa)$，否则与$z$定义矛盾。
+		$z'$是$w$中的最长子串并且满足$z' \equsuf[w] z$，而$z \in Fact(w)$。
+		故一定有$|z'| \ge |z|$，当$|z'| = |z|$时，即$z = z'$，结论显然成立。
+		而当$z' > z$时，具有和$u$相同的条件，因此同样可以推得$z' \notin \Suff(wa)$。
+		
+		故$u^{-1} \Suff(wa) = {\o}, z'^{-1} \Suff(wa) = {\o}$，
+		因此$u^{-1} \Suff(wa) = z'^{-1} \Suff(wa)$，从而有$u \equsuf[wa] z'$。
+		
+		综上所述，结论得证。
 	\end{proof}
+	定理~\ref{thm:sam_ec}描述的其实是当线性构建后缀自动机时，等价类是如何变化的。
+	
+	\begin{cor}
+	\label{cor:z_u_equsuf_v}
+		不妨令$w \in A^*, a \in A$，$z$是$w$中出现的$wa$的最长后缀，
+		$z'$是$w$中满足$z' \equsuf[wa] z$的最长子串。
+		若$z' = z$，那么$\forall u,v \in Fact(w)$，
+		$u \equsuf[w] v \Longrightarrow u \equsuf[wa] v$。
+	\end{cor}
+	\begin{proof}
+		有定理~\ref{thm:sam_ec}可知当$u \neq_{\Suff(w)} z$时，一定有$u \equsuf[wa] v$。
+		故仅需证明当$u \equsuf[w] z$时，结论同样成立。
+		
+		由$z' = z$及定理~\ref{thm:sam_ec}可知
+		\[
+			\forall u \equsuf[w] z \Rightarrow u \equsuf[wa] z
+		\]
+		显然$u \equsuf[wa] z$，而$u \equsuf[w] v, u \equsuf[w] z$可知$v \equsuf[w] z$。
+		同理有$v \equsuf[wa] z$。易知$u \equsuf[wa] v$。
+	\end{proof}
+	
+	\begin{cor}
+	\label{cor:a_notin_w}
+		不妨令$w \in A^*, \in A$，假定字符$a$并未在$w$中出现，那么
+		$\forall u,v \in Fact(w)$，有结论$u \equsuf[w] v \Longrightarrow u \equsuf[wa] v$。
+	\end{cor}
+	\begin{proof}
+		由条件易知$z = \varepsilon$，由推论~\ref{cor:z_u_equsuf_v}可知$v' \varepsilon = v$,
+		从而有$u \equsuf[w] v \Longrightarrow u \equsuf[wa] v$。
+	\end{proof}
+	
+	推论~\ref{cor:z_u_equsuf_v}和推论~\ref{cor:a_notin_w}是对增量构建后缀自动机
+	状态变化情况的详细描述，说明了满足什么情况下等价类依然保持不变。
+	
+\subsubsection{Sizes of suffix automata.}
+	
+	
 	
 \end{document}
