@@ -91,6 +91,7 @@
 \newcommand{\resetcounter}{\setcounter{equation}{0}}
 \newcommand{\equsuf}[1][x]{\equiv_{\textit{Suff(#1)}}}	
 \newcommand{\Suff}{\textit{Suff}}
+\newcommand{\len}[1][x]{\textit{length}_{#1}}
 
 % section deeep to 3 1.1.1
 \setcounter{secnumdepth}{3}
@@ -204,7 +205,8 @@
 	空间至少是$O(|E|)$，时间平均为常量。
 	
 \subsection{Failure function}
-	
+\label{sub:failure_function}
+
 	\Emph{Failure function}挺重要的，也挺有效的，后面的几种自动机模型都一定程度上使用了failure function。
 	其实FA包括DFA, NFA, $\varepsilon$-NFA，对于NFA而言，可能存在$\delta(p,a)=q_0, \delta(p,a)=q_1$。
 	然而DFA，对于给定的输入字符$a$以及当前状态$p$，仅存在唯一的$q, \delta(p,a)=q$。
@@ -1057,6 +1059,7 @@
 	\end{mthm}
 	
 \subsection{后缀自动机的性质}
+\label{sub:sam_property}
 
 \subsubsection{End-positions.}
 	
@@ -1205,7 +1208,7 @@
 		
 		这里使用反证法，如果$v \notin \Suff(w)$，由引理~\ref{cor:3_cond}可知，$w \in \Suff(v)$。
 		不妨令$z \in u^{-1} \Suff(x)$，
-		由$w \in Suff(u)$及~\ref{lem:u_in_sufv}可知$u^{-1} \Suff(x) \subseteq w^{-1} \Suff(x)$，
+		由$w \in \Suff(u)$及~\ref{lem:u_in_sufv}可知$u^{-1} \Suff(x) \subseteq w^{-1} \Suff(x)$，
 		从而有$z \in w^{-1} \Suff(x)$，又因为$v \equsuf w$，从而有$z \in v^{-1} \Suff(x)$。
 		
 		从而$u \in \Suff(xz^{-1}), v \in \Suff(xz^{-1})$，则$u$和$v$其中之一必定是另一个的后缀。
@@ -1222,12 +1225,59 @@
 	\end{proof}
 	定理~\ref{lem:suf_sxu}告诉我们$\forall v \equsuf s_x(u)$，那么$v \in \Suff(s_x(u))$。
 	
+	\begin{lem}
+	\label{lem:sx_k_equsuf_u}
+		不妨令$z \in \Suff(x)$，若$u \equsuf z$且$u \in \Suff(z)$，
+		令$k, k \ge 0$表示最大的整数满足$|u| \le {s_w}^k(z)$，有结论$u \equsuf {s_w}^k{z}$。
+	\end{lem}
+	\begin{proof}
+		由$u \in \Suff(z)$，可知$|u| \le |z|$，故一定存在这样的$k$。不妨令${s_w}^k(z) = y_k$。
+		
+		% 不妨令
+		% \begin{align*}
+			% s_x(z) 		&= y_1			&\quad			\\
+			% {s_x}^2(z)	&= s_x(y_1)		&=y_2			\\
+			% {s_x}^3(z)	&= s_x(y_2)		&=y_3			\\
+						% &\cdots			&\cdots			\\
+			% {s_w}^k(z)	&= s_x(y_{k-1})	&=y_k
+		% \end{align*}
+		% 由定义~\ref{defn:sx}可知
+		% \begin{align*}
+			% z_1^{-1} \Suff(x)	&\subset	y_1^{-1} \Suff(x)	\\
+			% y_1^{-1} \Suff(x)	&\subset	y_2^{-1} \Suff(x)	\\
+			% y_2^{-1} \Suff(x)	&\subset	y_3^{-1} \Suff(x)	\\
+								% &\cdots							\\
+			% y_{k-1}^{-1} \Suff(x) &\subset	y_k^{-1} \Suff(x)
+		% \end{align*}
+		由定义~\ref{defn:sx}可知$y_k \in \Suff(z)$，而$u \in \Suff(z), |u| \le |y_k|$。
+		因此，$u \in \Suff(y_k)$。
+		由于$k$已经是目前满足$|u| \le {s_w}^k(z)$的最大值，那么不妨考虑$k+1$。显然共有两种情况。
+		\begin{enumerate}[(1)]
+			\item $s_x^{k+1}(z)$不存在
+			
+			又定义~\ref{defn:sx}可知，即$\forall y_{k+1} \in \Suff(y_k), y_{k+1} \equsuf[x] y_k$。
+			而$u \in \Suff(y_k)$，故$u \equsuf[x] y_k$。
+			
+			\item $|u| > s_x^{k+1}(z)$
+			
+			由定义~\ref{defn:sx}可知$s_x^{k+1}(z) = s_x(y_k) = y_{k+1}$，
+			而$u \in \Suff(y_k), |u| > |y_{k+1}|$，
+			则一定有$u \equsuf[x] y_k$否则与定义~\ref{defn:sx}矛盾。
+			
+			故此时，$u \equsuf[x] {s_w}^k(z)$。
+			
+		\end{enumerate}
+		综上所述，$u \equsuf[x] {s_w}^k(z)$结论成立。
+	\end{proof}
+	这个引理在后面至少被使用两次，然而每次作者使用的时候都将结论成立的缘由指向~\ref{lem:suf_congruence}。
+	这显然有问题，毕竟$s_x$的定义再本章节才出现，因此新补充这样一个引理。
+	
 \subsubsection{State splitting.}
 	本小节主要介绍后缀自动机在线构建的相关性质和引理。
 	
 	\begin{lem}
 	\label{lem:sam_build_suff}
-		不妨令$w \in A^*, a \in A$, $\forall u in A^*$，有：
+		不妨令$w \in A^*, a \in A$, $\forall u \in A^*$，有：
 		\[
 			u^{-1} \Suff(wa) =
 			\left\{
@@ -1277,7 +1327,7 @@
 	说明$\equsuf[w]$表示的等价类是$\equsuf[wa], a \in A$表示等价类的并集。
 	而事实上仅将一个或者两个等价类由于同余关系$\equsuf[wa]$会分割成两个子类，
 	其中一个子类包含$w$中未出现的子串，它至少要包含字符串$wa$，$wa$这个串对类别和状态均有提升。
-	定理~\ref{thm:sam_state_split}和它的推论说明另一个类别如何分割。
+	定理~\ref{thm:sam_ec}和它的推论说明另一个类别如何分割。
 	
 	\begin{lem}
 	\label{lem:longest_suf_equ}
@@ -1305,7 +1355,7 @@
 			u \equsuf[w] z \Longrightarrow
 			\left\{
 				\begin{aligned}
-					&u \equsuf[wa] z,	&\text{ if } |u| \le z,	\\
+					&u \equsuf[wa] z,	&\text{ if } |u| \le |z|,	\\
 					&u \equsuf[wa] z',	&\text{ otherwise }
 				\end{aligned}
 			\right .
@@ -1316,25 +1366,25 @@
 		仅需证当$u \neq_{\Suff(w)} z$时，有$u \equsuf[wa] v$，
 		即$u^{-1} \Suff(wa) = v^{-1} \Suff(wa)$。
 		
-		而由定理~\ref{lem:sam_build_suff}可知可以将证明结论转化为仅需证明
+		而由定理~\ref{lem:sam_build_suff}易知可以将证明原结论转化为仅需证明
 		$u \in \Suff(wa) \Longrightarrow v \in \Suff(wa)$。
 		
-		不妨假设$u \in \Suff(wa)$，由于$u \in Fact(w)$，从而可知$u^{-1} Suff(wa) \neq (wa)^{-1} Suff(wa)$。
-		而$s_{w}(wa) = z$及定义~\ref{defn:sam_build_suff}可知$|u| < |z|$，
+		不妨假设$u \in \Suff(wa)$，由于$u \in Fact(w)$，从而可知$u^{-1} \Suff(wa) \neq (wa)^{-1} \Suff(wa)$。
+		而$s_{w}(wa) = z$及定义~\ref{defn:sx}可知$|u| < |z|$，
 		从而有$u \in \Suff(z)$。则一定存在最大的整数$k$使得$|u| \le |S_w^k(z)|$。
-		而$s_w^k(z) \in \Suff(z)$，则一定有$s_w^k(z) \in \Suff(wa)$。
-		故再次应用定义~\ref{defn:sam_build_suff}可知$u \equsuf[w] s_w^k(z)$。而$u \equsuf[w] v$。
-		则有$v \equsuf[w] s_w^k(z)$，显然$v \in \Suff(z), v \in \Suff(wa)$。
+		而${s_w}^k(z) \in \Suff(z)$，则一定有${s_w}^k(z) \in \Suff(wa)$。
+		由引理~\ref{lem:sx_k_equsuf_u}可知$u \equsuf[w] {s_w}^k(z)$。而$u \equsuf[w] v$。
+		则有$v \equsuf[w] {s_w}^k(z)$，显然$v \in \Suff(z), v \in \Suff(wa)$。
 		
 		再考虑对于单个字符串$u$的结论。\\
 		由$u \equsuf[w] z$及定理~\ref{lem:u_equsuf_v}可知$u \in \Suff(z)$或者$z \in \Suff(u)$。
 		
 		当$|u| \le |z|$时，显然满足$u \in \Suff(z)$，故可知$u \in \Suff(wa)$，
-		由定理~\ref{lem:sam_build_suff}可知$u^{-1} Suff(wa) = u^{-1} Suff(w)a \cap \{ \varepsilon \}$.
-		同理，$v^{-1} Suff(wa) = v^{-1} Suff(w)a \cap \{ \varepsilon \}$，而$u^{-1} Suff(w) = v^{-1} Suff(w)$。
+		由定理~\ref{lem:sam_build_suff}可知$u^{-1} \Suff(wa) = u^{-1} \Suff(w)a \cap \{ \varepsilon \}$.
+		同理，$v^{-1} \Suff(wa) = v^{-1} \Suff(w)a \cap \{ \varepsilon \}$，而$u^{-1} \Suff(w) = v^{-1} \Suff(w)$。
 		因此，有$u \equsuf[w] z$。
 		
-		而当$|u| > |z|$时，$u \in w, u \equsuf z$，由定义~\ref{defn:sam_build_suff}可知，
+		而当$|u| > |z|$时，$u \in w, u \equsuf z$，由定义~\ref{defn:sx}可知，
 		$u \notin \Suff(wa)$，否则与$z$定义矛盾。
 		$z'$是$w$中的最长子串并且满足$z' \equsuf[w] z$，而$z \in Fact(w)$。
 		故一定有$|z'| \ge |z|$，当$|z'| = |z|$时，即$z = z'$，结论显然成立。
@@ -1346,6 +1396,7 @@
 		综上所述，结论得证。
 	\end{proof}
 	定理~\ref{thm:sam_ec}描述的其实是当线性构建后缀自动机时，等价类是如何变化的。
+	不难发现，或者等价类仍然不变，或者与$z$或$z'$等价。
 	
 	\begin{cor}
 	\label{cor:z_u_equsuf_v}
@@ -1380,6 +1431,223 @@
 	状态变化情况的详细描述，说明了满足什么情况下等价类依然保持不变。
 	
 \subsubsection{Sizes of suffix automata.}
+	
+	这一小节将分别讨论后缀自动机的状态$Q$和转换边$E$的上界，同时说明后缀自动机$M(\Suff(x))$的空间复杂度为$O(|x|)$。
+	
+	\begin{cor}
+	\label{cor:sz_Q}
+		若$|x| = 0$, 则$|Q| = 1$，
+		若$|x| = 1$, 则$|Q| = 2$，
+		否则当$|x| \ge 2$时，$|x|+1 \le |Q| \le 2|x|-1$。
+		并且当且仅当$x$形如$ab^{|x|-1}, a \neq b$时达到上界。
+	\end{cor}
+	\begin{proof}
+		显然$|Q| \ge |x|+1$，并且当且仅当$x$形如$a^{|x|}$时达到边界。因此仅需证明$|Q| \le 2|x|-1$。
+		
+		易知$|x| <= 1$，结论显然成立。由定理~\ref{lem:sam_ec}可知，每当对$M(\Suff(x))$进行增量构建时，
+		增加的状态数最多为2（$z$和$z'$），而当增量到2个字符时，状态数不超过3。
+		故$|Q| \le 3 + 2 \times (|x| - 2) = 2|x| - 1$。
+	\end{proof}
+	
+	定义函数$\len: Q \leftarrow \mathbb{N}$表示对$M(\Suff(x))$中的$\forall q$及其等价类中最长字符串$u$。
+	它同时也是从其实状态到状态$q$的最长路径（这条路径标记为$u$）。
+	$M(\Suff(x))$中的最长路径路径恰好形成了一棵生成树，这棵树中的边称为$solid$。
+	等价于$\forall (p,a,q) \in E$，有：
+	\[
+		(p, a, q) \text{ is solid } \Longleftrightarrow \len(q) = \len(p) + 1
+	\]
+	定义函数$\textit{length}$是为了更清楚的说明$M(\Suff(x))$的空间的上界。
+	
+	\begin{lem}
+	\label{lem:sz_E}
+		若$|x| \ge 1$, 则$|E| \le |Q| + |x| - 2$。
+	\end{lem}
+	\begin{proof}
+		考虑由$M(\Suff(x))$最长路径组成的生成树，显然树中共有$|Q| - 1$条边，并且每条边都是$solid$。
+		
+		考虑$non-solid$边$(p, a, q)$，我们定义$x$的后缀$uav$，
+		$u$表示从初始状态到状态$p$的路最长径表示的子串，$v$表示从状态$q$到达终结状态最长路径表示的子串。
+		显然不同的$non-solid$边对应$x$的不同后缀。而$|\Suff(x)| = |x|$，
+		又因为$|x| = 1$时，$u,v = \varepsilon$，显然应该是$solid$，故$non-solid$边的上界为$|x| - 1$。
+		
+		综上可知$|E| \le |Q|-1 + |x|-1$，从而有$|E| \le |Q|+|x|-2$。
+	\end{proof}
+	
+	\begin{cor}
+	\label{cor:sz_E}
+		若$|x| = 0$, 则$|E| = 0$;
+		若$|x| = 1$，则$|E| = 1$;
+		若$|x| = 2$，则$2 \le |E| \le 3$;
+		否则$|x| \ge 3$，则$|x| \le |E| \le 3|x|-4$。
+		并且仅当$x$形如$ab^{|x|-2}c$时达到上界。
+	\end{cor}
+	\begin{proof}
+		观察下界$|x|$是显然的，并且仅当$x$形如$a^{|x|}$达到边界。
+		
+		考虑下界，不难发现当$|x| \le 2$时，结论成立。因此，仅需证明当$|x| \ge 3$时，结论同样成立。
+		
+		当$|x| \ge 3$时，由推论~\ref{cor:sz_Q}和引理~\ref{lem:sz_E}可知，
+		$|E| \le |Q|+|x|-2, |Q| \le 2|x|-1$，故$|E| \le 3|x|-3$。
+		
+		而当且仅当$x$形如$ab^{|x|-1}$时，$Q$达到边界值，但此时$|E| = 2|x|-1$，显然此时$|E| \le 3|x|-4$。
+		而当$|Q| \le 2|x|-2$时，代入可知$|E| \le 3|x|-4$。
+		
+		综上可知，$|x| \le |E| \le 3|x|-4$。
+	\end{proof}
+	
+	\begin{thm}
+	\label{thm:sz_suffix_automata}
+		任意字符串的后缀自动机的空间复杂度都线性于该串的长度。
+	\end{thm}
+	\begin{proof}
+	由推论~\ref{cor:sz_Q}和~\ref{cor:sz_E}可知，$|E|+|Q| \le 5|x|-5 = O(n)$。
+	\end{proof}
+	
+	推论~\ref{cor:sz_Q}和推论~\ref{cor:sz_E}比较有价值，给定了较好的边界，从而说明整体的边界为$5|x|-5$。
+	
+\subsection{后缀自动机的构造}	
+	
+	后缀自动机可以采用增量法在线构建，时间复杂度和空间复杂度都是线性的，真个构造过程是高效的。
+	
+\subsubsection{Suffix links and suffix paths.}
+	
+	后缀自动机的构造主要依据于~\ref{sub:sam_property}，引入$suffix\ link$辅助条件的检测。
+	其实这个东西和~\ref{sub:failure_function}很类似，使用的目的在~\ref{sub:as_strmatch_automata}。
+	
+	不妨使用四元组$(Q, i, T, E) = M(\Suff(x))$并且$\delta$表示转换函数。
+	$\forall p \in Q \setminus \{i\}$，状态$p$表示的其实是满足关系$\equsuf[x]$的等价类，其中的元素都是$x$的子串。
+	使用$u$表示等价类$p$中的任何子串，进而状态$p$的$suffix\ link$表示的其实是$s_x(u)$的同余类。
+	（参考定理~\ref{thm:sam_ec}若$z \equiv p$，那么$z'$其实就是$suffix\ link$）。
+	由引理~\ref{lem:sx_eq}可知$suffix\ link$与$u$的具体取值无关。
+	这里引入函数$f_x$表示状态$p$到$s_x(u)$的映射。
+	
+	$M(\Suff(x))$的后缀路径的实际上是$suffix\ link$的迭代。
+	注意如果$q = f_x(p)$，那么一定有$\len[x](q) < \len[x](p)$。从而，序列
+	\[
+		(p, f_x(p), {f_x}^2(p), \cdots)
+	\]
+	一定是有穷的并且最终结束于起始状态$i$。这样的序列称为状态$p$的后缀路径。
+	
+	后缀自动机$M(\Suff(x))$的状态$last_x$表示$x$自身的等价类。显然状态$last_x$没有任何出边，从而$last_x$的后缀路径可以表示成
+	\[
+		(last_x, f_x(last_x), {f_x}^2(last_x), \cdots)
+	\]
+	这条路径是后缀自动机建立的关键路径。
+	
+	\begin{prop}
+	\label{prop:sx_fx}
+		不妨令$u \in Fact(x) \setminus \{ \varepsilon \}$并且令$p = \delta(i, u)$。
+		从而有结论$\forall k \ge 0$，若${s_w}^k(u)$存在，那么一定有${f_x}^k(p) = \delta(i, {s_w}^k(u))$。
+	\end{prop}
+	\begin{proof}
+		当$k = 0$时，结论即是已知，故显然成立。
+		
+		故不妨令$k \ge 1$并且${s_w}^k(u)$存在，使用数学归纳法假设${f_x}^{k-1}(p) = \delta(i, s_x^{k-1}(u))$。
+		由$f_x$的定义可知$f_x({f_x}^{k-1}(p))$表示$s_x(s_x^{k-1}u)$的同余等价类。
+		故可知${f_x}^{k-1}(p) = \delta(i, s_x^{k}(u))$。
+	\end{proof}
+	
+	\begin{cor}
+	\label{cor:sam_t_lastx}
+		后缀自动机$M(\Suff(x))$中的终结态集合$T$，恰好是状态$last_x$的后缀路径上的状态集合。
+	\end{cor}
+	\begin{proof}
+		令$p$表示$last_x$所在后缀路径上的其中一个状态，从而有$\exists k \ge 0$，$p = {f_x}^k(last_x)$。
+		由于$last_x = \delta(i, x)$及命题~\ref{prop:sx_fx}可知，${f_x}^k(last_x) = \delta(i, {s_w}^k(x))$。
+		从而有$p = \delta(i, {s_w}^k(x))$。
+		
+		若$p \in T, u \in \Suff(x), p = \delta(i, u)$。由于$u \in \Suff(x)$，不妨令$k \ge 0$为同时满足
+		$|u| \le |{s_w}^k(x)|$的最大整数值。
+		
+		由引理~\ref{lem:sx_k_equsuf_u}可知$u \equsuf[x] {s_w}^k(x)$，故有$p = \delta(i, {s_w}^k(x))$。
+		由命题~\ref{prop:sx_fx}可知，$p = {f_x}^k(u), u \in \Suff(x)$，则$p$一定在$last_x$的后缀路径中。
+		
+		综上结论成立。
+	\end{proof}
+	
+\subsubsection{On-line construction.}
+\label{subsub:sam_online_construct}
+
+	本节主要说明后缀自动机在线构造的方法，简单说就是每个阶段构建前，
+	都已经形成了基于$x$的前缀$x_1 x_2 \cdots x_{\ell}$的后缀自动机$M(\Suff(x_1 x_2 \cdots x_{\ell}))$。
+	这个自动机的终结态由$last_{x_1 x_2 \cdots x_{\ell}}$的后缀路径隐式说明。
+	在构建过程中可以显示地使用变量来表示状态$last_{x_1 x_2 \cdots x_{\ell}}$。
+	% 这就是SAM-Build过程中的last
+	
+	除此外，还使用了其它两个变量：$Length$和$F$。
+	$Length$数组表示函数$\len[x]$，有~\ref{sub:sam_property}节可知$solid$边或者$non-solid$均与这个函数有关。
+	$F$数组用来表示状态的$suffix\ link$，其本质就是$f_x$函数。
+	
+	后缀自动机的在线构造包括SA-EXTEND过程和后续的预处理过程
+	（该过程将$M(\Suff(x_1 x_2 \cdots x_{\ell-1}))$建立的转换函数转化为当前串的自动机$M(\Suff(x_1 x_2 \cdots x_{\ell}))$）。
+	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
+		SuffixAutomata(x)
+			let \deta be the transition function of (Q, i, T, E)
+			(Q, E) \leftarrow ({\o}, {\o})
+			i \leftarrow State-Creation
+			Length[i] \leftarrow 0
+			F[i] \leftarrow NIL
+			last \leftarrow i
+			for \ell from 1 up to |x|
+				loop SA-Extend(\ell)
+			T \leftarrow {\o}
+			p \leftarrow last
+			loop T \leftarrow T + {p}
+				 p \leftarrow F[p]
+				while p \neq NIL
+			return ((Q, i, T, E), Length, F)
+	\end{lstlisting}
+	
+	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
+		SA-Extend(\ell)
+		a \leftarrow x_{\ell}
+		newlast \leftarrow State-Creation
+		Length[newlast] \leftarrow Length[last] + 1
+		p \leftarrow last
+		loop E \leftarrow E + {(p, a, newlast)}
+			 p \leftarrow F[p]
+			while p \neq NIL and \delta(p,a)=NIL
+		if p = NIL
+			then F[newlast] \left i
+			else q \leftarrow \delta(p, a)
+				 if Length[q] = Length[p] + 1
+					then F[newlast] \leftarrow q
+					else q' \leftarrow State-Creation
+						 for each letter b such that \delta(q, b) \neq NIL
+							loop E \left E + {(q', b, \delta(q, b))}
+						 Length[q'] \leftarrow Length[p] + 1
+						 F[newlast] \leftarrow q'
+						 F[q'] \leftarrow F[q]
+						 F[q] \leftarroww q'
+						 loop E \leftarrow E - {(p, a, q)} + {(p, a, q')}
+							  p \leftarrow F[p]
+							while p \neq NIL and \delta(p, a) = q
+		last \leftarrow newlast
+	\end{lstlisting}
+	
+	\begin{thm}
+	\label{thm:sam_build_right}
+		$\forall x$，函数SuffixAutomata都可以构建$x$的后缀自动机。
+	\end{thm}
+	\begin{proof}
+		
+	\end{proof}
+	
+\subsubsection{复杂度}
+\label{subsub:sam_build_complexity}
+
+	\begin{thm}
+	\end{thm}
+	\begin{proof}
+	\end{proof}
+
+	
+\subsection{作为字符串下标}
+\label{sub:as_index}
+
+	
+\subsection{作为字符串匹配自动机}
+\label{sub:as_strmatch_automata}
 	
 	
 	
