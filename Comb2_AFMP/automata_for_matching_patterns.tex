@@ -1630,15 +1630,113 @@
 		$\forall x$，函数SuffixAutomata都可以构建$x$的后缀自动机。
 	\end{thm}
 	\begin{proof}
+		后缀自动机构造过程的正确性使用数学归纳法对已经建立的$x$长度进行归纳推理。
 		
+		首先，考虑当$x = \varepsilon$，显然此时的后缀自动机仅包含一个状态$i$，即是初始态也是终结态。
+		此时，上述构造过程显然正确。
+		
+		然后，考虑$x \neq \varepsilon$，这也意味着$|x| \ge 1$，故不妨令$w \in A^*, a \in A$使得$x = wa$。
+		使用数学归纳法，我们假定当处理到$w$时，已经建立的后缀自动机$M(\Suff(w))$是正确的。
+		状态集合及转换函数分别用$Q$和$E$表示。
+		
+		显然，此时$last = \delta(i,w)$。同时，对于$\forall r \in Q$，有$Lengh[r] = length_w(r)$，
+		而对于$\forall r \in Q \setminus \{i\}$，有$F[r] = f_w(r)$。
+		
+		故我们仅需证明，当使用字符$a$对$M(\Suff(w))$进行增量构造后，得到的自动机$M(\Suff(wa))$是正确的。
+		所谓$M(\Suff(wa))$，首先要保证所有终结态的集合表示的恰好是$\Suff(x)$，同时$M(\Suff(x))$的转换函数是正确的。
+		
+		SA-EXTEND过程首先建立新的状态$newlast$表示的最长后缀$x$，显然有$\delta(last_w, a) = newlast$。
+		同时，这条边是$solid$，而$Length[newlast] = Length[last] + 1 = length_x(x)$也保证$Length$的更新正确。
+		
+		SA-EXTEND过程中的变量$p$其实是在对$last_w$的所有$suffix\ path$路径进行搜索，
+		在循环停止前，均加入边$(p, a, newlast)$，使得这些节点更新为$x$的后缀。
+		当循环结束时，可能有如下三种情况：
+		\begin{enumerate}[(1)]
+			\item $p$为空；
+			\item $(p, a, q)$是$solid$边；
+			\item $(p, a, q)$是$non-solid$边。
+		\end{enumerate}
+		
+		因为后缀自动机的边根据$solid$定义仅分成两类，故上述三种情况确实是完备的。
+		进而，我们仅需要根据三种不同情况分别证明。
+		\begin{enumerate}[\text{Case} (1).]
+			\item $p$为空
+			
+			当且仅当$w$中从未$a$满足这种情况。显然，这说明了$s_x(x) = \varepsilon$，
+			故使用$f_x(newlast) = i$是正确的，从而$F[newlast] \leftarrow i$。
+			而对于$\forall r \in Q$由推论~\ref{cor:a_notin_w}可知，等价类不发生变化，
+			故其它$f_w(r) = f_x(r)$，而显然这种情况$newlast$是唯一的终结态。
+			
+			\item $(p, a, q)$是$solid$边
+			
+			不妨令$u$表示最长的子串满足$\delta(i, u) = p$。
+			由$length_x$的定义可知$|u| = length_x(p) = Length[p]$，
+			又因为${s_x}^k(w) < {s_x}^{k-1}(w)$，可知$ua$一定是出现在$w$中的$wa$的最长后缀。
+			注意，这个结论一定成立是因为这条边是$solid$，因而有$length_x(q) = length_x(p) + 1$，
+			那么$\delta(i, ua) = q$一定成立。
+			即$ua = s_x(x)$，而由$f_x$定义可知$f_x(newlast) = q$，故$F[newlast] = q$。
+			
+			不妨令$z = ua = s_x(x)$，由定理~\ref{thm:sam_ec}可知对于任何与$q$不等价的其它等价类仍然保持原有的等价关系。
+			因此，仅需要考虑与$z$在$w$中等价的串是否在$x$依然与$z$等价。
+			不妨令$z'$表示$w$中与$z$等价的最长子串，即$|z'| \ge |z|$。
+			由$length_x$定义可知$|z'| \le |z|$，显然$z' = z$，由推论~\ref{cor:z_u_equsuf_v}可知
+			$\forall v \equsuf[w] z \Longrightarrow v \equsuf[wa] z$。
+			
+			显然此时的终结态集合同样正确。
+			
+			\item $(p, a, q)$是$non-solid$边
+			
+			不妨令$u$表示最长的子串满足$\delta(i, u) = p, z = ua$，$z'$表示最长的子串满足$\delta(i, z') = q$。
+			显然$\delta(i, z) = q$，但$|ua| < |z'|, ua \in \Suff(z')$，但是$ua = s_w(wa)$。
+			
+			由~\ref{thm:sam_ec}的进一步解释可知，$\forall v \equsuf[w] z$，必须将其分割成两个等价类。
+			即$|v| \le |z|$与$v \equsuf[x] z$，而其它的$v \equsuf[x] z'$。
+			
+			过程SA-EXTEND先创建了新的状态$q'$表示$z$，而原有的状态$q'$表示$z'$，
+			显然这个过程保证$|v| > |z|$仍然保持等价关系，而$|v| \le |z|$变为与$z$等价。
+			而$s_x(x) = z = ua, s_x(z') = z$均显然成立。因此，易知$F$的更新也是正确的。
+			
+			最后考虑，为什么后面还要加一个循环？在执行循环前$\forall v, q = \delta(i, v)$。
+			在执行循环后$\forall v, |v| \le |z|, q' = \delta(i, v)$，而$|v| > |z|$，仍然有$q = \delta(i, v)$。
+			重点是$|v| \le |z|$仅出现在$p$的$suffix\ path$路径上。而当$\delta(p,a) \neq q$时，
+			那么此时的$\delta(p,a)$不可能$\equsuf[w] z$。
+			
+		\end{enumerate}
+		
+		综上，证明了后缀自动机的增量构建过程是正确的。
 	\end{proof}
+	理解上述的证明过程，关键是要理解定理~\ref{thm:sam_ec}及其推论。
+	后缀自动机的每个状态表示的不是单个串，而是一个等价类。
+	而对于一个等价类，使用最长串表示$length_x$表示的是这个串在$x$的最右端下标，
+	而由引理~\ref{lem:u_equsuf_v}可知其它串一定是这个最长串的后缀。
+	由引理~\ref{lem:sx_eq}可知，一个等价类的$f_x$是相同的。
+		
 	
 \subsubsection{复杂度}
-\label{subsub:sam_build_complexity}
+\label{subsub:sam_build_complex}
+
+	为了分析后缀自动机构造过程的复杂度，我们需要假定使用邻接表实现这样一个自动机。
+	从而，增加边、更新边、查询转换函数等操作都可以在$O(\log |A|)$时间内完成。
+	$f_x$函数采用数组$F$实现，因此$f_x$的查询可以在$O(1)$时间内完成。
+	
+	使用$Length$数组表示$length_x$，同时使用布尔变量表示邻接表中的边是否为$solid$。
 
 	\begin{thm}
+	\label{thm:sam_online_construct_complex}
+		对于给定的字符串$x$，SuffixAutomata函数可以在时间复杂度$O(|x| \times |A|)$及空间复杂度$O(|x|)$构建它的后缀自动机。
 	\end{thm}
 	\begin{proof}
+		后缀自动机$M(\Suff(x))$、$Length$、$F$的空间复杂度都是$O(|Q|)$，邻接表的空间复杂度为$O(|E|)$。
+		由推论~\ref{cor:sz_Q}和~\ref{cor:sz_E}可知它们的复杂度等价于$O(|x|)$。
+		故空间复杂度$O(|x|)$证毕。
+		
+		显然SuffixAutomata出SA-EXTEND循环外，其余操作均满足复杂度$O(|x| \times |A|)$。
+		因此，考虑均摊，即执行SA-EXTEND的总体复杂度不超过$O(|x| \times |A|)$。
+		
+		这个均摊，作者必然是没说清楚的。我也没有什么太好的方法证明。
+		但是可以参考failure function。除了增加结点因此导致$f_x$重定向外，$f_x$是不更新的。
+		因此，下一次搜索的$suffix\ path$与前一次有很大重合，那么前一次处理了$a$，下一次当再次处理$a$时，
+		一定不会搜索到初始位置，故$O(|x| \times |A|)$是一个界。均摊后，SA-EXTEND的上界就是$O(|A|)$。
 	\end{proof}
 
 	
