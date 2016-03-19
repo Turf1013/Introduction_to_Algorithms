@@ -1734,19 +1734,241 @@
 		因此，考虑均摊，即执行SA-EXTEND的总体复杂度不超过$O(|x| \times |A|)$。
 		
 		这个均摊，作者必然是没说清楚的。我也没有什么太好的方法证明。
-		但是可以参考failure function。除了增加结点因此导致$f_x$重定向外，$f_x$是不更新的。
-		因此，下一次搜索的$suffix\ path$与前一次有很大重合，那么前一次处理了$a$，下一次当再次处理$a$时，
-		一定不会搜索到初始位置，故$O(|x| \times |A|)$是一个界。均摊后，SA-EXTEND的上界就是$O(|A|)$。
+		% 但是可以参考failure function。除了增加结点因此导致$f_x$重定向外，$f_x$是不更新的。
+		% 因此，下一次搜索的$suffix\ path$与前一次有很大重合，那么前一次处理了$a$，下一次当再次处理$a$时，
+		% 一定不会搜索到初始位置，故$O(|x| \times |A|)$是一个界。均摊后，SA-EXTEND的上界就是$O(|A|)$。
+		我认为可以这么理解，每次SA-EXTEND的第一次循环跳过的结点，下一次不会再被搜索。
+		因为显然，下一次从$last$开始搜索，而$F[last] = q$。因此，总共至多跳过$O(|x|)$个结点，
+		考虑邻接表查询边的复杂度则为$O(|A|)$，所以均摊后每次调用SA-EXTEND的复杂度是$O(|A|)$。
+		
+		显然整体的复杂度为$O(|x| \times |A|)$。
 	\end{proof}
 
 	
 \subsection{作为字符串下标}
 \label{sub:as_index}
 
+	基于字符串$x$的后缀自动机自然地提供了其子串的下标。
+	我们考虑如下4个坐标的基本操作：成员、初始位置、出现次数、位置列表。
+	使用后缀自动机同样可以有效地计算字符串中子串的数目，同时最长的子串至少出现两次。
+	
+\subsubsection{Membership.}
+\label{subsub:idx_membership}
+
+	\begin{prob}
+	\label{prob:index_membership}
+		\Emph{(Membership problem for Fact(x).)}
+		对于给定的字符串$w \in A^*$，找到它属于$Fact(x)$的最长前缀。
+	\end{prob}
+	
+	\begin{prop}
+		给定后缀自动机$M(\Suff(x))$，计算给定字符串$w$的最长前缀$u$并且$u \in Fact(x)$的过程，
+		可以在$O(|u| \times \log |A|)$时间内完成。
+	\end{prop}
+	\begin{proof}
+		在$M(\Suff(x))$搜索字符串$u$，当首次出现$\delta(p, u_k) = \varepsilon$时跳出搜索循环，
+		此时的前缀$u_1 u_2 \cdots u_{k-1}$极为所求解。显然这个过程可以在$O(|u| \times |A|)$内完成。
+	\end{proof}
+	
+\subsection{First position.}
+\label{subsub:idx_fp}
+	
+	\begin{prob}
+	\label{prob:index_fir_pos}
+		\Emph{(Frist position of w in x.)}
+		对于给定的$w \in Fact(x)$，找到它在字符串$x$中首次出现的位置。
+	\end{prob}
+	
+	首先我们假定$w \in Fact(x)$（测试$w$是否在$x$中可以直接在自动机中搜索$x$），
+	原问题在$x$中搜索$w$首次出现的位置$fp_x(w)$，等价于计算$endpos_x(w)$，显然
+	\[
+		fp_x(w) = endpos_x(w) - |w|.
+	\]
+	更却求地说，这等价于计算$x$中的子串$w$的右端上下文的最大长度
+	\[
+		lc_x(w) = \max \{ |z| | z \in w^{-1} Fact(x) \}.
+	\]
+	（注意$endpos$定义使用的是$\min$，而$lc$这里定义使用的是$\max$，这是极大-极小定理的应用）。
+	因为
+	\[
+		fp_x(w) = |x| - lc_x(w) - |w|.
+	\]
+	与之相反的，找到$w$在$x$中的最末位置$lp_x(w)$，可以通过计算右端上下文的最小值实现。因为，
+	\begin{align*}
+		sc_x(w) = \min \{ |z| | z \in w^{-1} Fact(x) \}.	\\
+		lp_x(w) = |x| - sc_x(w) - |w|.
+	\end{align*}
+	因此，为了高效地计算初始位置或最末位置，我们可以对$lc$或者$sc$进行预处理。
+	
+	\begin{prop}
+		后缀自动机$M(\Suff(x))$可以在$O(|x|)$时间内进行预处理，
+		从而$\forall w, w \in Fact(x)$可以在$O(|x| \times \log |A|)$时间和$O(|x|)$空间内
+		确定初始位置或最末位置。
+	\end{prop}
+	\begin{proof}
+		首先，定义$LC$：
+		对于状态$p$和字符串$u$满足$p = \delta(i, u)$，有$LC[p] = lc_x(u)$。
+		注意到，$LC[p]$与$u$的具体值无关。
+		由引理~\ref{lem:u_equsuf_v}可知$v \equsuf[x] u$，则必定有$lc_x(u) = lc_x(v)$。
+		因此数组$LC$满足如下归纳关系：
+		\[
+			LC[p] =
+			\left\{
+				\begin{aligned}
+					&0,				&\text{ if } p = last_x,	\\
+					&1 + \max \{ LC[q] | q = \delta(p, a), a \in A \}, &\text{ otherwise }
+				\end{aligned}
+			\right .
+		\]
+		显然可以通过深搜在$O(|Q|)$时间内计算每个状态的$LC$值，因此该过程的时间复杂度是$O(|x|)$。
+		
+		为了计算$fp_x(w)$，我们首先要找到状态$p$满足$\delta(i, w) = p$，
+		值$|x| - |w| - LC[p]$就是所求解。由命题~\ref{prop:index_membership}可知
+		这个过程的时间复杂度是$O(|w| \times \log |A|)$。
+		
+		同理，定义$SC$：
+		对于状态$p$和字符串$u$满足$p = \delta(i, u)$，有$SC[p] = sc_x(u)$，使用如下归纳关系计算$SC$:
+		\[
+			SC[p] =
+			\left\{
+				\begin{aligned}
+					&0,			&\text{ if } p \in T,	\\
+					&1 + \min \{ SC[q] | q = \delta(p, a), a \in A \},	&\text{ otherwise }
+				\end{aligned}
+			\right .
+		\]
+		计算过程同样采用深搜，故预处理的时间复杂度为$O(|x|)$，而查询的复杂度为$O(|u| \times \log |A|)$。
+		
+	\end{proof}
+	
+\subsubsection{Occurrence number.}
+\label{subsub:idx_on}
+
+	\begin{prob}
+		\Emph{(Number of occurrences of w in x.)}
+		对于给定的字符串$w, w \in Fact(x)$，求$w$在$x$中出现的次数。
+	\end{prob}
+		
+	\begin{prop}
+		后缀自动机$M(\Suff(x))$可以在$O(|x|)$时间内进行预处理，
+		从而使得计算$\forall w, w \in Fact(x)$在$x$中出现次数可以在$O(|x| \times \log |A|)$及空间$O(|x|)$内完成。
+	\end{prop}
+	\begin{proof}
+		$w$在$x$的出现此时可以表示为
+		\[
+			|\{ z | z \in A^* \text{ and } wz \in \Suff(x) \}|.
+		\]
+		若$\delta(i, w) = p$，可以转化为
+		\[
+			|\{ z | z \in A^* \text{ and } wz \in \Suff(x) \}|.
+		\]
+		不妨令$NB[p]$表示上式值，同时满足如下递归关系式：
+		\[
+			NB[p] =
+			\left\{
+				\begin{aligned}
+					&1 + \sum_{q = \delta(p, a),a \in A} NB[q],     &\text{ if } p \in T,   \\
+					&\sum_{q = \delta(p,a), a \in A} NB[q],         &\text{ otherwise }.
+				\end{aligned}
+			\right .
+		\]
+		显然这也是一个树形DP，同样可以深搜在$O(|x|)$时间内计算出所有状态$p$的$NB$值。
+		
+		然后，对于给定字符串$w$，先求出状态$p$满足$\delta(i, w) = p$，就是在$M(\Suff(x))$上进行深搜。
+		由命题~\ref{prop:index_membership}可知，这个过程的复杂度为$O(|w| \times \log |A|)$。
+		
+		显然结论成立。
+	\end{proof}
+	
+	另一个与之相似的问题是求$x$中的子串数量。事实上，$Fact(x)$是右端上下文与初始状态$i$关联的特殊状态。
+	通过计算右端数量$CS[p]$可以计算子串数量，$CS[p]$d的计算满足如下递归关系式：
+	\[
+		CS[p] =
+		\left\{
+			\begin{aligned}
+				&1,			&\text{ if } p = last_x,	\\
+				&1 + \sum_{q = \delta(p, a), a \in A} CS[q],	&\text{ otherwise }.	\\
+			\end{aligned}
+		\right .
+	\]
+	从而可以得到$x$的子串数量：
+	\[
+		|Fact(x)| = CS[i].
+	\]
+	显然，这又是一个树形DP，复杂度依然是$O(|x|)$。
+	这个树形DP中累加求和的是当前状态$p$的$\equsuf[x]$的串数量。
+	最终$CS[i]$其实是包括空串的$CS[i]-1$是所有非空子串的数量。
+	
+\subsubsection{List of positions.}
+\label{subsub:idx_lop}
+	
+	\begin{prob}
+		\Emph{(Positions of w in x.)}
+		给定字符串$w, w \in Fact(x)$，求$w$在$x$中出现位置的列表。
+	\end{prob}
+	
+	\begin{prop}
+		后缀自动机$M(\Suff(x))$可以在$O(|x|)$时间内预处理，使得
+		$w$在$w$出现的位置列表可以在$O(|w| \times \log |A| + |L|)$时间及$O(|x|)$空间内计算。
+	\end{prop}
+	\begin{proof}
+		预处理自动机进行缩点，将那些仅包含一条结点并且目标结点是非终结态的结点缩点。
+		而这等价于在原有后缀自动机$M(\Suff(x))$上叠加了新的图。
+		显然，这个图的结点要么是终结状态、要么是包含两条出边的状态。
+		其中的每个结点代表了从$i$搜索到该结点的字符路径。
+		
+		假定在$M(\Suff(x))$对字符串$w$进行搜索，并且$\delta(i, w) = q$。
+		因此，位置列表就是以$q$为根的子树的所有的位置的并集。
+		显然由根结点$q$开始对子树进行遍历即可找到位置列表，
+		显然子树中结点不超过$2|L|$，故遍历的时间复杂度是$O(|L|)$。
+		由命题~\ref{prop:index_membership}可知搜索字符串$w$的复杂度为$O(|w| \times \log |A|)$。
+		
+		故整体的时间复杂度为$O(|w| \times \log |A|)$。
+	\end{proof}
+	
+\subsubsection{Longest repeated factor.}
+\label{subsub:idx_lrf}
+	
+	通过使用$x$的后缀自动机可以解决两类问题：
+	\begin{itemize}
+		\item 找到$x$的最长重复子串
+		\item 找到$x$中仅出现一次的最短子串
+	\end{itemize}
+	
+	\begin{prob}
+		\Emph{(Longest repeated factor in x.)}
+		给定字符串$x$，找出最长的子串$w \in Fact(x)$并且$w$在$x$中出现至少两次。
+	\end{prob}
+	若计算$x$中子串重复次数的数组$NB$已经被预处理。
+	从而原问题转化为找到$M(\Suff(x))$中的最深状态$p$并且$NB[p]>1$。
+	从初始状态$i$到状态$p$的字符路径即是所求解。
+	
+	事实上即使不使用$NB$也可以解决该问题。
+	我们仅仅需要考虑最深的状态$p$并且同时满足如下两个条件：
+	\begin{enumerate}[(1)]
+		\item $p$的出度至少为$2$；
+		\item $p$为终结点并且$p$的出度至少为$1$。
+	\end{enumerate}
+	
+	\begin{prop}
+	\label{prop:idx_lrf_complex}
+		使用后缀自动机$M(\Suff(x))$，计算$x$中的最长重复子串可以在时间复杂度$O(|x|)$内实现。
+	\end{prop}
+	\begin{proof}
+		显然第二种方法可以在$O(|x|)$内实现。
+	\end{proof}
+	
+	给定字符串$x$的最长重复子串，$ua \in Fact(x), a \in A$。
+	显然$ua$是在$x$中出现一次的最短子串。
+	因此，推论~\ref{prop:idx_lrf_complex}同时满足这两个问题。
+	
+	这显然也是极大-极小定理的应用之一。
+	P.S. 离散数学真的很重要。
 	
 \subsection{作为字符串匹配自动机}
 \label{sub:as_strmatch_automata}
 	
-	
+\subsection{Factor Automata}	
+\label{sub:factor_automata}
 	
 \end{document}
