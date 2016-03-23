@@ -825,23 +825,26 @@
 	而前向边恰好为$(|x|)$更好理解，因为从$\varepsilon \leftarrow p_{x}$恰好是包含所有的前向边，即字符串$x$本身。
 	
 	因此，基于邻接表并只建立关键边的string-matching自动机的建立过程如下：
-	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
-		LinearStringMatchingAutoma(x)
-			let \delta be the transition function of (Q, i, {\o}, G)
-			Q \leftarrow {\o}
-			i \leftarrow State-Creation()
-			G[i] \leftarrow {\o}
-			t \leftarrow i
-			for letter a from first to last letter of x
-				loop r \leftarrow \delta(t, a)
-					q \leftarrow State-Creation()
-					if r \neq i
-						then G[t] \leftarrow G[t] - \{(a, r)\}
-					G[t] \leftarrow G[t] + \{(a, q)\}
-					G[q] \leftarrow G[r]
-					t \leftarrow q
-			return (Q, i, {t}, G)
-	\end{lstlisting}
+    \begin{codebox}
+	\Procname{$\proc{LinearStringMatchingAutomata}(x)$}
+		\zi	\Comment let $\delta$ be the transition function of $(Q, i, {\O}, G)$
+		\li $Q \gets {\O}$
+		\li $i \gets \proc{State-Creation}()$
+		\li $G[i] \gets {\O}$
+		\li $t \gets i$
+		\li \For $j \gets 1$ \To $x$
+		\li		\Do
+					$r \gets \delta(t, x[j])$
+		\li			$q \gets \proc{State-Creation}()$
+		\li			\If $r \neq i$
+		\li				\Then $G[t] \gets G[t] - \{(x[j], r)\}$
+						\End
+		\li			$G[t] \gets G[t] + \{(x[j], q)\}$
+		\li			$G[q] \gets G[r]$
+		\li			$t \gets q$
+				\End
+		\li \Return $(Q, i, \{t\}, G)$
+	\end{codebox}
 	
 	显然上述建立自动机$M(A^*x)$的空间复杂度为$O(|x|)$，时间复杂度为$O(|x| \times |A|)$。
 	
@@ -1635,23 +1638,27 @@
 	
 	后缀自动机的在线构造包括SA-EXTEND过程和后续的预处理过程
 	（该过程将$M(\Suff(x_1 x_2 \cdots x_{\ell-1}))$建立的转换函数转化为当前串的自动机$M(\Suff(x_1 x_2 \cdots x_{\ell}))$）。
-	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
-		SuffixAutomata(x)
-			let \deta be the transition function of (Q, i, T, E)
-			(Q, E) \leftarrow ({\o}, {\o})
-			i \leftarrow State-Creation
-			Length[i] \leftarrow 0
-			F[i] \leftarrow NIL
-			last \leftarrow i
-			for \ell from 1 up to |x|
-				loop SA-Extend(\ell)
-			T \leftarrow {\o}
-			p \leftarrow last
-			loop T \leftarrow T + {p}
-				 p \leftarrow F[p]
-				while p \neq NIL
-			return ((Q, i, T, E), Length, F)
-	\end{lstlisting}
+	\begin{codebox}
+	\Procname{$\proc{SuffixAutomata}(x)$}
+		\zi let $\delta$ be the transition function of $(Q, i, T, E)$
+		\li $(Q, E) \gets ({\O}, {\O})$
+		\li $i \gets \proc{State-Creation}()$
+		\li $Length[i] \gets 0$
+		\li $F[i] \gets \const{nil}$
+		\li $last \gets i$
+		\li \For $\ell \gets 1$ \To \attrib{x}{length}
+		\li		\Do $\proc{SA-Extend}(\ell)$
+				\End
+		\li	$T \gets {\O}$
+		\li	$p \gets last$
+		\li \kw{Do}
+        \li     \Do
+				$T \gets T + \{p\}$
+		\li		$p \gets F[p]$
+                \End
+		\li	\kw{While} $p \neq \const{nil}$
+		\li \Return $((Q, i, T, E), Length, F)$
+	\end{codebox}
 	
 	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
 		SA-Extend(\ell)
@@ -1682,7 +1689,7 @@
 	
 	\begin{thm}
 	\label{thm:sam_build_right}
-		$\forall x$，函数SuffixAutomata都可以构建$x$的后缀自动机。
+		$\forall x$，函数\proc{SuffixAutomata}可以构建$x$的后缀自动机。
 	\end{thm}
 	\begin{proof}
 		后缀自动机构造过程的正确性使用数学归纳法对已经建立的$x$长度进行归纳推理。
