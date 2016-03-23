@@ -18,10 +18,10 @@
 \usepackage{float}
 \usepackage{color}
 \usepackage{multirow}
-\usepackage{color}
 \usepackage[all,pdf]{xy}
 \usepackage{verbatim}   %comment
 \usepackage{cases}
+\usepackage{clrscode3e}	% need clrscode3e package which is not included in CTex.
 
 % THEOREM Environments --------------------------------------------------------
 \newtheorem{thm}{Theorem}[subsection]
@@ -40,7 +40,7 @@
 \DeclareMathOperator{\IM}{Im}
 \DeclareMathOperator{\ess}{ess}
 \newcommand{\eps}{\varepsilon}
-\newcommand{\To}{\longrightarrow}
+%\newcommand{\To}{\longrightarrow}  conflict with \package{clrscode3e}p
 \newcommand{\h}{\mathcal{H}}
 \newcommand{\s}{\mathcal{S}}
 \newcommand{\A}{\mathcal{A}}
@@ -232,16 +232,18 @@
 			\right .
 		\]
 	\end{defn}
-	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
-		FailureFunction-Transition(p, a)
-			while p \neq NIL and \gamma(p,a) = NIL
-				loop p \leftarrow F[p]
-			if p \neq NIL
-				then p \leftarrow \gamma(p,a)
-				else p \leftarrow i
-			% In fact, when p = NIL, should return i instead.
-			return p	
-	\end{lstlisting}
+	\begin{codebox}
+	\Procname{$\proc{FailureFunction-Transition}(p, a)$}
+		\li	\While $p \neq \const{nil}$ and $\gamma(p,a) = \const{nil}$
+		\li	\Do
+				$p \gets F[p]$
+			\End
+		\li \If $p \neq \const{nil}$
+		\li		\Then $p \gets \gamma(p,a)$
+		\li		\Else $p \gets i$
+				\End
+		\li	\Return p
+	\end{codebox}
 	假设使用adjancy lists表示$\gamma$，则空间复杂度为$O(|Q| + |E'|)$。
 	这里$E' = \{(p,a,q) | (p,a,q) \in E \ and\ \gamma(p,a) is defined \}$.
 	时间复杂度为$O(|Q| \times log |A|)$。
@@ -250,7 +252,7 @@
 
 	这个模型其实没什么，就是在failure function的基础上使用了邻接矩阵。
 	$fail, |fail|=|Q|$还是原来的failure函数，$base, |base|=|Q|$表示状态$p$对应的出边对应的其实地址，
-	$check, |check|=|Q|\times|A|$表示对应结点的状态，$target, |target|=|Q|\times|A|$表示下一状态。
+	$check, |check|=|Q|\times|A|$表示对应结点的状态，$target, |target|=|Q|\times|A|$ 表示下一状态。
 	重写递推式
 	\[
 		\delta(p, a) =
@@ -304,39 +306,52 @@
 	因此，对于$\delta(p,\varepsilon) = q$，当搜素到$p$时，同时也要把$q$加入带搜索集合中。
 	因为，这个状态发生的可能。（DFA可以这个东西，但是会产生状态爆炸的问题。）
 	
-	使用RE自动机搜素主要包括\Emph{Closure}和\Emph{Transitions}两个过程。
-	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
-		Closure(E, S)
-			R \leftarrow S
-			\vartheta \leftarrow EmptyQueue
-			for each state p in S
-				loop Enqueue(\vartheta, p)
-			while not QueueIsEmpty(\vartheta)
-				loop p \leftarrow Dequeue(\vartheta)
-					for each state q such that(p, \varepsilon, q) is in E
-						loop if q is not in R
-							then R \leftarrow R + {q}
-								Enqueue(\vartheta, q)
-			return R
-	\end{lstlisting}
-	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
-		Transitions(E, S, a)
-			R \leftarrow \emptyset
-			for each state p in S
-				loop for each state q such that (p, a, q) is in E
-					loop R \leftarrow R + {q}
-			return R
-	\end{lstlisting}
+	使用RE自动机搜素主要包括\proc{Closure}和\proc{Transitions}两个过程。
+	\begin{codebox}
+	\Procname{$\proc{Closure}(E, S)$}
+		\li $R \gets S$
+		\li	$\vartheta \gets \const{EmptyQueue}$
+		\li	\For p \kw{in} S
+		\li		\Do $\func{Enqueue}(\vartheta, p)$
+				\End
+		\li \While not $\func{QueueIsEmpty}(\vartheta)$
+		\li		\Do
+					$p \gets \func{Dequeue}(\vartheta)$
+		\li			\For $(p,a,q)$ \kw{in} E
+		\li				\Do
+							\If q \kw{not in} R
+		\li						\Then $R \gets R + \{q\}$
+		\li							  $\func{Enqueue}(\vartheta, q)$
+								\End
+						\End
+				\End
+		\li \Return R
+	\end{codebox}
+	
+	\begin{codebox}
+	\Procname{$\proc{Transitions}(E, S, a)$}
+		\li $R \gets {\O}$
+		\li	\For p \kw{in} S
+		\li		\Do
+					\For $(p,a,q)$ \kw{in} E
+		\li				\Do
+							$R \gets R + \{q\}$
+						\End
+				\End
+		\li	\Return R
+	\end{codebox}
 	
 	这样一个自动机的基本功能是用来检测字符串$y$是否可以被正则表达式$x$所表示，这样一个过程称为\Emph{Tester}。
-	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
-		Tester(x, y)
-			Build RE (Q, i, {t}, E) of x
-			C \leftarrow Closure(E, {i})
-			for letter a from first to last letter of y
-				loop C \leftarrow Closure(E, Transition(E, C, a))
-			return t \in C
-	\end{lstlisting}
+	\begin{codebox}
+	\Procname{$\proc{Tester}(x, y)$}
+		\li	\proc{Build-RE} $(Q, i, \{t\}, E)$ of $x$
+		\li $C \gets \proc{Closure}(E, \{i\})$
+		\li	\For $j \gets 1$ \To $\attrib{y}{length}$
+		\li		\Do
+					$C \gets \proc{Closure}(E, \proc{Transition}(E, C, y[j]))$
+				\End
+		\li \Return $t \kw{in} C$
+	\end{codebox}
 	
 	\begin{prop}
 		给定一个正则表达还是$x$，测试单词$y$属于$Lang(x)$的时间复杂度为$O(|x||y|)$，空间复杂度为$O(|x|)$。
@@ -350,15 +365,17 @@
 	做法很简单，在每次Tester的循环中都将初始状态$i$加入$C$中，表示每次搜索可能都是从初始状态开始。
 	这样就得到了过程Matcher。
 	
-	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
-		Matcher(x, y)
-			Build RE (Q, i, {t}, E) of x
-			C \leftarrow Closure(E, {i})
-			occurrence if t \in C
-			for letter a from first to laster letter of y
-				loop C \leftarrow Closure(E, Transition(E,c,a))
-					occurrence if t \in C
-	\end{lstlisting}
+    \begin{codebox}
+    \Procname{$\proc{Matcher}(x,y)$}
+        \li	\proc{Build-RE} $(Q, i, \{t\}, E)$ of $x$
+        \li $C \gets \proc{Closure}(E, \{i\})$
+        \li \func{occurrence} \If t \kw{in} C
+        \li	\For $j \gets 1$ \To $\attrib{y}{length}$
+        \li     \Do
+                    $C \gets \proc{Closure}(E, \proc{Transition}(E, y[j], a))$
+        \li         \func{occurrence} \If t \kw{in} C
+                \End
+    \end{codebox}
 	
 \subsection{时间和空间的trade-off}
 	
@@ -458,7 +475,7 @@
 			$h_U(va) \in Pref(U), h_U \in \Suff(h_U(v)a)$，应用$h_U$的定义可知。
 			$|h_U(va)| \le |h_U(h_U(v)a)|$，因此$h_U(va)$必定是$h_U(h_U(v)a)$的后缀。
 			而$h_U(h_U(v)a) \in Pref(U), h_U(h_U(v)a) \in \Suff(va)$，再次应用$h_U$的定义可知。
-			$|h_U(va)| \ge |h_U(h_U(v)a)|$，因此，当且仅当$h_U(va) = h_U(h_U(v)a)$成立时，才满足条件。
+			$|h_U(va)| \ge |h_U(h_U(v)a)|$，因此，当且仅当$h_U(va) = h_U(h_U(v)a)$ 成立时，才满足条件。
 			% 条件三是不是和kmp的next数组的使用很像，这个定理还是挺重要的。
 			
 		\end{enumerate}
@@ -491,22 +508,29 @@
 	再回到$DFA$的定义$\Big( Pref(X), \varepsilon, Pref(X) \cap A^*X, \{(p,a,h_X(pa) | p \in Pref(X), a \in A\} \Big)$
 	其实就是$\Big( Pref(X), \varepsilon, X, f_X \cap \gamma_X \Big)$。
 	由于这里的所有状态都是一个前缀，因此使用$trie$(information retrieval)可以表示$X$的所有前缀。
-	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
-		Trie(X)
-			let \delta be the transition function of (Q, i, T, E)
-			(Q, T, E) \leftarrow  (\emptyset, \emptyset, \emptyset)
-			i \leftarrow State-Creation()
-			for word x from first to last word of X
-				loop t \leftarrow i
-					for letter a from first to last letter of x
-						loop q \leftarrow \delta(t, a)
-							if q = NIL
-								then q \leftarrow State-Creation()
-									 E \leftarrow E + {(t, a, q)}
-							t \leftarrow q
-					T \leftarrow T + {t}
-			return (Q, i, T, E)
-	\end{lstlisting}
+	
+    \begin{codebox}
+    \Procname{$\proc{Trie}(X)$}
+    \zi \Comment let $\delta$ be the transition function of $(Q, i, T, E)$
+    \li $(Q, T, E) \gets ({\O}, {\O}, {\O})$
+    \li $i \gets \proc{State-Creation}()$
+    \li	\For x \kw{in} word(X)
+    \li     \Do
+                $t \gets i$
+    \li         \For $j \gets 1$ \To $\attrib{x}{length}$
+    \li             \Do
+                        $q \gets \delta(t, x[j])$
+    \li                 \If $q \isequal \const{nil}$
+    \li                     \Then
+                                $q \gets \proc{State-Creation}()$
+    \li                         $E \gets E + \{(t, x[j], q)\}$
+                            \End
+    \li                 $t \gets q$
+                    \End
+    \li         $T \gets T + \{t\}$
+            \End
+    \li \Return $(Q, i, T, E)$
+    \end{codebox}
 	
 	\begin{lem}
 		不妨令$U \subseteq A^*$，$\forall (u,a) \in Pref(U) \times A$，如下等式成立：
@@ -528,28 +552,54 @@
 	% 下面这个伪代码有错误！！！！！！！
 	%
 	构建好$trie$可以得到线性时间的搜索匹配算法。
-	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
-		LinearDictionaryMatchingAutomata(X)
-			left \gamma be the transition of (Q, i, T, E')
-			left \delta be the transition of (Q, i, T, E)
-			(Q, i, T, E') \leftarrow Trie(X)
-			F[i] \leftarrow NIL
-			\vartheta \leftarrow EmtpyQueue
-			EnQueue(\vartheta, i)
-			while not QueueIsEmpty(\vartheta)
-				loop p \leftarrow DeQueue(\vartheta)
-					for each letter a such that \gamma(p, a) \neq NIL
-						loop q \leftarrow \gamma(p, a)
-							F[q] \leftarrow \delta(F[p], a)
-							% \delta \equiv FailureFunction-Transition
-							if F[q] is in T
-							% obviously, if q is in T, then append q into T, F[q] has checked already.
-								then T \leftarrow T + {q}
-							EnQueue(\vartheta, q)
-			return (Q, i, T, (\gamma, F))
-	\end{lstlisting}
+	% \begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
+		% LinearDictionaryMatchingAutomata(X)
+			% let \gamma be the transition of (Q, i, T, E')
+			% let \delta be the transition of (Q, i, T, E)
+			% (Q, i, T, E') \leftarrow Trie(X)
+			% F[i] \leftarrow NIL
+			% \vartheta \leftarrow EmtpyQueue
+			% EnQueue(\vartheta, i)
+			% while not QueueIsEmpty(\vartheta)
+				% loop p \leftarrow DeQueue(\vartheta)
+					% for each letter a such that \gamma(p, a) \neq NIL
+						% loop q \leftarrow \gamma(p, a)
+							% F[q] \leftarrow \delta(F[p], a)
+							% // \delta \equiv FailureFunction-Transition
+							% if F[q] is in T
+							% // obviously, if q is in T, then append q into T, F[q] has checked already.
+								% then T \leftarrow T + {q}
+							% EnQueue(\vartheta, q)
+			% return (Q, i, T, (\gamma, F))
+	% \end{lstlisting}
+    \begin{codebox}
+    \Procname{$LinearDictionaryMatchingAutomata$(X)}
+	\zi	\Comment let $\gamma$ be the transition of $(Q, i, T, E')$
+	\zi \Comment let $\delta$ be the transition of $(Q, i, T, E)$
+	\li $(Q, i, T, E') \gets \proc{Trie}(X)$
+	\li $F[i] \gets \const{nil}$
+	\li $\vartheta \gets \const{EmptyQueue}$
+	\li $\func{EnQueue}(\vartheta, i)$
+	\li \While \kw{not} $\func{QueueIsEmpty}(\vartheta)$
+	\li		\Do
+				$p \gets \func{DeQueue}(\vartheta)$
+	\li			\For a such that $\gamma \neq \const{nil}$
+	\li				\Do
+						$q \gets \gamma(p, a)$
+	\li					$F[q] \gets \delta(F[p], a)$
+	\li					\Comment $\delta \equiv \proc{FailureFunction-Transition}$
+	\li					\If F[q] \kw{in} T
+	\li					\Comment obviously, \If q \kw{in} T, then append q into T, F[q] has checked already.
+	\li						\Then $T \gets T + \{q\}$
+							\End
+	\li					$\proc{EnQueue}(\vartheta, q)$
+					\End
+			\End
+	\li \Return $(Q, i, T, (\gamma, F))$
+    \end{codebox}
+
 	\begin{lem}
-		LinearDictionaryMatchingAutomata表示基于$X$的dictionary-matching自动机$D(X)$的建立过程，
+		\proc{LinearDictionaryMatchingAutomata}表示基于$X$的dictionary-matching自动机$D(X)$ 的建立过程，
 		时间复杂度为$O(|X|\times|A|)$，空间复杂度为$O(|X|\times|A|)$。
 	\end{lem}
 	
@@ -584,6 +634,7 @@
 \subsection{线性dictionary-matching automata的搜索}
 
 	\begin{thm}
+	\label{thm:ac_automata_complex}
 		$X$表示有限单词的集合，$y$表示一个字符串，
 		$\ell$表示$\forall x \in X$的最大长度，$d$表示$trie$的最大出度，
 		使用基于$X$的$DFA$搜索$X$中的字符串在$y$中匹配的位置，
@@ -710,37 +761,41 @@
 	上式恰恰说明了如何使用增量法由自动机$(Pref(u), i, {u}, E_u)$得到新的自动机$(Pref(ua), i, {ua}, E_{ua})$。
 	即增加一个新的状态表示前缀$ua$，保留一部分转换函数的边并新增加一些边。显然，整个构建过程是在线进行的。
 	其实，这也是SAM使用增量构法建自动机的基本思路。基于邻接矩阵的自动机的构建过程的伪代码如下：
-	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
-		StringMatchingAutomata(x)
-			let \delta be the transition function of (Q, i, {\o}, E)
-			(Q, E) \leftarrrow ({\o}, {\o})
-			i \leftarrow State-Creation()
-			for each letter b in A
-				loop E \leftarrow E + {(i, b, i)}
-			t \leftarrow i
-			for letter a from first to last letter of x
-				loop r \leftarrow \delta(t, a)
-					q \leftarrow State-Creation()
-					E \leftarrow E - {(t, a, r)} + {(t, a, q)}
-					for each letter b in A
-						loop E \leftarrow E + {(q, b, \delta(r, b))}
-					t \leftarrow q
-			return (Q, i, \{t\}, E)
-	\end{lstlisting}
+	\begin{codebox}
+	\Procname{$\proc{StringMatchingAutomata}(x)$}
+	\zi \Comment $\delta$ be the transition function of $(Q, i, {\o}, E)$
+	\li	$(Q, E) \gets {{\O}, {\O}}$
+	\li $i \gets \proc{State-Creation}()$
+	\li \For b \kw{in} A
+	\li		\Do $E \gets E + \{(i, b, i)\}$
+			\End
+	\li $t \gets i$
+	\li \For $j \gets 1$ \To \attrib{x}{length}
+	\li		\Do
+				$r \gets \delta(t, x[j])$
+	\li			$q \gets \proc{State-Creation}()$
+	\li			$E \gets E - \{(t, x[j], r)\} + \{(t, x[j], q)\}$
+	\li			\For b \kw{in} A
+	\li				\Do $E \gets E + \{(q, b, \delta(r, b))\}$
+					\End
+	\li			$t \gets q$
+			\End
+	\li \Return $(Q, i, \{t\}, E)$
+	\end{codebox}
 	
 \subsection{线性string-matching automata}
 	
 	那么到底如实使用增量法建立一个基于邻接表并且时间和空间复杂度都是线性的自动机呢？
 	
 	这里有个概念，\Emph{关键边（significant edges）}。
-	若满足$\delta(p,a)=q, q \neq \varepsilon q \neq NIL$，我们称这样的边是关键边。
+	若满足$\delta(p,a)=q, q \neq \varepsilon \text{ and }q \neq \const{nil}$，我们称这样的边是关键边。
 	如果一条边是关键边，当$q=pa$时我们称这样的边为\Emph{前向边（forward）}，否则我们称为\Emph{后向边（backward）}。
 	
 	\begin{prop}
 		基于任意字符串$x$的string-matching自动机的关键便的上界为$2|x|$；
 		更确切的说，前向边的数量恰好为$|x|$，后向边的数量的上界为$O(|x|)$。
 		（当$x$的第一个字符仅仅出现在$x$的开始位置时，达到边界。）
-		% 这个边界后奇特？？？
+		% 这个边界很奇特？？？
 	\end{prop}
 	为了证明上述命题，提出如下引理：
 	\begin{lem}
@@ -981,7 +1036,7 @@
 	\begin{thm}
 		$\forall x \in A^+, |y| = n > 0$，考虑算法$\lambda \in L(x)$，
 		在比较模型中$\lambda$进行不超过$2n-1$次字符比较，
-		其中每个字符进行不超过$\min \{1+\left\lfloor \log_2|x| \right\rfloor, |A| \}$次比较。
+		其中每个字符进行不超过$\min \{1+\left\lfloor \log_2|x| \right\rfloor, |A| \}$ 次比较。
 	\end{thm}
 	\begin{proof}
 		每个字符进行不超过$\min \{1+\left\lfloor \log_2|x| \right\rfloor, |A| \}$次比较这是显然的，
@@ -1968,7 +2023,137 @@
 \subsection{作为字符串匹配自动机}
 \label{sub:as_strmatch_automata}
 	
+	基于字符串$x$的后缀自动机$M(\Suff(x))$可以用来解决字符串匹配问题，即定位字符串$x$在字符串$y$中的出现位置。
+	搜索过程类似于在线对$y$进行搜素。此外，$M(\Suff(x))$还需要failure function的支持，
+	而$suffix\ link$在这里等价于failure function。
+	
+\subsubsection{Ending factors.}
+\label{subsub:strmacth_end_factor}
+
+	EndingFactors过程计算在$y$的每个位置出现的$x$的最长子串，更确切地说是这个子串的长度。使用$\ell_k$表示
+	\[
+		\forall k \in [0, |y|], \ell_k = \max \{ |w| | w \in \Suff(y_1 y_2 \cdots y_k) \cap Fact(x) \}
+	\]
+	EndingFactors可以在线计算最长结尾子串的序列$(\ell_k)_{0 \le k \le |y|}$。
+	它以由$\{0, \cdots, |x|\}$的字符组成的字符串作为输出结果。
+	~\ref{sub:sam_property}引入的函数$length_x$用来对使用$suffix\ link$遍历后对当前长度进行恢复。
+	
+	EndingFactors函数的核心是使用$F$数组在转换过程中进行计算。
+	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
+		Ending-Factors((Q, i, T, E), Length, F, y)
+			let \delta be the transition function of (Q, i, T, E)
+			(\ell, p) \leftarrow (0, i)
+			L \leftarrow 0
+			for letter a from first to last letter of y
+				loop if \delta(p, a) \neq NIL
+					then (\ell, p) \leftarrow (\ell+1, \delta(p, a))
+					else loop p \leftarrow F[p]
+							while p \neq NIL and \delta(p, a) = NIL
+						 if p \neq NIL
+							then (\ell, p) \leftarrow (Length[p]+1, \delta(p, a))
+							else (\ell, p) \leftarrow (0, i)
+					 L \leftarrow L \cdot \ell
+			return L
+	\end{lstlisting}
+	
+	\begin{thm}
+		EndingFactors过程计算字符串$y$中的$x$的最长结尾子串的时间复杂度为$O(|y| \times \log |A|)$，空间复杂度为$O(|x|)$。
+		在$M(\Suff(x))$中，$y$至多执行$2|y|$次状态转换
+	\end{thm}
+	\begin{proof}
+		因为$f_x$函数实际上等价于failure function，过证明过程与定理~\ref{thm:ac_automata_complex}过程及其类似，此处略。
+	\end{proof}
+	
+\subsubsection{suffix links的优化.}	
+	
+	实际上我们大可以使用另外一种函数$\hat{f_x}$代替$f_x$函数，从而优化搜索的延迟。
+	引入后缀自动机$M(\Suff(x))$的状态$q$的Follow集合的定义：
+	\[
+		Follow_x(q) = \{ a | a \in A, \delta(q, a) \text{ is defined. } \}
+	\]
+	进而，可以递归定义$\hat{f_x}$：
+	\[
+		\hat{f_x}(q) =
+		\left\{
+			\begin{aligned}
+				&f_x(q),			&\text{ if } Follow_x(f_x(q)) \nsubseteq Follow_x(q),	\\
+				&\hat{f_x}(f_x(q)),	&\text{ otherwise }.
+			\end{aligned}
+		\right .
+	\]
+	注意到这里的$\hat{f_x}$可能会未定义。
+	
+	Follow集合的性质可以简化$\hat{f_x}$的计算。
+	在后缀自动机中，总是有$Follow_x(q) \subset Follow(f_x(q))$。
+	这是因为$f_x(q)$对应于$u$的最长后缀$v$，而$u$满足$\delta(i, u) = q$。
+	因此，$u$的Follow集合一定是$v$的Follow集合的子集。
+	使用这个性质，可以重新定义$\hat{f_x}$：
+	\[
+		\hat{f_x}(q) =
+		\left\{
+			\begin{aligned}
+				&f_x(q),		&\text{ if } deg_q \neq deg_{f_x(q)},	\\
+				&\hat{f_x}(f_x(q)),	&\text{ otherwise }.
+			\end{aligned}
+		\right .
+	\]
+	因此，$\hat{f_x}$仅仅需要考虑状态的出度，故可以再线性时间内预处理。
+	
+	\begin{prop}
+		使用$\hat{F}$数组表示$\hat{f_x}$函数的EndingFactors过程的$delay$复杂度是$O(|A|)$。
+	\end{prop}
+	\begin{proof}
+		由于$Follow_x(q) \subset Follow_x(\hat{f_x}) \subseteq |A|$，因此$delay$复杂度为$O(|A|)$。
+	\end{proof}
+	
+\subsubsection{Searching for rotations.}
+	
+	$(\ell_k)_{0 \le k \le |y|}$的相关内容使用于如下使用场景：
+	搜索字符串$y$中的$x$，计算$(x,y)$的最长公共子串，或者计算连个字符串间的$subword$距离：
+	\[
+		d(x, y) = |x| + |y| - 2 \times lcf(x, y).
+	\]
+	$x$在$y$中的位置依赖于如下简单观察：
+	\[
+		\ell_k = |x| \Longleftrightarrow x \text{ occurs at position } k - |x| \text{ in } y.
+	\]
+	$(\ell_k)$同样适用于解决字符串的共轭（rotation）问题：
+	当字符串$v,w \in A^*, u = vw$时，字符串$u$的共轭是$wv$。
+
+	\begin{prob}
+		\Emph{(Searching for rotations.)}
+		给定字符串$x, x \in A^*$，找到字符串$y$中$x$共轭的所有位置。
+	\end{prob}
+	
+	第一种解法是构建基于$x$所有共轭的$trie$树，然后进行搜索。然后，这样一个$trie$的空间复杂度是$O(|x|)$的。
+	
+	基于后缀自动机的解法可以将空间复杂度优化为线性。
+	
+	\begin{prop}
+		在执行时间复杂度为$O(|x| \times \log |A|)$的预处理后，
+		$y$中所有$x$共轭的位置可以再时间复杂度$O(|y| \times \log |A|)$及空间复杂度$O(|x|)$内求出。
+	\end{prop}
+	\begin{proof}
+		显然字符串$x \cdot x$中任何长度为$|x|$的子串都是$x$的共轭。
+		同时，长度大于$|x|$的子串一定包含长度为$x$的共轭作为后缀。
+		
+		解决方案变更为构建后缀自动机$M(\Suff(xx))$，并且跑一遍修改后的EndingFactors：
+		当$\ell_k \ge |x|$时，保留$k - |x|$。
+		
+		事实上，当且仅当$x \cdot x$的最长子串在$k$位置结尾时长度不小于$x$。
+		因此，$w$的长为$x$的后缀才是$x$的共轭。
+		
+		显然，此时的时间复杂度不变。
+	\end{proof}
+	
 \subsection{Factor Automata}	
 \label{sub:factor_automata}
+	
+\subsubsection{Relation to suffix automata.}
+
+\subsubsection{Size of factor automata.}
+
+\subsubsection{On-line construction.}
+	
 	
 \end{document}
