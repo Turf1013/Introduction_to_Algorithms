@@ -1659,33 +1659,40 @@
 		\li	\kw{While} $p \neq \const{nil}$
 		\li \Return $((Q, i, T, E), Length, F)$
 	\end{codebox}
-	
-	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
-		SA-Extend(\ell)
-		a \leftarrow x_{\ell}
-		newlast \leftarrow State-Creation
-		Length[newlast] \leftarrow Length[last] + 1
-		p \leftarrow last
-		loop E \leftarrow E + {(p, a, newlast)}
-			 p \leftarrow F[p]
-			while p \neq NIL and \delta(p,a)=NIL
-		if p = NIL
-			then F[newlast] \left i
-			else q \leftarrow \delta(p, a)
-				 if Length[q] = Length[p] + 1
-					then F[newlast] \leftarrow q
-					else q' \leftarrow State-Creation
-						 for each letter b such that \delta(q, b) \neq NIL
-							loop E \left E + {(q', b, \delta(q, b))}
-						 Length[q'] \leftarrow Length[p] + 1
-						 F[newlast] \leftarrow q'
-						 F[q'] \leftarrow F[q]
-						 F[q] \leftarroww q'
-						 loop E \leftarrow E - {(p, a, q)} + {(p, a, q')}
-							  p \leftarrow F[p]
-							while p \neq NIL and \delta(p, a) = q
-		last \leftarrow newlast
-	\end{lstlisting}
+
+	\begin{codebox}
+	\Procname{$\proc{SA-Extemd}(\ell)$}
+		\li $a \gets x_{\ell}$
+		\li	$\id{newlast} \gets \proc{State-Creation}()$
+		\li	$Length[\id{newlast}] \gets Length[\id{last}] + 1$
+		\li $p \gets \id{last}$
+		\li \kw{Do}
+		\li		\Do
+				$E \gets E + \{(p, a, \id{newlast})\}$
+		\li		$p \gets F[p]$
+				\End
+		\li	\While $p \neq \const{nil}$ and $\delta(p,a) \isequal \const{nil}$
+		\li \If $p \isequal \const{nil}$
+		\li		\Then $F[\id{newlast}] \gets i$
+		\li	\Else
+				$q' \gets \proc{State-Creation()}$
+		\li		\For \id{b} such that $\delta(q, b) \neq \const{nil}$
+		\li		\Do 
+					$E \gets E + \{(q', b, \delta(q, b))\}$
+				\End
+		\li		$Length[q'] \gets Length[p] + 1$
+		\li		$F[\id{newlast}] \gets q'$
+		\li		$F[q'] \gets F[q]$
+		\li		$F[q] \gets q'$
+		\li		\kw{Do}
+		\li			\Do
+						$E \gets E - \{(p, a, q)\} + \{(p, a, q')\}$
+		\li				$p \gets F[p]$
+					\End
+		\li		\While $p \neq \const{nil}$ and $\delta(p, a) \isequal q$
+				\End
+		\li $\id{last} \gets \id{newlast}$
+	\end{codebox}
 	
 	\begin{thm}
 	\label{thm:sam_build_right}
@@ -2037,34 +2044,43 @@
 \subsubsection{Ending factors.}
 \label{subsub:strmacth_end_factor}
 
-	EndingFactors过程计算在$y$的每个位置出现的$x$的最长子串，更确切地说是这个子串的长度。使用$\ell_k$表示
+	\proc{Ending-Factors}过程计算在$y$的每个位置出现的$x$的最长子串，更确切地说是这个子串的长度。使用$\ell_k$表示
 	\[
 		\forall k \in [0, |y|], \ell_k = \max \{ |w| | w \in \Suff(y_1 y_2 \cdots y_k) \cap Fact(x) \}
 	\]
-	EndingFactors可以在线计算最长结尾子串的序列$(\ell_k)_{0 \le k \le |y|}$。
+	\proc{Ending-Factors}可以在线计算最长结尾子串的序列$(\ell_k)_{0 \le k \le |y|}$。
 	它以由$\{0, \cdots, |x|\}$的字符组成的字符串作为输出结果。
 	~\ref{sub:sam_property}引入的函数$length_x$用来对使用$suffix\ link$遍历后对当前长度进行恢复。
 	
-	EndingFactors函数的核心是使用$F$数组在转换过程中进行计算。
-	\begin{lstlisting}[frame=shadowbox,framexleftmargin=5mm,rulesepcolor=\color{gray},numbers=none]
-		Ending-Factors((Q, i, T, E), Length, F, y)
-			let \delta be the transition function of (Q, i, T, E)
-			(\ell, p) \leftarrow (0, i)
-			L \leftarrow 0
-			for letter a from first to last letter of y
-				loop if \delta(p, a) \neq NIL
-					then (\ell, p) \leftarrow (\ell+1, \delta(p, a))
-					else loop p \leftarrow F[p]
-							while p \neq NIL and \delta(p, a) = NIL
-						 if p \neq NIL
-							then (\ell, p) \leftarrow (Length[p]+1, \delta(p, a))
-							else (\ell, p) \leftarrow (0, i)
-					 L \leftarrow L \cdot \ell
-			return L
-	\end{lstlisting}
+	\proc{Ending-Factors}函数的核心是使用$F$数组在转换过程中进行计算。
+	\begin{codebox}
+	\Procname{$\proc{Ending-Factors}((Q,i,T,E), Length, F, y)$}
+		\zi \Comment let $\delta$ be the transition function of $(Q, i, T, E)$
+		\li	$(\ell, p) \gets (0, i)$
+		\li	$L \gets 0$
+		\li	\For $j \gets 1$ \To \attrib{y}{length}
+		\li		\Do
+					$a \gets y[j]$
+		\li			\If $\delta(p,a) \neq \const{nil}$
+		\li				\Then $(\ell, p) \gets (\ell+1, \delta(p,a))$
+		\li			\Else 
+						\kw{Do}
+		\li					\Do $p \gets F[p]$
+							\End
+		\li				\While $p \neq \const{nil}$ and $\delta(p,a) \isequal \const{nil}$
+		\li				\If $p \neq \const{nil}$
+		\li					\Then $(\ell, p) \gets (Length[p]+1, \delta(p,a))$
+		\li				\Else
+							$(\ell, p) \gets (0, i)$
+							\End
+						\End
+		\li			$L \gets L \cdot \ell$			
+				\End	
+		\li	\Return L
+	\end{codebox}
 	
 	\begin{thm}
-		EndingFactors过程计算字符串$y$中的$x$的最长结尾子串的时间复杂度为$O(|y| \times \log |A|)$，空间复杂度为$O(|x|)$。
+		\proc{Ending-Factors}过程计算字符串$y$中的$x$的最长结尾子串的时间复杂度为$O(|y| \times \log |A|)$，空间复杂度为$O(|x|)$。
 		在$M(\Suff(x))$中，$y$至多执行$2|y|$次状态转换
 	\end{thm}
 	\begin{proof}
