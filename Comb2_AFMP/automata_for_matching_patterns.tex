@@ -107,32 +107,33 @@
 
 \section{前言}
 
-	字符串匹配的相关算法旨在解决在一个较大规模的文本中查询模式串的匹配情况。
-	这里的模式串可能是一系列单词，也可能是一个强大的正则表达式。有许许多多
-	的算法可以解决字符串匹配的相关问题，而这些算法往往包括\Emph{预处理}以及\Emph{搜索}
-	两个阶段。其中一部分算法在搜索阶段往往采用\Emph{自动机}这一载体，自动机的优势
+	字符串匹配的相关算法旨在解决在一个较大规模的文本中查询模式串匹配情况的相关问题。
+	这里的模式串可能是一系列单词，也可能是一个强大的正则表达式。解决这类问题存在很多算法，
+	而这些算法往往包括\Emph{预处理}以及\Emph{搜索}两个阶段。
+	其中一部分算法在搜索阶段往往采用\Emph{自动机}这一载体，自动机的优势
 	主要在于通过状态的跃迁加快查找的速度，同时支持在线查找，可以处理大文件。
 	
-	文中涉及的算法主要使用\Emph{最小化的确定性有穷自动机}，用来处理\Emph{re-matching}、
-    \Emph{dictinoary-matching}以及\Emph{index-matching}等问题。
+	本文涉及的算法主要使用\Emph{最小化的确定性有穷自动机}，用来处理\Emph{re-matching}、
+    \Emph{dictionary-matching}以及\Emph{index-matching}等问题。
 
 \section{符号说明}
 	
-	简单规定一下使用的符号说明，后面的自动机算法都尽量以形式化的方法说明。
+	简单对使用的符号进行说明，后面的自动机算法都尽量采用形式化的方式描述。
 	
 \subsection{Alphabet and words}
 	
-	\noindent
-    $A$表示一个字符集合，$a$表示$A$的一个元素。				\\
-	$u$表示一个单词，$|u|$表示长度，$u_j$表示第$j$个字符。	\\
+	% \noindent
+    $A$表示一个字符集合，$a$表示$A$中的一个字符元素。				\\
+	$u$表示一个单词，$|u|$表示长度，$u_j$和$u[j]$均表示$u$中的第$j$个字符。	\\
 	$u \cdot v$或$uv$表示单词$u$连接单词$v$，$u^0 = \varepsilon$。\\
-	当$u,v,w$满足$u = wv$时，有$uw^{-1} = v, vu^{-1} = w$	\\
-	当$\exists u^0, u^1, u=u^0vu^1$成立时，称$v$是$u$的factor。
-	此时若$v \neq u$并且$u^0=\varepsilon or u^1=\varepsilon$，我们称$v$是$u$的proper factor。
+	当$u,v,w$满足$u = wv$时，有$uv^{-1} = w, w^{-1}u = v$	\\
+	当$\exists u_0, u_1, u=u_0vu_1$成立时，称$v$是$u$的\Emph{factor}。
+	此时若$v \neq u$并且$u_0=\varepsilon \text{ or } u_1=\varepsilon$，
+	我们称$v$是$u$的\Emph{proper factor}。
 	
 \subsection{Languages}
 	
-	\noindent
+	% \noindent
 	$U$表示一个语言集合，$U \subseteq A^*$.	\\
 	$pref(U), fact(U), suff(U)$分别表示语言$U$的某个前缀、子串、后缀。	\\
 	$Pref(U), Fact(U), \Suff(U)$分别表示语言$U$的所有前缀、子串、后缀的集合。	\\
@@ -146,7 +147,7 @@
 	
 	$\equiv_W$这个符号还是挺重要的，需要搞清楚定义，后面后缀自动机通篇都在使用同余关系
 	（同余关系与商代数是离散数学的知识，没印象的可以恶补一下）。	\\
-	举个例子，$W = {abcbc}$，那么字符串$abc$的右端上下文就是$\{ \varepsilon, b, bc \}$
+	举个例子，$W = Pref(abcbc)$，那么字符串$abc$的右端上下文就是$\{ \varepsilon, b, bc \}$
 	
 	
 \subsection{Regular expressions}
@@ -165,13 +166,13 @@
 		\delta(p, u) =
 		\left\{
 		\begin{aligned}
-			&p,		  &if\ u=\varepsilon,	\\
-			&\delta(\delta(p, a), v), &if\ u=av,	\\
-			&undefined,  &otherwise.
+			&p,		  &\text{ if } u=\varepsilon,	\\
+			&\delta(\delta(p, a), v), &\text{ if } u=av,	\\
+			&undefined,  &&\text{ if }.
 		\end{aligned}
 		\right .
 	\]
-	其实这个递推式就是描述了一个在自动机上搜索$u$的过程。
+	其实这个递推式描述了在自动机FA上搜索$u$的过程。
 	
 \section{DFA的抽象数据结构}
 
@@ -179,14 +180,14 @@
 	下面列举了主要的五种方法：
 	transition matrix, adjacency lists, transition list, failure function, table-compression。
 	
-	我们将不同方法查询$\delta(p,a)$的时间花费称为$delay$, $delay$表示在查询下一个字符前花费在查询$a$的时间。
-	一般来说，允许状态分支的数据结构的$delay$为常数，如transition matrix；而基于比较的数据结构的查询时间为
-	$O(log |A|)$。
+	我们将使用不同方法查询$\delta(p,a)$的时间花费称为$delay$, $delay$表示在查询下一个字符$a$产生的状态转移所花费的时间。
+	一般来说，允许使用索引表示状态转移的数据结构的$delay$为常数，如transition matrix；而基于比较的数据结构的查询时间为
+	$O(\log |A|)$。
 	
 \subsection{Transition matrix}
 
 	转移矩阵式最简单的DFA的实现方式，这也不难想象。
-	还是讲DFA想象成一个directed graph，这其实就是个邻接矩阵。
+	还是将DFA想象成一个DAG，这其实就是个邻接矩阵。
 	显然它的空间复杂度为$O(|Q| \times |A|)$，延迟为$O(1)$。
 	它的缺陷和优势与邻接矩阵几乎相同。
 	
@@ -194,7 +195,9 @@
 	
 	这个邻接表其实也和普通Graph里的邻接表是一致的。
 	因此，它的空间复杂度为$O(|Q| + |E|)$，延迟为$O(log \min(|Q|, |A|))$。
-	其实这里一般携程$O(log |A|)$就好了，当$|Q|<|A|$时，导致每个结点的出度至多为$|Q|$。
+	其实这里一般写成$O(\log |A|)$就好了。
+	当$|Q| > |A|$时，每个结点的出度至多为$|A|$。
+	而当$|Q| < |A|$时，每个结点的出度至多为$|Q|$。
 	因此，综合起来就是$O(log \min(|Q|, |A|))$。
 	
 \subsection{Transition list}
@@ -207,7 +210,7 @@
 \subsection{Failure function}
 \label{sub:failure_function}
 
-	\Emph{Failure function}挺重要的，也挺有效的，后面的几种自动机模型都一定程度上使用了failure function。
+	\Emph{Failure function}最为重要，十分高效。后面的几种自动机模型都一定程度上使用了failure function。
 	其实FA包括DFA, NFA, $\varepsilon$-NFA，对于NFA而言，可能存在$\delta(p,a)=q_0, \delta(p,a)=q_1$。
 	然而DFA，对于给定的输入字符$a$以及当前状态$p$，仅存在唯一的$q, \delta(p,a)=q$。
 	它的空间复杂度和时间复杂度都是线性的。	\\
@@ -217,6 +220,7 @@
 	使用确定化将NFA转化为DFA时，DFA的结点可能代表了NFA的几个状态集合，因为$\delta$函数指向的新的状态可能
 	也是原始状态的集合。若还使用上述的方法就会造成空间爆炸。因此，这里使用fail函数将相关的状态关联起来，
 	不断的递归进行检索，可以一定程度上降低空间复杂度。
+	更为重要的是，使用均摊进行分析可以发现时间复杂度不会因此而提高。
 	
 	\begin{defn}
 		$\gamma$表示函数$Q \times A \rightarrow Q$, $f$表示函数$Q \rightarrow Q$。
@@ -225,9 +229,9 @@
 			\delta(p,a) =
 			\left\{
 			\begin{aligned}
-				&\gamma(p, a), 		&if\ \gamma(p, a) \neq Null,	              \\
-				&\delta(f(p), a), 	&if\ \gamma(p, a) = \text{Null and } f(p) \neq Null,	\\
-				&i,					&otherwise.
+				&\gamma(p, a), 		&\text{ if } \gamma(p, a) \neq \const{nil},	              \\
+				&\delta(f(p), a), 	&\text{ if } \gamma(p, a) = \const{nil} \text{ and } f(p) \neq \const{nil},	\\
+				&\id{i},			&\text{ otherwise }.
 			\end{aligned}
 			\right .
 		\]
@@ -245,8 +249,8 @@
 		\li	\Return p
 	\end{codebox}
 	假设使用adjancy lists表示$\gamma$，则空间复杂度为$O(|Q| + |E'|)$。
-	这里$E' = \{(p,a,q) | (p,a,q) \in E \ and\ \gamma(p,a) is defined \}$.
-	时间复杂度为$O(|Q| \times log |A|)$。
+	这里$E' = \{(p,a,q) | (p,a,q) \in E \text{ and } \gamma(p,a) \text{ is defined } \}$.
+	时间复杂度为$O(|Q| \times \log |A|)$。
 	
 \subsection{Table-compression}
 
@@ -258,8 +262,8 @@
 		\delta(p, a) =
 		\left\{
 		\begin{aligned}
-			&target[base[p]+a], 	&if\ check[base[p]+a] = p		\\
-			&\delta(fail(p), a),	&if\ check[base[p]+a] \neq p
+			&target[base[p]+a], 	&\text{ if } check[base[p]+a] = p		\\
+			&\delta(fail(p), a),	&\text{ if } check[base[p]+a] \neq p
 		\end{aligned}
 		\right .
 	\]
@@ -278,33 +282,34 @@
 	查找所有可能的$y$的前缀，满足$Pref(y) \in A^*Lang(x)$。
 	构建这个自动机的时间和空间均是$O(|x|)$，匹配$y$的时间是$O(|x||y|)$，
 	识别$y$的每个字符的时间是$O(|x|)$。
+	% 注意这个复杂度其实不小
 	
 \subsection{RE自动机}
 
-	\begin{thm} $x$表示一个正则表达式，一定存在一个可以识别$x$并满足如下条件的$\varepsilon-NFA$：
+	\begin{thm} 令$x$表示一个正则表达式，一定存在一个可以识别$x$并满足如下条件的$\varepsilon$-NFA：
 		\begin{enumerate}[(1)]
 		
 			\item 状态总数上界为$2|x|$；
 			
 			\item 标号为$a$的边的上界为$|x|$，标号为$\varepsilon$的边的上界为$4|x|$；
 			
-			\item 每个状态的入度和出度的总和不超过2，并且当且仅当标号为$\varepsilon$时总和为2。
+			\item 每个状态的入度和出度的总和不超过$2$，并当且仅当标号为$\varepsilon$时总和为$2$。
 			
 		\end{enumerate}
 	\end{thm}
 	
-	这个定理还是比较重要的，这个为RE自动机算法的空间复杂度$O(|x|)$和时间复杂度$O(|x||y|)$奠定了基调。
+	这个定理还是比较重要的，为RE自动机算法的空间复杂度$O(|x|)$和时间复杂度$O(|x||y|)$奠定了基调。
 	这个定理也比较好证明，基本思路是对两个表达式$x,y$进行数学归纳。证明$x+y, x \cdot y, x^*$也满足上述定理。
 	
 	\begin{thm}
-		$\delta(x)$表示由正则表达式$x$构建的$\varepsilon-NFA$，空间和时间复杂度均满足$O(|x|)$。
+		$\delta(x)$表示由正则表达式$x$构建的$\varepsilon$-NFA，空间和时间复杂度均满足$O(|x|)$。
 	\end{thm}
 	
 \subsection{使用RE自动机搜索}
 
-	这里面有个稍微难理解的东西$\varepsilon 闭包$。因为$\varepsilon-NFA$中的状态转移可能由$\varepsilon$引发，
+	这里面有个稍微难理解的东西$\varepsilon$-闭包。因为$\varepsilon$-NFA中的状态转移可能由$\varepsilon$引发，
 	因此，对于$\delta(p,\varepsilon) = q$，当搜素到$p$时，同时也要把$q$加入带搜索集合中。
-	因为，这个状态发生的可能。（DFA可以这个东西，但是会产生状态爆炸的问题。）
+	因为，这个状态有发生的可能。（DFA可以解决这个问题，但是会带来新的问题——即状态爆炸。）
 	
 	使用RE自动机搜素主要包括\proc{Closure}和\proc{Transitions}两个过程。
 	\begin{codebox}
@@ -312,16 +317,16 @@
 		\li $R \gets S$
 		\li	$\vartheta \gets \const{EmptyQueue}$
 		\li	\For p \kw{in} S
-		\li		\Do $\func{Enqueue}(\vartheta, p)$
+		\li		\Do $\func{EnQueue}(\vartheta, p)$
 				\End
 		\li \While not $\func{QueueIsEmpty}(\vartheta)$
 		\li		\Do
 					$p \gets \func{Dequeue}(\vartheta)$
-		\li			\For $(p,a,q)$ \kw{in} E
+		\li			\For $(p,\varepsilon,q)$ \kw{in} E
 		\li				\Do
-							\If q \kw{not in} R
+							\If q not \kw{in} R
 		\li						\Then $R \gets R + \{q\}$
-		\li							  $\func{Enqueue}(\vartheta, q)$
+		\li							  $\func{EnQueue}(\vartheta, q)$
 								\End
 						\End
 				\End
@@ -341,7 +346,7 @@
 		\li	\Return R
 	\end{codebox}
 	
-	这样一个自动机的基本功能是用来检测字符串$y$是否可以被正则表达式$x$所表示，这样一个过程称为\Emph{Tester}。
+	这样一个自动机的基本功能是用来检测字符串$y$是否可以被正则表达式$x$所表示，这样一个过程称为\proc{Tester}。
 	\begin{codebox}
 	\Procname{$\proc{Tester}(x, y)$}
 		\li	\proc{Build-RE} $(Q, i, \{t\}, E)$ of $x$
@@ -350,7 +355,7 @@
 		\li		\Do
 					$C \gets \proc{Closure}(E, \proc{Transition}(E, C, y[j]))$
 				\End
-		\li \Return $t \kw{in} C$
+		\li \Return t \kw{in} C
 	\end{codebox}
 	
 	\begin{prop}
@@ -358,12 +363,13 @@
 	\end{prop}
 	
 	\begin{proof}
-		其实只能说Transitions和Closure可以在$O(|Q|)=O(|x|)$中实现，这样Tester的复杂度就是$O(|y||x|)$。
+		其实只能说\proc{Transitions}和\proc{Closure}可以在$O(|Q|)=O(|x|)$中实现，这样\proc{Tester}的复杂度就是$O(|y||x|)$。
 	\end{proof}
 	
-	Tester只能做判定，还是回到最初的问题，识别所有可以匹配$x$的$fact(y)$，将这样的$fact(y)$在y中的右边界的位置称为$end-point$。
-	做法很简单，在每次Tester的循环中都将初始状态$i$加入$C$中，表示每次搜索可能都是从初始状态开始。
-	这样就得到了过程Matcher。
+	\proc{Tester}只能做判定$y$是否匹配$x$，故还得回到最初的问题，识别所有可以匹配$x$的$fact(y)$。
+	将这样的$fact(y)$在y中的右边界的位置称为$end-point$。
+	做法很简单，在每次\proc{Tester}的循环中都将初始状态$\id{i}$加入$C$中，表示每次搜索可能都是从初始状态开始。
+	这样就得到了过程\proc{Matcher}。
 	
     \begin{codebox}
     \Procname{$\proc{Matcher}(x,y)$}
@@ -372,17 +378,17 @@
         \li \func{occurrence} \If t \kw{in} C
         \li	\For $j \gets 1$ \To $\attrib{y}{length}$
         \li     \Do
-                    $C \gets \proc{Closure}(E, \proc{Transition}(E, y[j], a))$
+                    $C \gets \proc{Closure}(E, \proc{Transition}(E, C, y[j]) + \{ \id{i} \})$
         \li         \func{occurrence} \If t \kw{in} C
                 \End
     \end{codebox}
 	
 \subsection{时间和空间的trade-off}
 	
-	上述方法是使用了$\varepsilon-NFA$这种自动机模型，其实也可以使用$DFA$。
+	上述方法使用了$\varepsilon$-NFA这种自动机模型，其实也可以使用$DFA$。
 	但是在对状态进行确定化时，往往会产生空间爆炸。
 	如$x = a(a+b)^{m-1}$，识别$A^*Long(x)$的$DFA$需要$2^m$个状态。
-	因为，它需要记录$m$个后缀字符。在构建$DFA$时往往采用延迟构建技巧。
+	因为它需要记录$m$个后缀字符。因此，在构建$DFA$时往往采用延迟构建这种技巧。
 	
 	% Lazy Construction这东西在vEB里面就见到了，在那里面还比较好理解
 	% 但在DFA的建立里面就理解乏力了？莫非等价于failure function。
