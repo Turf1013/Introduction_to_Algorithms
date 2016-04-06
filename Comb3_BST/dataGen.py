@@ -29,36 +29,18 @@ def GenData(fileName):
 					fout.write("%s %d\n" % (opL[idx], x))
 				else:
 					fout.write("%s\n" % (opL[idx]))
-					
-				
+		
 		
 def MovData(srcFileName, desFileName):
 	with open(srcFileName, "r") as fin:
 		lines = fin.readlines()
 	with open(desFileName, "w") as fout:
 		fout.write("".join(lines))
-
 		
-def CompData():
-	print "comp"
-	srcFileName = "F:\Qt_prj\hdoj\data.out"
-	desFileName = "F:\workspace\cpp_hdoj\data.out"
-	srcLines = []
-	desLines = []
-	with open(srcFileName, "r") as fin:
-		srcLines = fin.readlines()
-	with open(desFileName, "r") as fin:
-		desLines = fin.readlines()
-	n = min(len(srcLines), len(desLines))-1
-	for i in xrange(n):
-		ans2 = int(desLines[i])
-		ans1 = int(srcLines[i])
-		if ans1 > ans2:
-			print "%d: wrong" % i
-
 			
 if __name__ == "__main__":
 	srcFileName = "F:\Qt_prj\hdoj\data.in"
 	desFileName = "F:\workspace\cpp_hdoj\data.in"
 	GenData(srcFileName)
 	MovData(srcFileName, desFileName)
+	
