@@ -26,3 +26,6 @@
 *.exe
 *.out
 *.app
+
+# raw data
+*.txt
