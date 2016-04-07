@@ -166,17 +166,21 @@ void simple_splay(Node* &x) {
 Node *down_top_access(Node* &t, int v) {
 	if (t == NULL)	return NULL;
 
-	Node *ret = NULL, *p = t, *last;
+	Node *ret = NULL, *x = t, *last = NULL;
 
-	while (p) {
-		int d = p->cmp(v);
+	while (x) {
+		int d = x->cmp(v);
 		if (d == -1) {
-			ret = last = p;
+			ret = last = x;
 			break;
 		}
-		last = p;
-		p = p->ch[d];
+		last = x;
+		x = x->ch[d];
 	}
+	
+	#ifdef DEBUG
+	assert(last != NULL);
+	#endif
 
 	// splay the last nonnull node
 	splay(last);
@@ -405,11 +409,11 @@ static void link_right(Node *&t, Node* &r) {
 	r = t;
 	t = left(t);
 	// may no need to maintain this pointer	???
-	left(r) = NULL
+	left(r) = NULL;
 	p(t) = NULL;
 }
 
-static void assemble(Node* &t, Node* &l, Node* &r, Node *ll, Node *rr) {
+static void assemble(Node* &t, Node* &l, Node* &r, Node *lt, Node *rt) {
 	#ifdef DEBUG
 	assert(t != NULL);
 	#endif
@@ -430,21 +434,104 @@ static void assemble(Node* &t, Node* &l, Node* &r, Node *ll, Node *rr) {
 		}
 	}
 	
-	left(t) = ll;
-	right(t) = rr;
+	left(t) = lt;
+	right(t) = rt;
 	p(t) = NULL;	// maintain father link
-	if (ll != NULL)	p(ll) = t;
-	if (rr != NULL) p(rr) = t;
+	if (lt != NULL)	p(lt) = t;
+	if (rt != NULL) p(rt) = t;
 }
 
-void hard_top_down_access(Node* &t, int v) {
-	if (t == NULL)	return ;
+Node *hard_top_down_access(Node* &t, int v) {
+	if (t == NULL)	return NULL;
 	
+	Node *lt, *rt, *l, *r;
+	Node *ret, *last;
+	
+	ret = last = lt = rt = l = r = NULL;
+	while (t != NULL) {
+		int d = t->cmp(v);
+		if (d==-1 || t->ch[d]==NULL) {
+			if (d == -1)	ret = t;
+			last = t;
+			break;
+		}
+		
+		int d2 = t->ch[d]->cmp(v);
+		if (d == 0) {
+			if (d2 == -1) {
+				last = t;
+				link_right(t, r);
+			} else if (d2 == 0) {
+				rotate_right(t);
+				last = t;
+				link_right(t, r);
+			} else {
+				link_right(t, r);
+				last = t;
+				link_left(t, l);
+			}
+		} else {
+			if (d2 == -1) {
+				last = t;
+				link_left(t, l);
+			} else if (d2 == 1) {
+				rotate_left(t);
+				last = t;
+				link_left(t, l);
+			} else {
+				link_left(t, l);
+				last = t;
+				link_right(t, r);
+			}
+		}
+		
+		if (lt==NULL && l!=NULL)	lt = l;
+		if (rt==NULL && r!=NULL)	rt = r;
+	}
+	
+	assemble(last, l, r, lt, rt);
+	t = last;
+	
+	return ret;
 }
 
-void simple_top_down_access(Node* &t, int v) {
-	if (t == NULL)	return ;
+Node *simple_top_down_access(Node* &t, int v) {
+	if (t == NULL)	return NULL;
+	Node *lt, *rt, *l, *r;
+	Node *ret, *last;
 	
+	ret = last = lt = rt = l = r = NULL;
+	while (t != NULL) {
+		int d = t->cmp(v);
+		if (d==-1 || t->ch[d]==NULL) {
+			if (d == -1)	ret = t;
+			last = t;
+			break;
+		}
+		
+		int d2 = t->ch[d]->cmp(v);
+		if (d == 0) {
+			if (d2 == 0) {
+				rotate_right(t);
+			}
+			last = t;
+			link_right(t, r);
+		} else {
+			if (d2 == 1) {
+				rotate_left(t);
+			}
+			last = t;
+			link_left(t, l);
+		}
+		
+		if (lt==NULL && l!=NULL)	lt = l;
+		if (rt==NULL && r!=NULL)	rt = r;
+	}
+	
+	assemble(last, l, r, lt, rt);
+	t = last;
+	
+	return ret;
 }
 
 //-------------------------------------------------
