@@ -98,6 +98,8 @@ void rotate(Node* &x, int d) {
 	y->ch[d] = x;
 	p(y) = p(x);		// maintain father link
 	p(x) = y;			// maintain father link
+	if (p(y) != NULL)
+		p(y)->ch[right(p(y)) == x] = y;
 	x = y;
 }
 
@@ -371,7 +373,6 @@ void hard_remove(Node* &t, int v) {
 	}
 
 	if (x == NULL)	return ;
-	if (p(x) == NULL)
 
 	// splay the last nonnull node
 	y = join(left(x), right(x));
@@ -380,6 +381,7 @@ void hard_remove(Node* &t, int v) {
 		p(x)->ch[right(p(x))==x] = y;
 		t = p(x);
 	} else {
+		p(y) = NULL;
 		t = y;
 	}
 	delete x;
@@ -492,6 +494,43 @@ int Successor(int v) {
 	return rt->v;
 }
 
+#ifdef DEBUG
+vi vc;
+
+bool check_splay(const Node *rt) {
+	if (rt == NULL)	return true;
+	
+	if (left(rt) != NULL) {
+		if (p(left(rt))!=rt || !check_splay(left(rt)))
+			return false;
+	}
+	
+	vc.pb(rt->v);
+	
+	if (right(rt) != NULL) {
+		if (p(right(rt))!=rt || !check_splay(right(rt)))
+			return false;
+	}
+	
+	return true;
+}
+
+bool judge() {
+	if (rt == NULL)	return true;
+	if (p(rt) != NULL)	return false;
+	
+	vc.clr();
+	if (!check_splay(rt))	return false;
+	
+	int sz = SZ(vc);
+	rep(i, 1, sz)
+		if (vc[i] <= vc[i-1])
+			return false;
+	return true;
+}
+#endif
+ 
+
 int main() {
 	ios::sync_with_stdio(false);
 	#ifndef ONLINE_JUDGE
@@ -502,10 +541,14 @@ int main() {
 	int t;
 	int n, m, x;
 	char op[12];
+	int nline = 1;
 
 	scanf("%d", &t);
-	while (t--) {
+	rep(tt, 1, t+1) {
 		scanf("%d%d", &n, &m);
+		#ifdef DEBUG
+		++nline;
+		#endif
 		if (rt)	{
 			Delete(rt);
 			rt = NULL;
@@ -546,6 +589,13 @@ int main() {
 					puts("No");
 				}
 			}
+			#ifdef DEBUG
+				++nline;
+				if (!judge()) {
+					printf("%d: wa\n", nline);
+					abort();
+				}
+			#endif
 			fflush(stdout);
 		}
 	}
