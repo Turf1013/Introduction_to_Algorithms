@@ -41,7 +41,7 @@ using namespace std;
 #define rson			mid+1, r, rt<<1|1
 #define INF				0x3f3f3f3f
 
-#define DEBUG
+// #define DEBUG
 
 typedef struct Node {
 	int v;
@@ -71,7 +71,13 @@ typedef pair<Node*, Node*>	pnn;
 #define insert			hard_insert
 #define remove			hard_remove
 
-void rotate(Node* &, int );
+// #define fast_rotate
+
+#ifdef fast_rotate
+void rotate(Node* , int);
+#else
+void rotate(Node* &, int);
+#endif
 void hard_splay(Node* &);
 void simple_splay(Node* &);
 Node *access(Node* &, int);
@@ -87,6 +93,58 @@ void simple_remove(Node* &, int);
 void Delete(Node *);
 
 // pay attention to update of node.p
+#ifdef fast_rotate
+void rotate(Node* x, int d) {
+	#ifdef DEBUG
+	assert(x != NULL);
+	#endif
+	
+	Node *y = x->ch[d^1];
+	x->ch[d^1] = y->ch[d];
+	if (y->ch[d] != NULL) p(y->ch[d]) = x;	// maintain father link
+	y->ch[d] = x;
+	p(y) = p(x);		// maintain father link
+	p(x) = y;			// maintain father link
+	if (p(y) != NULL)
+		p(y)->ch[right(p(y)) == x] = y;
+}
+
+void hard_splay(Node* &x) {
+	if (x == NULL)	return ;
+	
+	while (p(x) != NULL) {
+		if (x == left(p(x))) {
+			if (g(x) == NULL) {
+				// zig
+				rotate_right(p(x));
+			} else if (p(x) == left(g(x))) {
+				// zig-zig
+				rotate_right(g(x));
+				rotate_right(p(x));
+			} else {
+				// zig-zag
+				rotate_right(p(x));
+				rotate_left(p(x));
+			}
+		} else {
+			if (g(x) == NULL) {
+				// zig
+				rotate_left(p(x));
+			} else if (p(x) == right(g(x))) {
+				// zig-zig
+				rotate_left(g(x));
+				rotate_left(p(x));
+			} else {
+				// zig-zag
+				rotate_left(p(x));
+				rotate_right(p(x));
+			}
+		}
+	}
+}
+
+#else
+	
 void rotate(Node* &x, int d) {
 	#ifdef DEBUG
 	assert(x != NULL);
@@ -119,7 +177,7 @@ void hard_splay(Node* &x) {
 			} else {
 				// zig-zag
 				rotate_right(y=p(x));
-				rotate_left(y);
+				rotate_left(y=p(x));
 			}
 		} else {
 			if (g(x) == NULL) {
@@ -132,12 +190,13 @@ void hard_splay(Node* &x) {
 			} else {
 				// zig-zag
 				rotate_left(y=p(x));
-				rotate_right(y);
+				rotate_right(y=p(x));
 			}
 		}
 		x = y;
 	}
 }
+#endif
 
 void simple_splay(Node* &x) {
 	if (x == NULL)	return ;
@@ -240,7 +299,9 @@ int Minimum(Node* &t) {
 */
 Node *join(Node* &t1, Node* &t2) {
 	Node* ret;
-
+	
+	if (t1 != NULL)	p(t1) = NULL;
+	if (t2 != NULL)	p(t2) = NULL;
 	if (t2 == NULL) {
 		ret = t1;
 		t1 = NULL;
@@ -255,7 +316,7 @@ Node *join(Node* &t1, Node* &t2) {
 	right(t1) = t2;
 	ret = t1;
 	p(t2) = t1;			// maintain father link
-	p(ret) = t1 = t2 = NULL;
+	t1 = t2 = NULL;
 	
 	return ret;
 }
@@ -265,8 +326,10 @@ Node *join(Node* &t1, Node* &t2) {
 	and destroy t2.
 */
 void jointo(Node *&t1, Node* &t2) {
-
+	if (t1 != NULL)	p(t1) = NULL;
 	if (t2 == NULL)	return ;
+	
+	p(t2) = NULL;
 	if (t1 == NULL)	{
 		t1 = t2;
 		t2 = NULL;
@@ -276,7 +339,7 @@ void jointo(Node *&t1, Node* &t2) {
 	Maximum(t1);
 	right(t1) = t2;
 	p(t2) = t1;			// maintain father link
-	p(t1) = t2 = NULL;
+	t2 = NULL;
 }
 
 pnn split(Node* &t, int v) {
@@ -336,7 +399,7 @@ void simple_insert(Node* &t, int v) {
 	}
 
 	Node *x = t, *y = NULL;
-	int d;
+	int d = -1;
 
 	while (x) {
 		d = x->cmp(v);
@@ -350,7 +413,7 @@ void simple_insert(Node* &t, int v) {
 	}
 	
 	#ifdef DEBUG
-	assert(y != NULL);
+	assert(y!=NULL && d>=0);
 	#endif
 	x = new Node(v, y);
 	y->ch[d] = x;
@@ -381,7 +444,7 @@ void hard_remove(Node* &t, int v) {
 		p(x)->ch[right(p(x))==x] = y;
 		t = p(x);
 	} else {
-		p(y) = NULL;
+		// if (y != NULL)	p(y) = NULL;
 		t = y;
 	}
 	delete x;
@@ -401,7 +464,7 @@ void simple_remove(Node* &t, int v) {
 			Node *z = join(left(x), right(x));
 			if (z != NULL)	p(z) = y;
 			if (y != NULL)
-				y->ch[d] = z;
+				y->ch[right(y)==x] = z;
 			else
 				y = z;
 			delete x;
@@ -448,12 +511,12 @@ bool Member(int v) {
 	return access(rt, v) != NULL;
 }
 
-int Maximum() {
-	return Maximum(rt);
+inline int Maximum() {
+	return getMax(rt);
 }
 
-int Minimum() {
-	return Minimum(rt);
+inline int Minimum() {
+	return getMin(rt);
 }
 
 void Insert(int v) {
@@ -534,7 +597,7 @@ bool judge() {
 int main() {
 	ios::sync_with_stdio(false);
 	#ifndef ONLINE_JUDGE
-		freopen("data.in", "r", stdin);
+		freopen("in_e3.in", "r", stdin);
 		freopen("data.out", "w", stdout);
 	#endif
 
@@ -553,6 +616,7 @@ int main() {
 			Delete(rt);
 			rt = NULL;
 		}
+		printf("Case #%d:\n", tt);
 		rep(i, 0, m) {
 			scanf("%s", op);
 			if (op[0] == 'M') {
@@ -598,10 +662,11 @@ int main() {
 			#endif
 			fflush(stdout);
 		}
+		putchar('\n');
 	}
 
 	#ifndef ONLINE_JUDGE
-		printf("time = %d.\n", (int)clock());
+		printf("time = %ldms.\n", clock());
 	#endif
 
 	return 0;
