@@ -43,6 +43,8 @@ using namespace std;
 #define INF				0x3f3f3f3f
 #define mset(a, val)	memset(a, (val), sizeof(a))
 
+#define DEBUG
+
 set<int> st;
 
 void Delete(int x) {
@@ -75,10 +77,20 @@ int Successor(int x) {
 	return iter==st.end() ? INF : *iter;
 }
 
+void print() {
+	sti::iterator iter = st.begin();
+
+	while (iter != st.end()) {
+		printf("%d ", *iter);
+		++iter;
+	}
+	putchar('\n');
+}
+
 int main() {
 	ios::sync_with_stdio(false);
 	#ifndef ONLINE_JUDGE
-		freopen("in_e3.txt", "r", stdin);
+		freopen("data.in", "r", stdin);
 		freopen("data.out", "w", stdout);
 	#endif
 
@@ -87,9 +99,12 @@ int main() {
 	char op[12];
 
 	scanf("%d", &t);
-	while (t--) {
+	rep(tt, 1, t+1) {
 		scanf("%d%d", &n, &m);
 		st.clr();
+		#ifdef DEBUG
+		printf("Case #%d:\n", tt);
+		#endif
 		rep(i, 0, m) {
 			scanf("%s", op);
 			if (op[0] == 'M') {
@@ -126,7 +141,13 @@ int main() {
 					puts("No");
 				}
 			}
+			#ifdef DEBUG
+			print();
+			#endif
 		}
+		#ifdef DEBUG
+		putchar('\n');
+		#endif
 	}
 
 	#ifndef ONLINE_JUDGE

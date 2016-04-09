@@ -53,8 +53,8 @@ typedef struct Node {
 	}
 
 	int cmp(int _v) {
-		return 	v==_v ? -1 :
-				v <_v ?  0 : 1;
+		return 	_v==v ? -1 :
+				_v <v ?  0 : 1;
 	}
 
 } Node;
@@ -67,13 +67,19 @@ typedef pair<Node*, Node*>	pnn;
 #define right(x)		(x)->ch[1]
 #define rotate_left(x)	rotate(x, 0)
 #define rotate_right(x)	rotate(x, 1)
-#define top_down_access	hard_top_down_access
 #define splay			hard_splay
-#define insert			hard_insert
-#define remove			hard_remove
-#define access			down_top_access
+#define insert			simple_insert
+#define remove			simple_remove
+#define top_down_access	hard_top_down_access
+#define access			top_down_access
 
-static void rotate(Node* &, int);
+// #define fast_rotate
+
+#ifdef fast_rotate
+void rotate(Node* , int);
+#else
+void rotate(Node* &, int);
+#endif
 void hard_splay(Node* &);
 void simple_splay(Node* &);
 Node *down_top_access(Node* &, int);
@@ -99,67 +105,135 @@ void simple_top_down_splay(Node* &);
 
 
 // pay attention to update of node.p
-static void rotate(Node* &x, int d) {
+#ifdef fast_rotate
+void rotate(Node* x, int d) {
+	#ifdef DEBUG
+	assert(x != NULL);
+	#endif
+	
 	Node *y = x->ch[d^1];
 	x->ch[d^1] = y->ch[d];
-	p(y->ch[d]) = x;	// maintain father link
+	if (y->ch[d] != NULL) p(y->ch[d]) = x;	// maintain father link
 	y->ch[d] = x;
 	p(y) = p(x);		// maintain father link
 	p(x) = y;			// maintain father link
-	x = y;
+	if (p(y) != NULL)
+		p(y)->ch[right(p(y)) == x] = y;
 }
 
 void hard_splay(Node* &x) {
 	if (x == NULL)	return ;
-
+	
 	while (p(x) != NULL) {
 		if (x == left(p(x))) {
 			if (g(x) == NULL) {
 				// zig
-				rotate_right(x);
+				rotate_right(p(x));
 			} else if (p(x) == left(g(x))) {
 				// zig-zig
+				rotate_right(g(x));
 				rotate_right(p(x));
-				rotate_right(x);
 			} else {
 				// zig-zag
-				rotate_right(x);
-				rotate_left(x);
+				rotate_right(p(x));
+				rotate_left(p(x));
 			}
 		} else {
 			if (g(x) == NULL) {
 				// zig
-				rotate_left(x);
+				rotate_left(p(x));
 			} else if (p(x) == right(g(x))) {
 				// zig-zig
+				rotate_left(g(x));
 				rotate_left(p(x));
-				rotate_left(x);
 			} else {
 				// zig-zag
-				rotate_left(x);
-				rotate_right(x);
+				rotate_left(p(x));
+				rotate_right(p(x));
 			}
 		}
 	}
 }
 
-void simple_splay(Node* &x) {
-	if (x == NULL)	return ;
+#else
+	
+void rotate(Node* &x, int d) {
+	#ifdef DEBUG
+	assert(x != NULL);
+	#endif
+	
+	Node *y = x->ch[d^1];
+	x->ch[d^1] = y->ch[d];
+	if (y->ch[d] != NULL) p(y->ch[d]) = x;	// maintain father link
+	y->ch[d] = x;
+	p(y) = p(x);		// maintain father link
+	p(x) = y;			// maintain father link
+	if (p(y) != NULL)
+		p(y)->ch[right(p(y)) == x] = y;
+	x = y;
+}
 
+void hard_splay(Node* &x) {
+	if (x == NULL)	return ;
+	Node *y;
+	
 	while (p(x) != NULL) {
 		if (x == left(p(x))) {
-			if (g(x) && p(x) == left(g(x))) {
+			if (g(x) == NULL) {
+				// zig
+				rotate_right(y=p(x));
+			} else if (p(x) == left(g(x))) {
 				// zig-zig
-				rotate_right(p(x));
+				rotate_right(y=g(x));
+				rotate_right(y);
+			} else {
+				// zig-zag
+				rotate_right(y=p(x));
+				rotate_left(y=p(x));
 			}
-			rotate_right(x);
 		} else {
-			if (g(x) && p(x) == right(g(x))) {
+			if (g(x) == NULL) {
+				// zig
+				rotate_left(y=p(x));
+			} else if (p(x) == right(g(x))) {
 				// zig-zig
-				rotate_left(p(x));
+				rotate_left(y=g(x));
+				rotate_left(y);
+			} else {
+				// zig-zag
+				rotate_left(y=p(x));
+				rotate_right(y=p(x));
 			}
-			rotate_left(x);
 		}
+		x = y;
+	}
+}
+#endif
+
+void simple_splay(Node* &x) {
+	if (x == NULL)	return ;
+	
+	Node *y;
+	
+	while (p(x) != NULL) {
+		if (x == left(p(x))) {
+			if (g(x)!=NULL && p(x) == left(g(x))) {
+				// zig-zig
+				rotate_right(y=g(x));
+			} else {
+				y = p(x);
+			}
+			rotate_right(y);
+		} else {
+			if (g(x)!=NULL && p(x) == right(g(x))) {
+				// zig-zig
+				rotate_left(y=g(x));
+			} else {
+				y = p(x);
+			}
+			rotate_left(y);
+		}
+		x = y;
 	}
 }
 
@@ -177,24 +251,30 @@ Node *down_top_access(Node* &t, int v) {
 		last = x;
 		x = x->ch[d];
 	}
-	
-	#ifdef DEBUG
-	assert(last != NULL);
-	#endif
 
 	// splay the last nonnull node
-	splay(last);
-	t = last;	// make root point to last
+	splay(t = last);
 
+	#ifdef DEBUG
+	assert(t != NULL);
+	#endif
+	
 	return ret;
 }
 
 int Maximum(Node* &t) {
 	if (t == NULL)	return -INF;
 	
-	// access the INF value
-	access(t, INF);
-	
+	Node *p = t, *last;
+
+	while (p) {
+		last = p;
+		p = p->ch[1];
+	}
+
+	// splay the last nonnull node
+	splay(t = last);
+
 	#ifdef DEBUG
 	assert(right(t) == NULL);
 	#endif
@@ -205,8 +285,15 @@ int Maximum(Node* &t) {
 int Minimum(Node* &t) {
 	if (t == NULL)	return INF;
 
-	// access the -INF value
-	access(t, -INF);
+	Node *p = t, *last;
+
+	while (p) {
+		last = p;
+		p = p->ch[0];
+	}
+
+	// splay the last nonnull node
+	splay(t = last);
 
 	#ifdef DEBUG
 	assert(left(t) == NULL);
@@ -220,9 +307,12 @@ int Minimum(Node* &t) {
 	and destroy both t1 and t2.
 */
 Node *join(Node* &t1, Node* &t2) {
-	Node* ret = t1;
-
+	Node* ret;
+	
+	if (t1 != NULL)	p(t1) = NULL;
+	if (t2 != NULL)	p(t2) = NULL;
 	if (t2 == NULL) {
+		ret = t1;
 		t1 = NULL;
 		return ret;
 	} else if (t1 == NULL) {
@@ -233,9 +323,10 @@ Node *join(Node* &t1, Node* &t2) {
 
 	Maximum(t1);
 	right(t1) = t2;
+	ret = t1;
 	p(t2) = t1;			// maintain father link
 	t1 = t2 = NULL;
-
+	
 	return ret;
 }
 
@@ -244,8 +335,10 @@ Node *join(Node* &t1, Node* &t2) {
 	and destroy t2.
 */
 void jointo(Node *&t1, Node* &t2) {
-
+	if (t1 != NULL)	p(t1) = NULL;
 	if (t2 == NULL)	return ;
+	
+	p(t2) = NULL;
 	if (t1 == NULL)	{
 		t1 = t2;
 		t2 = NULL;
@@ -261,21 +354,23 @@ void jointo(Node *&t1, Node* &t2) {
 pnn split(Node* &t, int v) {
 	if (t == NULL)	return mp((Node*)NULL, (Node*)NULL);
 
-	Node *x = access(t, v), *t1, *t2;
-	int d = x->cmp(v);
+	Node *t1, *t2;
+	
+	access(t, v);
+	int d = t->cmp(v);
 
-	if (d <= 0) {
+	if (d != 0) {
 		// break right link
 		t1 = t;
 		t2 = right(t);
 		right(t1) = NULL;	// maintain father link
-		p(t2) = NULL;
+		if (t2!=NULL)	p(t2) = NULL;
 	} else {
 		// break left link
 		t1 = left(t);
 		t2 = t;
 		left(t2) = NULL;	// maintain father link
-		p(t1) = NULL;
+		if (t1!=NULL)	p(t1) = NULL;
 	}
 
 	return mp(t1, t2);
@@ -292,9 +387,9 @@ void hard_insert(Node* &t, int v) {
 	Node* &t2 = pr.sec;
 
 	// only root of t1 might be equal to v, and v exists already
-	if (t1 && t1->v==v)	{
+	if (t1!=NULL && t1->v==v)	{
 		right(t1) = t2;
-		p(t2) = t1;			// maintain father link
+		if (t2 != NULL)	p(t2) = t1;	// maintain father link
 		t = t1;
 		return ;
 	}
@@ -302,8 +397,8 @@ void hard_insert(Node* &t, int v) {
 	t = new Node(v);
 	left(t) = t1;
 	right(t) = t2;
-	p(t1) = t;				// maintain father link
-	p(t2) = t;
+	if (t1!=NULL)	p(t1) = t;		// maintain father link
+	if (t2!=NULL)	p(t2) = t;
 }
 
 void simple_insert(Node* &t, int v) {
@@ -313,16 +408,22 @@ void simple_insert(Node* &t, int v) {
 	}
 
 	Node *x = t, *y = NULL;
-	int d;
+	int d = -1;
 
 	while (x) {
-		d = t->cmp(v);
-		if (d == -1)	return ;
+		d = x->cmp(v);
+		if (d == -1) {
+			splay(t=x);
+			return ;
+		}
 
 		y = x;
 		x = x->ch[d];
 	}
-
+	
+	#ifdef DEBUG
+	assert(y!=NULL && d>=0);
+	#endif
 	x = new Node(v, y);
 	y->ch[d] = x;
 	splay(t=x);
@@ -347,9 +448,13 @@ void hard_remove(Node* &t, int v) {
 
 	// splay the last nonnull node
 	y = join(left(x), right(x));
-	if (y != NULL)
-		p(y) = p(x);
-	t = p(x);
+	if (y != NULL)	p(y) = p(x);
+	if (p(x) != NULL) {
+		p(x)->ch[right(p(x))==x] = y;
+		t = p(x);
+	} else {
+		t = y;
+	}
 	delete x;
 	splay(t);
 }
@@ -398,7 +503,7 @@ static void link_left(Node* &t, Node* &l) {
 	t = right(t);
 	// may no need to maintain this pointer ???
 	right(l) = NULL;
-	p(t) = NULL;
+	if (t != NULL)	p(t) = NULL;	
 }
 
 static void link_right(Node *&t, Node* &r) {
@@ -410,35 +515,48 @@ static void link_right(Node *&t, Node* &r) {
 	t = left(t);
 	// may no need to maintain this pointer	???
 	left(r) = NULL;
-	p(t) = NULL;
+	if (t != NULL)	p(t) = NULL;	
 }
 
 static void assemble(Node* &t, Node* &l, Node* &r, Node *lt, Node *rt) {
 	#ifdef DEBUG
 	assert(t != NULL);
 	#endif
+	
+	// current mid pointer may be null, 
+	//	Turns out that we had already link last to l or r.
+	if (t == l) {
+		right(t) = NULL;
+		l = p(t);
+		if (l == NULL)	lt = NULL;
+	} else if (t == r) {
+		left(t) = NULL;
+		r = p(t);
+		if (r == NULL)	rt = NULL;
+	}
+	
 	if (l != NULL)	{
 		right(l) = left(t);
 		if (left(t) != NULL) {
 			p(left(t)) = l;		// maintain father link
 			l = left(t);
-			left(l) = right(l) = NULL;
+			// left(l) = right(l) = NULL;	serious wrong
 		}
+		left(t) = lt;
+		p(lt) = t;
 	}
 	if (r != NULL) {
 		left(r) = right(t);
 		if (right(t) != NULL) {	
 			p(right(t)) = r;	// maintain father link
 			r = right(t);
-			left(r) = right(r) = NULL;
+			// left(r) = right(r) = NULL;	serious wrong
 		}
+		right(t) = rt;
+		p(rt) = t;
 	}
 	
-	left(t) = lt;
-	right(t) = rt;
 	p(t) = NULL;	// maintain father link
-	if (lt != NULL)	p(lt) = t;
-	if (rt != NULL) p(rt) = t;
 }
 
 Node *hard_top_down_access(Node* &t, int v) {
@@ -489,14 +607,14 @@ Node *hard_top_down_access(Node* &t, int v) {
 		if (rt==NULL && r!=NULL)	rt = r;
 	}
 	
-	assemble(last, l, r, lt, rt);
-	t = last;
+	assemble(t = last, l, r, lt, rt);
 	
 	return ret;
 }
 
 Node *simple_top_down_access(Node* &t, int v) {
 	if (t == NULL)	return NULL;
+	
 	Node *lt, *rt, *l, *r;
 	Node *ret, *last;
 	
@@ -528,7 +646,7 @@ Node *simple_top_down_access(Node* &t, int v) {
 		if (rt==NULL && r!=NULL)	rt = r;
 	}
 	
-	assemble(last, l, r, lt, rt);
+	assemble(t = last, l, r, lt, rt);
 	t = last;
 	
 	return ret;
@@ -537,16 +655,36 @@ Node *simple_top_down_access(Node* &t, int v) {
 //-------------------------------------------------
 Node *rt = NULL;
 
+static int getMin(const Node *x) {
+	int ret = INF;
+	
+	while (x) {
+		ret = x->v;
+		x = x->ch[0];
+	}
+	return ret;
+}
+
+static int getMax(const Node *x) {
+	int ret = -INF;
+	
+	while (x) {
+		ret = x->v;
+		x = x->ch[1];
+	}
+	return ret;
+}
+
 bool Member(int v) {
 	return access(rt, v) != NULL;
 }
 
-int Maximum() {
-	return Maximum(rt);
+inline int Maximum() {
+	return getMax(rt);
 }
 
-int Minimum() {
-	return Minimum(rt);
+inline int Minimum() {
+	return getMin(rt);
 }
 
 void Insert(int v) {
@@ -558,18 +696,80 @@ void Erase(int v) {
 }
 
 int Predecessor(int v) {
-	Node *x = access(rt, v);
-	if (x != NULL) {
-		return Maximum(left(x));
-	} else {
-		return x->v;
-	}
+	if (rt == NULL)	return -INF;
+	
+	access(rt, v);
+	
+	int d = rt->cmp(v);
+	if (d <= 0)
+		return getMax(left(rt));
+	
+	#ifdef DEBUG
+	assert(getMin(right(rt)) > v);
+	#endif
+	return rt->v;
 }
 
 int Successor(int v) {
-	Node *x = access(rt, v);
-	return Minimum(right(x));
+	if (rt == NULL)	return INF;
+	
+	access(rt, v);
+	
+	int d = rt->cmp(v);
+	if (d != 0)
+		return getMin(right(rt));
+	
+	#ifdef DEBUG
+	assert(getMax(left(rt)) < v);
+	#endif
+	return rt->v;
 }
+
+#ifdef DEBUG
+vi vc;
+
+bool check_splay(const Node *rt) {
+	if (rt == NULL)	return true;
+	
+	if (left(rt) != NULL) {
+		if (p(left(rt))!=rt || !check_splay(left(rt)))
+			return false;
+	}
+	
+	vc.pb(rt->v);
+	
+	if (right(rt) != NULL) {
+		if (p(right(rt))!=rt || !check_splay(right(rt)))
+			return false;
+	}
+	
+	return true;
+}
+
+bool judge() {
+	vc.clr();
+	
+	if (rt == NULL)	return true;
+	if (p(rt) != NULL)	return false;
+	
+	if (!check_splay(rt))	return false;
+	
+	int sz = SZ(vc);
+	rep(i, 1, sz)
+		if (vc[i] <= vc[i-1])
+			return false;
+	return true;
+}
+
+void print() {
+	int sz = SZ(vc);
+	
+	rep(i, 0, sz)
+		printf("%d ", vc[i]);
+	putchar('\n');
+}
+#endif
+
 
 int main() {
 	ios::sync_with_stdio(false);
@@ -581,14 +781,21 @@ int main() {
 	int t;
 	int n, m, x;
 	char op[12];
+	#ifdef DEBUG
+	int nline = 1;
+	#endif
 
 	scanf("%d", &t);
-	while (t--) {
+	rep(tt, 1, t+1) {
 		scanf("%d%d", &n, &m);
 		if (rt)	{
 			Delete(rt);
 			rt = NULL;
 		}
+		#ifdef DEBUG
+		++nline;
+		printf("Case #%d:\n", tt);
+		#endif
 		rep(i, 0, m) {
 			scanf("%s", op);
 			if (op[0] == 'M') {
@@ -625,11 +832,23 @@ int main() {
 					puts("No");
 				}
 			}
+			#ifdef DEBUG
+			++nline;
+			if (!judge()) {
+				printf("%d: wa\n", nline);
+				abort();
+			}
+			print();
+			fflush(stdout);
+			#endif
 		}
+		#ifdef DEBUG
+		putchar('\n');
+		#endif
 	}
 
 	#ifndef ONLINE_JUDGE
-		printf("time = %d.\n", (int)clock());
+		printf("time = %ldms.\n", clock());
 	#endif
 
 	return 0;

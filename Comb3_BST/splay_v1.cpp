@@ -41,7 +41,7 @@ using namespace std;
 #define rson			mid+1, r, rt<<1|1
 #define INF				0x3f3f3f3f
 
-// #define DEBUG
+#define DEBUG
 
 typedef struct Node {
 	int v;
@@ -579,10 +579,11 @@ bool check_splay(const Node *rt) {
 }
 
 bool judge() {
+	vc.clr();
+	
 	if (rt == NULL)	return true;
 	if (p(rt) != NULL)	return false;
 	
-	vc.clr();
 	if (!check_splay(rt))	return false;
 	
 	int sz = SZ(vc);
@@ -591,32 +592,42 @@ bool judge() {
 			return false;
 	return true;
 }
+
+void print() {
+	int sz = SZ(vc);
+	
+	rep(i, 0, sz)
+		printf("%d ", vc[i]);
+	putchar('\n');
+}
 #endif
  
 
 int main() {
 	ios::sync_with_stdio(false);
 	#ifndef ONLINE_JUDGE
-		freopen("in_e3.in", "r", stdin);
+		freopen("data.in", "r", stdin);
 		freopen("data.out", "w", stdout);
 	#endif
 
 	int t;
 	int n, m, x;
 	char op[12];
+	#ifdef DEBUG
 	int nline = 1;
+	#endif
 
 	scanf("%d", &t);
 	rep(tt, 1, t+1) {
 		scanf("%d%d", &n, &m);
-		#ifdef DEBUG
-		++nline;
-		#endif
 		if (rt)	{
 			Delete(rt);
 			rt = NULL;
 		}
+		#ifdef DEBUG
+		++nline;
 		printf("Case #%d:\n", tt);
+		#endif
 		rep(i, 0, m) {
 			scanf("%s", op);
 			if (op[0] == 'M') {
@@ -654,15 +665,18 @@ int main() {
 				}
 			}
 			#ifdef DEBUG
-				++nline;
-				if (!judge()) {
-					printf("%d: wa\n", nline);
-					abort();
-				}
-			#endif
+			++nline;
+			if (!judge()) {
+				printf("%d: wa\n", nline);
+				abort();
+			}
+			print();
 			fflush(stdout);
+			#endif
 		}
+		#ifdef DEBUG
 		putchar('\n');
+		#endif
 	}
 
 	#ifndef ONLINE_JUDGE
