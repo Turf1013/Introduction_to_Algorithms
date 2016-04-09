@@ -41,7 +41,7 @@ using namespace std;
 #define rson			mid+1, r, rt<<1|1
 #define INF				0x3f3f3f3f
 
-#define DEBUG
+// #define DEBUG
 
 typedef struct Node {
 	int v;
@@ -629,15 +629,13 @@ Node *simple_top_down_access(Node* &t, int v) {
 		
 		int d2 = t->ch[d]->cmp(v);
 		if (d == 0) {
-			if (d2 == 0) {
+			if (d2 == 0)
 				rotate_right(t);
-			}
 			last = t;
 			link_right(t, r);
 		} else {
-			if (d2 == 1) {
+			if (d2 == 1)
 				rotate_left(t);
-			}
 			last = t;
 			link_left(t, l);
 		}
@@ -647,10 +645,10 @@ Node *simple_top_down_access(Node* &t, int v) {
 	}
 	
 	assemble(t = last, l, r, lt, rt);
-	t = last;
 	
 	return ret;
 }
+
 
 //-------------------------------------------------
 Node *rt = NULL;
@@ -774,7 +772,7 @@ void print() {
 int main() {
 	ios::sync_with_stdio(false);
 	#ifndef ONLINE_JUDGE
-		freopen("data.in", "r", stdin);
+		freopen("in_e3.in", "r", stdin);
 		freopen("data.out", "w", stdout);
 	#endif
 
