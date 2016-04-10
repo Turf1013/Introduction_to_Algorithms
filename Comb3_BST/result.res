@@ -6,9 +6,20 @@ in_e7.txt
 splay_v1.0:
 splay_v1+++:	hard_splay, hard_insert, hard_remove
 splay_v1---:	simple_splay, simple_insert, simple_remove
+
+splay_v1.1:
+splay_v1*++:	hard_splay, hard_insert, hard_remove
+splay_v1*++:	hard_splay, hard_insert, hard_remove
+splay_v1*++:	hard_splay, hard_insert, hard_remove
+splay_v1*++:	hard_splay, hard_insert, hard_remove
+
+splay_v2.0;
 splay_v2+:		hard_splay, simple_insert, simple_remove, hard_top_down_access
 splay_v2-:		hard_splay, simple_insert, simple_remove, simple_top_down_access
 
+
+------------------------------------------
+global
 (ms)			e3		e5		e7
 treap			15		1194	23894
 set				48		1173	22213
@@ -18,7 +29,14 @@ splay_v1+-+		8		1563	31804
 splay_v1+--		7		1515	31038
 splay_v2+		0		1404	29701
 splay_v2-		15		1388	27128
+splay_v1*+-		8		1552	30047
+splay_v1*++		3		1423	32268
+splay_v1*--		3		1444	30916
+splay_v1*-+		3		1474	29600
 
+
+--------------------------------------
+splay v1.0
 	e5 		e7
 set	2218  	34082
 +++ 7083	115662
@@ -29,3 +47,4 @@ set	2218  	34082
 --- 9473
 --+ 8981
 +-+ 8015  	100588
+
