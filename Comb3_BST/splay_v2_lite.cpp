@@ -41,7 +41,7 @@ using namespace std;
 #define rson			mid+1, r, rt<<1|1
 #define INF				0x3f3f3f3f
 
-#define DEBUG
+// #define DEBUG
 
 typedef struct Node {
 	int v;
@@ -68,9 +68,9 @@ typedef pair<Node*, Node*>	pnn;
 #define rotate_left(x)	rotate(x, 0)
 #define rotate_right(x)	rotate(x, 1)
 #define splay			hard_splay
-#define insert			hard_insert
-#define remove			hard_remove
-#define top_down_access	hard_top_down_access
+#define insert			simple_insert
+#define remove			simple_remove
+#define top_down_access	simple_top_down_access
 #define access			top_down_access
 
 // #define fast_rotate
@@ -559,11 +559,11 @@ Node *hard_top_down_access(Node* &t, int v) {
 	if (t == NULL)	return NULL;
 	
 	Node *lrt[2], *lr[2];
+	Node *ret, *last;
 	Node* &lt = lrt[0];
 	Node* &rt = lrt[1];
 	Node* &l = lr[0];
 	Node* &r = lr[1];
-	Node *ret, *last;
 	
 	ret = last = lt = rt = l = r = NULL;
 	while (t != NULL) {
@@ -576,37 +576,40 @@ Node *hard_top_down_access(Node* &t, int v) {
 			break;
 		}
 		
-		int d2 = t->ch[d]->cmp(v);
-		if (d == 0) {
-			if (d2 < 0) {
-				last = t;
-				link_right(t, r);
-			} else if (d2 == 0) {
-				rotate_right(t);
-				last = t;
-				link_right(t, r);
-			} else {
-				link_right(t, r);
-				last = t;
-				link_left(t, l);
-			}
-		} else {
-			if (d2 < 0) {
-				last = t;
-				link_left(t, l);
-			} else if (d2 == 1) {
-				rotate_left(t);
-				last = t;
-				link_left(t, l);
-			} else {
-				link_left(t, l);
-				last = t;
-				link_right(t, r);
-			}
-		}
+		int d2 = t->ch[d]->cmp(v), _d = d ^ 1;
+				
+		// if (d2 < 0) {
+			// last = t;
+			// link(t, lr[_d], _d);
+		// } else if (d2 == d) {
+			// rotate(t, _d);
+			// last = t;
+			// link(t, lr[_d], _d);
+		// } else {
+			// link(t, lr[_d], _d);
+			// last = t;
+			// link(t, lr[d], d);
+		// }
+
+		// if (lt==NULL && l!=NULL)	lt = l;
+		// if (rt==NULL && r!=NULL)	rt = r;
 		
-		if (lt==NULL && l!=NULL)	lt = l;
-		if (rt==NULL && r!=NULL)	rt = r;
+		if (d2 < 0) {
+			last = t;
+			link(t, lr[_d], _d);
+			if (lrt[_d]==NULL && lr[_d]!=NULL)	lrt[_d] = lr[_d];
+		} else if (d2 == d) {
+			rotate(t, _d);
+			last = t;
+			link(t, lr[_d], _d);
+			if (lrt[_d]==NULL && lr[_d]!=NULL)	lrt[_d] = lr[_d];
+		} else {
+			link(t, lr[_d], _d);
+			last = t;
+			link(t, lr[d], d);			
+			if (lt==NULL && l!=NULL)	lt = l;
+			if (rt==NULL && r!=NULL)	rt = r;
+		}
 	}
 	
 	assemble(t = last, l, r, lt, rt);
@@ -617,8 +620,12 @@ Node *hard_top_down_access(Node* &t, int v) {
 Node *simple_top_down_access(Node* &t, int v) {
 	if (t == NULL)	return NULL;
 	
-	Node *lt, *rt, *l, *r;
+	Node *lrt[2], *lr[2];
 	Node *ret, *last;
+	Node* &lt = lrt[0];
+	Node* &rt = lrt[1];
+	Node* &l = lr[0];
+	Node* &r = lr[1];
 	
 	ret = last = lt = rt = l = r = NULL;
 	while (t != NULL) {
@@ -631,20 +638,12 @@ Node *simple_top_down_access(Node* &t, int v) {
 			break;
 		}
 		
-		int d2 = t->ch[d]->cmp(v);
-		if (d == 0) {
-			if (d2 == 0)
-				rotate_right(t);
-			last = t;
-			link_right(t, r);
-			if (rt==NULL && r!=NULL)	rt = r;
-		} else {
-			if (d2 == 1)
-				rotate_left(t);
-			last = t;
-			link_left(t, l);
-			if (lt==NULL && l!=NULL)	lt = l;
-		}
+		int d2 = t->ch[d]->cmp(v), _d = d ^ 1;
+		
+		if (d2 == d) rotate(t, _d);
+		last = t;
+		link(t, lr[_d], _d);
+		if (lrt[_d]==NULL && lr[_d]!=NULL)	lrt[_d] = lr[_d];
 	}
 	
 	assemble(t = last, l, r, lt, rt);
@@ -775,7 +774,7 @@ void print() {
 int main() {
 	ios::sync_with_stdio(false);
 	#ifndef ONLINE_JUDGE
-		freopen("in_e3.in", "r", stdin);
+		freopen("in_e7.in", "r", stdin);
 		freopen("data.out", "w", stdout);
 	#endif
 
