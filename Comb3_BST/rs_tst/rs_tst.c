@@ -9,9 +9,9 @@
 #include "rs_tst.h"
 #include "log.h"
 
-#define FILENAME "./data_100_30.in"
-#define MAXN 5000
-#define MAXL 100
+#define FILENAME "./data.in"
+#define MAXN 100200
+#define MAXL 60
 
 #ifndef min
 #define min(a, b) ((a)<(b) ? (a):(b))
@@ -106,7 +106,7 @@ static void dumpWord(char *filename) {
 		abort();
 	}
 
-	for (i=0; i<n; ++i)	fprintf(fout, "%s\n", words[i]);
+	for (i=0; i<n; ++i)	fprintf(fout, "%s\n", X[i]);
 
 	fclose(fout);
 }
