@@ -97,31 +97,6 @@ void tst_hard_Insert(char *s) {
 	char *ss = s;
 	#endif /* storeStr */
 	int d;
-	//char ch;
-	// Ndptr p, q;
-	// int flag = 1;
-
-	// if (rt == NULL) {
-	// 	ch = *s;
-	// 	newNode(rt, ch);
-	// }
-
-	// p = tst_rt;
-	// while (flag) {
-	// 	ch = *s;
-	// 	if (ch == p->splichar) {
-	// 		if (ch == 0)	flag = 0;
-	// 		++s;
-	// 		if (ch && mid(p) == NULL) newNode(mid(p), *s);
-	// 		q = mid(p);
-	// 	} else if (ch < p->splichar) {
-	// 		if (left(p) == NULL) newNode(left(p), ch);
-	// 		q = left(p);
-	// 	} else {
-	// 		if (right(p) == NULL) newNode(right(p), ch);
-	// 		q = right(p);
-	// 	}
-	// };
 	Ndptr q, *p;
 
 	p = &tst_rt;
