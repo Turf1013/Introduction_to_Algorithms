@@ -25,6 +25,10 @@
 }
 #define i2c(i) x[i][dep]
 
+
+/*
+	qsort with multi-key
+*/
 void swapn(int a, int b, int n, char *x[]) {
 	while (n--)	{
 		swap(a, b);
@@ -72,6 +76,259 @@ void sortedStr(char *x[], int n) {
 	sortStr(x, n, 0);
 }
 
+
+/*
+	ternary search tree:`tst`
+*/
+#define left(p) 	(p)->lokid
+#define right(p)	(p)->hikid
+#define mid(p)		(p)->eqkid
+#define newNode(rt, ch)\
+{\
+	rt = (Ndptr)malloc(sizeof(Node));\
+	(rt)->splitchar = ch;\
+	(rt)->lokid = (rt)->hikid = (rt)->eqkid = NULL;\
+}
+
+Ndptr tst_rt;
+
+void tst_hard_Insert(char *s) {
+	#ifdef storeStr
+	char *ss = s;
+	#endif /* storeStr */
+	int d;
+	//char ch;
+	// Ndptr p, q;
+	// int flag = 1;
+
+	// if (rt == NULL) {
+	// 	ch = *s;
+	// 	newNode(rt, ch);
+	// }
+
+	// p = tst_rt;
+	// while (flag) {
+	// 	ch = *s;
+	// 	if (ch == p->splichar) {
+	// 		if (ch == 0)	flag = 0;
+	// 		++s;
+	// 		if (ch && mid(p) == NULL) newNode(mid(p), *s);
+	// 		q = mid(p);
+	// 	} else if (ch < p->splichar) {
+	// 		if (left(p) == NULL) newNode(left(p), ch);
+	// 		q = left(p);
+	// 	} else {
+	// 		if (right(p) == NULL) newNode(right(p), ch);
+	// 		q = right(p);
+	// 	}
+	// };
+	Ndptr q, *p;
+
+	p = &tst_rt;
+	while ((q = *p) != NULL) {
+		if ((d = *s-q->splitchar) == 0) {
+			if (*s++ == 0)	return ;
+			p = &(mid(q));
+		} else if (d < 0) {
+			p = &(left(q));
+		} else {
+			p = &(right(q));
+		}
+	}
+
+	for (;;) {
+		newNode(*p, *s);
+		q = *p;
+		if (*s++ == 0) {
+			#ifdef storeStr
+			mid(q) = (Ndptr) ss;
+			#endif /* storeStr */
+			return;
+		}
+		p = &(mid(q));
+	}
+}
+
+Ndptr tst_simple_Insert(Ndptr p, char *s) {
+	if (p == NULL) {
+		newNode(p, *s);
+	}
+	if (*s < p->splitchar) {
+		left(p) = tst_simple_Insert(left(p), s);
+	} else if (*s == p->splitchar) {
+		if (*s)	mid(p) = tst_simple_Insert(mid(p), ++s);
+	} else {
+		right(p) = tst_simple_Insert(right(p), s);
+	}
+	return p;
+}
+
+int tst_Search(char *s) {
+	Ndptr p = tst_rt;
+	int d;
+
+	while (p) {
+		if ((d = *s-p->splitchar) == 0) {
+			if (*s++ == 0)	return 1;
+			p = mid(p);
+		} else if (d < 0) {
+			p = left(p);
+		} else {
+			p = right(p);
+		}
+	}
+	return 0;
+}
+
+void tst_Delete(Ndptr rt) {
+	if (rt) {
+		tst_Delete(left(rt));
+		tst_Delete(mid(rt));
+		tst_Delete(right(rt));
+		free(rt);
+	}
+}
+
+
+/*
+	Hash
+*/
+Hdptr *hashtable;
+int tabsize;
+
+void hash_init(int n) {
+	tabsize = n;
+	hashtable = (Hdptr *)malloc(sizeof(Hdptr) * tabsize);
+	memset(hashtable, 0, sizeof(Hdptr) * tabsize);
+}
+
+unsigned getH(char *s) {
+	unsigned ret = 0;
+	while (*s)	ret = ret * 31 + *s++;
+	return ret % tabsize;
+}
+
+void hash_Insert(char *s) {
+	unsigned h = getH(s);
+	Hdptr p = (Hdptr) malloc(sizeof(HNode));
+	p->nxt = hashtable[h];
+	p->s = s;
+	hashtable[h] = p;
+}
+
+static inline int inline_strcmp(char *src, char *des) {
+	for (; *src==*des; ++src,++des) if (*src == 0) return 0;
+	return *src - *des;
+}
+
+int hash_Search(char *s) {
+	Hdptr p;
+
+	for (p=hashtable[getH(s)]; p; p=p->nxt) {
+		if (inline_strcmp(s, p->s) == 0)	return 1;
+	}
+	return 0;
+}
+
+static void hash_Delete_Entry(Hdptr p) {
+	if (p) {
+		hash_Delete_Entry(p->nxt);
+		free(p);
+	}
+}
+
+void hash_Delete() {
+	int i;
+
+	for (i=0; i<tabsize; ++i) hash_Delete_Entry(hashtable[i]);
+	free(hashtable);
+}
+
+/*
+	trie
+*/
+Tdptr trie_rt;
+
+void trie_Init() {
+	int i;
+
+	trie_rt = (Tdptr) malloc(sizeof(TNode));
+	for (i=0; i<MAXK; ++i) trie_rt->nxt[i] = NULL;
+	trie_rt->flag = 0;
+}
+
+void trie_Insert_v1(char *s) {
+	int i, id;
+	Tdptr p = trie_rt, q;
+
+	while (*s) {
+		id = *s - 'a';
+		q = p->nxt[id];
+		if (q == NULL)	{
+			q = p->nxt[id] = (Tdptr) malloc(sizeof(TNode));
+			for (i=0; i<MAXK; ++i) q->nxt[i] = NULL;
+			q->flag = 0;
+		}
+		p = q;
+		++s;
+	}
+	p->flag = 1;
+}
+
+void trie_Insert_v2(char *s) {
+	int i, id;
+	Tdptr p = trie_rt, q;
+
+	while (*s) {
+		id = *s - 'a';
+		q = p->nxt[id];
+		if (q == NULL)	break;
+		p = q;
+		++s;
+	}
+
+	while (*s) {
+		id = *s - 'a';
+		p->nxt[id] = (Tdptr) malloc(sizeof(TNode));
+		p = p->nxt[id];
+		for (i=0; i<MAXK; ++i) p->nxt[i] = NULL;
+		p->flag = 0;
+		++s;
+	}
+
+	p->flag = 1;
+}
+
+int trie_Search_v1(char *s) {
+	int id;
+	Tdptr p = trie_rt;
+
+	while (*s) {
+		id = *s - 'a';
+		if (p->nxt[id] == NULL)	return 0;
+		p = p->nxt[id];
+		++s;
+	}
+
+	return p->flag;
+}
+
+int trie_Search_v2(char *s) {
+	Tdptr p = trie_rt;
+	for (; p && *s; ++s) p = p->nxt[*s-'a'];
+	return p && p->flag;
+}
+
+void trie_Delete(Tdptr p) {
+	int i;
+
+	if (p) {
+		for (i=0; i<MAXK; ++i) trie_Delete(p->nxt[i]);
+		free(p);
+	}
+}
+
+/*======================================================================*/
 typedef void (*sorted_ptr) (char *[], int);
 char filename[80];
 char words[MAXN][MAXL];
