@@ -60,6 +60,7 @@ void trie_Delete(Tdptr);
 /*
 	Advanced String Search Algorithm
 */
-
+void tst_pmsearch(Ndptr , char *);
+void tst_nearsearch(Ndptr, char *, int );
 
 #endif /* RS_TST_H */

@@ -9,8 +9,12 @@
 #include "rs_tst.h"
 #include "log.h"
 
+#define storeStr
+
 #define FILENAME "./data.in"
+#define SFILENAME "./datas.in"
 #define MAXN 100200
+#define MAXM 2000
 #define MAXL 60
 
 #ifndef min
@@ -97,31 +101,6 @@ void tst_hard_Insert(char *s) {
 	char *ss = s;
 	#endif /* storeStr */
 	int d;
-	//char ch;
-	// Ndptr p, q;
-	// int flag = 1;
-
-	// if (rt == NULL) {
-	// 	ch = *s;
-	// 	newNode(rt, ch);
-	// }
-
-	// p = tst_rt;
-	// while (flag) {
-	// 	ch = *s;
-	// 	if (ch == p->splichar) {
-	// 		if (ch == 0)	flag = 0;
-	// 		++s;
-	// 		if (ch && mid(p) == NULL) newNode(mid(p), *s);
-	// 		q = mid(p);
-	// 	} else if (ch < p->splichar) {
-	// 		if (left(p) == NULL) newNode(left(p), ch);
-	// 		q = left(p);
-	// 	} else {
-	// 		if (right(p) == NULL) newNode(right(p), ch);
-	// 		q = right(p);
-	// 	}
-	// };
 	Ndptr q, *p;
 
 	p = &tst_rt;
@@ -328,12 +307,75 @@ void trie_Delete(Tdptr p) {
 	}
 }
 
+
+/*
+	Advanced String Search Algorithm
+*/
+int nodecnt;
+char *srcharr[MAXN];
+int srchtop = 0;
+
+void tst_pmsearch(Ndptr rt, char *s) {
+	if (rt == NULL)	return ;
+	++nodecnt;
+	if (*s=='.' || *s<rt->splitchar)
+		tst_pmsearch(left(rt), s);
+	if (*s=='.' || *s==rt->splitchar)
+		if (*s && rt->splitchar)
+			tst_pmsearch(mid(rt), s+1);
+	if (*s==0 && rt->splitchar==0)
+		srcharr[srchtop++] = (char *) mid(rt);
+	if (*s=='.' || *s>rt->splitchar)
+		tst_pmsearch(right(rt), s);
+}
+
+void tst_nearsearch(Ndptr rt, char *s, int d) {
+	if (rt==NULL || d<0)	return ;
+	++nodecnt;
+	if (d>0 || *s<rt->splitchar)
+		tst_nearsearch(left(rt), s, d);
+	if (rt->splitchar == 0) {
+		if (strlen(s) <= d)
+			srcharr[srchtop++] = (char *) mid(rt);
+	} else {
+		tst_nearsearch(mid(rt), *s?s+1:s, *s==rt->splitchar ? d:d-1);
+	}
+	if (d>0 || *s>rt->splitchar)
+		tst_nearsearch(right(rt), s, d);
+}
+
+
+/*
+	other common algorithm
+*/
+int qstrcomp(const void *a, const void *b) {
+	return strcmp(*(char **)a, *(char **)b);
+}
+
+int binarySearch(char *X[], int n, char *ss) {
+	int l = 0, r = n - 1, mid;
+	char *s, *t;
+
+	while (l <= r) {
+		mid = (l + r) >> 1;
+		for (s=ss, t=X[mid]; *s==*t; ++s,++t)	if (*s == 0)	return 1;
+		if (*s < *t) {
+			r = mid - 1;
+		} else {
+			l = mid + 1;
+		}
+	}
+	return 0;
+}
+
+
 /*======================================================================*/
 typedef void (*sorted_ptr) (char *[], int);
-char filename[80];
-char words[MAXN][MAXL];
+char filename[80], sfilename[80];
+char words[MAXN][MAXL], swords[MAXM][MAXL];
 char *X[MAXN];
-int n;
+int res[MAXM];
+int n, m;
 
 static void readWord(char *filename) {
 	FILE *fin;
@@ -353,6 +395,21 @@ static void readWord(char *filename) {
 	fclose(fin);
 }
 
+static void readSword(char *filename) {
+	FILE *fin;
+
+	fin = fopen(filename, "r");
+	if (!fin) {
+		fprintf(stderr, "Error: can't open file \"%s\"", filename);
+		abort();
+	}
+
+	m = 0;
+	while (fscanf(fin, "%s", swords[m])!=EOF) ++m;
+
+	fclose(fin);
+}
+
 static void dumpWord(char *filename) {
 	FILE *fout;
 	int i;
@@ -368,8 +425,19 @@ static void dumpWord(char *filename) {
 	fclose(fout);
 }
 
-int qstrcomp(const void *a, const void *b) {
-	return strcmp(*(char **)a, *(char **)b);
+static void dumpRes(char *filename) {
+	FILE *fout;
+	int i;
+
+	fout = fopen(filename, "w");
+	if (!fout) {
+		fprintf(stderr, "Error: can't open file \"%s\"", filename);
+		abort();
+	}
+
+	for (i=0; i<m; ++i)	fprintf(fout, "%d\n", res[i]);
+
+	fclose(fout);
 }
 
 static void testSortStr() {
@@ -388,14 +456,132 @@ static void testSortStr() {
 	dumpWord("data-mk.out");
 }
 
+static void testTst() {
+	program_t prog;
+	int i;
+
+	/* Build */
+	program_start(&prog);
+	for (i=0; i<n; ++i) tst_hard_Insert(words[i]);
+	program_end(stdout, &prog, "tst_hard_Insert");
+	/* Search */
+	program_start(&prog);
+	for (i=0; i<m; ++i) res[i] = tst_Search(swords[i]);
+	program_end(stdout, &prog, "tst_Search");
+	dumpRes("tst-search-hard.out");
+	tst_Delete(tst_rt);
+
+	/* Build */
+	program_start(&prog);
+	for (i=0; i<n; ++i) tst_simple_Insert(tst_rt, words[i]);
+	program_end(stdout, &prog, "tst_hard_Insert");
+	/* Search */
+	program_start(&prog);
+	for (i=0; i<m; ++i) res[i] = tst_Search(swords[i]);
+	program_end(stdout, &prog, "tst_Search");
+	dumpRes("tst-search-simple.out");
+	tst_Delete(tst_rt);
+}
+
+static void testTrie() {
+	program_t prog;
+	int i;
+
+	trie_Init();
+	/* Build */
+	program_start(&prog);
+	for (i=0; i<n; ++i) trie_Insert_v1(words[i]);
+	program_end(stdout, &prog, "trie_Insert_v1");
+	/* Search */
+	program_start(&prog);
+	for (i=0; i<m; ++i) res[i] = trie_Search_v1(swords[i]);
+	program_end(stdout, &prog, "trie_Search_v1");
+	dumpRes("trie-search-v1.out");
+	trie_Delete(trie_rt);
+
+	trie_Init();
+	/* Build */
+	program_start(&prog);
+	for (i=0; i<n; ++i) trie_Insert_v2(words[i]);
+	program_end(stdout, &prog, "trie_Insert_v2");
+	/* Search */
+	program_start(&prog);
+	for (i=0; i<m; ++i) res[i] = trie_Search_v2(swords[i]);
+	program_end(stdout, &prog, "trie_Search_v2");
+	dumpRes("trie-search-v2.out");
+	trie_Delete(trie_rt);
+}
+
+static void testHash() {
+	program_t prog;
+	int i;
+
+	hash_init(n);
+	/* Build */
+	program_start(&prog);
+	for (i=0; i<n; ++i) hash_Insert(words[i]);
+	program_end(stdout, &prog, "hash_Insert");
+	/* Search */
+	program_start(&prog);
+	for (i=0; i<m; ++i) res[i] = hash_Search(swords[i]);
+	program_end(stdout, &prog, "hash_Search");
+	dumpRes("hash-search.out");
+	hash_Delete();
+}
+
+static void testSort() {
+	program_t prog;
+	int i;
+
+	/* Build */
+	program_start(&prog);
+	qsort(X, n, sizeof(char*), qstrcomp);
+	program_end(stdout, &prog, "qsort-lib");
+	/* Search */
+	program_start(&prog);
+	for (i=0; i<m; ++i) res[i] = binarySearch(X, n, swords[i]);
+	program_end(stdout, &prog, "qlib_binarySearch");
+	dumpRes("qsort-lib-search.out");
+
+	readWord(filename);
+	/* Build */
+	program_start(&prog);
+	sortedStr(X, n);
+	program_end(stdout, &prog, "qsort-mk");
+	/* Search */
+	program_start(&prog);
+	for (i=0; i<m; ++i) res[i] = binarySearch(X, n, swords[i]);
+	program_end(stdout, &prog, "qmk_binarySearch");
+	dumpRes("qsort-mk-search.out");
+
+	readWord(filename);
+}
+
+static void testTreeStr() {
+	readWord(filename);
+	readSword(sfilename);
+	testTst();
+	testTrie();
+	testHash();
+	testSort();
+}
+
 int main(int argc, char **argv) {
+	
+	/* parse filename */
 	if (argc > 1) {
 		strcpy(filename, argv[1]);
 	} else {
 		strcpy(filename, FILENAME);
 	}
+	if (argc > 2) {
+		strcpy(sfilename, argv[2]);
+	} else {
+		strcpy(sfilename, SFILENAME);
+	}
 
-	testSortStr();
+	// testSortStr();
+	testTreeStr();
 
 	return 0;
 }
