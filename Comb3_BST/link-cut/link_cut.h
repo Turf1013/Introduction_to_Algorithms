@@ -10,8 +10,9 @@
 				Self-Adjusting Binary Search Trees, Daniel D. Sleator and Robert Endre Tarjan.
 */
 typedef struct Node* Ndptr;
+typedef struct Node* Path;
 typedef struct Node {
-	int netmin, netcost;
+	int netmin, netcost;	// assert(netmin>=0 && netcost>=0)
 	Ndptr bparent;
 	Ndptr bhead, bleft, bright, btail;
 	int flag;	// -1: external, 0: not reverse, 1: reversed
@@ -28,16 +29,21 @@ void mincost();
 void update();
 
 Ndptr path(Ndptr);
-Ndptr head(Ndptr);
-Ndptr tail(Ndptr);
+Ndptr head(Path);
+Ndptr tail(Path);
 Ndptr before(Ndptr);
 Ndptr after(Ndptr);
 int pcost(Ndptr);
-int pmincost(Ndptr);
-void pupdate(Ndptr, int);
-void reverse(Ndptr);
-Ndptr concatenate(Ndptr, Ndptr, int);
+int pmincost(Path);
+void pupdate(Path, int);
+void reverse(Path);
+Path concatenate(Path, Path, int);
 void split(Ndptr, Ndptr*, Ndptr*, int*, int *y);
+
+void construct(Ndptr, Ndptr, int);
+void destroy(Ndptr);
+void rotate_left(Ndptr);
+void rotate_right(Ndptr);
 
 /*
 	Naive Partitioning
