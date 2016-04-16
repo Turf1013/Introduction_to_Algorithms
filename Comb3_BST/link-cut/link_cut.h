@@ -18,15 +18,15 @@ typedef struct Node {
 	int flag;	// -1: external, 0: not reverse, 1: reversed
 } Node;
 
-void link();
+Path link(Ndptr, Ndptr, int);
 void cut();
 void evert();
 
-void parent();
-void root();
-void cost();
-void mincost();
-void update();
+void parent(Ndptr);
+void root(Ndptr);
+int cost(Ndptr);
+int mincost(Ndptr);
+void update(Ndptr, int);
 
 Ndptr path(Ndptr);
 Ndptr head(Path);
@@ -48,8 +48,8 @@ void rotate_right(Ndptr);
 /*
 	Naive Partitioning
 */
-void expose();
-void splice();
+void splice(Path);
+void expose(Ndptr);
 
 
 #endif  /* LINK_CUT_H */

@@ -17,6 +17,12 @@
 #define bright(x)	(x)->bright
 #define bhead(x)	(x)->bhead
 #define btail(x)	(x)->btail
+/**
+	I really want to use an array to store dparent, but
+		as external node's bleft or bright is useless, we use bleft point to dparent.
+*/
+#define dparent(x)	(x)->bleft
+#define dcost(x)	(x)->netcost
 #define swap(a, b)\
 {\
 	Ndptr tmp = b;\
@@ -25,7 +31,8 @@
 }
 
 Ndptr Stack[maxn];
-Ndptr dparent[maxn];
+// Ndptr dparent[maxn];
+Ndptr extNode[maxn];
 
 static inline int min(int a, int b) {
 	return a<b ? a:b;
@@ -69,9 +76,13 @@ Ndptr head(Path v) {
 #endif
 
 #ifdef EVERT
-	return v->flag==1 ? btail(v) : bhead(v);
+	// return v->flag==1 ? btail(v) : bhead(v);
+	return v->flag < 0 ? v :	/* external node */
+			v->flag == 0 ? bhead(v) : btail(v);
 #else
-	return bhead(v);
+	// return bhead(v);
+	return v->flag < 0 ? v :	/* external node */
+			bhead(v);
 #endif
 }
 
@@ -85,9 +96,13 @@ Ndptr tail(Path v) {
 #endif
 
 #ifdef EVERT
-	return v->flag==1 ? bhead(v) : btail(v);
+	// return v->flag==1 ? btail(v) : bhead(v);
+	return v->flag < 0 ? v :	/* external node */
+			v->flag == 0 ? btail(v) : bhead(v);
 #else
-	return btail(v);
+	// return bhead(v);
+	return v->flag < 0 ? v :	/* external node */
+			btail(v);
 #endif
 }
 
@@ -203,7 +218,7 @@ Ndptr pmincost(Path x) {
 		else
 			assert(0);
 	#else
-		/*
+		/**
 			I thought the Pseudo code of Tarjan has some small mistake because:
 			\forall v in search-path, grossmin(v) must equal to gorssmin(rt).
 			So bright(y)->netcost>0 doesn't mean:
@@ -426,8 +441,9 @@ void rotate_right(Ndptr x) {
 	}
 	
 	/* 2 */
-	/* Once 2 or 3 calculated, 
-		we can use equation netmin'(x)+netmin'(z) = min'(z) - min'(x) to calculate the other.
+	/*
+		Once 2 or 3 calculated, we can use equation
+			netmin'(x)+netmin'(z) = min'(z) - min'(x) to calculate the other.
 	*/
 	x->netmin = netcost_x;
 	if (z->flag >= 0)
@@ -455,8 +471,20 @@ Path concatenate(Path p, Path q, int delta) {
 */
 void Access(Ndptr x) {
 	Ndptr y;
+	int top = 0;
 	
+	/**
+		Using a stack to store the node from x to root(path(x)) is necessary,
+			due to the reversed-bit.
+	*/
 	while ((y = bpar(x)) != NULL) {
+		S[top++] = x;
+		x = y;
+	}
+		
+	while (--top > 0) {
+		y = S[top];
+		x = S[top-1];
 		if (bleft(y) == x)
 			rotate_right(y);
 		else
@@ -517,27 +545,115 @@ Ndptr splice(Path p) {
 #ifdef DEBUG
 	assert(bpar(p) == NULL);
 #endif
-	Ndptr q, r, v;
-	int x, y;
+	Path q, r;
+	Ndptr v;
+	int wq, wr;
 
-	prt = root(p);
-	v = dparent[tail(p)];
-	split(v, &q, &r, &x, &y);
+	v = dparent(tail(p));
+	split(v, &q, &r, &wq, &wr);
 	if (q != NULL) {
-		dparent[tail(q)] = v;
-		dcost[tail(q)] = x;
+		dparent(tail(q)) = v;
+		dcost(tail(q)) = wq;
 	}
-	p = concatenate(p, v, dcost[tail(p)]);
+	p = concatenate(p, path(v), dcost(tail(p)));
 
 	if (r == NULL)
 		return p;
 	else
-		return concatenate(p, r, y);
+		return concatenate(p, r, wr);
 }
 
 /**
-	\brief	
+	\brief	Create a single solid path with head v and tail root(v) by
+		converting dashed edges to solid along the tree path from v to root(v) and
+		converting solid edges incident to this path to dashed.
+	\return the solid path.
 */
-void expose() {
+void expose(Ndptr v) {
+	Path p, q, r;
+	int wq, wr;
+	
+	split(v, &q, &r, &wq, &wr);
+	if (q != NULL) {
+		dparent(tail(q)) = v;
+		dcost(tail(q)) = wq;
+	}
+	if (r == NULL) {
+		p = Path(v);
+	} else {
+		p = concatenate(path(v), r, wr);
+	}
+	
+	while (dparent(tail(p)) != NULL) {
+		p = splice(p);
+	}
+	return p;
+}
+
+
+/**
+	\brief	Return the parent of v. 
+		If v has no parent(tree root), return null.
+*/
+Ndptr parent(Ndptr v) {
+	if (v == tail(path(v)))
+		return dparent(v);
+	else
+		return after(v);
+}
+
+/**
+	\brief	Return the root of tree contains v.
+*/
+Ndptr root(Ndptr v) {
+	return tail(expose(v));
+}
+
+/**
+	\brief	Return the root of tree contains v.
+*/
+int cost(Ndptr v) {
+	if (v == tail(path(v)))
+		return dcost(v);
+	else
+		return pcost(v);
+}
+
+/**
+	\brief	Return the vertex v closet to root(u) such that
+		edge (v, parent(v)) has minimum cost among edge on the tree path from u to root(u).
+*/
+Ndptr mincost(Ndptr u) {
+	return pmincost(expose(v));
+}
+
+/**
+	\brief Modify the consts of all edges on the tree path from v to root(v) by
+		adding delta to the cost of each edge.
+*/
+void update(Ndptr v, int delta) {
+	pupdate(expose(v), delta);
+}
+
+/**
+	\brief Combine the trees containing v and u by adding the edge (v, u) of cost w,
+		making u the parent of v.
+		Assume v and u are in different trees and v is a tree root.
+*/
+Path link(Ndptr v, Ndptr u, int w) {
+	return concatenate(path(v), expose(u), w);
+}
+
+/**
+	\brief 
+*/
+void cut() {
+	
+}
+
+/**
+	\brief 
+*/
+void evert() {
 	
 }
