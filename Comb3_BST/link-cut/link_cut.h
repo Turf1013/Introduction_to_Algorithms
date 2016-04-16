@@ -40,7 +40,7 @@ void reverse(Path);
 Path concatenate(Path, Path, int);
 void split(Ndptr, Ndptr*, Ndptr*, int*, int *y);
 
-void construct(Ndptr, Ndptr, int);
+Ndptr construct(Path, Path, int);
 void destroy(Ndptr);
 void rotate_left(Ndptr);
 void rotate_right(Ndptr);

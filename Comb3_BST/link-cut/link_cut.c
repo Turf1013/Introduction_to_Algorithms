@@ -47,7 +47,7 @@ static inline void pushdown(Ndptr v) {
 	}
 }
 
-/*
+/**
 	\brief 	Return the root of the solid path contains v
 */
 Ndptr path(Ndptr v) {
@@ -59,7 +59,7 @@ Ndptr path(Ndptr v) {
 	return v;
 }
 
-/*
+/**
 	\brief 	Return the root of the solid path v
 		Assume x is the root of the solid path v
 */
@@ -75,7 +75,7 @@ Ndptr head(Path v) {
 #endif
 }
 
-/*
+/**
 	\brief 	Return the tail of the solid path v
 		Assume x is the root of the solid path v
 */
@@ -91,7 +91,7 @@ Ndptr tail(Path v) {
 #endif
 }
 
-/*
+/**
 	\brief 	Return the vertex before v on path(v), 
 		if v is the head of the root, return null.
 */
@@ -119,7 +119,7 @@ Ndptr before(Ndptr x) {
 	return ret;
 }
 
-/*
+/**
 	\brief 	Return the vertex after x on path(x), 
 		if x is the tail of the root, return null.
 */
@@ -147,7 +147,7 @@ Ndptr after(Ndptr x) {
 	return ret;
 }
 
-/*
+/**
 	\brief	Return the cost of the edge(x, after(x)).
 */
 int pcost(Ndptr x) {
@@ -175,7 +175,7 @@ int pcost(Ndptr x) {
 	return ret;
 }
 
-/*
+/**
 	\brief	Return the vertex closes to tail(p) such that (x, after(x)) has the minimum cost among edges on p.
 		Assume x is the root of path.
 */
@@ -233,7 +233,7 @@ Ndptr pmincost(Path x) {
 	return NULL;
 }
 
-/*
+/**
 	\brief	Add x to the cost of every edge on solid path p.
 		Assume x is the root of solid path p
 */
@@ -244,7 +244,7 @@ void pupdate(Path x, int delta) {
 	x->netmin += delta;
 }
 
-/*
+/**
 	\brief	Reverse the direction of path x.
 		Assume x is the root of solid path p
 */
@@ -258,7 +258,7 @@ void reverse(Path x) {
 	x->flag ^= 1;
 }
 
-/*
+/**
 	\brief	Given the root x and y of two binary tree and a value w,
 		combine the trees into a single tree by constructing a new root node with left son x, right son y, cost w.
 */
@@ -280,9 +280,10 @@ Ndptr construct(Ndptr x, Ndptr y, int w) {
 	x->netmin -= w;
 	y->netmin -= w;
 	bpar(x) = bpar(y) = rt;
+	return rt;
 }
 
-/*
+/**
 	\brief	Given the root of nontrival tree x, 
 		erase the root u and divide the tree into two sub-trees consists of 
 		left son of x, right son of x, and the cost of breaking edge.
@@ -307,12 +308,13 @@ void destroy(Ndptr rt, Ndptr *lrt, Ndptr *rrt, int *w) {
 	free(rt);
 }
 
-/*
+/**
 	\brief	Perform a single left rotation at node x.
 		Node x must have an internal right son.
 */
 void rotate_left(Ndptr x) {
 	Ndptr y = bright(x), z = bleft(y);
+	Ndptr c = bleft(x);
 	
 #ifdef DEBUG
 	if (x->flag)	pushdown(x);
@@ -332,15 +334,51 @@ void rotate_left(Ndptr x) {
 			bleft(bpar(y)) = y;
 	}
 	
+	/*
+		all the attribute of x, y, z need to maintain
+	*/
+	int netmin_x = x->netmin, netcost_x = x->netcost;
+	int netmin_y = y->netmin, netcost_y = y->netcost;
+	int netmin_z = z->netmin, netcost_z = z->netcost;
 	
+	/* 1 */	y->netmin = netmin_x;
+	/* 6 */	
+	if (z->flag >= 0)
+		z->netcost = netcost_z;
+	/* 4 */	y->netcost = netcost_y + netmin_y;
+	/* 5 */
+	x->netcost = 0;
+	if (c->flag >= 0)
+		x->netcost = max(x->netcost, netcost_x-c->netmin);
+	if (z->flag >= 0)
+		x->netcost = max(x->netcost, netcost_x-netmin_y-netmin_z);
+	
+	/* 3 */
+	if (z->flag >= 0) {
+		z->netmin = 0;
+		z->netmin = max(z->netmin, netmin_z+netmin_y-netcost_x);
+		if (c->flag >= 0)
+			z->netmin = max(z->netmin, netmin_z+netmin_y-c->netmin);
+	}
+	
+	/* 2 */
+	/* Once 2 or 3 calculated, 
+		we can use equation netmin'(x)+netmin'(z) = min'(z) - min'(x) to calculate the other.
+	*/
+	x->netmin = netcost_x;
+	if (z->flag >= 0)
+		x->netmin = min(x->netmin, netmin_z+netmin_y);
+	if (c->flag >= 0)
+		x->netmin = min(x->netmin, netmin_c);
 }
 
-/*
+/**
 	\brief	Perform a single right rotation at node x.
 		Node x must have an internal left son.
 */
 void rotate_right(Ndptr x) {
 	Ndptr y = bleft(x), z = bright(y);
+	Ndptr c = bright(x);
 	
 #ifdef DEBUG
 	if (x->flag)	pushdown(x);
@@ -363,29 +401,122 @@ void rotate_right(Ndptr x) {
 	/*
 		all the attribute of x, y, z need to maintain
 	*/
+	int netmin_x = x->netmin, netcost_x = x->netcost;
+	int netmin_y = y->netmin, netcost_y = y->netcost;
+	int netmin_z = z->netmin, netcost_z = z->netcost;
 	
+	/* 1 */	y->netmin = netmin_x;
+	/* 6 */	
+	if (z->flag >= 0)
+		z->netcost = netcost_z;
+	/* 4 */	y->netcost = netcost_y + netmin_y;
+	/* 5 */
+	x->netcost = 0;
+	if (c->flag >= 0)
+		x->netcost = max(x->netcost, netcost_x-c->netmin);
+	if (z->flag >= 0)
+		x->netcost = max(x->netcost, netcost_x-netmin_y-netmin_z);
+	
+	/* 3 */
+	if (z->flag >= 0) {
+		z->netmin = 0;
+		z->netmin = max(z->netmin, netmin_z+netmin_y-netcost_x);
+		if (c->flag >= 0)
+			z->netmin = max(z->netmin, netmin_z+netmin_y-c->netmin);
+	}
+	
+	/* 2 */
+	/* Once 2 or 3 calculated, 
+		we can use equation netmin'(x)+netmin'(z) = min'(z) - min'(x) to calculate the other.
+	*/
+	x->netmin = netcost_x;
+	if (z->flag >= 0)
+		x->netmin = min(x->netmin, netmin_z+netmin_y);
+	if (c->flag >= 0)
+		x->netmin = min(x->netmin, netmin_c);
 }
 
-/*
+/**
 	\brief	Combine p and q by adding the edge(tail(p), head(q)) of cost delta, Return the combined path.
 		Assume p, q is the root of their solid path
+	\prob	Why Tarjan say the time complexity of concatenate is O(lgn). Why not O(1).
 */
 Path concatenate(Path p, Path q, int delta) {
 #ifdef DEBUG
 	assert(bpar(p)==NULL && bpar(q)==NULL);
 #endif
-
 	
+	/* concatenate is the same as construct ??? */
+	return construct(p, q, delta);
 }
 
-/*
+/**
+	\brief Rotate the node v to the root of tree.
+*/
+void Access(Ndptr x) {
+	Ndptr y;
+	
+	while ((y = bpar(x)) != NULL) {
+		if (bleft(y) == x)
+			rotate_right(y);
+		else
+			rotate_left(y);
+	}
+}
+
+/**
+	\brief	Divide path(v) into (up to) three parts by deleting the edge incident to v.
+	\param 	p subpath consisting all vertices from head(path(v)) to before(v);
+			q subpath consisting all vertices from after(v) to tail(path(v));
+			w0 cost of edge(before(v), v);
+			w1 cost of edge(v, after(v)).
+*/
+void split(Ndptr v, Path *p, Path *q, int *w0, int *w1) {
+	Ndptr x = bpar(v), p, q, tmp;
+	int flag = bright(x) == v;
+	
+	Access(x);
+	if (flag) {
+		destroy(x, p, q, w0);
+	#ifdef DEBUG
+		assert(q != NULL);
+	#endif
+		if (q->flag >= 0) {
+			x = bpar(head(q));
+			Access(x);
+			destroy(x, tmp, q, w1);
+		#ifdef DEBUG
+			assert(tmp->flag < 0);
+		#endif
+		}
+	} else {
+		destroy(q, p, w1);
+	#ifdef DEBUG
+		assert(p != NULL);
+	#endif
+		if (p->flag >= 0) {
+			x = bpar(tail(q));
+			Access(x);
+			destroy(x, p, tmp, w0);
+		#ifdef DEBUG
+			assert(tmp->flag < 0);
+		#endif
+		}
+	}
+}
+
+
+/**
 	\brief 	Extend the solid path by adding the edge from tail(p) to parent(tail(p)),
 		if some out-edge from parent(tail(p)) is solid, then turn to dashed instead.
 	\prob 	what is path? How to present path? 
 		Obviously, we use a BST to present path. 
 		So, why don't we just use any vertex of path instead of pathid or something like that.
 */
-Ndptr splict(Ndptr p) {
+Ndptr splice(Path p) {
+#ifdef DEBUG
+	assert(bpar(p) == NULL);
+#endif
 	Ndptr q, r, v;
 	int x, y;
 
@@ -402,4 +533,11 @@ Ndptr splict(Ndptr p) {
 		return p;
 	else
 		return concatenate(p, r, y);
+}
+
+/**
+	\brief	
+*/
+void expose() {
+	
 }
