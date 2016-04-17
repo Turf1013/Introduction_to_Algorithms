@@ -19,8 +19,8 @@ typedef struct Node {
 } Node;
 
 Path link(Ndptr, Ndptr, int);
-void cut();
-void evert();
+int cut(Ndptr);
+void evert(Ndptr);
 
 void parent(Ndptr);
 void root(Ndptr);
@@ -48,7 +48,7 @@ void rotate_right(Ndptr);
 /*
 	Naive Partitioning
 */
-void splice(Path);
+Ndptr splice(Path);
 void expose(Ndptr);
 
 
