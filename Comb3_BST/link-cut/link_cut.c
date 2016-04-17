@@ -503,6 +503,7 @@ void split(Ndptr v, Path *p, Path *q, int *w0, int *w1) {
 	Ndptr x = bpar(v), p, q, tmp;
 	int flag = bright(x) == v;
 	
+	w0 = w1 = 0;
 	Access(x);
 	if (flag) {
 		destroy(x, p, q, w0);
@@ -628,7 +629,7 @@ Ndptr mincost(Ndptr u) {
 }
 
 /**
-	\brief Modify the consts of all edges on the tree path from v to root(v) by
+	\brief	Modify the consts of all edges on the tree path from v to root(v) by
 		adding delta to the cost of each edge.
 */
 void update(Ndptr v, int delta) {
@@ -636,7 +637,7 @@ void update(Ndptr v, int delta) {
 }
 
 /**
-	\brief Combine the trees containing v and u by adding the edge (v, u) of cost w,
+	\brief	Combine the trees containing v and u by adding the edge (v, u) of cost w,
 		making u the parent of v.
 		Assume v and u are in different trees and v is a tree root.
 */
@@ -645,15 +646,25 @@ Path link(Ndptr v, Ndptr u, int w) {
 }
 
 /**
-	\brief 
+	\brief	Divide the tree containing v into two trees by deleting the 
+		edge (v, parent(v))
+	\return	the cost of edge (v, parent(v))
 */
-void cut() {
+int cut(Ndptr v) {
+	Path p, q;
+	int wp, wq;
 	
+	split(v, &p, &q, &wp, &wq);
+	dparent(v) = NULL;
+	
+	return wq;
 }
 
 /**
-	\brief 
+	\brief	Modify the tree containing v by making the root.
+		That means reversing the direction of every edge on the path from v to original root.
 */
-void evert() {
-	
+void evert(Ndptr v) {
+	reverse(expose(v));
+	dparent(v) = NULL;
 }
