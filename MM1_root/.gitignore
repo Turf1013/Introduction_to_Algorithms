@@ -3,4 +3,4 @@
 !*.tex
 !Makefile
 !*.py
-!TopCoder-mm-2_files\
+!**/TopCoder-mm-2_files/
