@@ -43,6 +43,12 @@ using namespace std;
 
 typedef long long LL;
 
+const double eps = 1e-7;
+int dcmp(double x) {
+    if (fabs(x) < eps)  return 0;
+    return x<0 ? -1:1;
+}
+
 template <typename T=double>
 struct Point_t {
     T x, y;
@@ -81,38 +87,8 @@ struct Point_t {
 
 typedef Point_t<double> Point;
 typedef Point_t<int> IPoint;
+typedef Point Vector;
 
-typedef struct Segment {
-    double k, b;
-
-    Segment() {}
-    Segment(double k, double b):k(k), b(b) {}
-
-    bool operator== (const Segment& oth) const {
-        return k==oth.k && b==oth.b;
-    }
-
-} Segment;
-
-typedef struct Cut_t {
-    IPoint a, b;
-
-    Cut_t() {}
-    Cut_t(IPoint a, IPoint b):a(a), b(b) {}
-
-    Segment toSegment(int &st) const {
-        if (a.x == b.x) {
-            st = 0;
-            return Segment(0, a.x);
-        } else {
-            st = 1;
-            double k = (b.y-a.y) / (double)(a.x-b.x);
-            double b = k*a.x + a.y;
-            return Segment(k, b);
-        }
-    }
-
-} Cut_t;
 
 typedef struct Circle {
     Point c;
@@ -136,9 +112,53 @@ typedef struct Circle {
 
 } Circle;
 
-typedef Point Vector;
+typedef struct Segment {
+    double k, b;
+	int st;
+
+    Segment() {}
+    Segment(double k, double b, int st=0):k(k), b(b), st(st) {}
+
+	int cmp(double x, double y) {
+		if (st)
+			return dcmp(b-x);
+		else
+			return dcmp(k*x+b - y);
+	}
+
+	int cmp(const Circle& c) const {
+		if (st)
+			return dcmp(b-c.c.x);
+		else
+			return dcmp(k*c.c.x+b - c.c.y);
+	}
+
+    bool operator== (const Segment& oth) const {
+        return k==oth.k && b==oth.b;
+    }
+
+} Segment;
+
+typedef struct Cut_t {
+    IPoint a, b;
+
+    Cut_t() {}
+    Cut_t(IPoint a, IPoint b):a(a), b(b) {}
+
+    Segment toSegment() const {
+        if (a.x == b.x) {
+            return Segment(0, a.x, 1);
+        } else {
+            double k = (b.y-a.y) / (double)(a.x-b.x);
+            double b = k*a.x + a.y;
+            return Segment(k, b, 0);
+        }
+    }
+
+} Cut_t;
+
+
 const double PI = acos(-1.0);
-const double eps = 1e-7;
 const int maxp = 110;
 const int maxrt = 105110;
 int cid[maxp];
@@ -147,12 +167,6 @@ int pre[maxrt];
 Point pts[maxrt];
 vi pid[maxp];
 FILE* logout;
-
-
-int dcmp(double x) {
-    if (fabs(x) < eps)  return 0;
-    return x<0 ? -1:1;
-}
 
 /**
     \brief Dot
@@ -180,27 +194,36 @@ inline double Length(const Point& a) {
 }
 
 /**
-    \brief calculate the angle of the vector
+    \brief calculate the angle of the point p and (0,0)
 */
 inline double angle(const Point& p) {
     return atan2(p.y, p.x);
 }
 
 /**
-    \brief of 2-vector
+    \brief calculate the angle of 2-vector
 */
 inline double Angle(Vector a, Vector b) {
     return acos(Dot(a, b) / Length(a) / Length(b));
 }
 
+/**
+	\brief calculate the Cross of two vector
+*/
 inline double Cross(Vector a, Vector b) {
     return a.x*b.y - a.y*b.x;
 }
 
+/**
+	\brief calculate the 2*Area of the triangle
+*/
 inline double Area2(Point a, Point b, Point c) {
     return Cross(b-a, c-a);
 }
 
+/**
+	\brief calculate the intersection point of two lines
+*/
 inline Point GetLineIntersection(Point P, Vector v, Point Q, Vector w) {
     Vector u = P - Q;
     double t = Cross(w, u) / Cross(v, w);
@@ -215,7 +238,7 @@ inline double DistanceToLine(Point P, Point A, Point B) {
     return fabs(Cross(v1, v2)) / Length(v1);
 }
 
-/**
+/**	
     \brief calculate the distance from point P to Segment(A, B).
 */
 inline double DistanceToSegment(Point &P, Point &A, Point &B) {
@@ -694,6 +717,26 @@ public:
         return retk;
     }
 
+	/**
+		\breif Due IPoint is needed, then we need to find the most similar IPoint.
+	*/
+	void getIPoint(Point& p, double k, Cut_t& ct) {
+		int base = 1e5;
+		double b = p.y - k * p.x;
+
+		while (base>0 && k*base-b > 0x3f3f3f3f)	base /= 10;	
+
+		#ifdef LOCAL_DEBUG
+			assert(base > 0);
+		#endif
+		ct.a.x = (int)base;
+		ct.a.y = (int)(k*base-b + .5);
+
+		base += 10;
+		ct.b.x = (int)base;
+		ct.b.y = (int)(k*base-b + .5);
+	}
+
     /**
         \brief make a cut to split two circles 
             due to relative position of these two circles.
@@ -708,7 +751,6 @@ public:
         LL A, B, C;
 
         Point p0 = getBestCutPoint(c1, c2, status, pvc);
-        ret.a = p0.toIPoint();
         getExtremeK(l, r, p0, A, B, C, kvc);
 
         if (status == 2) {
@@ -758,16 +800,67 @@ public:
         #endif
 
         double k = getBestK(A, B, C, kvc);
+		getIPoint(p0, k, ret);
 
         return ret;
     }
 
     /**
-        \brief update the root because of the cut.
+        \brief update the plant because of the cut.
     */
-    void updateRoot(int l, int r) {
+    int updatePlant(int l, int r) {
+		#ifdef LOCAL_DEBUG
+		assert(SZ(ans) > 0);
+		#endif
+		Segment seg = (*ans.rbegin()).toSegment();
 
+		int ll = l, rr = r - 1;
+
+		while (ll <= rr) {
+			while (ll<=rr && seg.cmp(cir[cid[ll]])<0)
+				++ll;
+			while (rr>ll && seg.cmp(cir[cid[rr]])>=0)
+				--rr;
+			if (ll >= rr)
+				break;
+			swap(cid[ll], cid[rr]);
+		}
+		
+		return ll;
     }
+
+	/**
+		\brief update the root because of the current cut.
+	*/
+	void updateRoot(int l, int r, int mid) {
+		/** 
+			update the root due to the relative position to the cut with the center of circle.
+				Obviously, it's just a similar to accurate.
+		*/
+		Segment seg = (*ans.rbegin()).toSegment();
+
+		rep(i, l, mid) {
+			const int& id = cid[i];
+			int sz = SZ(pid[id]), n = 1;
+			rep(j, 1, sz) {
+				const int& k = pid[id][j];
+				if (seg.cmp(pts[k]) < 0)
+					pid[id][n++] = k;
+			}
+			pid[id].resize(n);
+		}
+
+		rep(i, mid, r) {
+			const int& id = cid[i];
+			int sz = SZ(pid[id]), n = 1;
+			rep(j, 1, sz) {
+				const int& k = pid[id][j];
+				if (seg.cmp(pts[k]) >= 0)
+					pid[id][n++] = k;
+			}
+			pid[id].resize(n);
+		}
+	}
 
     /**
         \brief split the plants using Divide and Conquer.
@@ -790,9 +883,28 @@ public:
         ans.pb(ct);
 
         /**
-            \step 3: update the root of plat
+            \step 3: update the position of the plant
+				due to the position to the cut
         */
-        updateRoot(l, r);
+        int mid = updatePlant(l, r);
+		#ifdef LOCAL_DEBUG
+		assert(mid < r);
+		#endif
+		
+		/**
+			\step 4: update the root
+		*/
+		updateRoot(l, r, mid);
+
+		/**
+			\step 5: Divide
+		*/
+		dfs_split(l, mid);
+		dfs_split(mid, r);
+
+		/**
+			\step 6: Conquer later.
+		*/
     }
 	
     /**
