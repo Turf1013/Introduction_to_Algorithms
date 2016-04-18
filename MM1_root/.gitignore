@@ -1,6 +1,9 @@
-*
+*.jar
+*.exe
+*.pdf
+*.png
+*.htm
 !*.cpp
 !*.tex
 !Makefile
 !*.py
-!**/TopCoder-mm-2_files/
