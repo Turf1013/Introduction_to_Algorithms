@@ -38,6 +38,7 @@ using namespace std;
 #define SZ(x) 			((int)(x).size())
 
 #define makeCuts        makeCuts_raw
+#define LOG_FILENAME    "makeCuts.log"
 #define LOCAL_DEBUG
 
 typedef long long LL;
@@ -130,7 +131,7 @@ typedef struct Circle {
     }
 
     Point point(double a) const {
-        return Point(c.x+cos(a)*c.r, c.y+sin(a)*c.r);
+        return Point(c.x+cos(a)*r, c.y+sin(a)*r);
     }
 
 } Circle;
@@ -138,13 +139,14 @@ typedef struct Circle {
 typedef Point Vector;
 const double PI = acos(-1.0);
 const double eps = 1e-7;
-const int maxp = 110
-const int maxrt = 105010;
+const int maxp = 110;
+const int maxrt = 105110;
 int cid[maxp];
 double rad[maxrt];
 int pre[maxrt];
-Point pts[maxrt+maxp];
+Point pts[maxrt];
 vi pid[maxp];
+FILE* logout;
 
 
 int dcmp(double x) {
@@ -173,10 +175,14 @@ inline double Length(const Point& a, const Point& b) {
     return sqrt( (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) );
 }
 
+inline double Length(const Point& a) {
+    return sqrt(a.x*a.x + a.y*a.y);
+}
+
 /**
     \brief calculate the angle of the vector
 */
-inline double angle(Point& p) {
+inline double angle(const Point& p) {
     return atan2(p.y, p.x);
 }
 
@@ -263,7 +269,7 @@ int getTangents(Circle &A, Circle &B, vector<Point>& ip) {
     // if (dcmp(d2)==0 && A.r==B.r) {
     //     return -1;
     // }
-    if (d2 == rdif*ridf) {
+    if (d2 == rdif*rdif) {
         ip.pb(A.point(base));
         ip.pb(B.point(base));
         return 1;
@@ -280,7 +286,7 @@ int getTangents(Circle &A, Circle &B, vector<Point>& ip) {
         ip.pb(A.point(base));
         ip.pb(B.point(PI+base));
     } else if (d2 > 0) {
-        double ang = acois((A.r+B.r) / sqrt(d2));
+        double ang = acos((A.r+B.r) / sqrt(d2));
         ip.pb(A.point(base+ang));
         ip.pb(B.point(PI+base+ang));
         ip.pb(A.point(base-ang));
@@ -292,9 +298,9 @@ int getTangents(Circle &A, Circle &B, vector<Point>& ip) {
 
 class CutTheRoots {
 public:
-    int NR, npt;
+    int NR, NP, npt;
     vector<Circle> cir;
-    vector<Segment> ans;
+    vector<Cut_t> ans;
 
     /**
         \brief makeCuts function provided by TCO.
@@ -340,7 +346,7 @@ public:
         ans.clr();
 
         #ifdef LOCAL_DEBUG
-        assert(npt < maxrt+maxp);
+        assert(npt < maxrt);
         #endif
 
         rep(i, 0, npt) {
@@ -535,11 +541,11 @@ public:
             return -2;
         }
 
-        a = angle(c1.c - c2.c);
-        da = acos((c1.r*c1.r + d*d - c2.r*c2.r) / (2.0*c1.r*d));
+        double a = angle(c1.c - c2.c);
+        double da = acos((c1.r*c1.r + d*d - c2.r*c2.r) / (2.0*c1.r*d));
 
-        p1 = c1.point(a - da);
-        p2 = c1.point(a + da);
+        Point p1 = c1.point(a - da);
+        Point p2 = c1.point(a + da);
         ip.pb(p1);
 
         if (p1 == p2)
@@ -551,9 +557,7 @@ public:
     /**
         \brief get the best cut point due to relative position of two circles.
     */
-    Point getBestCutPoint(int idx, int idx_, int& status, vi& pvc) {
-        Circle &c1 = cir[cid[idx]];
-        Circle &c2 = cir[cid[idx_]];
+    Point getBestCutPoint(Circle &c1, Circle &c2, int& status, vector<Point>& pvc) {
         Point p0;
 
         status = circle_circle_intersection(c1, c2, pvc);
@@ -585,7 +589,7 @@ public:
                 #endif
                 p0 = GetLineIntersection(pvc[0], v1, pvc[2], v2);
                 #ifdef LOCAL_DEBUG
-                assert(SegmentIntersection(pvc[0], pvc[1], pvc[2], pv[3]));
+                assert(SegmentIntersection(pvc[0], pvc[1], pvc[2], pvc[3]));
                 #endif
             }
 
@@ -607,8 +611,8 @@ public:
         \brief calculate the coefficient of the equation.
     */
     inline void updateCoef(int x0, int y0, Point& p, LL &A, LL &B, LL &C) {
-        LL x = (int)(P.x) - x0;
-        LL y = y0 - (int)(P.y);
+        LL x = (int)(p.x) - x0;
+        LL y = y0 - (int)(p.y);
         A += x * x;
         B += 2 * x * y;
         C += y * y;
@@ -618,7 +622,7 @@ public:
         \brief calculate the best k due to Monotonic.
             I'm not absolutely sure about the range [-\inf, -1].
     */
-    inline void getBestK(LL A, LL B, LL C, vector<double>& kvc) {
+    inline void getEquationK(LL A, LL B, LL C, vector<double>& kvc) {
         if (B == 0)   {
             kvc.pb(0);
             return ;
@@ -660,50 +664,91 @@ public:
             }
         }
 
-        getBestK(A, B, C, kvc);
+        getEquationK(A, B, C, kvc);
     }
 
     /**
         \brief get the best split due to `W` function and best cut point.
     */
+    double getBestK(LL A, LL B, LL C, vector<double>& kvc) {
+        double mn = -1, retk;
+        int sz = SZ(kvc);
 
+        #ifdef LOCAL_DEBUG
+        assert(sz > 0);
+        #endif
+
+        rep(i, 0, sz) {
+            const double& k = kvc[i];
+            double tmp = (A*k*k + B*k + C) / (k*k+1);
+            if (dcmp(tmp-mn) > 0) {
+                mn = tmp;
+                retk = k;
+            }
+            #ifdef LOCAL_DEBUG
+                fprintf(logout, "k = %.3lf, w = %.6lf\n", k, tmp);
+                fflush(logout);
+            #endif
+        }
+
+        return retk;
+    }
 
     /**
         \brief make a cut to split two circles 
             due to relative position of these two circles.
     */
     Cut_t splitTwoCircle(int l, int r, int idx, int idx_) {
+        Circle &c1 = cir[cid[idx]];
+        Circle &c2 = cir[cid[idx_]];
         Cut_t ret;
         int status;
         vector<Point> pvc;
         vector<double> kvc;
         LL A, B, C;
 
-        Point p0 = getBestCutPoint(idx, idx_, status, pvc);
+        Point p0 = getBestCutPoint(c1, c2, status, pvc);
         ret.a = p0.toIPoint();
-        getExtremeK(l, r, p0, kvc);
+        getExtremeK(l, r, p0, A, B, C, kvc);
 
         if (status == 2) {
             // intersect
             Point p = pvc[0];
-            double ang1 = Angle(p-c1.r, c2.r-c1.r);
-            double ang2 = Angle(p-c2.r, c1.r-c2.r);
-            double k1 = tan(ang1);
-            double k2 = tan(ang2);
+            // double ang1 = Angle(p-c1.c, c2.c-c1.c);
+            // double ang2 = Angle(p-c2.c, c1.c-c2.c);
+            // double k1 = tan(ang1);
+            // double k2 = tan(ang2);
+            double k1 = (c1.c.y-p.y) / (p.x-c1.c.x);
+            double k2 = (c2.c.y-p.y) / (p.x-c2.c.x);
             kvc.pb(k1);
             kvc.pb(k2);
 
         } else if (status == 1) {
             // tangent
-            
+            double ang = atan((c1.c.y-c2.c.y) / (double)(c1.c.x-c2.c.x)) * 180 / PI;
+            if (ang < 0)    ang += 180.0;
+            double lbound = 75, rbound = 120;
+            double k1 = tan((lbound + ang) / 180.0 * PI);
+            double k2 = tan((rbound + ang) / 180.0 * PI);
+            kvc.pb(k1);
+            kvc.pb(k2);
 
         } else if (status == -1) {
             // separated
-
+            double k1 = (pvc[0].y-pvc[1].y) / (pvc[1].x -pvc[0].x);
+            double k2 = (pvc[2].y-pvc[3].y) / (pvc[3].x -pvc[2].x);
+            kvc.pb(k1);
+            kvc.pb(k2);
 
         } else if (status == -2) {
             // cover
-            
+            double ang = atan((c1.c.y-c2.c.y) / (double)(c1.c.x-c2.c.x)) * 180 / PI;
+            if (ang < 0)    ang += 180.0;
+            double lbound = 75, rbound = 105;
+            double k1 = tan((lbound + ang) / 180.0 * PI);
+            double k2 = tan((rbound + ang) / 180.0 * PI);
+            kvc.pb(k1);
+            kvc.pb(k2);
 
         }
         #ifdef LOCAL_DEBUG
@@ -712,8 +757,16 @@ public:
         }
         #endif
 
+        double k = getBestK(A, B, C, kvc);
 
         return ret;
+    }
+
+    /**
+        \brief update the root because of the cut.
+    */
+    void updateRoot(int l, int r) {
+
     }
 
     /**
@@ -733,7 +786,8 @@ public:
         */
         int idx1, idx2;
         chooseTwoCircle(l, r, idx1, idx2);
-        splitTwoCircle(l, r, idx1, idx2);
+        Cut_t ct = splitTwoCircle(l, r, idx1, idx2);
+        ans.pb(ct);
 
         /**
             \step 3: update the root of plat
@@ -745,6 +799,7 @@ public:
         \brief Traser's v1.0 algorithm to make the cuts.
     */
 	vi makeCuts_Trasier_v1(int NP, vi points, vi roots) {
+        this->NP = NP;
         /**
             \step 1: initial union-find & pid vector & base point
         */
@@ -764,18 +819,48 @@ public:
         /**
             \step 4: 
         */
+
+        vi ret;
+        int sz = SZ(ans);
+        rep(i, 0, sz) {
+            ret.pb(ans[i].a.x);
+            ret.pb(ans[i].a.y);
+            ret.pb(ans[i].b.x);
+            ret.pb(ans[i].b.y);
+        }
+        #ifdef LOCAL_DEBUG
+        fprintf(logout, "|ans| = %d\n", (int)SZ(ret));
+        #endif
+
+        return ret;
 	}
 };
 
 
 // -------8<------- end of solution submitted to the website -------8<-------
 
-template<class T> void getVector(vector<T>& v) {
+template<class T> 
+void getVector(vector<T>& v) {
     for (int i = 0; i < v.size(); ++i)
         cin >> v[i];
 }
 
+void init_log() {
+    logout = fopen(LOG_FILENAME, "w");
+
+    if (logout == NULL) {
+        fprintf(stderr, "%s not exists.", LOG_FILENAME);
+        exit(1);
+    }
+}
+
+void close_log() {
+    fclose(logout);
+}
+
 int main() {
+    init_log();
+
     int NP;
     cin >> NP;
 
@@ -793,10 +878,11 @@ int main() {
     vector<int> ret = cr.makeCuts(NP, points, roots);
 
     cout << ret.size() << endl;
-    for (int i = 0; i < ret.size(); ++i) {
+    for (int i = 0; i < (int)ret.size(); ++i) {
         cout << ret[i] << endl;
     }
     cout.flush();
+    close_log();
 
 	return 0;
 }
