@@ -1,8 +1,10 @@
+*~
 *.jar
 *.exe
 *.pdf
 *.png
 *.htm
+CutTheRoots
 !*.cpp
 !*.tex
 !Makefile
