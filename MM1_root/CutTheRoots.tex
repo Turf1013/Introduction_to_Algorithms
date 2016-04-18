@@ -1,0 +1,254 @@
+%-*- coding:UTF-8 -*-
+% link-cut.tex
+\documentclass[UTF8]{ctexart}
+\usepackage{geometry}
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{dsfont}
+\usepackage{amsthm}
+\usepackage{listings} %插入代码
+\usepackage{xcolor} %代码高亮
+\usepackage{blkarray}
+\usepackage{diagbox}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{color}
+\usepackage{multirow}
+\usepackage[all,pdf]{xy}
+\usepackage{verbatim}   %comment
+\usepackage{cases}
+\usepackage{clrscode3e}	% need clrscode3e package which is not included in CTex.
+
+% THEOREM Environments --------------------------------------------------------
+\newtheorem{thm}{Theorem}[subsection]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{prob}[thm]{Problem}
+\newtheorem{mthm}[thm]{Main Theorem}
+\theoremstyle{definition}
+\newtheorem{defn}[thm]{Definition}
+\theoremstyle{remark}
+\newtheorem{rem}[thm]{Remark}
+\numberwithin{equation}{subsection}
+% MATH ------------------------------------------------------------------------
+\DeclareMathOperator{\RE}{Re}
+\DeclareMathOperator{\IM}{Im}
+\DeclareMathOperator{\ess}{ess}
+\newcommand{\eps}{\varepsilon}
+%\newcommand{\To}{\longrightarrow}  conflict with \package{clrscode3e}p
+\newcommand{\h}{\mathcal{H}}
+\newcommand{\s}{\mathcal{S}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\J}{\mathcal{J}}
+\newcommand{\M}{\mathcal{M}}
+\newcommand{\W}{\mathcal{W}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\BOP}{\mathbf{B}}
+\newcommand{\BH}{\mathbf{B}(\mathcal{H})}
+\newcommand{\KH}{\mathcal{K}(\mathcal{H})}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Complex}{\mathbb{C}}
+\newcommand{\Field}{\mathbb{F}}
+\newcommand{\RPlus}{\Real^{+}}
+\newcommand{\Polar}{\mathcal{P}_{\s}}
+\newcommand{\Poly}{\mathcal{P}(E)}
+\newcommand{\EssD}{\mathcal{D}}
+\newcommand{\Lom}{\mathcal{L}}
+\newcommand{\States}{\mathcal{T}}
+\newcommand{\abs}[1]{\left\vert#1\right\vert}
+\newcommand{\set}[1]{\left\{#1\right\}}
+\newcommand{\seq}[1]{\left<#1\right>}
+\newcommand{\norm}[1]{\left\Vert#1\right\Vert}
+\newcommand{\essnorm}[1]{\norm{#1}_{\ess}}
+
+
+% Some setup
+\pagestyle{plain}
+\geometry{a4paper, top=2cm, bottom=2cm, left=2cm, right=2cm}
+\CTEXsetup[format={\raggedright\bfseries\Large}]{section}
+\lstset{numbers=left, %设置行号位置
+        numberstyle=\small, %设置行号大小
+        keywordstyle=\color{blue}, %设置关键字颜色
+        commentstyle=\color{purple}, %设置注释颜色
+        %frame=single, %设置边框格式
+        escapeinside=``, %逃逸字符(1左面的键)，用于显示中文
+        breaklines, %自动折行
+        extendedchars=false, %解决代码跨页时，章节标题，页眉等汉字不显示的问题
+        %xleftmargin=2em,xrightmargin=2em, aboveskip=1em, %设置边距
+        tabsize=4, %设置tab空格数
+        showspaces=false %不显示空格
+       }
+
+% About math
+\newcommand{\rmnum}[1]{\romannumeral #1}
+\newcommand{\Emph}{\textbf}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\newcommand{\resetcounter}{\setcounter{equation}{0}}
+\newcommand{\equsuf}[1][x]{\equiv_{\textit{Suff(#1)}}}	
+\newcommand{\Suff}{\textit{Suff}}
+\newcommand{\len}[1][x]{\textit{length}_{#1}}
+
+% section deeep to 3 1.1.1
+\setcounter{secnumdepth}{3}
+
+\begin{document}
+
+\title{\Huge CutTheRoots}
+\vspace{2cm}
+\author{\Large Trasier}
+\date{\today}
+\maketitle
+
+\section{Problem Statement}
+\label{sec:problem_statement}
+	
+	Several seeds were planted in one jar.
+	To separate the plants, you need to cut the soil in the jar.
+	Each cut is modeled as an \Emph{infinite} staight line which goes through points(X1, Y1) and (X2, Y2).
+	Cut lines cut every root they intersect.
+	Two plants are considered to be separated as long as there exists at least one line which separates their base points.
+	
+	You need implement a single method \Emph{int[] makeCuts(int NP, int[] points, int[] roots)}.
+	The paramenters give the following information:
+	\begin{itemize}
+	
+		\item \Emph{NP}: the number of plants.
+		
+		\item \Emph{points}: the coordinates of endpoints of roots.
+			Endpoint i (0-based) has coordinates (points$[2*i]$, points$[2*i+1]$).
+			Note that there will be more than \Emph{NP} points in this array;
+			the first \Emph{NP} points wil be base points of plants.
+			
+		\item \Emph{roots}:	represend with indice of their endpoints,
+			Root j (0-based) connects endpoints root$[2*j]$ and root$[2*j+1]$.
+			It is guaranteed that each root endpoint belongs to exactly one plant.
+			Root of one plant or different plants can intersect each other, but not share an endpoint.
+			Due the code of generate, root$[2*j]$ is exists points, root$[2*j+1]$ is new point.
+		
+	\end{itemize}
+	
+	You must return a vector<int> represenint a set at most $4 * NP$ lines which separate all plants.
+	If you return describes L lines, it must contain exactly $4 * L$ elementts.
+
+\section{Notes}	
+\label{sec:notes}
+
+	\begin{itemize}
+	
+		\item Time limit is \Emph{10 seconds} and the memory limit is \Emph{1024MB} for a single test case.
+		
+		\item $\Emph{NP} \in [5, 105]$, $\Emph{|roots|} \in [50, 105000]$.
+		
+		\item All coordinates will faill into the range $[0, 1024]$.
+		
+	\end{itemize}
+	
+	
+\section{Thought}	
+
+	基于思路是尽量保持原有植物的外接轮廓。基本算法是贪心+二分。
+	\begin{enumerate}[(1)]
+	
+		\item 如何判定每条根属于哪个植物？
+		
+		并查集，将每个root连接的两点看成一条边，构建图，前$NP$个点一定是各自的祖先。
+		
+		\item 如何表示植物及其根？
+		
+		显然的思路是对每个植物，构建凸包，然后求外接多边形或者外接圆进行运算。
+		这个思路存在的问题是没有把祖先结点当做关键点。
+		因此，采用求所有root到祖先结点的距离，取\Emph{中位数}构建外接圆。
+		使用圆表示每棵植物。
+		
+		\item 切割基于什么理论？
+		
+		假定我们有一个最优的切割，那么再加任何一次切割的行为必然是一种\Emph{画蛇添足}的行为。
+		显然，我们随着切割的增加，保留的根的数目单调递减。故，这里是可以采用二分的。
+		然而，这个二分的关键在于上下限如何确定以及如何切割？
+		
+		\item 如何切割？
+		
+		切割的思路可以看成将元素进行分类，使用线性分类器对元素分类。
+		这个线性分类器的模型是一条直线，者很糟糕，导致很多分类算法都不能直接适用。
+		因此，我们适用启发式分割。每次，取两个规模最大的圆。
+		
+		\begin{enumerate}[(1)]
+			
+			\item 相交
+			
+			过两个交点的中点做直线$y=kx+b$，使得$W$函数最大。
+			
+			\item 相离
+			
+			过两条内切线的交点做直线$y=kx+b$，使得$W$函数最大。
+			
+			\item 内切
+			
+			过切点做直线$y=kx+b$，使得$W$函数最大。
+			
+			\item 内含
+			
+			过两个圆心做线段与圆的交点，过交点做直线$y=kx+b$，使得$W$函数最大。
+			
+			\item 重合
+			
+			不存在
+			
+		\end{enumerate}
+		
+		$W$函数描述的是所有点到直线的距离，我们希望这个距离越大越好，这样被切掉的root近似最少。
+		
+		点$(x0, y0)$到直线$Ax+By+C=0$的距离为
+		\[
+			d = \frac{|Ax0 + By0 + C|}{\sqrt{A^2+B^2}}
+		\]
+		直线$y=kx+b$过点$x0, y0$，可得直线$k(x-x0)-y+y0=0$。
+		\begin{align*}
+			W	&= \sum_{i=1}^{np}\sum_{j=1}^{|Root_i|} d^2	\\
+				&= \sum_{i=1}^{np}\sum_{j=1}^{|Root_i|} \frac{|k(x_{ij}-x0) - y_{ij} + y0|^2}{k^2+1}	\\
+				&= \frac{Ak^2 + Bk + C}{k^2+1}	\\
+				&= A + \frac{Bk + C - A}{k^2+1}
+		\end{align*}
+		若$B = 0$时，取$x = - \frac{C}{A}$
+		若$B \neq 0$时，不妨令$Y = \frac{Bk + C - A} {k^2+1} = \frac{Bk + D} {k^2+1}$。
+		对该式求导可知
+		\begin{align*}
+			dY 	&= \frac{B(k^2+1) - (Bk+D)*2k} {k^2+1}	\\
+				&= - \frac{Bk^2 + 2Dk - B} {k^2+1}	\\
+			\Delta	&= (2D)^2 + 4 \times B \times B	\\
+					&= 4(D^2 + B^2)
+		\end{align*}
+		显然一定存在两点$k_0, k_1$使得导数为0。
+		因此，最优解的取值范围是$[-\inf, k0], k1$。
+		
+		\item 如何动态修改？
+		
+		当划定一次分割后，断掉所有被切割的root点。
+		同时由于分割即分类，即对所有植物进行了一次二分类。
+		从而，可以对每个类别递归的进行操作\proc{CutTheRoots}。
+		
+		则$L = 2*L(n/2) + 1$，这里$L = [\log(n), n]$
+		
+		\item 如何判定植物被分割？
+		
+		任意base点对至少被一条直线分割。时间复杂度$O(n ^ 3)$.
+		
+		\item 如何打补丁？
+		
+		当函数执行完成后，扫描每个点对，假设$p0, p1$没有被分割。abort()
+		% 这种情况可能发生么？
+		
+		\item 如何参数化？
+		
+		中点和$k$的范围均可以参数化，
+		选择最大的两个圆也可以随机化。
+		
+	\end{enumerate}
+	
+\end{document}
+
