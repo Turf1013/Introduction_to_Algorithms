@@ -4,6 +4,7 @@
 *.pdf
 *.png
 *.htm
+*.log
 CutTheRoots
 !*.cpp
 !*.tex
