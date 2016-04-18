@@ -2,4 +2,4 @@
 !*.cpp
 !*.tex
 !Makefile
-!./exp/
+!./exp/*.py
