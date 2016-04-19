@@ -205,7 +205,7 @@ def test_intersect_circle():
 	plt.show()
 
 
-def getTangle(A, B):
+def getTangents(A, B):
 	if not isinstance(A, circle) or not isinstance(B, circle):
 		raise ValueError, "A or B not class circle"
 
@@ -236,6 +236,7 @@ def getTangle(A, B):
 		ret.append(A.point(base))
 		ret.append(B.point(base+pi))
 	elif d > 0:
+		ang = acos((A.r+B.r) / sqrt(d2));
 		ret.append(A.point(base+ang))
 		ret.append(B.point(pi+base+ang))
 		ret.append(A.point(base-ang))
@@ -254,7 +255,7 @@ def test_tangents():
 		r2 = R2[i]
 		c1 = circle(o1, r1);
 		c2 = circle(o2, r2);
-		pts = getTangle(c1, c2)
+		pts = getTangents(c1, c2)
 
 		ax = plt.subplot(2, 2, i+1)
 		cir = Circle(xy=tuple(o1), radius=r1, alpha=0.5)
@@ -276,9 +277,9 @@ def test_tangents():
 		if len(pts)	> 0:
 			X = zip(*pts)[0]
 			Y = zip(*pts)[1]
-			print pts
-			print X
-			print Y
+			# print pts
+			# print X
+			# print Y
 			for i in xrange(0, len(X), 2):
 				ax.plot(X[i:i+2], Y[i:i+2], 'ro-')
 		# ax.set_xlabel(r'X', fontsize=20)
