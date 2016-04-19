@@ -37,7 +37,7 @@ using namespace std;
 #define all(x) 			(x).begin(),(x).end()
 #define SZ(x) 			((int)(x).size())
 
-#define makeCuts        makeCuts_raw
+#define makeCuts        makeCuts_Trasier_v1
 #define LOG_FILENAME    "makeCuts.log"
 #define LOCAL_DEBUG
 
@@ -308,7 +308,7 @@ int getTangents(Circle &A, Circle &B, vector<Point>& ip) {
     if (d == 0) {
         ip.pb(A.point(base));
         ip.pb(B.point(PI+base));
-    } else if (d2 > 0) {
+    } else if (d > 0) {
         double ang = acos((A.r+B.r) / sqrt(d2));
         ip.pb(A.point(base+ang));
         ip.pb(B.point(PI+base+ang));
@@ -324,6 +324,27 @@ public:
     int NR, NP, npt;
     vector<Circle> cir;
     vector<Cut_t> ans;
+
+    /**
+        \brief dump the data to the logout.
+    */
+    void dumpInputToLog(int NP, vi& points, vi& roots) {
+        fprintf(logout, "%d\n", NP);
+
+        int npoints = SZ(points);
+        fprintf(logout, "%d\n", npoints);
+        rep(i, 0, npoints) {
+            fprintf(logout, "%d ", points[i]);
+        }
+        fprintf(logout, "\n");
+
+        int nroots = SZ(roots);
+        fprintf(logout, "%d\n", nroots);
+        rep(i, 0, nroots)  {
+            fprintf(logout, "%d ", roots[i]);
+        }
+        fprintf(logout, "\n");
+    }
 
     /**
         \brief makeCuts function provided by TCO.
@@ -469,6 +490,8 @@ public:
         int idx;
 
         #ifdef LOCAL_DEBUG
+        printf("l = %d, r = %d, kth = %d\n", l, r, kth);
+        fflush(stdout);
         assert(r>=l && kth>=l && kth<=r);
         #endif
 
@@ -564,8 +587,11 @@ public:
             return -2;
         }
 
-        double a = angle(c1.c - c2.c);
-        double da = acos((c1.r*c1.r + d*d - c2.r*c2.r) / (2.0*c1.r*d));
+        double a = angle(c2.c - c1.c);
+        double tmp = (c1.r*c1.r + d*d - c2.r*c2.r) / (2.0*c1.r*d);
+        tmp = min(1.0, tmp);
+        tmp = max(-1.0, tmp);
+        double da = acos(tmp);
 
         Point p1 = c1.point(a - da);
         Point p2 = c1.point(a + da);
@@ -911,6 +937,10 @@ public:
         \brief Traser's v1.0 algorithm to make the cuts.
     */
 	vi makeCuts_Trasier_v1(int NP, vi points, vi roots) {
+        #ifdef LOCAL_DEBUG
+        dumpInputToLog(NP, points, roots);
+        #endif
+
         this->NP = NP;
         /**
             \step 1: initial union-find & pid vector & base point
@@ -971,6 +1001,11 @@ void close_log() {
 }
 
 int main() {
+    #ifdef LOCAL_DEBUG
+        freopen("data.in", "r", stdin);
+       // freopen("data.out", "w", stdout);
+    #endif
+
     init_log();
 
     int NP;
