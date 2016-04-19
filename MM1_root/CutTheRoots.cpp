@@ -40,6 +40,7 @@ using namespace std;
 #define makeCuts        makeCuts_Trasier_v1
 #define LOG_FILENAME    "makeCuts.log"
 #define LOCAL_DEBUG
+#define DEBUG
 
 typedef long long LL;
 
@@ -149,9 +150,9 @@ typedef struct Cut_t {
         if (a.x == b.x) {
             return Segment(0, a.x, 1);
         } else {
-            double k = (b.y-a.y) / (double)(a.x-b.x);
-            double b = k*a.x + a.y;
-            return Segment(k, b, 0);
+            double k = ((double)b.y-a.y) / ((double)b.x-a.x);
+            double bb = a.y - k*a.x;
+            return Segment(k, bb, 0);
         }
     }
 
@@ -178,7 +179,7 @@ inline double Dot(Point a, Point b) {
 /**
     \brief calculate the length^2 between to points
 */
-inline double Length2(const Point& a, const Point& b) { 
+inline double Length2(const Point& a, const Point& b) {
     return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
 }
 
@@ -238,16 +239,16 @@ inline double DistanceToLine(Point P, Point A, Point B) {
     return fabs(Cross(v1, v2)) / Length(v1);
 }
 
-/**	
+/**
     \brief calculate the distance from point P to Segment(A, B).
 */
 inline double DistanceToSegment(Point &P, Point &A, Point &B) {
     if (A == B) return Length(P - A);
     Vector v1 = B - A, v2 = P - A, v3 = P - B;
-    
+
     if (dcmp(Dot(v1, v2)) < 0)      return Length(v2);
     else if (dcmp(Dot(v1, v3)) > 0) return Length(v3);
-    else                            return fabs(Cross(v1, v2)) / Length(v1);  
+    else                            return fabs(Cross(v1, v2)) / Length(v1);
 }
 
 /**
@@ -257,7 +258,7 @@ inline bool SegmentIntersection(Point &a1, Point &a2, Point &b1, Point &b2) {
     double c1 = Cross(a2-a1, b1-a1);
     double c2 = Cross(a2-a1, b2-a1);
     double c3 = Cross(b2-b1, a1-b1);
-    double c4 = Cross(b2-b1, b2-b1);
+    double c4 = Cross(b2-b1, a2-b1);
     return dcmp(c1)*dcmp(c2)<0 && dcmp(c3)*dcmp(c4)<0;
 }
 
@@ -369,7 +370,7 @@ public:
     }
 
     /**
-        \brief disjoint-set 
+        \brief disjoint-set
     */
     int find(int x) {
         if (x == pre[x])
@@ -402,7 +403,7 @@ public:
             cir.pb(Circle(pts[i]));
             pid[i].clr();
         }
-        
+
         rep(i, 0, npt)   pre[i] = i;
     }
 
@@ -416,7 +417,7 @@ public:
 
         NR = SZ(roots) >> 1;
 
-        #ifdef LOCAL_DEBUG    
+        #ifdef LOCAL_DEBUG
         assert(NR < maxrt);
         #endif
 
@@ -487,11 +488,13 @@ public:
     */
     double findKth(int n, int kth) {
         int l = 0, r = n - 1;
-        int idx;
+        int idx = 0;
 
-        #ifdef LOCAL_DEBUG
-        printf("l = %d, r = %d, kth = %d\n", l, r, kth);
-        fflush(stdout);
+        #ifdef DEBUG
+        // printf("l = %d, r = %d, kth = %d\n", l, r, kth);
+        // fflush(stdout);
+		#endif
+		#ifdef LOCAL_DEBUG
         assert(r>=l && kth>=l && kth<=r);
         #endif
 
@@ -563,7 +566,7 @@ public:
     }
 
     /**
-        \brief calculate the relative 
+        \brief calculate the relative
     */
     int circle_circle_intersection(Circle &c1, Circle &c2, vector<Point>& ip) {
         double d = Length(c1.c, c2.c);
@@ -702,7 +705,7 @@ public:
         */
         int x0 = (int)(p0.x + .5);
         int y0 = (int)(p0.y + .5);
-        
+
         A = B = C = 0;
         rep(i, l, r) {
             const int& id = cid[i];
@@ -720,8 +723,8 @@ public:
         \brief get the best split due to `W` function and best cut point.
     */
     double getBestK(LL A, LL B, LL C, vector<double>& kvc) {
-        double mn = -1, retk;
-        int sz = SZ(kvc);
+        double mn = 0;
+        int sz = SZ(kvc), idx = -1;
 
         #ifdef LOCAL_DEBUG
         assert(sz > 0);
@@ -730,9 +733,9 @@ public:
         rep(i, 0, sz) {
             const double& k = kvc[i];
             double tmp = (A*k*k + B*k + C) / (k*k+1);
-            if (dcmp(tmp-mn) > 0) {
+            if (idx==-1 || dcmp(tmp-mn)>0) {
                 mn = tmp;
-                retk = k;
+                idx = i;
             }
             #ifdef LOCAL_DEBUG
                 fprintf(logout, "k = %.3lf, w = %.6lf\n", k, tmp);
@@ -740,31 +743,73 @@ public:
             #endif
         }
 
-        return retk;
+        return kvc[idx];
     }
 
 	/**
 		\breif Due IPoint is needed, then we need to find the most similar IPoint.
 	*/
 	void getIPoint(Point& p, double k, Cut_t& ct) {
-		int base = 1e5;
+		// int base = 1e3;
+		// double b = p.y - k * p.x;
+
+		// if (dcmp(k) <= 0) {
+			// while (base<=1000000 && k*base+b > 0x3f3f3f3f)	base *= 10;
+		// } else {
+			// while (base>0 && k*base+b > 0x3f3f3f3f)	base /= 10;
+		// }
+
+		// #ifdef LOCAL_DEBUG
+			// assert(base > 0 && base<=1000000);
+		// #endif
+		// ct.a.x = (int)base;
+		// ct.a.y = (int)(k*base+b + .5);
+
+		// if (dcmp(k) <= 0) {
+			// base *= 5;
+		// } else {
+			// base /= 5;
+		// }
+		//base += 10;
+		// ct.b.x = (int)base;
+		// ct.b.y = (int)(k*base+b + .5);
 		double b = p.y - k * p.x;
-
-		while (base>0 && k*base-b > 0x3f3f3f3f)	base /= 10;	
-
+		int i;
 		#ifdef LOCAL_DEBUG
-			assert(base > 0);
+		int cnt = 0;
 		#endif
-		ct.a.x = (int)base;
-		ct.a.y = (int)(k*base-b + .5);
-
-		base += 10;
-		ct.b.x = (int)base;
-		ct.b.y = (int)(k*base-b + .5);
+		
+		for (i=0; i<=1024; ++i) {
+			double y = k*i+b;
+			if (y>=0 && y<=1024) {
+				ct.a.x = i;
+				ct.a.y = (int)(k*i+b);
+				#ifdef LOCAL_DEBUG
+				++cnt;
+				#endif
+				break;
+			}
+		}
+		
+		for (i=1024; i>=0; --i) {
+			double y = k*i+b;
+			if (y>=0 && y<=1024) {
+				ct.b.x = i;
+				ct.b.y = (int)(k*i+b);
+				#ifdef LOCAL_DEBUG
+				++cnt;
+				#endif
+				break;
+			}
+		}
+		
+		#ifdef LOCAL_DEBUG
+		assert(cnt >= 2);
+		#endif
 	}
 
     /**
-        \brief make a cut to split two circles 
+        \brief make a cut to split two circles
             due to relative position of these two circles.
     */
     Cut_t splitTwoCircle(int l, int r, int idx, int idx_) {
@@ -843,7 +888,11 @@ public:
 		int ll = l, rr = r - 1;
 
 		while (ll <= rr) {
-			while (ll<=rr && seg.cmp(cir[cid[ll]])<0)
+			#ifdef DEBUG
+				// printf("ll = %d, rr = %d\n", ll, rr);
+				// fflush(stdout);
+			#endif
+			while (ll<rr && seg.cmp(cir[cid[ll]])<0)
 				++ll;
 			while (rr>ll && seg.cmp(cir[cid[rr]])>=0)
 				--rr;
@@ -851,7 +900,11 @@ public:
 				break;
 			swap(cid[ll], cid[rr]);
 		}
-		
+		#ifdef DEBUG
+			// printf("ll = %d, rr = %d\n", ll, rr);
+			// fflush(stdout);
+		#endif
+
 		return ll;
     }
 
@@ -859,7 +912,7 @@ public:
 		\brief update the root because of the current cut.
 	*/
 	void updateRoot(int l, int r, int mid) {
-		/** 
+		/**
 			update the root due to the relative position to the cut with the center of circle.
 				Obviously, it's just a similar to accurate.
 		*/
@@ -914,9 +967,9 @@ public:
         */
         int mid = updatePlant(l, r);
 		#ifdef LOCAL_DEBUG
-		assert(mid < r);
+		assert(mid>l && mid<r);
 		#endif
-		
+
 		/**
 			\step 4: update the root
 		*/
@@ -932,7 +985,7 @@ public:
 			\step 6: Conquer later.
 		*/
     }
-	
+
     /**
         \brief Traser's v1.0 algorithm to make the cuts.
     */
@@ -951,15 +1004,15 @@ public:
             \step 2: which plan the root belongs to.
         */
         collect(roots);
-        
+
         /**
             \step 3: separate the circle
         */
-        rep(i, 0, NP)   cid[i] = NP;
+        rep(i, 0, NP)   cid[i] = i;
         dfs_split(0, NP);
 
         /**
-            \step 4: 
+            \step 4:
         */
 
         vi ret;
@@ -981,7 +1034,7 @@ public:
 
 // -------8<------- end of solution submitted to the website -------8<-------
 
-template<class T> 
+template<class T>
 void getVector(vector<T>& v) {
     for (int i = 0; i < v.size(); ++i)
         cin >> v[i];
@@ -1002,8 +1055,8 @@ void close_log() {
 
 int main() {
     #ifdef LOCAL_DEBUG
-        freopen("data.in", "r", stdin);
-       // freopen("data.out", "w", stdout);
+		// freopen("data.in", "r", stdin);
+		// freopen("data.out", "w", stdout);
     #endif
 
     init_log();
