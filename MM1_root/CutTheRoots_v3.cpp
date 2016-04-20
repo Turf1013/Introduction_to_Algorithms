@@ -39,7 +39,7 @@ using namespace std;
 
 #define LOG_FILENAME    "makeCuts.log"
 #define LOCAL_DEBUG
-// #define DEBUG
+#define DEBUG
 #define pre itmp
 
 typedef long long LL;
@@ -48,15 +48,16 @@ const double eps = 1e-7;
 const double PI = acos(-1.0);
 const int maxp = 106;
 const int maxrt = 105115;
-int cNR;
-int itmp[maxrt];
+int itmp[maxrt], idTb[maxrt], pid[maxrt], son[maxrt];
 double dbtmp[maxrt];
+double W[maxrt], len[maxrt];
 double ltB[maxp];
 double sumB[maxp];
-FILE* logout;
 bool mark[maxp];
 bool dead[maxrt];
 bool visit[maxp][maxp];
+FILE* logout;
+int cNR;
 
 int dcmp(double x) {
     if (fabs(x) < eps)  return 0;
@@ -193,12 +194,11 @@ typedef struct node_t {
 
 } node_t;
 
+vector<edge_t> E[maxrt];
+
 typedef struct Graph_t {
-	vector<vector<edge_t> > E;
 	vi son;
-	vector<double> len, W;
-	vector<int> pid, S;
-	map<int,int> tb;
+	vector<int> S;
 	Segment seg;
 	int vn, rtd, top, ptId;
 
@@ -212,18 +212,13 @@ typedef struct Graph_t {
 		W.reserve(n);
 		son.reserve(n);
 		len.reserve(n);
-		pid.reserve(n);
 		S.reserve(n);
 	}
 
 	inline int getId(int u) {
-		if (tb.find(u) == tb.end()) {
-			tb[u] = vn;
-			pid[vn] = u;
-			return vn++;
-		} else {
-			return tb[u];
-		}
+		if (idTb[u] == -1)
+			idTb[u] = vn++;
+		return idTb[u];
 	}
 
 	inline int getPid(int v) {
@@ -411,6 +406,10 @@ int find(int x) {
 	return pre[x] = find(pre[x]);
 }
 
+vector<vi> group;
+vector<Cut_t> ans;
+vector<double> kvc;
+
 class CutTheRoots {
 public:
 	// static const double NEG_INF = -1e16;
@@ -426,9 +425,6 @@ public:
 	static const double xy_step;
 	static const double alpha_step;
     int NR, NP, npt;
-    vector<vi> group;
-    vector<Cut_t> ans;
-	vector<double> kvc;
 
 	/**
 		\breif K to choose according the step
@@ -463,6 +459,7 @@ public:
             fprintf(logout, "%d ", roots[i]);
         }
         fprintf(logout, "\n");
+        fflush(stdout);
     }
 
     /**
@@ -493,6 +490,7 @@ public:
         assert(NR < maxrt);
         #endif
 
+        memset(idTb, -1, sizeof(idTb));
         rep(i, 0, npt)   pre[i] = i;
         rep(i, 0, NR) {
             const int& u = roots[i<<1];
@@ -506,14 +504,14 @@ public:
         }
 
 		#ifdef DEBUG
-		vi Sz_(npt, 0);
-		rep(i, 0, npt)
-			++Sz_[find(i)];
+		// vi Sz_(npt, 0);
+		// rep(i, 0, npt)
+		// 	++Sz_[find(i)];
 		#endif
 
         rep(i, 0, NP) {
 			#ifdef DEBUG
-			assert(Sz[i] == Sz_[i] && pre[i]==i);
+			// assert(Sz[i] == Sz_[i] && pre[i]==i);
 			// printf("Sz[%d] = %d, Sz_[%d] = %d\n", i, Sz[i], i, Sz_[i]);
 			#endif
 			G[i].init(i, Sz[i]);
@@ -524,11 +522,14 @@ public:
 		// exit(0);
 		#endif
 
-        for (int i=0; i<NR+NR; i+=2) {
-			const int& u = roots[i];
-			const int& v = roots[i+1];
+        rep(i, 0, NR) {
+            const int& u = roots[i<<1];
+            const int& v = roots[i<<1|1];
             int ptId = find(u);
             double w = Length(pts[u], pts[v]);
+            #ifdef DEBUG
+            assert(ptId>=0 && ptId<NP);
+            #endif
 			G[ptId].addEdge(u, v, w);
         }
 
@@ -1006,20 +1007,22 @@ public:
 		
 		while (SZ(group) < NP) {
 			#ifdef DEBUG
-			if (++cnt == NP) {
-				puts("wrong");
-				fflush(stdout);
-				return ;
-			}
+			// if (++cnt == NP) {
+			// 	puts("wrong");
+			// 	fflush(stdout);
+			// 	return ;
+			// }
 			#endif
 			/**
 				\step 1. choose two fittest plant
 			*/
 			int idx = -1, idx_ = -1;
 			chooseTwoPlant(idx, idx_);
+
 			#ifdef DEBUG
 			assert(idx>=0 && idx_>=0);
 			int szGp = SZ(group);
+			printf("szGp = %d, idx = %d, idx_ = %d\n", szGp, idx, idx_);
 			#endif
 
 			/**
@@ -1059,15 +1062,15 @@ public:
 		rep(k, 0, sz) {
 			Segment seg = ans[k].toSegment();
 			rep(i, 0, NP) {
-				if (seg.cmp(pts[i]) < 0) {
+				if (seg.cmp(pts[i]) <= 0) {
 					rep(j, i+1, NP) {
-						if (seg.cmp(pts[j]) >= 0) {
+						if (seg.cmp(pts[j]) > 0) {
 							visit[i][j] = visit[j][i] = true;
 						}
 					}
 				} else {
 					rep(j, i+1, NP) {
-						if (seg.cmp(pts[j]) < 0) {
+						if (seg.cmp(pts[j]) <= 0) {
 							visit[i][j] = visit[j][i] = true;
 						}
 					}
@@ -1104,7 +1107,7 @@ public:
         \brief Traser's v2.0 algorithm to make the cuts.
     */
 	vi makeCuts(int NP, vi points, vi roots) {
-        #ifdef DEBUG
+        #ifdef LOCAL_DEBUG
         dumpInputToLog(NP, points, roots);
         #endif
 
@@ -1126,17 +1129,25 @@ public:
 		rep(i, 0, NP) vc.pb(i);
 		group.pb(vc);
         split();
+        #ifdef LOCAL_DEBUG
+        fprintf(logout, "after split |Cut| = %d\n", SZ(ans));
+        #endif
 
 		/**
             \step 5: chekc if can reduce some cut
         */
-		// reduceCut();
+		reduceCut();
+		#ifdef LOCAL_DEBUG
+        fprintf(logout, "after reduce |Cut| = %d\n", SZ(ans));
+        #endif
 
         /**
             \step 6: check if all separated
         */
-		// check_separated();
-
+		check_separated();
+		#ifdef LOCAL_DEBUG
+        fprintf(logout, "after check |Cut| = %d\n", SZ(ans));
+        #endif
 
 		/**
 			\step 7: dump to return
@@ -1163,8 +1174,12 @@ public:
 			assert(ans[i].a != ans[i].b);
 			#endif
         }
-        #ifdef LOCAL_DEBUG
+        
+        #ifdef DEBUG
 		printf("|Cut| = %d\n", sz);
+        #endif
+
+        #ifdef LOCAL_DEBUG
         fprintf(logout, "|Cut| = %d\n", sz);
         #endif
 	}
