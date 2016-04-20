@@ -7,7 +7,7 @@ LIBS = -lrt
 CFLAGS = -Wall
 
 build: CutTheRoots
-CutTheRoots: CutTheRoots.cpp
+CutTheRoots: CutTheRoots_v3.cpp
 	$(CXX)	$(CFLAGS) -o CutTheRoots CutTheRoots.cpp $(LIBS)
 
 .PHONY: clean test

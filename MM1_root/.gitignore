@@ -5,6 +5,7 @@
 *.png
 *.htm
 *.log
+*.in
 CutTheRoots
 !*.cpp
 !*.tex
