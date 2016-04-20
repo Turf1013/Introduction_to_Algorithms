@@ -1222,6 +1222,10 @@ public:
 		ans.resize(n);
 	}
 	
+	/**
+		\brief	check if there exists cuted two circle in the group.
+		\return if exists return the id of the max separated cut, otherwise -1.
+	*/	
 	int cuted(int l, int r) {
 		Circle& c1 = cir[cid[l]];
 		Circle& c2 = cir[cid[l+1]];
