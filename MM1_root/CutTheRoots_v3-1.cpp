@@ -19,13 +19,14 @@
 #include <iterator>
 #include <iomanip>
 using namespace std;
+#pragma comment(linker,"/STACK:102400000,1024000")
 
 #define sti				set<int>
 #define stpii			set<pair<int, int> >
 #define mpii			map<int,int>
 #define vi				vector<int>
 #define pii				pair<int, int>
-#define pdd             pair<double, double>
+#define pdd             pair<float, float>
 #define vpii			vector<pair<int,int> >
 #define rep(i, a, n) 	for (int i=a;i<n;++i)
 #define per(i, a, n) 	for (int i=n-1;i>=a;--i)
@@ -38,37 +39,36 @@ using namespace std;
 #define SZ(x) 			((int)(x).size())
 
 #define LOG_FILENAME    "makeCuts.log"
-#define LOCAL_DEBUG
-#define DEBUG
-#define pre itmp
+// #define LOCAL_DEBUG
+// #define DEBUG
 
 typedef long long LL;
 
-const double eps = 1e-7;
-const double PI = acos(-1.0);
+const float eps = 1e-5;
+const float PI = acos(-1.0);
 const int maxp = 106;
 const int maxrt = 105115;
 int itmp[maxp*3];
 int S[maxrt], top;
-double W[maxrt];
-double ltB[maxp];
-double sumB[maxp];
+float W[maxrt];
+float ltB[maxp];
+float sumB[maxp];
 bool mark[maxp];
 bool visit[maxp][maxp];
 FILE* logout;
 int cNR;
 
-int dcmp(double x) {
+int dcmp(float x) {
     if (fabs(x) < eps)  return 0;
     return x<0 ? -1:1;
 }
 
-template <typename T=double>
+template <typename T=float>
 struct Point_t {
     T x, y;
 
     Point_t() {}
-    Point_t(double x, double y): x(x), y(y) {}
+    Point_t(float x, float y): x(x), y(y) {}
 
     bool operator== (const Point_t& oth) const {
         return x==oth.x && y==oth.y;
@@ -103,34 +103,34 @@ struct Point_t {
     }
 
 	void print() const {
-		printf("x = %.4lf, y = %.4lf\n", (double)x, (double)y);
+		printf("x = %.4lf, y = %.4lf\n", (float)x, (float)y);
 	}
 };
 
-typedef Point_t<double> Point;
+typedef Point_t<float> Point;
 typedef Point_t<int> IPoint;
 typedef Point Vector;
 Point pts[maxrt];
 
 typedef struct Segment {
-    double k, b;
+    float k, b;
 	int st;
 
     Segment() {}
-    Segment(double k, double b, int st=0):k(k), b(b), st(st) {}
+    Segment(float k, float b, int st=0):k(k), b(b), st(st) {}
 
     int cmp(Point& p) {
     	if (st)
-			return dcmp(b-p.x);
+			return dcmp(p.x - b);
 		else
-			return dcmp(k*p.x+b - p.y);
+			return dcmp(p.y - (k*p.x+b));
     }
 
-	int cmp(double x, double y) {
+	int cmp(float x, float y) {
 		if (st)
-			return dcmp(b-x);
+			return dcmp(x - b);
 		else
-			return dcmp(k*x+b - y);
+			return dcmp(y - (k*x+b));
 	}
 
     bool operator== (const Segment& oth) const {
@@ -153,8 +153,8 @@ typedef struct Cut_t {
         if (a.x == b.x) {
             return Segment(0, a.x, 1);
         } else {
-            double k = ((double)b.y-a.y) / ((double)b.x-a.x);
-            double bb = a.y - k*a.x;
+            float k = ((float)b.y-a.y) / ((float)b.x-a.x);
+            float bb = a.y - k*a.x;
             return Segment(k, bb, 0);
         }
     }
@@ -168,11 +168,11 @@ typedef struct Cut_t {
 
 typedef struct edge_t {
 	int v;
-	double w;
+	float w;
 	int nxt;
 
 	edge_t() {}
-	edge_t(int v, double w):v(v), w(w) {}
+	edge_t(int v, float w):v(v), w(w) {}
 
 	void print() const {
 		printf("v = %d, w = %.4lf\n", v, w);
@@ -181,11 +181,11 @@ typedef struct edge_t {
 } edge_t;
 
 typedef struct node_t {
-	double b, w;
+	float b, w;
 	int ptId;
 
 	node_t() {}
-	node_t(double b, double w, double ptId):
+	node_t(float b, float w, float ptId):
 		b(b), w(w), ptId(ptId) {}
 
 	bool operator< (const node_t& oth) const {
@@ -194,20 +194,30 @@ typedef struct node_t {
 
 } node_t;
 
-const double len_son_weight = 1.0;
+const float len_son_weight = 1.0;
 int head[maxrt], l = 1, rtd;
 edge_t E[maxrt];
 node_t nd[maxrt];
 Segment seg;
 
-inline void addEdge(int u, int v, double w) {
+inline void addEdge(int u, int v, float w) {
+	#ifdef DEBUG
+	printf("u = %d, v = %d\n", u, v);
+	fflush(stdout);
+	#endif
+	#ifdef LOCAL_DEBUG
+	assert(u != v);
+	#endif
 	E[l].v = v;
 	E[l].w = w;
 	E[l].nxt = head[u];
 	head[u] = l++;
+	#ifdef DEBUG
+	assert(l <= maxrt);
+	#endif
 }
 
-inline double calWeight(int len, int son) {
+inline float calWeight(int len, int son) {
 	return len * son / cNR;
 }
 
@@ -219,8 +229,12 @@ inline int getPos(int pid) {
 	return seg.cmp(pts[pid])<=0 ? 0:1;
 }
 
-bool dfs_refresh(int u, int& son, double& len) {
+bool dfs_refresh(int u, int& son, float& len) {
 	int d = getPos(u);
+
+	#ifdef DEBUG
+		// printf("u = %d, d = %d\n", u, d);
+	#endif
 
 	if (d != rtd) {
 		W[u] = 0;
@@ -230,21 +244,29 @@ bool dfs_refresh(int u, int& son, double& len) {
 	son = 1;
 	len = 0;
 	S[top++] = u;
-	int sson, pk = head[u];
-	double llen;
+	int sson, pk = 0;
+	float llen;
+
+	#ifdef DEBUG
+	// printf("u = %d\n", u);
+	#endif
 
 	for (int k=head[u]; k; k=E[k].nxt) {
 		const int& v = E[k].v;
 		if (dfs_refresh(v, sson, llen)) {
 			son += sson;
 			len += llen + E[k].w;
-			E[pk].nxt = k;
+			if (pk)
+				E[pk].nxt = k;
 			pk = k;
 		}
 	}
 
 	W[u] = calWeight(len, son);
-	E[pk].nxt = 0;
+	if (!pk)
+		head[u] = 0;
+	else
+		E[pk].nxt = 0;
 	return true;
 }
 
@@ -254,14 +276,14 @@ typedef struct Graph_t {
 
 	void refresh() {
 		int son;
-		double len;
+		float len;
 
 		l = top;
 		rtd = getPos(ptId);
 		#ifdef DEBUG
-		bool flag = dfs_refresh(0, son, len);
+		bool flag = dfs_refresh(ptId, son, len);
 		#else
-		dfs_refresh(0, son, len);
+		dfs_refresh(ptId, son, len);
 		#endif
 		r = top;
 
@@ -270,87 +292,91 @@ typedef struct Graph_t {
 		#endif
 	}
 
-	void dumpKxy(int& sz, double k) {
+	void dumpKxy(int& sz, float k) {
 		rep(i, l, r) {
 			// int pid = getPid(S[i]);
 			const int& pid = S[i];
 			nd[sz].b = pts[pid].y - pts[pid].x * k;
-			nd[sz].w = W[i];
+			nd[sz].w = W[pid];
 			nd[sz].ptId = ptId;
 			++sz;
 		}
 	}
 
-	void dumpX(double x, double &w) {
+	void dumpX(float x, float &w) {
 		int d = dcmp(pts[ptId].x - x) <= 0 ? 0 : 1;
 		rep(i, l, r) {
-			int d2 = dcmp(pts[S[i]].x - x) <= 0 ? 0 : 1;
+			const int& pid = S[i];
+			int d2 = dcmp(pts[pid].x - x) <= 0 ? 0 : 1;
 			if (d == d2) {
-				w += W[i];
+				w += W[pid];
 			}
 		}
 	}
 
-	void dumpY(double y, double &w) {
+	void dumpY(float y, float &w) {
 		int d = dcmp(pts[ptId].y - y) <= 0 ? 0 : 1;
 		rep(i, l, r) {
-			int d2 = dcmp(pts[S[i]].y - y) <= 0 ? 0 : 1;
+			const int& pid = S[i];
+			int d2 = dcmp(pts[pid].y - y) <= 0 ? 0 : 1;
 			if (d == d2) {
-				w += W[i];
+				w += W[pid];
 			}
 		}
 	}
 
 } Graph_t;
 
-
-/**
-	\brief disjoint-set
-*/
-int find(int x) {
-	if (x == pre[x])
-		return x;
-	return pre[x] = find(pre[x]);
-}
-
 /**
     \brief calculate the length^2 between to points
 */
-inline double Length2(const Point& a, const Point& b) {
+inline float Length2(const Point& a, const Point& b) {
     return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
 }
 
 /**
     \brief calculate the length between to points
 */
-inline double Length(const Point& a, const Point& b) {
+inline float Length(const Point& a, const Point& b) {
     return sqrt( (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) );
 }
 
-inline double Length(const Point& a) {
+inline float Length(const Point& a) {
     return sqrt(a.x*a.x + a.y*a.y);
 }
 
 Graph_t G[maxp];
 vector<vi> group;
 vector<Cut_t> ans;
-vector<double> kvc;
+vector<float> kvc;
 
 class CutTheRoots {
 public:
-	static const double NEG_INF;
-	static const double POS_INF;
-	static const double w_incut;
-	static const double w_outcut;
-	static const double xy_step;
-	static const double alpha_step;
+	float NEG_INF;
+	float POS_INF;
+	float w_incut;
+	float w_outcut;
+	float xy_step;
+	float alpha_step;
     int NR, NP, npt;
+	
+	/**
+		\brief the parameter
+	*/
+	void init_para() {
+		NEG_INF = -1e16;
+		POS_INF = 1e16;
+		w_incut = 30.0  / NP;
+		w_outcut = 2.0 * (npt / (NP * 300.0));
+		xy_step = 10;
+		alpha_step = 2.0;
+	}
 
 	/**
-		\breif K to choose according the step
+		\brief K to choose according the step
 	*/
 	inline void init_kvc() {
-		double alpha;
+		float alpha;
 
 		for (alpha=0; alpha<90.; alpha+=alpha_step) {
 			kvc.pb(tan(alpha*PI/180.0));
@@ -379,11 +405,11 @@ public:
             fprintf(logout, "%d ", roots[i]);
         }
         fprintf(logout, "\n");
-        fflush(stdout);
+        fflush(logout);
     }
 
     /**
-        \brief initial the points to global double array.
+        \brief initial the points to global float array.
     */
     void init(vi& points) {
         npt = SZ(points) >> 1;
@@ -394,37 +420,57 @@ public:
 
         rep(i, 0, npt) {
             pts[i].x = points[i<<1];
-            pts[i].y = points[i<<1|1];
+            pts[i].y = points[(i<<1)|1];
         }
 
-		points.clr();
 		init_kvc();
+		init_para();
     }
 
     /**
         \brief collect the plant's root.
     */
     void collect(vi& roots) {
-        cNR = NR = SZ(roots) >> 1;
+        NR = SZ(roots) >> 1;
+		cNR = npt;
         #ifdef LOCAL_DEBUG
         assert(NR < maxrt);
         #endif
 
 		memset(head, 0, sizeof(head));
-        rep(i, 0, npt)   pre[i] = i;
+		rep(i, 0, NP)	G[i].ptId = i;
+		#ifdef DEBUG
+		printf("NR = %d\n", NR);
+		#endif
         rep(i, 0, NR) {
             const int& u = roots[i<<1];
-            const int& v = roots[i<<1|1];
-			double w = Length(pts[u], pts[v]);
+            const int& v = roots[(i<<1)|1];
+			float w = Length(pts[u], pts[v]);
 			addEdge(u, v, w);
         }
+		#ifdef DEBUG
+		printf("addEdge end.\n");
+		#endif
+		
+		#ifdef DEBUG
+        puts("update Root start");
+		fflush(stdout);
+		#endif
+        updateRoot(Segment(0, 2048));
+		#ifdef DEBUG
+        puts("update Root end");
+		fflush(stdout);
+		#endif
+		#ifdef DEBUG
+        assert(cNR == npt);
+		#endif
     }
 
 	/**
 		\breif Heuristic function: two smallest and closet circle two split,
 				because they always need a cut to split them, why don't we cut early???
 	*/
-	double HForChoosePlant(int idx1, int idx2) {
+	float HForChoosePlant(int idx1, int idx2) {
 		Point &p1 = pts[idx1];
 		Point &p2 = pts[idx2];
 
@@ -432,7 +478,7 @@ public:
 			H = |c1.c - c2.c| + (|c1| + |c2|) / NR
 		*/
 
-		return Length2(p1, p2) + (G[idx1].r - G[idx1].l + G[idx2].r - G[idx2].l) / (double)(cNR);
+		return Length(p1, p2) + (G[idx1].r - G[idx1].l + G[idx2].r - G[idx2].l) / (float)(cNR);
 	}
 
     /**
@@ -441,7 +487,7 @@ public:
     */
     void chooseTwoPlant(int &idx, int &idx_) {
 		int szGp = SZ(group);
-		double mn = POS_INF;
+		float mn = POS_INF;
 
 		rep(k, 0, szGp) {
 			int sz = SZ(group[k]);
@@ -450,7 +496,7 @@ public:
 
 			rep(i, 0, sz) {
 				rep(j, i+1, sz) {
-					double tmp = HForChoosePlant(group[k][i], group[k][j]);
+					float tmp = HForChoosePlant(group[k][i], group[k][j]);
 					if (dcmp(tmp-mn) < 0) {
 						idx = group[k][i];
 						idx_ = group[k][j];
@@ -467,10 +513,10 @@ public:
 		\	Because first item we want to protect more roots,
 				second item we really need less cut, so we want a cut which can split more plant.
 	*/
-	void chooseBestSplit(double K, double lb, double rb, double &B, double &W) {
+	void chooseBestSplit(float K, float lb, float rb, float &B, float &W) {
 		int szNd = 0;
-		vector<pair<double,int> > ptB;
-		double h = 0;
+		vector<pair<float,int> > ptB;
+		float h = 0;
 
 		W = NEG_INF;
 		memset(sumB, 0, sizeof(sumB));
@@ -481,7 +527,7 @@ public:
 
 		rep(ii, 0, szGp) {
 			int ptSz = SZ(group[ii]);
-			vector<pair<double,int> > gpB;
+			vector<pair<float,int> > gpB;
 
 			rep(jj, 0, ptSz) {
 				int ptId = group[ii][jj];
@@ -489,8 +535,8 @@ public:
 				int psz = szNd;
 				G[ptId].dumpKxy(szNd, K);
 
-				double &sum = sumB[ptId];
-				double &lt = ltB[ptId];
+				float &sum = sumB[ptId];
+				float &lt = ltB[ptId];
 				rep(j, psz, szNd) {
 					if (dcmp(nd[j].b - nd[psz].b) <= 0)
 						lt += nd[j].w;
@@ -548,7 +594,7 @@ public:
 				++k;
 			}
 
-			double bb = (nd[j].b + nd[i].b) / 2.0;
+			float bb = (nd[j].b + nd[i].b) / 2.0;
 			if (dcmp(h-W)>0 && dcmp(bb-lb)>0 && dcmp(bb-rb)<0) {
 				B = bb;
 				W = h;
@@ -561,7 +607,7 @@ public:
 		\brief choose the best split due to cut
 			x = ???, step = 10
 	*/
-	void chooseBestSplitX(double lx, double rx, double &x, double &w) {
+	void chooseBestSplitX(float lx, float rx, float &x, float &w) {
 		if (dcmp(lx-rx) == 0) {
 			x = (lx + rx) / 2.0;
 			w = 0;
@@ -572,11 +618,11 @@ public:
 		}
 
 		if (lx > rx)	swap(lx, rx);
-		double delta = (rx-lx) / xy_step;
-		double xx, tmp;
+		float delta = (rx-lx) / xy_step;
+		float xx, tmp;
 
 		w = NEG_INF;
-		for (xx=lx; xx<=rx; xx+=delta) {
+		for (xx=lx+delta; xx<=rx; xx+=delta) {
 			tmp = 0;
 			rep(i, 0, NP)
 				G[i].dumpX(xx, tmp);
@@ -591,7 +637,7 @@ public:
 		\brief choose the best split due to
 			y = ???, step = 10
 	*/
-	void chooseBestSplitY(double ly, double ry, double &y, double &w) {
+	void chooseBestSplitY(float ly, float ry, float &y, float &w) {
 		if (dcmp(ly-ry) == 0) {
 			y = (ly + ry) / 2.0;
 			w = 0;
@@ -602,8 +648,8 @@ public:
 		}
 
 		if (ly > ry)	swap(ly, ry);
-		double delta = (ry - ly) / xy_step;
-		double yy, tmp;
+		float delta = (ry - ly) / xy_step;
+		float yy, tmp;
 
 		w = NEG_INF;
 		for (yy=ly+delta; yy<ry; yy+=delta) {
@@ -629,9 +675,9 @@ public:
 		\brief split two chosen plant
 	*/
 	Cut_t splitTwoPlant(int idx, int idx_) {
-		double bestk, bestb, bestw = NEG_INF;
-		double k, b, w;
-		double lb, rb;
+		float bestk, bestb, bestw = NEG_INF;
+		float k, b, w;
+		float lb, rb;
 		int sz = SZ(kvc);
 
 		rep(i, 0, sz) {
@@ -685,7 +731,7 @@ public:
 		\brief calculate the disntance between
 			`y = k * x + b` and `y = k'x + b'`
 	*/
-	double HForKxy(double k, double b, double kk, double bb) {
+	float HForKxy(float k, float b, float kk, float bb) {
 		return fabs(k-kk) + fabs(b-bb);
 	}
 
@@ -694,7 +740,7 @@ public:
 		\brief choose the best cut due to
 			y = k * x + b.
 	*/
-	Cut_t chooseBestCut(double k, double b, int idx, int idx_) {
+	Cut_t chooseBestCut(float k, float b, int idx, int idx_) {
 		vector<IPoint> vp;
 		int x, y;
 
@@ -716,7 +762,7 @@ public:
 		Point& p2 = pts[idx_];
 		int d1, d2;
 		Cut_t ret, ct;
-		double mn = POS_INF, tmp;
+		float mn = POS_INF, tmp;
 
 		rep(i, 0, sz) {
 			ct.a = vp[i];
@@ -757,6 +803,10 @@ public:
 
 			c[0] = c[1] = 0;
 			rep(j, 0, sz) {
+				#ifdef DEBUG
+				int pid = group[i][j];
+				Point pt = pts[pid];
+				#endif
 				itmp[j] = (seg.cmp(pts[group[i][j]]) <= 0 ? 0 : 1);
 				++c[itmp[j]];
 			}
@@ -788,7 +838,20 @@ public:
 	void updateRoot() {
 		const Cut_t& ct = *ans.rbegin();
 		seg = ct.toSegment();
-		
+
+		top = 0;
+		rep(i, 0, NP) {
+			G[i].refresh();
+		}
+		cNR = top;
+		#ifdef DEBUG
+		assert(cNR >= NP);
+		#endif
+	}
+
+	void updateRoot(Segment seg_) {
+		seg = seg_;
+
 		top = 0;
 		rep(i, 0, NP) {
 			G[i].refresh();
@@ -869,28 +932,26 @@ public:
 			Heuristics function.
     */
 	void split() {
-		#ifdef DEBUG
 		int cnt = 0;
-		#endif
 
 		while (SZ(group) < NP) {
-			#ifdef DEBUG
 			if (++cnt == NP) {
-				puts("wrong");
-				fflush(stdout);
-				return ;
-			}
+			#ifdef LOCAL_DEBUG			
+				fprintf(logout, "output of NP.\n");
+				fflush(logout);
 			#endif
+				break ;
+			}
 			/**
 				\step 1. choose two fittest plant
 			*/
 			int idx = -1, idx_ = -1;
+			int pszGp = SZ(group);
 			chooseTwoPlant(idx, idx_);
 
 			#ifdef DEBUG
 			assert(idx>=0 && idx_>=0);
-			int szGp = SZ(group);
-			printf("szGp = %d, idx = %d, idx_ = %d\n", szGp, idx, idx_);
+			printf("szGp = %d, idx = %d, idx_ = %d\n", pszGp, idx, idx_);
 			#endif
 
 			/**
@@ -914,8 +975,10 @@ public:
 			*/
 			// reduceCut();
 
+			if (SZ(group) == pszGp)
+				break;
 			#ifdef DEBUG
-			assert(SZ(group) > szGp);
+			assert(SZ(group) > pszGp);
 			#endif
 		}
 	}
@@ -983,20 +1046,44 @@ public:
         /**
             \step 1: initial union-find & pid vector & base point
         */
+		#ifdef DEBUG
+		puts("initial points start.");
+		fflush(stdout);
+		#endif
         init(points);
+		#ifdef DEBUG
+		puts("initial points end.");
+		fflush(stdout);
+		#endif
 
         /**
             \step 2: which plan the root belongs to.
         */
+		#ifdef DEBUG
+		puts("collect roots start.");
+		fflush(stdout);
+		#endif
         collect(roots);
-
+		#ifdef DEBUG
+		puts("collect roots end.");
+		fflush(stdout);
+		#endif
+		
         /**
             \step 3: separate the circle
         */
 		vi vc;
 		rep(i, 0, NP) vc.pb(i);
 		group.pb(vc);
+		#ifdef DEBUG
+		puts("separate plants start.");
+		fflush(stdout);
+		#endif
         split();
+		#ifdef DEBUG
+		puts("separate plants end.");
+		fflush(stdout);
+		#endif
         #ifdef LOCAL_DEBUG
         fprintf(logout, "after split |Cut| = %d\n", SZ(ans));
         #endif
@@ -1004,15 +1091,31 @@ public:
 		/**
             \step 5: chekc if can reduce some cut
         */
+		#ifdef DEBUG
+		puts("reduce Cut start.");
+		fflush(stdout);
+		#endif
 		reduceCut();
+		#ifdef DEBUG
+		puts("reduce Cut end.");
+		fflush(stdout);
+		#endif
 		#ifdef LOCAL_DEBUG
         fprintf(logout, "after reduce |Cut| = %d\n", SZ(ans));
         #endif
 
         /**
             \step 6: check if all separated
-        */
+        */		
+		#ifdef DEBUG
+		puts("check Separated start.");
+		fflush(stdout);
+		#endif
 		check_separated();
+		#ifdef DEBUG
+		puts("check Separated end.");
+		fflush(stdout);
+		#endif
 		#ifdef LOCAL_DEBUG
         fprintf(logout, "after check |Cut| = %d\n", SZ(ans));
         #endif
@@ -1020,9 +1123,16 @@ public:
 		/**
 			\step 7: dump to return
 		*/
+		#ifdef DEBUG
+		puts("dump Result start.");
+		fflush(stdout);
+		#endif
 		vi ret;
         dump_result(ret);
-
+		#ifdef DEBUG
+		puts("dump Result end.");
+		fflush(stdout);
+		#endif
         return ret;
 	}
 
@@ -1052,68 +1162,3 @@ public:
         #endif
 	}
 };
-const double CutTheRoots::NEG_INF = -1e16;
-const double CutTheRoots::POS_INF = 1e16;
-const double CutTheRoots::w_incut = 1.0;
-const double CutTheRoots::w_outcut = 0.0;
-const double CutTheRoots::xy_step = 10;
-const double CutTheRoots::alpha_step = 1.0;
-
-// -------8<------- end of solution submitted to the website -------8<-------
-
-template<class T>
-void getVector(vector<T>& v) {
-    for (int i = 0; i < v.size(); ++i)
-        cin >> v[i];
-}
-
-void init_log() {
-    logout = fopen(LOG_FILENAME, "w");
-
-    if (logout == NULL) {
-        fprintf(stderr, "%s not exists.", LOG_FILENAME);
-        exit(1);
-    }
-}
-
-void close_log() {
-    fclose(logout);
-}
-
-int main() {
-    #ifdef DEBUG
-		freopen("data.in", "r", stdin);
-		freopen("data.out", "w", stdout);
-    #endif
-
-    init_log();
-
-    int NP;
-    cin >> NP;
-
-    int Npoints;
-    cin >> Npoints;
-    vector<int> points(Npoints);
-    getVector(points);
-
-    int Nroots;
-    cin >> Nroots;
-    vector<int> roots(Nroots);
-    getVector(roots);
-
-    CutTheRoots cr;
-    vector<int> ret = cr.makeCuts(NP, points, roots);
-
-	#ifdef DEBUG
-	cout << "sz = ";
-	#endif
-    cout << ret.size() << endl;
-    for (int i = 0; i < (int)ret.size(); ++i) {
-        cout << ret[i] << endl;
-    }
-    cout.flush();
-    close_log();
-
-	return 0;
-}
-
