@@ -206,7 +206,7 @@ typedef struct Graph_t {
 	Graph_t() {
 		vn = 0;
 	}
-	
+
 	void init(int ptId, int n) {
 		this->ptId = ptId;
 		E.reserve(n);
@@ -884,7 +884,12 @@ public:
 						vc.pb(group[i][j]);
 					}
 				}
+				
+				#ifdef DEBUG
+				assert(SZ(vc) > 0);
+				#endif
 				group[i].resize(m);
+				group.pb(vc);
 			}
 		}
 	}
@@ -896,7 +901,7 @@ public:
 	void updateRoot() {
 		const Cut_t& ct = *ans.rbegin();
 		Segment seg = ct.toSegment();
-		
+
 		cNR = 0;
 		rep(i, 0, NP) {
 			G[i].refresh(seg);
@@ -984,7 +989,8 @@ public:
 			int idx = -1, idx_ = -1;
 			chooseTwoPlant(idx, idx_);
 			#ifdef DEBUG
-			assert(idx>=0 && idx_>=0); 
+			assert(idx>=0 && idx_>=0);
+			int szGp = SZ(group);
 			#endif
 
 			/**
@@ -1006,7 +1012,11 @@ public:
 			/**
 				\step 5. reduce the cut
 			*/
-			reduceCut();
+			// reduceCut();
+			
+			#ifdef DEBUG
+			assert(SZ(group) > szGp);
+			#endif
 		}
 	}
 
