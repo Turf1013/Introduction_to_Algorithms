@@ -37,10 +37,9 @@ using namespace std;
 #define all(x) 			(x).begin(),(x).end()
 #define SZ(x) 			((int)(x).size())
 
-#define makeCuts        makeCuts_Trasier_v2
 #define LOG_FILENAME    "makeCuts.log"
 #define LOCAL_DEBUG
-#define DEBUG
+// #define DEBUG
 #define pre itmp
 
 typedef long long LL;
@@ -48,7 +47,7 @@ typedef long long LL;
 const double eps = 1e-7;
 const double PI = acos(-1.0);
 const int maxp = 106;
-const int maxrt = 105015;
+const int maxrt = 105115;
 int cNR;
 int itmp[maxrt];
 double dbtmp[maxrt];
@@ -251,6 +250,10 @@ typedef struct Graph_t {
 			W[i] = calWeight(S[i]);
 			S[i] = getPid(S[i]);
 		}
+
+		#ifdef DEBUG
+		assert(son[0] > 0);
+		#endif
 	}
 
 	inline int getPos(int v) {
@@ -268,6 +271,7 @@ typedef struct Graph_t {
 		}
 
 		// S[top++] = getPid(u);
+		son[u] = 1;
 		S[top++] = u;
 		int sz = SZ(E[u]), m = 0;
 
@@ -484,7 +488,7 @@ public:
     */
     void collect(vi& roots) {
         cNR = NR = SZ(roots) >> 1;
-		vi Sz(NR, 1);
+		vi Sz(npt, 1);
         #ifdef LOCAL_DEBUG
         assert(NR < maxrt);
         #endif
@@ -497,23 +501,28 @@ public:
             int fv = find(v);
             if (fu != fv) {
                 pre[fv] = fu;
-				Sz[fv] += Sz[fu];
+				Sz[fu] += Sz[fv];
             }
         }
 
 		#ifdef DEBUG
-		vi Sz_(NP, 0);
-		rep(i, 0, NR)
+		vi Sz_(npt, 0);
+		rep(i, 0, npt)
 			++Sz_[find(i)];
 		#endif
 
         rep(i, 0, NP) {
 			#ifdef DEBUG
-			assert(Sz[i] == Sz_[i]);
+			assert(Sz[i] == Sz_[i] && pre[i]==i);
+			// printf("Sz[%d] = %d, Sz_[%d] = %d\n", i, Sz[i], i, Sz_[i]);
 			#endif
 			G[i].init(i, Sz[i]);
             G[i].getId(i);
         }
+		#ifdef DEBUG
+		// fflush(stdout);
+		// exit(0);
+		#endif
 
         for (int i=0; i<NR+NR; i+=2) {
 			const int& u = roots[i];
@@ -529,6 +538,9 @@ public:
 		Segment seg(0, 2048);
 		rep(i, 0, NP) {
 			G[i].refresh(seg);
+			#ifdef DEBUG
+			assert(G[i].vn == Sz[i]);
+			#endif
 		}
     }
 
@@ -628,7 +640,13 @@ public:
 		sort(all(ptB));
 		int sz = SZ(vc);
 		int i = 0, k = 0, lt = 0;
-		vc.pb(vc[sz-1]);
+		/**
+			following is the bug of CDT.
+		*/
+		{
+			node_t nd = vc[sz-1];
+			vc.pb(nd);
+		}
 
 		while (i < sz) {
 			int j = i;
@@ -674,7 +692,7 @@ public:
 		\brief choose the best split due to cut
 			x = ???, step = 10
 	*/
-	void chooseBestSplitX(double &x, double lx, double rx, double &w) {
+	void chooseBestSplitX(double lx, double rx, double &x, double &w) {
 		if (dcmp(lx-rx) == 0) {
 			x = (lx + rx) / 2.0;
 			w = 0;
@@ -704,7 +722,7 @@ public:
 		\brief choose the best split due to
 			y = ???, step = 10
 	*/
-	void chooseBestSplitY(double &y, double ly, double ry, double &w) {
+	void chooseBestSplitY(double ly, double ry, double &y, double &w) {
 		if (dcmp(ly-ry) == 0) {
 			y = (ly + ry) / 2.0;
 			w = 0;
@@ -878,13 +896,13 @@ public:
 				vi vc;
 
 				rep(j, 0, sz) {
-					if (itmp[j] ^ d) {
+					if (itmp[j] == d) {
 						group[i][m++] = group[i][j];
 					} else {
 						vc.pb(group[i][j]);
 					}
 				}
-				
+
 				#ifdef DEBUG
 				assert(SZ(vc) > 0);
 				#endif
@@ -982,7 +1000,18 @@ public:
 			Heuristics function.
     */
 	void split() {
+		#ifdef DEBUG
+		int cnt = 0;
+		#endif
+		
 		while (SZ(group) < NP) {
+			#ifdef DEBUG
+			if (++cnt == NP) {
+				puts("wrong");
+				fflush(stdout);
+				return ;
+			}
+			#endif
 			/**
 				\step 1. choose two fittest plant
 			*/
@@ -1013,7 +1042,7 @@ public:
 				\step 5. reduce the cut
 			*/
 			// reduceCut();
-			
+
 			#ifdef DEBUG
 			assert(SZ(group) > szGp);
 			#endif
@@ -1074,8 +1103,8 @@ public:
     /**
         \brief Traser's v2.0 algorithm to make the cuts.
     */
-	vi makeCuts_Trasier_v2(int NP, vi points, vi roots) {
-        #ifdef LOCAL_DEBUG
+	vi makeCuts(int NP, vi points, vi roots) {
+        #ifdef DEBUG
         dumpInputToLog(NP, points, roots);
         #endif
 
@@ -1101,12 +1130,12 @@ public:
 		/**
             \step 5: chekc if can reduce some cut
         */
-		reduceCut();
+		// reduceCut();
 
         /**
             \step 6: check if all separated
         */
-		check_separated();
+		// check_separated();
 
 
 		/**
@@ -1135,7 +1164,8 @@ public:
 			#endif
         }
         #ifdef LOCAL_DEBUG
-        fprintf(logout, "|Cut| = %d\n", (int)SZ(res)/4);
+		printf("|Cut| = %d\n", sz);
+        fprintf(logout, "|Cut| = %d\n", sz);
         #endif
 	}
 };
