@@ -7,4 +7,5 @@
 *.in
 *.o
 *.gcno
+example/
 dna

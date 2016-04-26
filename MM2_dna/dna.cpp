@@ -67,7 +67,7 @@ const double MAX_AUC = 0.999999;
 FILE* logout;
 
 #define LOGFILE "dna.log"
-#define result_map unordered_map<string, Result_t>
+#define result_map map<string, Result_t>
 
 /**
 	\brief Reuslt of the align

@@ -4,7 +4,7 @@
 
 CXX = g++
 LIBS = -lrt
-CFLAGS = -Wall
+CFLAGS = --std=c++0x -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 
 build: dna
 CutTheRoots: dna.cpp
