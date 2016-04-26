@@ -7,10 +7,6 @@ using namespace std;
 #define LOCAL_DEBUG
 #define DEBUG
 
-#ifdef LOCAL_DEBUG
-#include "log.h"
-#endif
-
 #define sti				set<int>
 #define stpii			set<pair<int, int> >
 #define mpii			map<int,int>
@@ -56,6 +52,11 @@ public:
 
 //%-------------------------------------Cut from here-------------------------------------------
 
+typedef struct {
+	struct timespec real;
+	struct timespec proc;
+} program_t;
+
 /**
 	Constants from the problem statement
 */
@@ -86,6 +87,9 @@ typedef struct Result_t {
 typedef struct Match_t {
 	double conf;	/* condfidence */
 	int r;			/* 0 or 1 */
+	bool operator< (const Match_t& oth) const {
+		return conf > oth.conf;
+	}
 } Match_t;
 
 
@@ -185,7 +189,7 @@ result_map parse_ground(const string& filename) {
 
 	if (!fin.is_open()) {
 		perror("%s not exists", filename.c_str());
-		abort(0);
+		abort();
 	}
 
 	while (fin >> line) {
@@ -218,7 +222,7 @@ bool check_format(const string& line, const vi& chrId) {
 	/* check ChromatidSequenceId */
 	{
 		bool flag = false;
-		for (auto id : chrId) {
+		for (int id : chrId) {
 			if(id == res.id) {
 				flag = true;
 				break;
@@ -235,7 +239,7 @@ bool check_format(const string& line, const vi& chrId) {
 	\param	ans: the output string of the algorithm
 			readNames: the name of the read as input
 */
-bool check_ans(const vstr& ans, int N, string[] readNames) {
+bool check_ans(const vstr& ans, int N, const vstr& readNames) {
 	int sz = SZ(ans);
 	unordered_set<string> st;
 	string readName;
@@ -300,6 +304,7 @@ vector<Match_t> calcMatch(const vstr& ans, const string& filename) {
 	}
 
 	printf("Number of correct answers: %d/%d = %.4lf\n", corrct, sz, correct*1.0/sz);
+	fprintf(logout, "Number of correct answers: %d/%d = %.4lf\n", corrct, sz, correct*1.0/sz);
 
 	return ret;
 }
@@ -307,8 +312,43 @@ vector<Match_t> calcMatch(const vstr& ans, const string& filename) {
 /**
 	\breif calculate the `Accuracy` of the algorithm
 */
-double calcAccuarcy(const double norm_a, const int N, const vector<Match_t>& vmatch) {
+double calcAccuarcy(const double norm_a, const int n, const vector<Match_t>& vmatch) {
+	sort(all(vmatch));
 
+	// merge results of equal confidence
+	vi cumul_si;
+	vi pos;
+
+	pos.pb(0);
+	cumul_si.pb(vmatch[0].r);
+	rep(i, 1, n) {
+		if (vmatch[i].conf == vmatch[i-1].conf); {
+			cumul_si.back() += vmatch[i].r;
+			pos.back() = i;
+		} else {
+			cumul_si.pb(cumul_si.back() + vmatch[i].r);
+			pos.pb(i);
+		}
+	}
+
+	// compute the AuC
+	double auc = 0.0;
+	double invn = 1.0 / n;
+	double invnp1 = 1.0 / (n+1);
+	double lgnp1 = 1.0 / log(n + 1.0);
+	int m = SZ(cumul_si);
+	rep(i, 0, m) {
+		double fi = (2 + pos[i] - cumul_si[i]);
+		double fip1 = (i==m-1) ? (n+1) : (2 + pos[i+1] - cumul_si[i+1]);
+		double lgfi = log(fi) * lgnp1;
+		double lgfip1 = log(fip1) * lgnp1;
+		auc += cumul_si[i] * (lgfip1 - lgfi) * invn;
+	}
+
+	printf("auc = %.4lf\n", auc);
+	fprintf(logout, "auc = %.4lf\n", auc);
+	
+	return log(1.0 - min(auc, MAX_AUC)) / norm_a;
 }
 
 /**
@@ -325,8 +365,204 @@ double calcScore(const double testNorm, const double accuracy, const double spee
 	return testNorm * accuracy * speed;
 }
 
+/**
+	\brief read the chromat
+	\param	filename: name of the chromat file
+	\return	vector<string>
+*/
+vstr getChromat(const string& filename) {
+	vstr ret;
+	string line;
+	ifstream fin(filename);
+
+	if (!fin.is_open()) {
+		perror("%s not exists.", filename_str());
+		abort();
+	}
+
+	// skip the header
+	getline(fin, line);
+	while (getline(fin, line)) {
+		if (line.back() == '\r')	line.pop_back();
+		ret.pb(line);
+	}
+
+	return ret;
+}
+
+static void save_time(program_t& prog) {
+	clock_gettime(CLOCK_REALTIME, &prog.real);
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &prog.proc);
+}
+
+static double calc_time(const program_t& st, const program_t& ed) {
+	double ret;
+
+	#ifdef USING_PROC_TIME
+	double proc_st = st.proc.tv_sec + (double)st.proc.tv_nsec / 1e9;
+	double proc_ed = ed.proc.tv_sec + (double)ed.proc.tv_nsec / 1e9;
+	ret = proc_ed - proc_st;
+	#else
+	double real_st = st.real.tv_sec + (double)st.real.tv_nsec / 1e9;
+	double real_ed = ed.real.tv_sec + (double)ed.real.tv_nsec / 1e9;
+	ret = real_ed - real_st;
+	#endif /* USING_PROC_TIME */
+
+	return ret
+}
+
+double norm_a;
+double norm_s;
+double prep_time, _prep_time;
+double cut_time, _cut_time;
+string fa1_path;
+string fa2_path;
+string minisam_path;
+vstr perform_test(int seed, const vi& chrId, int& n) {
+	program_t st_prog;
+	program_t ed_prog;
+	DNASequencing dna;
+	vstr ret, readNames, readSeqs;
+
+	/**
+		Preprocess 
+	*/
+	save_time(st_prog);
+
+	/**
+		\step 1: initTest
+	*/
+	dna.initTest(seed);
+	/**
+		\step 2: passReferemceGenome
+	*/
+	for (int id : chrId) {
+		string filename = "./example/chromatid" + to_string(id) + ".fa";
+		vstr chromatidSeq = getChromat(filename);
+		dna.passReferemceGenome(id, chromatidSeq);
+	}
+	/**
+		\step 2: preProcessing
+	*/
+	dna.preProcessing();
+
+	save_time(ed_prog);
+	_prep_time = calc_time(st_prog, ed_prog);
+
+	/**
+		\step 4: getRead
+	*/
+	{
+		ifstream fin1(fa1_path);
+		ifstream fin2(fa2_path);
+
+		if (!fin1.is_open()) {
+			perror("%s not exists", fa1_path.c_str());
+			abort();
+		}
+		if (!fin2.is_open()) {
+			perror("%s not exists", fa2_path.c_str());
+			abort();
+		}
+		string line1, line2;
+
+		while (getline(fin1, line1) && getline(fin2, line2)) {
+			if (line1.back() == '\r') line1.pop_back();
+			if (line2.back() == '\r') line2.pop_back();
+			readNames.pb(line1.substr(1));
+			readNames.pb(line2.substr(1));
+			getline(fin1, line1);
+			getline(fin2, line2);
+			if (line1.back() == '\r') line1.pop_back();
+			if (line2.back() == '\r') line2.pop_back();
+			readSeqs.pb(line1);
+			readSeqs.pb(line2);
+		}
+	}
+	n = SZ(readNames);
+
+	/**
+		CutOffTime
+	*/
+	save_time(st_prog);
+	/**
+		\step 5: align
+	*/
+	ret = getAlignment(n, norm_a, norm_s, readNames, readSeqs);
+	save_time(ed_prog);
+	_cut_time = calc_time(st_prog, ed_prog);
+
+
+	printf("prep_time = %.4lf, prep_bound = %.4lf\n", _prep_time, prep_time*3);
+	printf("cut_time = %.4lf, cut_bound = %.4lf\n", _cut_time, cut_time*2);
+	fprintf(logout, "prep_time = %.4lf, prep_bound = %.4lf\n", _prep_time, prep_time*3);
+	fprintf(logout, "cut_time = %.4lf, cut_bound = %.4lf\n", _cut_time, cut_time*2);
+
+	return ret;
+}
+
 static void _test(int seed) {
-	
+	vi chrId;
+	double testNorm;
+
+	norm_s = 0.5;
+	if (seed == 0) {
+		minisam_path = "./example/small5.minisam";
+		fa1_path = "./example/small5.fa1";
+		fa1_path = "./example/small5.fa2";
+
+		norm_a = NORM_A_SMALL;
+		testNorm = 1000 / 1.05;
+		prep_time = 201;
+		cut_time = 16.1;
+
+		chrId.pb(20);
+	} else if (seed == 1) {
+		minisam_path = "./example/medium5.minisam";
+		fa1_path = "./example/medium5.fa1";
+		fa1_path = "./example/medium5.fa2";
+
+		norm_a = NORM_A_MEDIUM;
+		testNorm = 1000000 / 1.05;
+		prep_time = 1669;
+		cut_time = 1102;
+
+		chrId.pb(1);
+		chrId.pb(11);
+		chrId.pb(20);
+	} else {
+		minisam_path = "../example/large5.minisam";
+		fa1_path = "./example/large5.fa1";
+		fa1_path = "./example/large5.fa2";
+
+		norm_a = NORM_A_LARGE;
+		testNorm = 1000000 / 1.05;
+		prep_time = 13239;
+		cut_time = 13730;
+
+		rep(i, 1, 25)	chrId.pb(i);
+	}
+
+	int n;
+	vstr ans = perform(chrId, n);
+	double score;
+
+	if (!check_ans(ans)) {
+		score = 0;
+	} else {
+		vector<Match_t> vmatch = calcMatch(ans, minisam_path);
+		double accuracy = calcAccuarcy(norm_a, n, vmatch);
+		double speed = calcSpeed(nomr_s, _cut_time, cut_time*2);
+		score = calcScore(testNorm, accuracy, speed);
+
+		printf("accuracy = %.4lf\n", accuracy);
+		printf("speed = %.4lf\n", speed);
+		fprintf(logout, "accuracy = %.4lf\n", accuracy);
+		fprintf(logout, "speed = %.4lf\n", speed);
+	}
+
+	printf("score = %.4lf\n", score);
+	fprintf(logout, "score = %.4lf\n", score);
 }
 
 static void test(int testcase) {
@@ -338,8 +574,19 @@ static void test(int testcase) {
 		testcase /= 10;
 	}
 
-	for (int i=1; i<=3; ++i)
-		_test(i);
+	for (int i=1; i<=3; ++i) {
+		if (i == 1) {
+			printf("\ntest Small:\n");
+			fprintf(logout, "\ntest Small:\n");
+		} else if (i == 2) {
+			printf("\ntest Medium:\n");
+			fprintf(logout, "\ntest Medium:\n");
+		} else {
+			printf("\ntest Large:\n");
+			fprintf(logout, "\ntest Large:\n");
+		}
+		_test(i-1);
+	}
 }
 
 static void init_log() {
