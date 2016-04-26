@@ -5,4 +5,6 @@
 *.htm
 *.log
 *.in
+*.o
+*.gcno
 dna

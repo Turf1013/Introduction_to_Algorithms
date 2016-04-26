@@ -16,5 +16,10 @@ clean:
 		-@rm dna dna.g* 2> /dev/null || true	
 
 test: build
-		./dna ./data.in
+		./dna 1
 		@echo
+		./dna 2
+		@echo
+		./dna 3
+		@echo
+
