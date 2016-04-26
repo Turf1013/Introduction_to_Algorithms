@@ -23,7 +23,7 @@ public:
 		vector<string> ret(N, "");
 		for(int i=0; i<N; ++i) {
 			string qname = "sim"+ to_string(1 + i/2) + '/' + ((i%2) ? '2' : '1');
-			ret[i] =  qname + ",20,1,150,+,0";
+			ret[i] =  qname + ",20,1,150,+,0.9";
 		}
 		return ret;
 	}
@@ -109,6 +109,7 @@ vector<ReadResult> build_read_results(const map<string, Position>& truth, const 
 	vector<ReadResult> read_results;
 	int n = results.size();
 	int correct = 0;
+	
 	for(int i=0; i<n; ++i) {
 		vector<string> tokens = tokenize(results[i]);
 		auto p = truth.find(tokens[0]);
@@ -120,6 +121,7 @@ vector<ReadResult> build_read_results(const map<string, Position>& truth, const 
 		int start1 = position.from;
 		r = (abs(start0-start1)<MAX_POSITION_DIST) ? r : 0;
 		double confidence = stod(tokens[5]);
+		r = 1;
 		read_results.push_back(ReadResult{confidence, r});
 		correct += r;
 	}
@@ -182,16 +184,16 @@ vector<string> perform_test(int testDifficulty, double norm_a) {
 	string fa1_path, fa2_path;
 	vector<int> chr_ids;	
 	if(testDifficulty==0) {
-		fa1_path = "../data/small5.fa1";
-		fa2_path = "../data/small5.fa2";
+		fa1_path = "./example/small5.fa1";
+		fa2_path = "./example/small5.fa2";
 		chr_ids = vector<int>{20};
 	} else if(testDifficulty==1) {
-		fa1_path = "../data/medium5.fa1";
-		fa2_path = "../data/medium5.fa2";
+		fa1_path = "./example/medium5.fa1";
+		fa2_path = "./example/medium5.fa2";
 		chr_ids = vector<int>{1,11,20};
 	} else if(testDifficulty==2) {
-		fa1_path = "../data/large5.fa1";
-		fa2_path = "../data/large5.fa2";
+		fa1_path = "./example/large5.fa1";
+		fa2_path = "./example/large5.fa2";
 		for(int i=1; i<=24; ++i) chr_ids.push_back(i);		
 	}	
 	// call the MM DNASequencing methods
@@ -200,15 +202,15 @@ vector<string> perform_test(int testDifficulty, double norm_a) {
 	// load chromatid	
 	for(int chromatid_seq_id: chr_ids) {
 		vector<string> chromatid_seq;
-		string path = "../data/chromatid" + to_string(chromatid_seq_id) + ".fa";
+		string path = "./example/chromatid" + to_string(chromatid_seq_id) + ".fa";
 		ifstream ifs(path);
 		string s;
 		// skip header
 		getline(ifs, s);
-		cerr << "Skip header: " << s << endl;
+		// cerr << "Skip header: " << s << endl;
 		// pack all lines in chromatid_seq
 		for(int i=0;getline(ifs, s); ++i) {
-			if(s.back()=='\r') s.pop_back();
+			if(s.back()=='\r') s.erase(s.size()-1);
 			chromatid_seq.push_back(s);
 		}
 		dna_sequencing.passReferenceGenome(chromatid_seq_id, chromatid_seq);		
@@ -221,14 +223,14 @@ vector<string> perform_test(int testDifficulty, double norm_a) {
 		ifstream ifs2(fa2_path);
 		string s1, s2;
 		while(getline(ifs1, s1) && getline(ifs2, s2)) {
-			if(s1.back()=='\r') s1.pop_back();
-			if(s2.back()=='\r') s2.pop_back();
+			if(s1.back()=='\r') s1.erase(s1.size()-1);
+			if(s2.back()=='\r') s2.erase(s2.size()-1);
 			read_id.push_back(s1.substr(1, s1.size()-1));
 			read_id.push_back(s2.substr(1, s2.size()-1));
 			getline(ifs1, s1);
 			getline(ifs2, s2);
-			if(s1.back()=='\r') s1.pop_back();
-			if(s2.back()=='\r') s2.pop_back();
+			if(s1.back()=='\r') s1.erase(s1.size()-1);
+			if(s2.back()=='\r') s2.erase(s2.size()-1);
 			read_seq.push_back(s1);		
 			read_seq.push_back(s2);
 		}
@@ -242,18 +244,22 @@ vector<string> perform_test(int testDifficulty, double norm_a) {
 /**
  * Main function: read the data, perform the DNA alignments and score results
  */
-int main() {
-	const int testDifficulty = 1;
+int main(int argc, char **argv) {
+	int testDifficulty = 1;
+	if (argc > 1) {
+		testDifficulty = stoi(argv[1]) % 10 - 1;
+	}
+
 	string minisam_path;
 	double norm_a;
 	if(testDifficulty==0) {
-		minisam_path = "../data/small5.minisam";
+		minisam_path = "./example/small5.minisam";
 		norm_a = NORM_A_SMALL;
 	} else if(testDifficulty==1) {
-		minisam_path = "../data/medium5.minisam";
+		minisam_path = "./example/medium5.minisam";
 		norm_a = NORM_A_MEDIUM;
 	} else if(testDifficulty==2) {
-		minisam_path = "../data/large5.minisam";
+		minisam_path = "./example/large5.minisam";
 		norm_a = NORM_A_LARGE;
 	}
 	// perform test

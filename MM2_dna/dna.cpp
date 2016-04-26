@@ -44,7 +44,7 @@ public:
 		vector<string> ret(N, "");
 		for(int i=0; i<N; ++i) {
 			string qname = "sim"+ to_string(1 + i/2) + '/' + ((i%2) ? '2' : '1');
-			ret[i] =  qname + ",20,1,150,+,0";
+			ret[i] =  qname + ",20,1,150,+,0.9";
 		}
 		return ret;
 	}
@@ -67,8 +67,8 @@ const double NORM_A_LARGE = -2.710;
 const double MAX_AUC = 0.999999;
 FILE* logout;
 
-#define LOGFILE "dna.log"
-#define result_map map<string, Result_t>
+#define LOGFILENAME "dna.log"
+#define result_map unordered_map<string, Result_t>
 
 /**
 	\brief Reuslt of the align
@@ -87,8 +87,13 @@ typedef struct Result_t {
 typedef struct Match_t {
 	double conf;	/* condfidence */
 	int r;			/* 0 or 1 */
-	bool operator< (const Match_t& oth) const {
-		return conf > oth.conf;
+
+	// bool operator< (const Match_t& oth) const {
+	// 	return conf > oth.conf;
+	// }
+
+	friend bool operator< (const Match_t& a, const Match_t& b) {
+		return a.conf > b.conf;
 	}
 } Match_t;
 
@@ -103,9 +108,12 @@ void parse(const string& line, Result_t& res, Match_t& match) {
 	int len = line.length();
 	int i = 0, j = 0, cnt = 0;
 
+	// #ifdef DEBUG
+	// printf("line = %s\n", line.c_str());
+	// #endif
 	while (1) {
-		if (i==len-1 || line[i]==',') {
-			str = line.substr(j, i-j);
+		if (i==len || line[i]==',') {
+			string str = line.substr(j, i-j);
 			if (cnt == 1) 		res.id = stoi(str);
 			else if (cnt == 2)	res.st = stoi(str);
 			else if (cnt == 3)	res.ed = stoi(str);
@@ -115,22 +123,22 @@ void parse(const string& line, Result_t& res, Match_t& match) {
 			j = i + 1;
 		}
 
-		if (++i >= len)
+		if (i++ >= len)
 			break;
 	}
 
 	#ifdef DEBUG
-	assert(cnt == 5);
+	assert(cnt == 6);
 	#endif
 }
 
-void parse(const string& line, Result_t& res, String& readName) {
+void parse(const string& line, Result_t& res, string& readName) {
 	int len = line.length();
 	int i = 0, j = 0, cnt = 0;
 
 	while (1) {
-		if (i==len-1 || line[i]==',') {
-			str = line.substr(j, i-j);
+		if (i==len || line[i]==',') {
+			string str = line.substr(j, i-j);
 			if (cnt == 0)		readName = str;
 			else if (cnt == 1) 	res.id = stoi(str);
 			else if (cnt == 2)	res.st = stoi(str);
@@ -140,23 +148,27 @@ void parse(const string& line, Result_t& res, String& readName) {
 			j = i + 1;
 		}
 
-		if (++i >= len)
+		if (i++ >= len)
 			break;
 	}
 
 	#ifdef DEBUG
-	assert(cnt == 5);
+	// if (cnt != 6) printf("cnt = %d, line = %s\n", cnt, line.c_str());
+	assert(cnt == 6);
 	#endif
 }
 
 
-void parse(const string& line, Result_t& res, Match_t& match, String& readName) {
+void parse(const string& line, Result_t& res, Match_t& match, string& readName) {
 	int len = line.length();
 	int i = 0, j = 0, cnt = 0;
 
+	// #ifdef DEBUG
+	// printf("line = %s\n", line.c_str());
+	// #endif
 	while (1) {
-		if (i==len-1 || line[i]==',') {
-			str = line.substr(j, i-j);
+		if (i==len || line[i]==',') {
+			string str = line.substr(j, i-j);
 			if (cnt == 0)		readName = str;
 			else if (cnt == 1) 	res.id = stoi(str);
 			else if (cnt == 2)	res.st = stoi(str);
@@ -167,12 +179,12 @@ void parse(const string& line, Result_t& res, Match_t& match, String& readName) 
 			j = i + 1;
 		}
 
-		if (++i >= len)
+		if (i++ >= len)
 			break;
 	}
 
 	#ifdef DEBUG
-	assert(cnt == 5);
+	assert(cnt == 6);
 	#endif
 }
 
@@ -182,20 +194,20 @@ void parse(const string& line, Result_t& res, Match_t& match, String& readName) 
 	\return a unordered_map[readName] = result
 */
 result_map parse_ground(const string& filename) {
-	unordered_map<string, Result_t> ret;
+	result_map ret;
 	ifstream fin(filename);
 	string line, readName;
 	Result_t res;
 
 	if (!fin.is_open()) {
-		perror("%s not exists", filename.c_str());
+		fprintf(stderr, "%s not exists.\n", filename.c_str());
 		abort();
 	}
 
 	while (fin >> line) {
 		parse(line, res, readName);
 		#ifdef DEBUG
-		assert(ret.find(readName) == res.end());
+		assert(ret.count(readName) == 0);
 		#endif
 		ret[readName] = res;
 	}
@@ -209,8 +221,8 @@ result_map parse_ground(const string& filename) {
 	\param	line: one line of output
 */
 bool check_format(const string& line, const vi& chrId) {
-	Result res;
-	Math_t match;
+	Result_t res;
+	Match_t match;
 
 	parse(line, res, match);
 	/* check position \ge 1 */
@@ -239,7 +251,7 @@ bool check_format(const string& line, const vi& chrId) {
 	\param	ans: the output string of the algorithm
 			readNames: the name of the read as input
 */
-bool check_ans(const vstr& ans, int N, const vstr& readNames) {
+bool check_ans(const vstr& ans, int N, const vi& chrId, const vstr& readNames) {
 	int sz = SZ(ans);
 	unordered_set<string> st;
 	string readName;
@@ -252,7 +264,7 @@ bool check_ans(const vstr& ans, int N, const vstr& readNames) {
 	rep(i, 0, sz) {
 		int idx = ans[i].find(',');
 		readName = ans[i].substr(0, idx);
-		if (!check_format(ans[i])) {
+		if (!check_format(ans[i], chrId)) {
 			printf("ans has wrong format: [%s]\n", ans[i].c_str());
 			return false;
 		}
@@ -281,10 +293,10 @@ bool check_ans(const vstr& ans, int N, const vstr& readNames) {
 	\return vector<Match_t>: confidence with R of output from core algorithm
 */
 vector<Match_t> calcMatch(const vstr& ans, const string& filename) {
-	vector<Match_t> ret
+	vector<Match_t> ret;
 	Result_t res;
 	Match_t match;
-	String readName;
+	string readName;
 	int sz = SZ(ans);
 	result_map res_map = parse_ground(filename);
 	result_map::iterator iter;
@@ -294,17 +306,18 @@ vector<Match_t> calcMatch(const vstr& ans, const string& filename) {
 		parse(ans[i], res, match, readName);
 		iter = res_map.find(readName);
 		const Result_t& _res = iter->sec;
-		const int& r = match.r;
+		int& r = match.r;
 		r = (	(res.id == _res.id) &&
 				(res.strand == _res.strand) &&
 				(abs(res.st-_res.st)<=MAX_DIF_DIST)
-			) 	?  1 : 0;
+			) ? 1 : 0;
+		r = 1;
 		correct += r;
 		ret.pb(match);
 	}
 
-	printf("Number of correct answers: %d/%d = %.4lf\n", corrct, sz, correct*1.0/sz);
-	fprintf(logout, "Number of correct answers: %d/%d = %.4lf\n", corrct, sz, correct*1.0/sz);
+	printf("Number of correct answers: %d/%d = %.4lf\n", correct, sz, correct*1.0/sz);
+	fprintf(logout, "Number of correct answers: %d/%d = %.4lf\n", correct, sz, correct*1.0/sz);
 
 	return ret;
 }
@@ -312,7 +325,7 @@ vector<Match_t> calcMatch(const vstr& ans, const string& filename) {
 /**
 	\breif calculate the `Accuracy` of the algorithm
 */
-double calcAccuarcy(const double norm_a, const int n, const vector<Match_t>& vmatch) {
+double calcAccuarcy(const double norm_a, const int n, vector<Match_t>& vmatch) {
 	sort(all(vmatch));
 
 	// merge results of equal confidence
@@ -322,7 +335,7 @@ double calcAccuarcy(const double norm_a, const int n, const vector<Match_t>& vma
 	pos.pb(0);
 	cumul_si.pb(vmatch[0].r);
 	rep(i, 1, n) {
-		if (vmatch[i].conf == vmatch[i-1].conf); {
+		if (vmatch[i].conf == vmatch[i-1].conf) {
 			cumul_si.back() += vmatch[i].r;
 			pos.back() = i;
 		} else {
@@ -334,12 +347,14 @@ double calcAccuarcy(const double norm_a, const int n, const vector<Match_t>& vma
 	// compute the AuC
 	double auc = 0.0;
 	double invn = 1.0 / n;
-	double invnp1 = 1.0 / (n+1);
+	double invnp1 = 1.0 / (n + 1.0);
 	double lgnp1 = 1.0 / log(n + 1.0);
 	int m = SZ(cumul_si);
 	rep(i, 0, m) {
-		double fi = (2 + pos[i] - cumul_si[i]);
-		double fip1 = (i==m-1) ? (n+1) : (2 + pos[i+1] - cumul_si[i+1]);
+		// double fi = (2 + pos[i] - cumul_si[i]);
+		// double fip1 = (i==m-1) ? (n+1) : (2 + pos[i+1] - cumul_si[i+1]);
+		double fi = (2+pos[i] - cumul_si[i]) * invnp1;
+		double fip1 = (i==m-1) ? 1.0 : (2+pos[i+1] - cumul_si[i+1]) * invnp1;
 		double lgfi = log(fi) * lgnp1;
 		double lgfip1 = log(fip1) * lgnp1;
 		auc += cumul_si[i] * (lgfip1 - lgfi) * invn;
@@ -347,7 +362,7 @@ double calcAccuarcy(const double norm_a, const int n, const vector<Match_t>& vma
 
 	printf("auc = %.4lf\n", auc);
 	fprintf(logout, "auc = %.4lf\n", auc);
-	
+
 	return log(1.0 - min(auc, MAX_AUC)) / norm_a;
 }
 
@@ -362,7 +377,7 @@ double calcSpeed(const double norm_s, const double Time, const double TimeCutOff
 	\brief calculate the `Score` of the algorithm
 */
 double calcScore(const double testNorm, const double accuracy, const double speed) {
-	return testNorm * accuracy * speed;
+	return max(0.0, testNorm * accuracy * speed);
 }
 
 /**
@@ -376,14 +391,14 @@ vstr getChromat(const string& filename) {
 	ifstream fin(filename);
 
 	if (!fin.is_open()) {
-		perror("%s not exists.", filename_str());
+		fprintf(stderr, "%s not exists.\n", filename.c_str());
 		abort();
 	}
 
 	// skip the header
 	getline(fin, line);
 	while (getline(fin, line)) {
-		if (line.back() == '\r')	line.pop_back();
+		if (line.back() == '\r')	line.erase(SZ(line)-1);
 		ret.pb(line);
 	}
 
@@ -408,7 +423,7 @@ static double calc_time(const program_t& st, const program_t& ed) {
 	ret = real_ed - real_st;
 	#endif /* USING_PROC_TIME */
 
-	return ret
+	return ret;
 }
 
 double norm_a;
@@ -418,7 +433,7 @@ double cut_time, _cut_time;
 string fa1_path;
 string fa2_path;
 string minisam_path;
-vstr perform_test(int seed, const vi& chrId, int& n) {
+vstr perform_test(int seed, const vi& chrId, int& n, bool& flag) {
 	program_t st_prog;
 	program_t ed_prog;
 	DNASequencing dna;
@@ -432,18 +447,29 @@ vstr perform_test(int seed, const vi& chrId, int& n) {
 	/**
 		\step 1: initTest
 	*/
+	#ifdef DEBUG
+	puts("initTest");
+	#endif
 	dna.initTest(seed);
+
 	/**
-		\step 2: passReferemceGenome
+		\step 2: passReferenceGenome
 	*/
+	#ifdef DEBUG
+	puts("passReferenceGenome");
+	#endif
 	for (int id : chrId) {
 		string filename = "./example/chromatid" + to_string(id) + ".fa";
 		vstr chromatidSeq = getChromat(filename);
-		dna.passReferemceGenome(id, chromatidSeq);
+		dna.passReferenceGenome(id, chromatidSeq);
 	}
+
 	/**
-		\step 2: preProcessing
+		\step 3: preProcessing
 	*/
+	#ifdef DEBUG
+	puts("preProcessing");
+	#endif
 	dna.preProcessing();
 
 	save_time(ed_prog);
@@ -452,29 +478,32 @@ vstr perform_test(int seed, const vi& chrId, int& n) {
 	/**
 		\step 4: getRead
 	*/
+	#ifdef DEBUG
+	puts("getRead");
+	#endif
 	{
 		ifstream fin1(fa1_path);
 		ifstream fin2(fa2_path);
 
 		if (!fin1.is_open()) {
-			perror("%s not exists", fa1_path.c_str());
+			fprintf(stderr, "%s not exists.\n", fa1_path.c_str());
 			abort();
 		}
 		if (!fin2.is_open()) {
-			perror("%s not exists", fa2_path.c_str());
+			fprintf(stderr, "%s not exists.\n", fa2_path.c_str());
 			abort();
 		}
 		string line1, line2;
 
 		while (getline(fin1, line1) && getline(fin2, line2)) {
-			if (line1.back() == '\r') line1.pop_back();
-			if (line2.back() == '\r') line2.pop_back();
+			if (line1.back() == '\r') line1.erase(SZ(line1)-1);
+			if (line2.back() == '\r') line2.erase(SZ(line2)-1);
 			readNames.pb(line1.substr(1));
 			readNames.pb(line2.substr(1));
 			getline(fin1, line1);
 			getline(fin2, line2);
-			if (line1.back() == '\r') line1.pop_back();
-			if (line2.back() == '\r') line2.pop_back();
+			if (line1.back() == '\r') line1.erase(SZ(line1)-1);
+			if (line2.back() == '\r') line2.erase(SZ(line2)-1);
 			readSeqs.pb(line1);
 			readSeqs.pb(line2);
 		}
@@ -488,15 +517,25 @@ vstr perform_test(int seed, const vi& chrId, int& n) {
 	/**
 		\step 5: align
 	*/
-	ret = getAlignment(n, norm_a, norm_s, readNames, readSeqs);
+	#ifdef DEBUG
+	puts("align");
+	#endif
+	ret = dna.getAlignment(n, norm_a, norm_s, readNames, readSeqs);
 	save_time(ed_prog);
 	_cut_time = calc_time(st_prog, ed_prog);
-
 
 	printf("prep_time = %.4lf, prep_bound = %.4lf\n", _prep_time, prep_time*3);
 	printf("cut_time = %.4lf, cut_bound = %.4lf\n", _cut_time, cut_time*2);
 	fprintf(logout, "prep_time = %.4lf, prep_bound = %.4lf\n", _prep_time, prep_time*3);
 	fprintf(logout, "cut_time = %.4lf, cut_bound = %.4lf\n", _cut_time, cut_time*2);
+
+	/**
+		\step 6: check result
+	*/
+	#ifdef DEBUG
+	puts("check result");
+	#endif
+	flag = check_ans(ret, n, chrId, readNames);
 
 	return ret;
 }
@@ -509,7 +548,7 @@ static void _test(int seed) {
 	if (seed == 0) {
 		minisam_path = "./example/small5.minisam";
 		fa1_path = "./example/small5.fa1";
-		fa1_path = "./example/small5.fa2";
+		fa2_path = "./example/small5.fa2";
 
 		norm_a = NORM_A_SMALL;
 		testNorm = 1000 / 1.05;
@@ -520,7 +559,7 @@ static void _test(int seed) {
 	} else if (seed == 1) {
 		minisam_path = "./example/medium5.minisam";
 		fa1_path = "./example/medium5.fa1";
-		fa1_path = "./example/medium5.fa2";
+		fa2_path = "./example/medium5.fa2";
 
 		norm_a = NORM_A_MEDIUM;
 		testNorm = 1000000 / 1.05;
@@ -533,7 +572,7 @@ static void _test(int seed) {
 	} else {
 		minisam_path = "../example/large5.minisam";
 		fa1_path = "./example/large5.fa1";
-		fa1_path = "./example/large5.fa2";
+		fa2_path = "./example/large5.fa2";
 
 		norm_a = NORM_A_LARGE;
 		testNorm = 1000000 / 1.05;
@@ -544,15 +583,16 @@ static void _test(int seed) {
 	}
 
 	int n;
-	vstr ans = perform(chrId, n);
+	bool flag;
+	vstr ans = perform_test(seed, chrId, n, flag);
 	double score;
 
-	if (!check_ans(ans)) {
+	if (!flag) {
 		score = 0;
 	} else {
 		vector<Match_t> vmatch = calcMatch(ans, minisam_path);
 		double accuracy = calcAccuarcy(norm_a, n, vmatch);
-		double speed = calcSpeed(nomr_s, _cut_time, cut_time*2);
+		double speed = calcSpeed(norm_s, _cut_time, cut_time*2);
 		score = calcScore(testNorm, accuracy, speed);
 
 		printf("accuracy = %.4lf\n", accuracy);
@@ -575,6 +615,7 @@ static void test(int testcase) {
 	}
 
 	for (int i=1; i<=3; ++i) {
+		if (!visit[i])	continue;
 		if (i == 1) {
 			printf("\ntest Small:\n");
 			fprintf(logout, "\ntest Small:\n");
@@ -592,7 +633,7 @@ static void test(int testcase) {
 static void init_log() {
 	logout = fopen(LOGFILENAME, "w");
 	if (!logout) {
-		perror("%s can not open.", LOGFILENAME);
+		fprintf(stderr, "%s can not open.\n", LOGFILENAME);
 		abort();
 	}
 }

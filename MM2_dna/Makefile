@@ -1,5 +1,5 @@
 ##
-#	Makefile for `CutTheRoots` application
+#	Makefile for `dna` application
 ##
 
 CXX = g++
@@ -7,8 +7,8 @@ LIBS = -lrt
 CFLAGS = --std=c++0x -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 
 build: dna
-CutTheRoots: dna.cpp
-	$(CXX)	$(CFLAGS) -o dna dna.cpp $(LIBS)
+dna: dna.cpp
+	$(CXX) $(CFLAGS) -o dna dna.cpp $(LIBS)
 
 .PHONY: clean test
 clean:
