@@ -18,13 +18,15 @@ using namespace std;
 #define all(x) 			(x).begin(),(x).end()
 #define SZ(x) 			((int)(x).size())
 
+
+#define DEBUG
 // #define WINDOWS
 // #define LINUX
 
 #ifdef WINDOWS
 	const string DATA_PREFIX = "I:/TCO-MM/";
 #else 
-	const string DATA_PREFIX = "~/Code/Introduction_to_Algorithms/MM2_dna/";
+	const string DATA_PREFIX = "/home/turf/Code/Introduction_to_Algorithms/MM2_dna/";
 #endif /* WINDOWS */
 
 struct TestCase_t {
@@ -35,7 +37,7 @@ struct TestCase_t {
 };
 
 const string READ_PATH = DATA_PREFIX + "example/";
-const string REFE_PATH = READ_PATH;
+const string REFE_PATH = READ_PATH + "chromatid";
 TestCase_t smallCase (
 	READ_PATH + "small5.fa1", 
 	READ_PATH + "small5.fa2", 
@@ -59,26 +61,151 @@ struct Entry_t {
 	char strand;
 	string read;
 	
-	void print() {
+	void print() const {
 		cout << simId+1 << '/' << faId+1 << ','
 			 << chrId << ',' << from << ',' << to << ','
 			 << strand << ',' << read << endl;
 	}
 };
 
+typedef long long LL;
 typedef vector<Entry_t> ventry;
 ventry vent;
 vector<string> vread[2];
+vector<string> vrefe;
+vi chrIds;
+int chScore[5][5];
+
+void initScore() {
+	rep(i, 0, 5) {
+		rep(j, 0, 5)
+			chScore[i][j] = -1;
+		chScore[i][i] = 1;
+	}
+}
+
+inline int getCharId(char ch) {
+	if (ch == 'A')	return 0;
+	if (ch == 'G')	return 1;
+	if (ch == 'C')	return 2;
+	if (ch == 'T')	return 3;
+	return 4;
+}
+
+int calcScore(char a, char b) {
+	return chScore[getCharId(a)][getCharId(b)];
+}
+
+/**
+	\brief get the content of chromatid
+*/
+void getRefer(const int chrId, vstr& refe) {
+	refe.clr();
+	string filename = REFE_PATH + to_string(chrId) + ".fa";
+	string line;
+	ifstream fin(filename);
+
+	if (!fin.is_open()) {
+		cerr << filename << " not exists." << endl;
+		abort();
+	}
+
+	// skip header
+	getline(fin, line);
+
+	while (getline(fin, line)) {
+		if (line.back() == '\r') line.erase(SZ(line) - 1);
+		refe.pb(line);
+	}
+
+	fin.close();
+}
+
+void getRefer(const string& filename, vstr& refe) {
+	refe.clr();
+	string line;
+	ifstream fin(filename);
+
+	if (!fin.is_open()) {
+		cerr << filename << " not exists." << endl;
+		abort();
+	}
+
+	// skip header
+	getline(fin, line);
+
+	while (getline(fin, line)) {
+		if (line.back() == '\r') line.erase(SZ(line) - 1);
+		refe.pb(line);
+	}
+
+	fin.close();
+}
+
+vstr getRefer(const string& filename) {
+	vstr refe;
+	string line;
+	ifstream fin(filename);
+
+	if (!fin.is_open()) {
+		cerr << filename << " not exists." << endl;
+		abort();
+	}
+
+	// skip header
+	getline(fin, line);
+
+	while (getline(fin, line)) {
+		if (line.back() == '\r') line.erase(SZ(line) - 1);
+		refe.pb(line);
+	}
+
+	fin.close();
+
+	return refe;
+}
+
+vstr getRefer(const int chrId) {
+	vstr refe;
+	string filename = REFE_PATH + to_string(chrId) + ".fa";
+	string line;
+	ifstream fin(filename);
+
+	if (!fin.is_open()) {
+		cerr << filename << " not exists." << endl;
+		abort();
+	}
+
+	// skip header
+	getline(fin, line);
+
+	while (getline(fin, line)) {
+		if (line.back() == '\r') line.erase(SZ(line) - 1);
+		refe.pb(line);
+	}
+
+	fin.close();
+
+	return refe;
+}
+
 
 /**
 	\brief get the complement of char
 */
-char getComplement(char ch) {
+inline char getComplement(char ch) {
 	if (ch == 'A')	return 'T';
 	if (ch == 'T')	return 'A';
 	if (ch == 'G')	return 'C';
 	if (ch == 'C')	return 'G';
 	return ch;
+}
+
+/**
+	\brief check if is the valid char
+*/
+inline bool isValid(char ch) {
+	return (ch=='A') || (ch=='G') || (ch=='C') || (ch=='T');
 }
 
 /**
@@ -178,10 +305,25 @@ void getEntry(const string& filename) {
 /**
 	\brief init
 */
-void init(const testCase_t& tcase) {
+void init(int testDifficulty) {
+	const TestCase_t& tcase = (testDifficulty==0) ? smallCase :
+							  (testDifficulty==1) ? mediumCase : largeCase;
+
 	getRead(tcase.fa1, vread[0]);
 	getRead(tcase.fa2, vread[1]);
 	getEntry(tcase.minisam);
+
+	chrIds.clr();
+
+	if (testDifficulty == 0) {
+		chrIds.pb(20);
+	} else if (testDifficulty == 1) {
+		chrIds.pb(1);
+		chrIds.pb(11);
+		chrIds.pb(20);
+	} else {
+		rep(i, 1, 25) chrIds.pb(i);
+	}
 }
 
 /**
@@ -194,7 +336,14 @@ bool check_RC(const Entry_t& entry) {
 	const string& org = vread[entry.faId][entry.simId];
 	string tmp = getReverseComplement(org);
 
-	return org == tmp;
+	// #ifdef DEBUG
+	// 	static int cnt = 0;
+	// 	if (cnt++ <= 3) {
+	// 		entry.print();
+	// 		printf("rc = %s\n", tmp.c_str());
+	// 	}
+	// #endif
+	return tmp == entry.read;
 }
 
 /**
@@ -229,37 +378,191 @@ void observe_strand() {
 		}
 	}
 
-	printf("observe-strand [+/-]: %s", flag ? "YES":"NO");
+	printf("observe-strand [+/-]: %s\n", flag ? "YES":"NO");
 }
 
 void observe_positionLen() {
 	int sz = SZ(vent);
 	vi vc;
 
-	for (int i=0; i<sz; ++i) {
-		const Entry_t &entry = vent[i];
-		vc.pb(entry.to - entry.from);
+	rep(i, 0, sz) {
+		const Entry_t& entry = vent[i];
+		vc.pb(entry.to - entry.from + 1);
+		// #ifdef DEBUG
+		// if (entry.to - entry.from + 1 != 150)
+		// 	printf("sim%d/%d\n", entry.simId+1, entry.faId+1);
+		// #endif
 	}
 
 	sort(all(vc));
-	int n = unqiue(all(vc)) - vc.begin();
-	if (n == 1) {
-		printf("observe-positionLen : all equal, %d\n", vc[0]);
-	} else {
-		printf("observe-positionLen : [%d, %d]\n", vc[0], vc[n-1]);
-	}
+	int n = unique(all(vc)) - vc.begin();
+	printf("observe-positionLen : [%d, %d]\n", vc[0], vc[n-1]);
 }
 
 void observe_pairDis() {
+	int sz = SZ(vent);
+	int tmp, overlap = 0;
+	vi vc;
 
+	for (int i=0; i<sz; i+=2) {
+		const Entry_t& entry_1 = vent[i];
+		const Entry_t& entry_2 = vent[i+1];
+		if (entry_1.from > entry_2.to)
+			tmp = entry_1.from - entry_2.to - 1;
+		else if (entry_2.from > entry_1.to)
+			tmp = entry_2.from - entry_1.to - 1;
+		else
+			++overlap, tmp = -1;
+		if (tmp > 0) vc.pb(tmp);
+	}
+
+	sort(all(vc));
+	int n = unique(all(vc)) - vc.begin();
+	printf("observe-pairDistance : overlap = %d, dis = [%d, %d]\n", overlap, vc[0], vc[n-1]);
 }
 
 void observe_refeUndef() {
+	vstr refe;
+	bool has = false;
 
+	rep(i, 0, SZ(chrIds)) {
+		int chrId = chrIds[i];
+		getRefer(chrId);
+
+		int sz = SZ(refe);
+		int i = 0;
+
+		while (i < sz) {
+			const string& line = refe[i];
+			const int len = line.length();
+			int j = 0;
+
+			while (j<len && line[j]=='N') ++j;
+			if (j < len) {
+				while (j<len && isValid(line[j])) ++j;
+				has = j < len;
+				break;
+			}
+			++i;
+		}
+		if (has) break;
+
+		int k = sz - 1;
+		while (k > i) {
+			const string& line = refe[k];
+			const int len = line.length();
+			int j = len-1;
+
+			while (j>=0 && line[j]=='N') --j;
+			if (j >= 0) {
+				while (j>=0 && isValid(line[j])) --j;
+				has = j >= 0;
+				break;
+			}
+			--k;
+		}
+		if (has) break;
+
+		for (++i; i<k; ++i) {
+			const string& line = refe[i];
+			const int len = line.length();
+			int j = len - 1;
+
+			while (j<len && isValid(line[j])) ++j;
+			if (j < len) {
+				has = true;
+				break;
+			}
+		}
+		if (has) break;
+	}
+
+	printf("observe-referUndef : %s\n", has ? "YES":"NO");
 }
 
 void observe_alignScore() {
+	int sz_ent = SZ(vent);
+	vi alignId[25];
+	vstr refe;
+	vi pos;
+	LL ptot, stot, tot;
 
+	ptot = stot = tot = 0;
+	rep(i, 0, sz_ent) alignId[vent[i].chrId].pb(i);
+
+	rep(chrId, 1, 25) {
+		int sz = SZ(alignId[chrId]);
+		if (sz == 0)
+			continue;
+
+		// #ifdef DEBUG
+		// sz = min(sz, 2);
+		// #endif
+
+		getRefer(chrId, refe);
+		int nline = SZ(refe);
+		pos.clr();
+		pos.pb(refe[0].length());
+		rep(i, 1, nline) pos.pb(pos.back() + refe[i].length());
+
+		LL ptmp, stmp, tmp;
+
+		ptmp = stmp = tmp = 0;
+		rep(i, 0, sz) {
+			const int& entId = alignId[chrId][i];
+			const Entry_t& entry = vent[entId];
+			// #ifdef DEBUG
+			// 	entry.print();
+			// #endif
+			const string& read = entry.read;
+			const int rlen = read.length();
+			LL score = 0;
+
+			int p = lower_bound(all(pos), entry.from) - pos.begin();
+			assert(p < nline);
+			int j = entry.from - 1 - (p==0 ? 0:pos[p-1]), k = 0;
+			int len = refe[p].length();
+			// #ifdef DEBUG
+			// printf("p = %d, j = %d\n", p, j);
+			// printf("line = %s\n", refe[p].c_str());
+			// #endif
+
+			while (k < rlen) {
+				score += calcScore(refe[p][j], read[k]);
+				// #ifdef DEBUG
+				// putchar(refe[p][j]);
+				// #endif
+				++j;
+				++k;
+				if (j == len) {
+					++p;
+					assert(p < nline);
+					len = refe[p].length();
+					j = 0;
+				}
+			}
+			// #ifdef DEBUG
+			// putchar('\n');
+			// #endif
+
+			if (entry.strand == '+') 
+				ptmp += score;
+			else
+				stmp += score;
+			tmp += score;
+
+			#ifdef DEBUG
+			if (entry.simId <= 3)
+				printf("sim%d/%d score = %lld\n", entry.simId+1, entry.faId+1, score);
+			#endif
+		}
+
+		printf("chrId = %d, [+]-Score = %lld, [-]-Score = %lld, tot-Score = %lld\n", chrId, ptmp, stmp, tmp);
+		ptot += ptmp;
+		stot += stmp;
+		tot += tmp;
+	}
+	printf("[+]-Score = %lld, [-]-Score = %lld, tot-Score = %lld\n", ptot, stot, tot);
 }
 
 void observe_substrFreq() {
@@ -275,12 +578,7 @@ void _observation(int testDifficulty) {
 	/**
 		\step 0: init according testDifficuly
 	*/
-	if (testDifficulty == 0)
-		init(smallCase);
-	else if (testDifficulty == 1)
-		init(mediumCase);
-	else
-		init(largeCase);
+	init(testDifficulty);
 
 	/**
 		\step 1: 是否一个为[+],另一个为[-]
@@ -328,7 +626,8 @@ void observation(int testCase) {
 	}
 	
 	rep(i, 1, 4) {
-		_observation(i - 1);
+		if (visit[i])
+			_observation(i - 1);
 	}
 }
 
@@ -337,9 +636,17 @@ int main(int argc, char **argv) {
 	
 	freopen("data.in", "r", stdin);
 
+	initScore();
 	int testCase = (argc>1) ? stoi(argv[1]) : 1;
 	
-	observation(testCase);
+	observation(testCase = 1);
+
+	// init(0);
+	// observe_alignScore();
+
+	// string tmp = "TTGTGATGTTTGCATTCAAGTCACAGAATTGAACACTCCCTTTCACAGAGCAGGTTTGAAACACTCTTTTTGTAGTGTCTATAAGTGAACATTTGGCGTGCTTTCAGGCCTAAGGTGAAAAAGGAAATCTCTTCCCATAAAAACTAGACA";
+	// string rc = getReverseComplement(tmp);
+	// printf("rc = %s\n", rc.c_str());
 	
 	return 0;
 }
