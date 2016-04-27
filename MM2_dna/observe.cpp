@@ -121,7 +121,7 @@ void getRead(const string& filename, vstr& vc) {
 /**
 	\brief	parse the line into entry
 */
-void parseEntry(const string& line, Entry_t& entry) {
+bool parseEntry(const string& line, Entry_t& entry) {
 	int len = line.length();
 	int i = 0, j = 0, cnt = 0;
 	
@@ -148,6 +148,8 @@ void parseEntry(const string& line, Entry_t& entry) {
 		
 		if (i++ == len)	break;
 	}
+
+	return cnt==6;
 }
 
 /**
@@ -158,9 +160,10 @@ void getEntry(const string& filename) {
 	ifstream fin(filename);
 	vent.clr();
 	Entry_t entry;
+	string line;
 	
 	if (!fin.is_open()) {
-		cer << filename << " not exists." << endl;
+		cerr << filename << " not exists." << endl;
 		abort();
 	}
 	
@@ -196,12 +199,8 @@ void observation(int testCase) {
 
 int main(int argc, char **argv) {
 	ios::sync_with_stdio(false);
-	#ifndef ONLINE_JUDGE
-		freopen("data.in", "r", stdin);
-		freopen("data.out", "w", stdout);
-	#endif
 	
-	// int testCase = (argc>1) ? stoi(argv[1]) : 1;
+	int testCase = (argc>1) ? stoi(argv[1]) : 1;
 	
 	// observation(testCase);
 	

@@ -10,6 +10,11 @@ build: dna
 dna: dna.cpp
 	$(CXX) $(CFLAGS) -o dna dna.cpp $(LIBS)
 
+ob: observe
+observe: observe.cpp
+	$(CXX) $(CFLAGS) -o ob observe.cpp $(LIBS)
+	
+
 .PHONY: clean test
 clean:
 		-@rm *.o *.gcno 2> /dev/null || true
