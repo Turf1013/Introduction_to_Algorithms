@@ -238,18 +238,32 @@
 	\begin{enumerate}
 		
 		\item \Emph{Ground truth}中的read对是否一个为[+],另一个为[-]
+		
+		结果是成对出现的
 
 		\item \Emph{Ground truth}中的$end\_position - start\_position$的长度是否一定为150
+		
+		不一定，结果在$[110, 348]$之间
 
 		\item \Emph{Ground truth}中的read对的间距情况
+		
+		结果在$[171, 542]$之间
 	
 		\item $[-]$是否表示原串的$\Emph{Reverse Complement}$
+		
+		确实是
 				
 		\item 染色体的中间是否含有未定义字符
+		
+		\Emph{smallCase}不含有
 
 		\item \Emph{Ground truth}中read的得分是多少，是否可以找到阈值
 		
+		显然存在\kw{insert}和\kw{delete}，导致计分有问题
+		
 		\item 统计子串频度
+		
+		暂时没统计
 	
 	\end{enumerate}
 	
