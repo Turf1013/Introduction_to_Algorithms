@@ -1,0 +1,288 @@
+%-*- coding:UTF-8 -*-
+% dna-align.tex
+\documentclass[hyperref,UTF8]{ctexart}
+\usepackage{geometry}
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{dsfont}
+\usepackage{amsthm}
+\usepackage{listings} %插入代码
+\usepackage{xcolor} %代码高亮
+\usepackage{blkarray}
+\usepackage{diagbox}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{color}
+\usepackage{multirow}
+\usepackage[all,pdf]{xy}
+\usepackage{verbatim}   %comment
+\usepackage{cases}
+\usepackage{clrscode3e}	% need clrscode3e package which is not included in CTex.
+\usepackage{hyperref}
+
+\geometry{screen}
+\hypersetup{
+    colorlinks=true,
+    bookmarks=true,
+    bookmarksopen=false,
+    pdfpagemode=FullScreen,
+    pdfstartview=fit,
+    pdftitle={DNA-Align},
+    pdfauthor={Trasier}
+}
+
+% THEOREM Environments --------------------------------------------------------
+\newtheorem{thm}{Theorem}[subsection]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{prob}[thm]{Problem}
+\newtheorem{mthm}[thm]{Main Theorem}
+\theoremstyle{definition}
+\newtheorem{defn}[thm]{Definition}
+\theoremstyle{remark}
+\newtheorem{rem}[thm]{Remark}
+\numberwithin{equation}{subsection}
+% MATH ------------------------------------------------------------------------
+\DeclareMathOperator{\RE}{Re}
+\DeclareMathOperator{\IM}{Im}
+\DeclareMathOperator{\ess}{ess}
+\newcommand{\eps}{\varepsilon}
+%\newcommand{\To}{\longrightarrow}  conflict with \package{clrscode3e}p
+\newcommand{\h}{\mathcal{H}}
+\newcommand{\s}{\mathcal{S}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\J}{\mathcal{J}}
+\newcommand{\M}{\mathcal{M}}
+\newcommand{\W}{\mathcal{W}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\BOP}{\mathbf{B}}
+\newcommand{\BH}{\mathbf{B}(\mathcal{H})}
+\newcommand{\KH}{\mathcal{K}(\mathcal{H})}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Complex}{\mathbb{C}}
+\newcommand{\Field}{\mathbb{F}}
+\newcommand{\RPlus}{\Real^{+}}
+\newcommand{\Polar}{\mathcal{P}_{\s}}
+\newcommand{\Poly}{\mathcal{P}(E)}
+\newcommand{\EssD}{\mathcal{D}}
+\newcommand{\Lom}{\mathcal{L}}
+\newcommand{\States}{\mathcal{T}}
+\newcommand{\abs}[1]{\left\vert#1\right\vert}
+\newcommand{\set}[1]{\left\{#1\right\}}
+\newcommand{\seq}[1]{\left<#1\right>}
+\newcommand{\norm}[1]{\left\Vert#1\right\Vert}
+\newcommand{\essnorm}[1]{\norm{#1}_{\ess}}
+
+
+% Some setup
+\pagestyle{plain}
+\geometry{a4paper, top=2cm, bottom=2cm, left=2cm, right=2cm}
+\CTEXsetup[format={\raggedright\bfseries\Large}]{section}
+\lstset{numbers=left, %设置行号位置
+        numberstyle=\small, %设置行号大小
+        keywordstyle=\color{blue}, %设置关键字颜色
+        commentstyle=\color{purple}, %设置注释颜色
+        %frame=single, %设置边框格式
+        escapeinside=``, %逃逸字符(1左面的键)，用于显示中文
+        breaklines, %自动折行
+        extendedchars=false, %解决代码跨页时，章节标题，页眉等汉字不显示的问题
+        %xleftmargin=2em,xrightmargin=2em, aboveskip=1em, %设置边距
+        tabsize=4, %设置tab空格数
+        showspaces=false %不显示空格
+       }
+
+% About math
+\newcommand{\rmnum}[1]{\romannumeral #1}
+\newcommand{\Emph}{\textbf}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\newcommand{\resetcounter}{\setcounter{equation}{0}}
+\newcommand{\equsuf}[1][x]{\equiv_{\textit{Suff(#1)}}}	
+\newcommand{\Suff}{\textit{Suff}}
+\newcommand{\len}[1][x]{\textit{length}_{#1}}
+
+% section deeep to 3 1.1.1
+\setcounter{secnumdepth}{3}
+
+\begin{document}
+
+\title{\Huge DNA-Align}
+\vspace{2cm}
+\author{\Large Trasier}
+\date{\today}
+\maketitle
+
+\section{Problem Statement}
+\label{sec:problem_statement}
+	
+	There are two major challenges within the alignment problem that we hope you will address in this competition:
+	\begin{enumerate}
+	
+		\item \Emph{A Read May Not Perfectly Match the Reference.}
+		A fraction of the reads will have no exact substring match in the reference due to genetic
+		variation and sequencing errors.
+		Although it is possible to obtain the exact alignment of two strings via the
+        \href{https://en.wikipedia.org/wiki/Smith-Waterman_algorithm}{Smith-Waterman} or
+        \href{https://en.wikipedia.org/wiki/Needleman-Wunsch_algorithm}{Needleman-Wunsch}
+		algorithms, this procedure runs in time proportional to the product of the strings' lengths;
+		In theory, this could be done for every read, but would be computationally infeasible.
+		
+		\Emph{There is no known efficient solution to inexact substring matching.}
+		
+		\item \Emph{Matching May be Ambiguous.}
+		Portitions of the genome are highly-repretitive.
+		In extreme cases, thousands of characters may be repeated thousands of times.
+		It is impossible for 150 character reads to unambiguously map to these regions,
+		but is is very important to know that the reported match may not be accurate.
+		
+		\Emph{The aligned must accurately measure the ambiguity of each mapping and report via a mapping confidence score.}
+		
+	\end{enumerate}
+
+	
+\section{Data Description}
+	
+	For the competition, submissions will be provided with same reference genome and new set of simulated reads.
+	Each submission will undergo up to threee competition tests with increasing difficulty,
+	with access to more difficult tests contingent on adequate performance on easier tests.
+	The tests differ in complexity by the number of reads to be aligned and
+	the number of chromatids the reads are to be aligned to.
+	
+	\begin{enumerate}
+	
+		\item \Emph{Small test}
+		
+		Chromosome 20($6.4\times10^7$ characters), up to $10^4$ read pairs
+		
+		\item \Emph{Medium test}
+		
+		Chromosomes $1, 11, 20$($4.5\times10^8$), up to $10^6$ read pairs.
+		
+		\item \Emph{Large test}
+		
+		Chromosomes $1, 2, \cdots, 24$($3.2\times10^9$), up to $10^7$ read pairs.
+		
+	\end{enumerate}
+	
+\section{Functions}
+	
+	The example and provisional test case will contain two tests with different difficuly(small, medium)
+	while the system test case will contain three tests(small, medium large).
+	The DNASequencing class won't be reinstantiated between the small and medium tests.
+	For the large system test, solutions will be run stand-alone outside of the normal submission
+	system on VMs with similar characteristics to the test processors.
+	
+	This set of functions will be called at most 2 times from smaller test to bigger ones.
+	For large system tests, it will only be called once.
+	Functions call order for a test within a testcase as follows:
+	\begin{enumerate}
+	
+		\item --- Preprocessing time limit starts counting here
+		
+		\item int \proc{initTest}(int testDifficulty)
+		
+		testDifficulty can be 0: small, 1: medium, 2: large. Return can be any valid integer.
+		
+		\item int \proc{passReferenceGenome}(int chromatidSequenceId, string[] chromatidSequence)
+		
+		will be called 1, 3 or 24 times according to the test difficuly. Return can be any valid integer.
+		
+		\item int \proc{preProcessing}()
+		
+		Return can be any valid integer.
+		
+		\item --- Preprocessing time limit ends here
+			  --- Time Cutoff starts counting here (the time used for scoring)
+			
+		\item string[] \proc{getAlignment}(int N, double normA, double normS, string[] readName, string[] readSequence)
+		
+		will be called once per test case.
+		
+		N is the number of reads in the test.
+		Both array will contain exactly N elements as well as the retrun array.
+		Elements at (2*i) and (2*i+1) are representing a read pair.
+		
+		Format of the return string:
+		
+		ReadName,\ ChromatidSequenceId,\ Start position(1-based),\ End position(1-based), strand(reference [+] or reverse complement [-]), mapping confidence score	\\
+		"sim1/1,1,10000,10149,+,0.89"
+		
+		\item --- Time Cutoff ends here
+			
+	\end{enumerate}
+
+\section{Notes}	
+\label{sec:notes}
+
+	\begin{itemize}
+	
+		\item Memory limit is 16GB
+		
+		\item Test processors are AWS m3.2xlarge instances
+		
+		\item There is no explicit code size limit. The implicit source code size limit is around 1MB
+		(it is not advisable to submit codes of size close to that or large). The compilation time limit is 60 seconds.
+		
+		\item You will be allowed to make example submissions each \Emph{30 minutes} and provisional submissions \Emph{each 3 hours}.
+		
+	\end{itemize}
+	
+	
+\section{Observation}
+\label{sec:observation}
+	
+	\begin{enumerate}
+	
+		\item $[-]$是否表示原串的$\Emph{Reverse Complement}$
+		
+		\item $Ground truth$中read的得分是多少，是否可以找到阈值
+		
+		\item $Ground truth$中$end_position - start-position$是否一定为150
+		
+		\item 染色体的中间是否含有未定义字符
+		
+		\item 统计子串频度
+	
+	\end{enumerate}
+	
+\section{Thought}
+\label{sec:thought}
+		
+	\begin{enumerate}
+	
+		\item 如何表示染色体
+		
+		\begin{enumerate}[(1)]
+		
+			\item 完整的字符串
+			
+			\item 使用子串重排序列
+			
+		\end{enumerate}
+		
+		\item 如何剪枝
+		
+		\begin{enumerate}[(1)]
+		
+			\item 根据染色体的$AGCT$数量与当前基因片的$AGCT$数量的\Emph{余弦相似度}
+			
+			\item 根据子序列的$AGCT$数量与当前基因片的$AGCT$数量的\Emph{欧式距离}
+			
+			\item 根据子串的分布于当前基因片的子串的分布
+		
+		\end{enumerate}
+		
+		\item 如何计算\Emph{Confidence}
+		
+		\item 如何利用$|truth_st-st| \ge 300$
+		
+		\item 如何提高空间利用率
+	
+	\end{enumerate}
+	
+\end{document}
+
