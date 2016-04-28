@@ -25,10 +25,167 @@ using namespace std;
 #define SZ(x) 			((int)(x).size())
 
 
+#define getComplement(ch) Complements[(ch)]
+#define getCharId(ch)	charId[(ch)]
+
+typedef struct trie_t* trie_ptr;
+struct trie_t {
+	trie_ptr fa;
+	trie_ptr nxt[5];
+
+	trie_t(trie_ptr fa = NULL):fa(fa) {
+		rep(i, 0, 5) nxt[i] = NULL;
+	}
+} trie_t;
+
+struct node_t {
+	trie_ptr leaf;
+	int chrId;
+	int pos;
+
+	node_t() {}
+	node_t(trie_t leaf, int chrId, int pos):
+		leaf(ed), chrId(chrId), pos(pos);
+};
+
+struct info_t {
+	int id;			/* ChromatidSequenceId */
+	int st;			/* Start position */
+	int ed; 		/* End position */
+	char strand;	/* strand */
+	double conf;
+
+	string to_string() const {
+		return ',' + to_string(id) + ',' + to_string(st), + ',' + to_string(ed) + ',' + strand + ',' + to_string(conf);
+	}
+};
+
+const int maxq = 180;
+struct Queue_t {
+	int l, r;
+	char qs[maxq];
+
+	inline void init() {
+		l = r = 0;
+	}
+
+	inline void push(char ch) {
+		qs[r++] = ch;
+		if (r == maxq) r = 0;
+	}
+
+	inline void pop() {
+		if (++l == maxq) l = 0;
+	}
+
+	inline void front() {
+		return qs[l];
+	}
+};
+
+const int max_apt = 100;
+Queue_t qs;
+typedef long long LL;
+char Complements[128];
+int charId[128];
+vector<node_t> Sequence[25][max_apt];
+trie_t *root = NULL;
+
+void Delete(trie_t *rt) {
+	rep(i, 0, 5) if (rt->nxt[i]) Delete(rt->nxt[i]);
+	delete rt;
+}
+
+inline trie_ptr newNode(trie_ptr fa) {
+	return new trie_t(fa);
+}
+
+trie_ptr Insert() {
+	int i = qs.l, id;
+	trie_ptr p = root, q;
+
+	while (i != r) {
+		id = getCharId(qs.Q[i]);
+		if (!p->nxt[id]) break;
+		++i;
+		if (i == maxq) i = 0;
+	}
+
+	while (i != r) {
+		id = getCharId(qs.Q[i]);
+		p->nxt[id] = newNode(p);
+		++i;
+		if (i == maxq) i = 0;
+		p = p->nxt[id];
+	}
+
+	return p;
+}
 
 class DNASequencing {
 public:
+	// constant parameter
+	int at_cg_maxdif;
+	int split_seq_len;	/* pay attention to update qsize */
+	int C[26];
+
+	vi chrIds;
+
+	void init_param(const int testDifficulty) {
+		at_cg_maxdif = 20;
+		split_seq_len = 150;
+	}
+
+	inline int calcScore(char c1, char c2) {
+		return c1==c2 ? 1:0;
+	}
+
+	string getReverseComplement(const string& line) {
+		int len = line.lenght();
+		string ret;
+
+		per(i, 0, len)	ret.pb(getComplement(line[i]));
+		return ret;
+	}
+
+	void init_trie() {
+		if (root)
+			Delete(root);
+		root = newNode();
+	}
+
 	int initTest(int testDifficulty) {
+		// init the parameter
+		init_param(testDifficulty);
+
+		// init the complement array
+		rep(i, 0, 128) Complements[i] = 'N';
+		Complements['A'] = 'T';
+		Complements['T'] = 'A';
+		Complements['C'] = 'G';
+		Complements['G'] = 'C';
+
+		// init the id
+		rep(i, 0, 128) charId[i] = 4;
+		charId['A'] = 0;
+		charId['T'] = 1;
+		charId['C'] = 2;
+		charId['G'] = 3;
+
+
+		// clear the chrIds
+		chrIds.clr();
+
+		// clear the begin position of sequence part
+		rep(i, 1, 25) {
+			rep(j, 0, max_apt) {
+				Sequence[i][j].clr();
+			}
+		}	
+
+		// init the trie
+		init_trie();
+
 		return 0;
 	}
 
@@ -36,16 +193,152 @@ public:
 		return 0;
 	}
 
+	void splitReferenceGenome(const int chrId, const vstr& chromatidSequence) {
+		int nline = SZ(chromatidSequence);
+		int i = 0, j = 0, idx = 1;
+		int len = chromatidSequence[i].length();
+		int apt = 0, cpg = 0;
+
+		#ifdef DEBUG
+		assert(nline > 3);
+		#endif
+
+		qs.init();
+		// fill first split_seq_len
+		while (idx < split_seq_len) {
+			const char& ch = chromatidSequence[i][j];
+			qs.push(ch);
+			if (ch=='A' || ch=='T')
+				++apt;
+			else if (ch=='C' || ch=='G')
+				++cpg;
+			++j;
+			if (j == len) {
+				++i;
+				len = chromatidSequence[i].length();
+				j = 0;
+			}
+			++idx;
+		}
+
+		// dynamic calculate the gap between `A+T` and `C+G`
+		while (i < nline) {
+			const char& ch = chromatidSequence[i][j];
+			qs.push(ch);
+			if (ch=='A' || ch=='T')
+				++apt;
+			else if (ch=='C' || ch=='G')
+				++cpg;
+			if (abs(apt-cpg) <= at_cg_maxdif) {
+				#ifdef DEBUG
+				assert(apt < max_apt);
+				#endif
+				trie_ptr leaf = Insert();
+				Sequence_beg[apt].pb(node_t(leaf, chrId, idx));
+			}
+			++j;
+			if (j == len) {
+				++i;
+				len = chromatidSequence[i].length();
+				j = 0;
+			}
+			++idx;
+
+			// pop the character queue
+			const char _ch = qs.top();
+			qs.pop();
+			if (_ch=='A' || _ch=='T')
+				--apt;
+			else if (_ch=='C' || _ch=='G')
+				--cpg;
+
+			#ifdef DEBUG
+			assert(apt>=0 && cpg>=0);
+			#endif
+		}
+	}
+
 	int passReferenceGenome(int chromatidSequenceId, const vector<string>& chromatidSequence) {
+		chrIds.pb(chromatidSequenceId);
+		splitReferenceGenome(chromatidSequenceId, chromatidSequence);
 		return 0;
 	}
 
+	/**
+		\brief Generate a failure but format right answer
+	*/
+	inline string getFailureResult(const int simId, const int faId) {
+		string qname = "sim" + to_string(simId) + '/' + to_string(faId);
+		return qname + ",20,1,150,+,0.9";
+	}
+
+	inline string getFailureResult(const string& qname) {
+		return qname + ",20,1,150,+,0.9";
+	}
+
+	inline void count_atcg(const string& read, int& a, int& t, int& c, int& g) {
+		int len = read.length();
+
+		C['A'-'A'] = C['T'-'A'] = C['C'-'A'] = C['G'-'A'] = 0;
+		rep(i, 0, len) ++C[read[i]-'A'];
+
+		a = C['A'-'A'];
+		t = C['T'-'A'];
+		c = C['C'-'A'];
+		g = C['G'-'A'];
+	}
+
+
+	inline void count_atcg(const string& read, int& apt, int& cpg) {
+		int len = read.length();
+
+		C['A'-'A'] = C['T'-'A'] = C['C'-'A'] = C['G'-'A'] = 0;
+		rep(i, 0, len) ++C[read[i]-'A'];
+
+		apt = C['A'-'A'] + C['T'-'A'];
+		cpg = C['C'-'A'] + C['G'-'A'];
+	}
+
+	void alignRead(const string& read, info_t& info) {
+		int apt, cpg;
+
+		/*
+			\step 1: count the number of atcg
+		*/
+		count_atcg(read, apt, cpg);
+
+		/*
+			\step 2: find all possible result
+		*/
+	}
+
 	vector<string> getAlignment(int N, double normA, double normS, const vector<string>& readName, const vector<string>& readSequence) {
-		vector<string> ret(N, "");
+		vstr ret;
+		info_t info;
+		bool flag;
+		string line;
+		#ifdef DEBUG
+		LL fail = 0;
+		#endif
+
 		for(int i=0; i<N; ++i) {
-			string qname = "sim"+ to_string(1 + i/2) + '/' + ((i%2) ? '2' : '1');
-			ret[i] =  qname + ",20,1,150,+,0.9";
+			const string& qname = readName[i];
+			flag = alignRead(readSequence[i], info);
+			if (flag) {
+				line = qname + info.to_string();
+			} else {
+				line = getFailureResult(qname);
+				#ifdef DEBUG
+				++fail;
+				#endif
+			}
+			ret.pb(line);
 		}
+
+		#ifdef DEBUG
+		printf("fail = %lld\n", fail);
+		#endif
+
 		return ret;
 	}
 };
