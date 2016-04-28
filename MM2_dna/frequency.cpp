@@ -350,18 +350,95 @@ void dumpFreq_chr() {
 */
 unordered_map<string,int> sliceTb;
 
-void dfs_init_slice(int b) {
+void dfs_init_slice(int left, string slice) {
+	if (left == 0) {
+		if (sliceTb.count(slice) == 0)
+			sliceTb[slice] = SZ(sliceTb);
+		return ;
+	}
 	
+	dfs_init_slice(left-1, slice+'A');
+	dfs_init_slice(left-1, slice+'T');
+	dfs_init_slice(left-1, slice+'C');
+	dfs_init_slice(left-1, slice+'G');
+	dfs_init_slice(left-1, slice+'U');
 }
 
-void init_slice(int len = 4) {
-	memset(C, 0, sizeof(C));
-	rep(i, 0, 4) C[i] = len;
-	dfs_init_slice(0);
+void init_slice(int len = 3) {
+	// memset(C, 0, sizeof(C));
+	// rep(i, 0, 4) C[i] = len;
+	sliceTb.clr();
+	dfs_init_slice(len, "");
+	#ifdef DEBUG
+	printf("SZ(slice_Tb) = %d\n", SZ(sliceTb));
+	#endif
+}
+
+void calcSliceFreq_chr(int chrId, vi& cnt, int slen) {
+	const string filename = REFE_PATH + to_string(chrId) + ".fa";
+	ifstream fin(filename);
+	
+	if (!fin.is_open()) {
+		cerr << filename << " not exists. " << endl;
+		abort();
+	}
+	
+	string line, pline="";
+	
+	// skip header
+	while (getline(fin, line)) {
+		int len = line.length();
+		if (pline.length()) {
+			rep(i, 1, slen) {
+				string str = pline.substr(pline.length()-(slen-i)) + line.substr(0, i);
+				#ifdef DEBUG
+				assert(SZ(str) == slen);
+				assert(sliceTb.count(str) > 0);
+				#endif
+				++cnt[sliceTb[str]];
+			}
+		}
+		rep(i, slen, len) {
+			string str = line.substr(i-slen, slen);
+			#ifdef DEBUG
+			assert(SZ(str) == slen);
+			assert(sliceTb.count(str) > 0);
+			#endif
+			++cnt[sliceTb[str]];
+		}
+		pline = line;
+	}
+	
+	fin.close();
+}
+
+void calcSliceFreq_chr() {
+	int sz = SZ(chrIds), nslice = SZ(slice_Tb);
+	vi sliceId;
+	
+	for (unordered_map<string,int>::iterator iter=sliceTb.begin(); iter!=sliceTb.end(); ++iter) {
+		printf("%4s\t", iter->fir.c_str());
+		sliceId.pb(iter->sec);
+	}
+	putchar('\n');
+	for (int chrId : chrIds) {
+		vi cnt(nslice, 0);
+		
+		calcSliceFreq_chr(chrId, cnt, len);
+		LL tot = 0;
+		rep(i, 0, nslice) tot += cnt[i];
+		
+		for (int sid : sliceId)
+			printf("%.3lf\t", cnt[sid] / (double) tot);
+		putchar('\n');
+	}
 }
 
 void calcSliceFrequency() {
-
+	init_slice();
+	chrIds.clr();
+	rep(i, 1, 25) chrIds.pb(i);
+	calcSliceFreq_chr();
 }
 
 int main(int argc, char **argv) {
