@@ -345,6 +345,25 @@ void dumpFreq_chr() {
 	fflush(logout);
 }
 
+/**
+	\brief calculate the slice's frequence of chromatid
+*/
+unordered_map<string,int> sliceTb;
+
+void dfs_init_slice(int b) {
+	
+}
+
+void init_slice(int len = 4) {
+	memset(C, 0, sizeof(C));
+	rep(i, 0, 4) C[i] = len;
+	dfs_init_slice(0);
+}
+
+void calcSliceFrequency() {
+
+}
+
 int main(int argc, char **argv) {
 	ios::sync_with_stdio(false);
 	
@@ -352,9 +371,11 @@ int main(int argc, char **argv) {
 	
 	int testCase = (argc > 1) ? stoi(argv[1]) : 1;
 	
-	calcFrequency(testCase);
+	// calcFrequency(testCase);
 
 	// dumpFreq_chr();
+
+	calcSliceFrequency();
 	
 	close_log();
 	
