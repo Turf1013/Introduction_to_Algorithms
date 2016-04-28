@@ -18,6 +18,10 @@ freq: frequency
 frequency: frequency.cpp
 	$(CXX) $(CFLAGS) -o freq frequency.cpp $(LIBS)
 
+algo: algorithm
+algorithm: algorithm.cpp
+	$(CXX) $(CFLAGS) -o algo algorithm.cpp $(LIBS)
+
 .PHONY: clean test
 clean:
 		-@rm *.o *.gcno 2> /dev/null || true

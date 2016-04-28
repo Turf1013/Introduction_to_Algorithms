@@ -85,6 +85,24 @@ vi chrIds;
 vector<Freq_t> vfreq_chr(25, Freq_t());
 
 /**
+	\brief	check AGCT
+*/
+inline bool isAGCT(char ch) {
+	return ch=='A' || ch=='G' || ch=='C' || ch=='T';
+}
+
+/**
+	\brief	regular the string, turns all non-AGCT to `N`
+*/
+string regular(const string& line) {
+	string ret;
+	int len = line.length();
+
+	for (int i=0; i<len; ++i) ret.pb(isAGCT(line[i]) ? line[i] : 'N');
+	return ret;
+}
+
+/**
 	\brief	calculate the frequency of chromat
 */
 void calcFreq_chr(int chrId) {
@@ -352,8 +370,10 @@ unordered_map<string,int> sliceTb;
 
 void dfs_init_slice(int left, string slice) {
 	if (left == 0) {
-		if (sliceTb.count(slice) == 0)
-			sliceTb[slice] = SZ(sliceTb);
+		if (sliceTb.count(slice) == 0) {
+			int tmp = SZ(sliceTb);
+			sliceTb[slice] = tmp;
+		}
 		return ;
 	}
 	
@@ -361,7 +381,7 @@ void dfs_init_slice(int left, string slice) {
 	dfs_init_slice(left-1, slice+'T');
 	dfs_init_slice(left-1, slice+'C');
 	dfs_init_slice(left-1, slice+'G');
-	dfs_init_slice(left-1, slice+'U');
+	// dfs_init_slice(left-1, slice+'N');
 }
 
 void init_slice(int len = 3) {
@@ -370,14 +390,15 @@ void init_slice(int len = 3) {
 	sliceTb.clr();
 	dfs_init_slice(len, "");
 	#ifdef DEBUG
-	printf("SZ(slice_Tb) = %d\n", SZ(sliceTb));
+	printf("SZ(sliceTb) = %d\n", SZ(sliceTb));
 	#endif
 }
 
-void calcSliceFreq_chr(int chrId, vi& cnt, int slen) {
+void calcSliceFreq_chr(int chrId, vector<LL>& cnt, int slen) {
 	const string filename = REFE_PATH + to_string(chrId) + ".fa";
 	ifstream fin(filename);
 	
+	printf("filename = %s\n", filename.c_str());
 	if (!fin.is_open()) {
 		cerr << filename << " not exists. " << endl;
 		abort();
@@ -386,25 +407,31 @@ void calcSliceFreq_chr(int chrId, vi& cnt, int slen) {
 	string line, pline="";
 	
 	// skip header
+	getline(fin, line);
 	while (getline(fin, line)) {
 		int len = line.length();
+		line = regular(line);
 		if (pline.length()) {
 			rep(i, 1, slen) {
 				string str = pline.substr(pline.length()-(slen-i)) + line.substr(0, i);
 				#ifdef DEBUG
 				assert(SZ(str) == slen);
-				assert(sliceTb.count(str) > 0);
+				// assert(sliceTb.count(str) > 0);
 				#endif
-				++cnt[sliceTb[str]];
+				if (sliceTb.count(str))
+					++cnt[sliceTb[str]];
 			}
 		}
 		rep(i, slen, len) {
 			string str = line.substr(i-slen, slen);
 			#ifdef DEBUG
 			assert(SZ(str) == slen);
-			assert(sliceTb.count(str) > 0);
+			// if (sliceTb.count(str) == 0)
+			// 	printf("unknown str = %s\n", str.c_str());
+			// assert(sliceTb.count(str) > 0);
 			#endif
-			++cnt[sliceTb[str]];
+			if (sliceTb.count(str))
+				++cnt[sliceTb[str]];
 		}
 		pline = line;
 	}
@@ -412,33 +439,43 @@ void calcSliceFreq_chr(int chrId, vi& cnt, int slen) {
 	fin.close();
 }
 
-void calcSliceFreq_chr() {
-	int sz = SZ(chrIds), nslice = SZ(slice_Tb);
-	vi sliceId;
+void calcSliceFreq_chr(int sliceLen) {
+	int nslice = SZ(sliceTb);
+	vector<int> sliceId;
 	
 	for (unordered_map<string,int>::iterator iter=sliceTb.begin(); iter!=sliceTb.end(); ++iter) {
 		printf("%4s\t", iter->fir.c_str());
+		fprintf(logout, "%4s\t", iter->fir.c_str());
 		sliceId.pb(iter->sec);
 	}
 	putchar('\n');
+	fprintf(logout, "\n");
 	for (int chrId : chrIds) {
-		vi cnt(nslice, 0);
+		vector<LL> cnt(nslice, 0LL);
 		
-		calcSliceFreq_chr(chrId, cnt, len);
+		calcSliceFreq_chr(chrId, cnt, sliceLen);
 		LL tot = 0;
 		rep(i, 0, nslice) tot += cnt[i];
+
+		// #ifdef DEBUG
+		// for (int sid : sliceId) printf("%d ", sid);
+		// putchar('\n');
+		// #endif
 		
-		for (int sid : sliceId)
-			printf("%.3lf\t", cnt[sid] / (double) tot);
+		for (int sid : sliceId) {
+			printf("%.4lf\t", cnt[sid] / (double) tot);
+			fprintf(logout,"%.4lf\t", cnt[sid] / (double) tot);
+		}
 		putchar('\n');
+		fprintf(logout, "\n");
 	}
 }
 
-void calcSliceFrequency() {
-	init_slice();
+void calcSliceFrequency(int sliceLen=3) {
+	init_slice(sliceLen);
 	chrIds.clr();
 	rep(i, 1, 25) chrIds.pb(i);
-	calcSliceFreq_chr();
+	calcSliceFreq_chr(sliceLen);
 }
 
 int main(int argc, char **argv) {
