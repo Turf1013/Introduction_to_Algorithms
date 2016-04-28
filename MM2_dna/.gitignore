@@ -5,8 +5,12 @@
 *.htm
 *.log
 *.in
+*.out
 *.o
 *.gcno
 example/
 dna
 ob
+freq
+freq.res
+

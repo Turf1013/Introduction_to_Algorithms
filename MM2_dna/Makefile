@@ -13,7 +13,10 @@ dna: dna.cpp
 ob: observe
 observe: observe.cpp
 	$(CXX) $(CFLAGS) -o ob observe.cpp $(LIBS)
-	
+
+freq: frequency
+frequency: frequency.cpp
+	$(CXX) $(CFLAGS) -o freq frequency.cpp $(LIBS)
 
 .PHONY: clean test
 clean:
