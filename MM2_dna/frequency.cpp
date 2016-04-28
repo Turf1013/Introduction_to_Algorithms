@@ -59,11 +59,20 @@ TestCase_t largeCase (
 	READ_PATH + "large5.minisam"
 );
 
-struct Chars_t {
+struct Freq_t {
 	double a, g, c, t;
-	Chars_t() {}
-	Chars_t(double a, double g, double c, double t):
+	
+	Freq_t() {}
+	Freq_t(double a, double g, double c, double t):
 		a(a), g(g), c(c), t(t) {}
+		
+	double len4() {
+		return sqrt(a*a+g*g+c*c+t*t);
+	}
+	
+	double len2() {
+		return sqrt((a+t)*(a+t) + (c+g)*(c+g));
+	}
 };
 
 #define LOGFILENAME "freq.log"
@@ -73,6 +82,7 @@ typedef long long LL;
 FILE *logout;
 LL C[26];
 vi chrIds;
+vector<Freq_t> vreq_chr(25, Freq_t());
 
 /**
 	\brief	calculate the frequency of chromat
@@ -114,7 +124,12 @@ void calcFreq_chr(int chrId) {
 	}
 	putchar('\n');
 	tot -= C['N'-'A'];
+	assert(tot > 0);
 	printf("A+T: %.4lf  C+G: %.4lf\n", (C['A'-'A']+C['T'-'A'])/(double)tot, (C['C'-'A']+C['G'-'A'])/(double)tot);
+	vreq_chr[chrId].a = C['A'-'A'] / (double) tot;
+	vreq_chr[chrId].c = C['C'-'A'] / (double) tot;
+	vreq_chr[chrId].g = C['G'-'A'] / (double) tot;
+	vreq_chr[chrId].t = C['T'-'A'] / (double) tot;
 	
 	// 
 	
@@ -129,13 +144,62 @@ void calcFreq_chr() {
 	}
 }
 
+
+/**
+    \brief	Cosine similarity of 4
+*/
+double similarity4(const Freq_t& a, const Freq_t& b) {
+	return (a.a*b.a + a.c*b.c+ a.g*b.g + a.t*b.t) / (a.len4() * b.len4());
+}
+
+double similarity2(const Freq_t& a, const Freq_t& b) {
+	return ((a.a+a.t)*(b.a+b.t) + (a.c+a.g)*(b.c+b.g)) / (a.len2() * b.len2());
+}
+
+/**
+	\brief	split the line with ','
+*/
+vstr split(const string& line, char ch) {
+	int len = line.length();
+	int i = 0, j = 0;
+	vstr ret;
+	
+	while (1) {
+		if (i==len || line[i]==ch) {
+			string str = line.substr(j, i-j);
+			ret.pb(str);
+			j = i + 1;
+		}
+		
+		if (i++ == len)	break;
+	}
+	
+	return ret;
+}
+
+
 /**
 	\brief	calculate the frequency of read
 */
 void calcFreq_read(const int testDifficulty) {
+	char ss[24];
 	const TestCase_t& tcase = (testDifficulty==0) ? smallCase :
 							  (testDifficulty==1) ? mediumCase : largeCase;
 	
+	vector<Freq_t> vfreq_read[25];
+	const string& filename = tcase.minisam;
+	ifstream fin(filename);
+	string line;
+	
+	if (!fin.is_open()) {
+		fprintf(stderr, "%s not exists.\n", filename.c_str());
+		abort();
+	}
+	
+	while (getline(fin, line)) {
+		vstr vsub = split(line, ',');
+		
+	}
 }
 
 void _calcFrequency(const int testDifficulty) {
