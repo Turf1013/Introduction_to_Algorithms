@@ -2,7 +2,7 @@
 using namespace std;
 
 /**
-	`Comment this line when subbmit`
+	`Comment this line when submit`
 */
 #define LOCAL_DEBUG
 #define DEBUG
