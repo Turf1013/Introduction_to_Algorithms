@@ -19,7 +19,7 @@ using namespace std;
 #define lson			l, mid, rt<<1
 #define rson			mid+1, r, rt<<1|1
 
-#define DEBUG
+//#define DEBUG
 
 const int INF = 0x3f3f3f3f;
 const int maxn = 405;
@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
 		s1 = needlman(ref, read);
 		s2 = myfunc(ref, read);
 		printf("s1 = %d, s2 = %d\n", s1, s2);
-		break;
+		// break;
 	}
 	return 0;
 }
