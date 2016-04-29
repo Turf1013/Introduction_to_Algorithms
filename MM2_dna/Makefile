@@ -22,10 +22,15 @@ algo: algorithm
 algorithm: algorithm.cpp
 	$(CXX) $(CFLAGS) -o algo algorithm.cpp $(LIBS)
 
+sl: slices
+slices: slice.cpp
+	$(CXX) $(CFLAGS) -o sl slice.cpp $(LIBS)
+
 .PHONY: clean test
 clean:
-		-@rm *.o *.gcno 2> /dev/null || true
+		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm dna dna.g* 2> /dev/null || true	
+		-@rm ob freq algo sl 2> /dev/null || true	
 
 test: build
 		./dna 12
