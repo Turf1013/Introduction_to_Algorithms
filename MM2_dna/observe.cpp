@@ -427,7 +427,7 @@ void observe_refeUndef() {
 
 	rep(i, 0, SZ(chrIds)) {
 		int chrId = chrIds[i];
-		getRefer(chrId);
+		getRefer(chrId, refe);
 
 		int sz = SZ(refe);
 		int i = 0;
