@@ -7,6 +7,9 @@ using namespace std;
 #define LOCAL_DEBUG
 #define DEBUG
 
+// #define SLICE_USE_CNT
+#define SLICE_USE_FREQ
+
 #define sti				set<int>
 #define stpii			set<pair<int, int> >
 #define mpii			map<int,int>
@@ -28,24 +31,25 @@ using namespace std;
 #define getComplement(ch) Complements[(ch)]
 #define getCharId(ch)	charId[(ch)]
 
+typedef unsigned int uint;
+typedef long long LL;
+
 typedef struct trie_t* trie_ptr;
 struct trie_t {
-	trie_ptr fa;
 	trie_ptr nxt[5];
 
-	trie_t(trie_ptr fa = NULL):fa(fa) {
+	trie_t() {
 		rep(i, 0, 5) nxt[i] = NULL;
 	}
 } trie_t;
 
-struct node_t {
+struct sep_t {
 	trie_ptr leaf;
-	int chrId;
-	int pos;
+	int idx;
 
-	node_t() {}
-	node_t(trie_t leaf, int chrId, int pos):
-		leaf(ed), chrId(chrId), pos(pos);
+	sep_t() {}
+	sep_t(trie_t leaf, int pos):
+		leaf(ed), pos(pos);
 };
 
 struct info_t {
@@ -56,102 +60,177 @@ struct info_t {
 	double conf;
 
 	string to_string() const {
-		return ',' + to_string(id) + ',' + to_string(st), + ',' + to_string(ed) + ',' + strand + ',' + to_string(conf);
+		return ',' + to_string(id) + ',' + to_string(st+1), + ',' + to_string(ed+1) + ',' + strand + ',' + to_string(conf);
 	}
 };
 
-const int maxq = 180;
-struct Queue_t {
-	int l, r;
-	char qs[maxq];
+struct slice_t {
+	int idx;
+	vector<double> freq;
 
-	inline void init() {
-		l = r = 0;
-	}
-
-	inline void push(char ch) {
-		qs[r++] = ch;
-		if (r == maxq) r = 0;
-	}
-
-	inline void pop() {
-		if (++l == maxq) l = 0;
-	}
-
-	inline void front() {
-		return qs[l];
+	void clear() {
+		freq.clr();
 	}
 };
 
-const int max_apt = 100;
-Queue_t qs;
+struct group_t {
+	int idx;
+	vector<double> freq;
+
+	void clear() {
+		freq.clr();
+	}
+}
+
+// constant parameter
+int sep_len;		/* pay attention to update qsize */
+
+// about sep
+const char* acgtn_s = "acgtn";
+const int max_hash_size = 1050;
+const int max_sep_len = 50;
+unsigned int hash_seed, has_size;
+int hash_base[max_sep_len];
+bool sep_id[max_hash_size];
+unsigned int sep_cnt[max_hash_size];
+unsigned int sep_cnt_ubound, sep_cnt_lbound;
+unsigned int topk_sep_chr;
+vector<pair<uint,uint> > sep_freq;
+char buffer[max_sep_len];
+
+// about slice
+int slice_len;
+
+// about group
+int group_len;
+
 typedef long long LL;
 char Complements[128];
 int charId[128];
-vector<node_t> Sequence[25][max_apt];
-trie_t *root = NULL;
+vector<slice_t> sliceChromat[25];
+vector<group_t> groupChromat[25];
+vector<sep_t> sepChromat;
+trie_ptr root = NULL;
+trie_ptr root_chr = NULL;
 
-void Delete(trie_t *rt) {
-	rep(i, 0, 5) if (rt->nxt[i]) Delete(rt->nxt[i]);
+void Delete(trie_t *rt, int dep) {
+	if (dep == sep_len)	return ;
+	rep(i, 0, 5) if (rt->nxt[i]) Delete(rt->nxt[i], dep+1);
 	delete rt;
 }
 
-inline trie_ptr newNode(trie_ptr fa) {
-	return new trie_t(fa);
-}
+trie_ptr Insert(char *s) {
+	int i = 0; 
+	trie_t p = root;
 
-trie_ptr Insert() {
-	int i = qs.l, id;
-	trie_ptr p = root, q;
-
-	while (i != r) {
-		id = getCharId(qs.Q[i]);
+	while (i < sep_len) {
+		id = getCharId(s[i]);
 		if (!p->nxt[id]) break;
+		p = p->nxt[id];
 		++i;
-		if (i == maxq) i = 0;
 	}
 
-	while (i != r) {
-		id = getCharId(qs.Q[i]);
-		p->nxt[id] = newNode(p);
-		++i;
-		if (i == maxq) i = 0;
+	while(i < sep_len) {
+		id = getCharId(s[i++]);
+		p->nxt[id] = new trie_t();
 		p = p->nxt[id];
 	}
+	++p->nxt[0];
 
 	return p;
 }
 
+trie_ptr Insert_chr(char *s) {
+	int i = 0; 
+	trie_t p = root_chr;
+
+	while (i < sep_len) {
+		id = getCharId(s[i]);
+		if (!p->nxt[id]) break;
+		p = p->nxt[id];
+		++i;
+	}
+
+	while(i < sep_len) {
+		id = getCharId(s[i++]);
+		p->nxt[id] = new trie_t();
+		p = p->nxt[id];
+	}
+	++p->nxt[0];
+
+	return p;
+}
+
+inline bool isACGT(char ch) {
+	return ch=='A' || ch=='G' || ch=='C' || ch=='T';
+}
+
+void init_trie() {
+	if (root)
+		Delete(root, 0);
+	root = new trie_t();
+}
+
+void init_trie_chr() {
+	if (root_chr)
+		Delete(root_chr, 0);
+	root_chr = new trie_t();
+}
+
+void trav_trie_chr(trie_ptr rt, int dep, unsigned int val) {
+	if (dep == sep_len) {
+		unsigned int h = val % hash_sizel
+		sep_cnt[h] += (rt->nxt[0] - (trie_ptr)NULL);
+		rt->nxt[1] += h;
+		return ;
+	}
+
+	unsigned int _val = val * hash_seed;
+	rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, _val+acgtn_s[i]);
+}
+
 class DNASequencing {
 public:
-	// constant parameter
-	int at_cg_maxdif;
-	int split_seq_len;	/* pay attention to update qsize */
 	int C[26];
-
 	vi chrIds;
 
 	void init_param(const int testDifficulty) {
-		at_cg_maxdif = 20;
-		split_seq_len = 150;
-	}
-
-	inline int calcScore(char c1, char c2) {
-		return c1==c2 ? 1:0;
+		if (testDifficulty == 0) {
+			sep_len = 10;
+			slice_len = 170;	// slice_len%sep_len = 0
+			group_len = 1020;	// group_len%slice_len = 0;	
+			hash_seed = 31;
+			hash_size = 123;
+			sep_cnt_ubound = 1e8;
+			sep_cnt_lbound = 0;
+			topk_sep_chr = 100;
+		} else if (testDifficulty == 1) {
+			sep_len = 10;
+			slice_len = 170;		// slice_len%sep_len = 0
+			group_len = 1020;	// group_len%slice_len = 0;	
+			hash_seed = 31;
+			hash_size = 123;
+			sep_cnt_ubound = 1e8;
+			sep_cnt_lbound = 0;
+			topk_sep_chr = 100;
+		} else {
+			sep_len = 10;
+			slice_len = 170;		// slice_len%sep_len = 0
+			group_len = 1020;	// group_len%slice_len = 0;	
+			hash_seed = 31;
+			hash_size = 123;
+			sep_cnt_ubound = 1e8;
+			sep_cnt_lbound = 0;
+			topk_sep_chr = 100;
+		}
 	}
 
 	string getReverseComplement(const string& line) {
-		int len = line.lenght();
+		int len = line.length();
 		string ret;
 
 		per(i, 0, len)	ret.pb(getComplement(line[i]));
 		return ret;
-	}
-
-	void init_trie() {
-		if (root)
-			Delete(root);
-		root = newNode();
 	}
 
 	int initTest(int testDifficulty) {
@@ -168,19 +247,17 @@ public:
 		// init the id
 		rep(i, 0, 128) charId[i] = 4;
 		charId['A'] = 0;
-		charId['T'] = 1;
-		charId['C'] = 2;
-		charId['G'] = 3;
-
+		charId['C'] = 1;
+		charId['G'] = 2;
+		charId['T'] = 3;
 
 		// clear the chrIds
 		chrIds.clr();
 
 		// clear the begin position of sequence part
 		rep(i, 1, 25) {
-			rep(j, 0, max_apt) {
-				Sequence[i][j].clr();
-			}
+			sliceChromat[i].clr();
+			groupChromat[i].clr();
 		}	
 
 		// init the trie
@@ -193,74 +270,150 @@ public:
 		return 0;
 	}
 
-	void splitReferenceGenome(const int chrId, const vstr& chromatidSequence) {
+	void separateChromat(const vstr& chromatidSequence) {
+		const int unkown_bound = 2;
+		const int chrId = *chrIds.rbegin();
 		int nline = SZ(chromatidSequence);
-		int i = 0, j = 0, idx = 1;
-		int len = chromatidSequence[i].length();
-		int apt = 0, cpg = 0;
+		int l = 0, unknown = 0;
+		int idx = 0;
+		sep_t sep;
 
-		#ifdef DEBUG
-		assert(nline > 3);
-		#endif
+		rep(idx, 0, nline) {
+			const string& line = chromatidSequence[idx];
+			const int len = line.length();
 
-		qs.init();
-		// fill first split_seq_len
-		while (idx < split_seq_len) {
-			const char& ch = chromatidSequence[i][j];
-			qs.push(ch);
-			if (ch=='A' || ch=='T')
-				++apt;
-			else if (ch=='C' || ch=='G')
-				++cpg;
-			++j;
-			if (j == len) {
-				++i;
-				len = chromatidSequence[i].length();
-				j = 0;
+			rep(i, 0, len) {
+				if (!isACGT(line[i])) {
+					if (++unknown == unknown_bound) {
+						l = 0;
+						unkown = 0;
+					}
+				}
+				if (l == sep_len) {
+					sep.leaf = Insert_chr(buffer);
+					sep.idx = idx + i;
+					sepChromat.pb(sep);
+					Insert_glb(buffer);
+					l = 0;
+					unkown = 0;
+				}
 			}
-			++idx;
+			idx += len;
+		}
+	}
+
+	int extractFeatureChromat() {
+		memset(sep_cnt, 0, sizeof(sep_cnt));
+		memset(sep_id, -1, sizeof(sep_id));
+		trav_trie_chr(root_chr, 0);
+
+		rep(i, 0, hash_size) {
+			if (sep_cnt[i]>sep_cnt_lbound && sep_cnt[i]<sep_cnt_ubound) {
+				sep_freq.pb(mp(sep_cnt[i], i));
+			}
 		}
 
-		// dynamic calculate the gap between `A+T` and `C+G`
-		while (i < nline) {
-			const char& ch = chromatidSequence[i][j];
-			qs.push(ch);
-			if (ch=='A' || ch=='T')
-				++apt;
-			else if (ch=='C' || ch=='G')
-				++cpg;
-			if (abs(apt-cpg) <= at_cg_maxdif) {
+		sort(all(sep_freq), greater<pair<uint,uint> >());
+		int mn_sz = min(topk_slice_chr, SZ(sep_freq));
+
+		rep(i, 0, mn_sz) {
+			sep_id[sep_freq[i].sec] = i;
+		}
+		sep_freq.clr();
+
+		return mn_sz;
+	}
+
+	void mergeChromat(int nfeature) {
+		const int chrId = *chrIds.rbegin();
+		int nsep = SZ(sepChromat);
+
+		// merge the sep into slice
+		{
+			int i = 0, j;
+			int bi;
+			uint tot;
+			slice_t slice;
+
+			memset(sep_cnt, 0, sizeof(sep_cnt));
+			rep(ii, 0, nfeature) slice.freq.pb(0.);
+
+			while (i < nsep) {
+				j = i;
+				bi = sepChromat[i].idx;
+				tot = 0;
+
+				while (i<nsep && sepChromat[i].idx-bi<=slice_len) {
+					int h = sepChromat[i].leaf->nxt[1] - (trie_ptr)NULL;
+					if (sep_id[h] >= 0) {
+						++sep[sep_id[h]];
+					}
+					++tot;
+					++i;
+				}
+
+				slice.idx = bi;
+				rep(k, 0, nfeature) {
+					#ifdef SLICE_USE_FREQ
+					slice[k] = sep_cnt[k] / (double) tot;
+					#else
+					slice[k] = sep_cnt[k];
+					#endif
+					sep_cnt[k] = 0;
+					sliceChromat[chrId].pb(slice);
+				}
+			}
+		}
+
+		// release sepChromat, we don't need them
+		sepChromat.clr();
+
+		// merge the slice into group
+		int nslice = SZ(sliceChromat[chrId]);
+		{
+			int i = 0, j;
+			int bi;
+			group_t grp;
+
+			rep(ii, 0, nfeature) grp.freq.pb(0.);
+			while (int < nslice) {
+				j = i;
+				bi = sliceChromat[chrId][i].idx;
+
+				while (i<nslice && sliceChromat[chrId][i].idx-bi<=group_len) {
+					const vector<double>& vc = sliceChromat[chrId][i].freq;
+					rep(ii, 0, nfeature) grp.freq[ii] += vc[ii];
+					++i;
+				}
+
 				#ifdef DEBUG
-				assert(apt < max_apt);
+				assert(i > j);
 				#endif
-				trie_ptr leaf = Insert();
-				Sequence_beg[apt].pb(node_t(leaf, chrId, idx));
+				j = i - j;
+				grp.idx = bi;
+				rep(ii, 0, nfeature) grp.freq[ii] /= j;
+				groupChromat[chrId].pb(grp);
+				rep(ii, 0, nfeature) grp.freq[ii] = 0;
 			}
-			++j;
-			if (j == len) {
-				++i;
-				len = chromatidSequence[i].length();
-				j = 0;
-			}
-			++idx;
-
-			// pop the character queue
-			const char _ch = qs.top();
-			qs.pop();
-			if (_ch=='A' || _ch=='T')
-				--apt;
-			else if (_ch=='C' || _ch=='G')
-				--cpg;
-
-			#ifdef DEBUG
-			assert(apt>=0 && cpg>=0);
-			#endif
 		}
 	}
 
 	int passReferenceGenome(int chromatidSequenceId, const vector<string>& chromatidSequence) {
+		// push chrId into chrIds
 		chrIds.pb(chromatidSequenceId);
-		splitReferenceGenome(chromatidSequenceId, chromatidSequence);
+
+		// split the chromat into slices, may exists bad separated
+		separateChromat(chromatidSequenceId, chromatidSequence);
+
+		// Find the feature of current chromat
+		nfeature = extractFeatureChromat()
+
+		// release the memory of chr's trie
+		init_trie_chr();
+
+		// merge the slice to present the chromat
+		mergeChromat(nfeature);
+
 		return 0;
 	}
 
@@ -269,11 +422,19 @@ public:
 	*/
 	inline string getFailureResult(const int simId, const int faId) {
 		string qname = "sim" + to_string(simId) + '/' + to_string(faId);
+		#ifdef DEBUG
 		return qname + ",20,1,150,+,0.9";
+		#else
+		return qname + ",20,1,150,+,0.9";
+		#endif
 	}
 
 	inline string getFailureResult(const string& qname) {
+		#ifdef DEBUG
 		return qname + ",20,1,150,+,0.9";
+		#else
+		return qname + ",20,1,150,+,0.9";
+		#endif
 	}
 
 	inline void count_atcg(const string& read, int& a, int& t, int& c, int& g) {
@@ -302,14 +463,7 @@ public:
 	void alignRead(const string& read, info_t& info) {
 		int apt, cpg;
 
-		/*
-			\step 1: count the number of atcg
-		*/
-		count_atcg(read, apt, cpg);
-
-		/*
-			\step 2: find all possible result
-		*/
+		
 	}
 
 	vector<string> getAlignment(int N, double normA, double normS, const vector<string>& readName, const vector<string>& readSequence) {

@@ -1,7 +1,7 @@
 ##
 #	Makefile for `dna` application
 ##
-
+CC = gcc
 CXX = g++
 LIBS = -lrt
 CFLAGS = --std=c++0x -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
@@ -26,11 +26,14 @@ sl: slices
 slices: slice.cpp
 	$(CXX) $(CFLAGS) -o sl slice.cpp $(LIBS)
 
+hash: hash.cpp
+	$(CXX) $(CFLAGS) -o hash hash.cpp $(LIBS)
+
 .PHONY: clean test
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm dna dna.g* 2> /dev/null || true	
-		-@rm ob freq algo sl 2> /dev/null || true	
+		-@rm ob freq algo sl hash 2> /dev/null || true	
 
 test: build
 		./dna 12
