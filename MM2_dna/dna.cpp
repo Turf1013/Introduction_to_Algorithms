@@ -45,11 +45,15 @@ struct trie_t {
 
 struct sep_t {
 	trie_ptr leaf;
-	int idx;
+	uint idx;
 
 	sep_t() {}
-	sep_t(trie_t leaf, int pos):
-		leaf(ed), pos(pos);
+	sep_t(trie_t leaf, int idx):
+		leaf(leaf), idx(idx);
+
+	bool operator< (const sep_t& oth) const {
+		return idx > oth.idx;
+	}
 };
 
 struct info_t {
@@ -80,7 +84,7 @@ struct group_t {
 	void clear() {
 		freq.clr();
 	}
-}
+};
 
 // constant parameter
 int sep_len;		/* pay attention to update qsize */
@@ -91,7 +95,8 @@ const int max_hash_size = 1050;
 const int max_sep_len = 50;
 unsigned int hash_seed, has_size;
 int hash_base[max_sep_len];
-bool sep_id[max_hash_size];
+int sep_id[max_hash_size];
+unsigned int all_id[max_hash_size];
 unsigned int sep_cnt[max_hash_size];
 unsigned int sep_cnt_ubound, sep_cnt_lbound;
 unsigned int topk_sep_chr;
@@ -104,12 +109,20 @@ int slice_len;
 // about group
 int group_len;
 
+// about global feature
+unsigned int topk_sep_all;
+int nbits_ubound, nbits_lbound;
+uint sep_cnt_all_ubound, sep_cnt_all_lbound;
+
 typedef long long LL;
 char Complements[128];
 int charId[128];
 vector<slice_t> sliceChromat[25];
 vector<group_t> groupChromat[25];
 vector<sep_t> sepChromat;
+slice_t allFeature[25];
+map<uint,int> allFeatureH;
+map<uint,int> chrFeatureH[25];
 trie_ptr root = NULL;
 trie_ptr root_chr = NULL;
 
@@ -119,7 +132,7 @@ void Delete(trie_t *rt, int dep) {
 	delete rt;
 }
 
-trie_ptr Insert(char *s) {
+trie_ptr Insert(char *s, int chrId) {
 	int i = 0; 
 	trie_t p = root;
 
@@ -136,6 +149,7 @@ trie_ptr Insert(char *s) {
 		p = p->nxt[id];
 	}
 	++p->nxt[0];
+	p->nxt[2] |= (1 << chrId)
 
 	return p;
 }
@@ -179,9 +193,39 @@ void init_trie_chr() {
 
 void trav_trie_chr(trie_ptr rt, int dep, unsigned int val) {
 	if (dep == sep_len) {
-		unsigned int h = val % hash_sizel
+		unsigned int h = val % hash_size;
 		sep_cnt[h] += (rt->nxt[0] - (trie_ptr)NULL);
 		rt->nxt[1] += h;
+		return ;
+	}
+
+	unsigned int _val = val * hash_seed;
+	rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, _val+acgtn_s[i]);
+}
+
+inline int getBits(int x) {
+	int ret = 0;
+
+	while (x) {
+		++ret;
+		x -= (-x & x);
+	}
+
+	return ret;
+}
+
+void trav_trie_all(trie_ptr rt, int dep, unsigned int val) {
+	if (dep == sep_len) {
+		uint h = val % hash_size;
+		int state = (rt->nxt[2] - (trie_ptr)NULL);
+		int bits = getBits(state);
+		uint cnt = (rt->nxt[0] - (trie_ptr)NULL);
+		if ((bits > nbits_lbound && bits < nbits_ubound) &&
+			(cnt > sep_cnt_all_lbound && cnt<sep_cnt_all_ubound)) {
+			all_id[h] |= state;
+			sep_cnt[h] += cnt;
+			rt->nxt[1] += h;
+		}
 		return ;
 	}
 
@@ -204,24 +248,36 @@ public:
 			sep_cnt_ubound = 1e8;
 			sep_cnt_lbound = 0;
 			topk_sep_chr = 100;
+			nbits_ubound = 2;
+			nbits_lbound = 0;
+			sep_cnt_all_ubound = 1e9;
+			sep_cnt_all_lbound = 50;
 		} else if (testDifficulty == 1) {
 			sep_len = 10;
 			slice_len = 170;		// slice_len%sep_len = 0
-			group_len = 1020;	// group_len%slice_len = 0;	
+			group_len = 1020;		// group_len%slice_len = 0;	
 			hash_seed = 31;
 			hash_size = 123;
 			sep_cnt_ubound = 1e8;
 			sep_cnt_lbound = 0;
 			topk_sep_chr = 100;
+			nbits_ubound = 2;
+			nbits_lbound = 0;
+			sep_cnt_all_ubound = 1e9;
+			sep_cnt_all_lbound = 50;
 		} else {
 			sep_len = 10;
 			slice_len = 170;		// slice_len%sep_len = 0
-			group_len = 1020;	// group_len%slice_len = 0;	
+			group_len = 1020;		// group_len%slice_len = 0;	
 			hash_seed = 31;
 			hash_size = 123;
 			sep_cnt_ubound = 1e8;
 			sep_cnt_lbound = 0;
 			topk_sep_chr = 100;
+			nbits_ubound = 12;
+			nbits_lbound = 1;
+			sep_cnt_all_ubound = 1e9;
+			sep_cnt_all_lbound = 50;
 		}
 	}
 
@@ -254,11 +310,14 @@ public:
 		// clear the chrIds
 		chrIds.clr();
 
-		// clear the begin position of sequence part
+		// clear the feature & presents of chromatid
 		rep(i, 1, 25) {
 			sliceChromat[i].clr();
 			groupChromat[i].clr();
+			allFeature[i].clr();
+			chrFeatureH[i].clr();
 		}	
+		allFeatureH.clr();
 
 		// init the trie
 		init_trie();
@@ -266,7 +325,68 @@ public:
 		return 0;
 	}
 
+	int extractFeatureAll() {
+		memset(sep_cnt, 0, sizeof(sep));
+		memset(sep_id, -1, sizeof(sep_id));
+		trav_trie_all(root, 0, 0);
+
+		rep(i, 0, hash_size) {
+			const int& cnt = sep_cnt[i];
+			const int& state = all_id[i];
+			int bits = getBits(state);
+			if ((bits > nbits_lbound && bits < nbits_ubound) &&
+				(cnt > sep_cnt_all_lbound && cnt < sep_cnt_all_ubound)) { {
+				sep_freq.pb(mp(cnt, i));
+			}
+		}
+
+		sort(all(sep_freq), greater<pair<uint,uint> >());
+		int mn_sz = min(topk_sep_all, SZ(sep_freq));
+
+		rep(i, 0, mn_sz) {
+			sep_id[sep_freq[i].sec] = i;
+		}
+
+		sep_freq.clr();
+		return mn_sz;
+	}
+
+	void mergeAll(int nfeature) {
+		int sz_chr = SZ(chrIds);
+
+		rep(i, 0, sz_chr) {
+			const int& chrId = chrIds[i];
+			rep(j, 0, nfeature)	allFeature[chrId].pb(0);
+		}
+
+		rep(i, 0, hash_size) {
+			if (sep_id[i] != -1) {
+				allFeatureH[i] = sep_id[i];
+				const int& state = all_id[i];
+				for (int chrId : chrIds) {
+					if (state & (1<<chrId))
+						allFeature[chrId][sep_id[i]] = 1;
+				}
+			}
+		}
+	}
+
 	int preProcessing() {
+		/**
+			\step 1: extract global feature
+		*/
+		int nfeature = extractFeatureAll();
+
+		/**
+			\step 2: free the global trie
+		*/
+		init_trie();
+
+		/**
+			\step 3: merge the global feature
+		*/
+		mergeAll(nfeature);
+
 		return 0;
 	}
 
@@ -293,7 +413,7 @@ public:
 					sep.leaf = Insert_chr(buffer);
 					sep.idx = idx + i;
 					sepChromat.pb(sep);
-					Insert_glb(buffer);
+					Insert_glb(buffer, chrId);
 					l = 0;
 					unkown = 0;
 				}
@@ -303,9 +423,10 @@ public:
 	}
 
 	int extractFeatureChromat() {
+		const int chrId = *chrIds.rbegin();
 		memset(sep_cnt, 0, sizeof(sep_cnt));
 		memset(sep_id, -1, sizeof(sep_id));
-		trav_trie_chr(root_chr, 0);
+		trav_trie_chr(root_chr, 0, 0);
 
 		rep(i, 0, hash_size) {
 			if (sep_cnt[i]>sep_cnt_lbound && sep_cnt[i]<sep_cnt_ubound) {
@@ -318,6 +439,7 @@ public:
 
 		rep(i, 0, mn_sz) {
 			sep_id[sep_freq[i].sec] = i;
+			chrFeatureH[chrId][seq_freq[i].sec] = i;
 		}
 		sep_freq.clr();
 
@@ -420,73 +542,43 @@ public:
 	/**
 		\brief Generate a failure but format right answer
 	*/
-	inline string getFailureResult(const int simId, const int faId) {
-		string qname = "sim" + to_string(simId) + '/' + to_string(faId);
+	inline string getFailureResult(const string& qname, const char strand='+') {
 		#ifdef DEBUG
-		return qname + ",20,1,150,+,0.9";
+		return qname + ",20,1,150," + strand + ",0.9";
 		#else
-		return qname + ",20,1,150,+,0.9";
+		return qname + ",20,1,150," + strand + ",0.9";
 		#endif
-	}
-
-	inline string getFailureResult(const string& qname) {
-		#ifdef DEBUG
-		return qname + ",20,1,150,+,0.9";
-		#else
-		return qname + ",20,1,150,+,0.9";
-		#endif
-	}
-
-	inline void count_atcg(const string& read, int& a, int& t, int& c, int& g) {
-		int len = read.length();
-
-		C['A'-'A'] = C['T'-'A'] = C['C'-'A'] = C['G'-'A'] = 0;
-		rep(i, 0, len) ++C[read[i]-'A'];
-
-		a = C['A'-'A'];
-		t = C['T'-'A'];
-		c = C['C'-'A'];
-		g = C['G'-'A'];
-	}
-
-
-	inline void count_atcg(const string& read, int& apt, int& cpg) {
-		int len = read.length();
-
-		C['A'-'A'] = C['T'-'A'] = C['C'-'A'] = C['G'-'A'] = 0;
-		rep(i, 0, len) ++C[read[i]-'A'];
-
-		apt = C['A'-'A'] + C['T'-'A'];
-		cpg = C['C'-'A'] + C['G'-'A'];
 	}
 
 	void alignRead(const string& read, info_t& info) {
-		int apt, cpg;
+		
 
 		
 	}
 
 	vector<string> getAlignment(int N, double normA, double normS, const vector<string>& readName, const vector<string>& readSequence) {
 		vstr ret;
-		info_t info;
 		bool flag;
-		string line;
+		info_t info1, info2;
+		string line1, line2;
 		#ifdef DEBUG
-		LL fail = 0;
+		int fail = 0;
 		#endif
 
-		for(int i=0; i<N; ++i) {
-			const string& qname = readName[i];
-			flag = alignRead(readSequence[i], info);
+		for(int i=0; i<N; i+=2) {
+			flag = alignReadPair(readSequence[i], readSequence[i+1], info1, info2);
 			if (flag) {
-				line = qname + info.to_string();
+				line1 = readName[i] + info1.to_string();
+				line2 = readName[i+1] + info2.to_string();
 			} else {
-				line = getFailureResult(qname);
+				line1 = getFailureResult(qname, '+');
+				line2 = getFailureResult(qname, '-');
 				#ifdef DEBUG
 				++fail;
 				#endif
 			}
-			ret.pb(line);
+			ret.pb(line1);
+			ret.pb(line2);
 		}
 
 		#ifdef DEBUG
