@@ -61,7 +61,7 @@ struct info_t {
 	int st;			/* Start position */
 	int ed; 		/* End position */
 	char strand;	/* strand */
-	double conf;
+	float conf;
 
 	string to_string() const {
 		return ',' + to_string(id) + ',' + to_string(st+1), + ',' + to_string(ed+1) + ',' + strand + ',' + to_string(conf);
@@ -70,21 +70,89 @@ struct info_t {
 
 struct slice_t {
 	int idx;
-	vector<double> freq;
+	vector<float> freq;
 
 	void clear() {
 		freq.clr();
 	}
-};
-
-struct group_t {
-	int idx;
-	vector<double> freq;
-
-	void clear() {
-		freq.clr();
+	
+	float similarity(const slice_t& a) const {
+		#ifdef DEBUG
+		assert(SZ(freq) == SZ(a.freq));
+		#endif
+		
+		int sz = SZ(freq);
+		float fz = 0., fa = 0., fb = 0.;
+		
+		rep(i, 0, sz) {
+			fz = freq[i] * a.freq[i];
+			fa += freq[i] * freq[i];
+			fb += a.freq[i] * a.freq[i];
+		}
+		
+		return fz / (sqrt(fa) * sqrt(fb));
+	}
+	
+	float length() const {
+		int sz = SZ(freq);
+		
+		float sum = 0.;
+		
+		rep(i, 0, sz) sum += freq[i] * freq[i];
+		
+		return sqrt(sum);
 	}
 };
+
+float similarity(const slice_t& a, const slice_t& b){
+	#ifdef DEBUG
+	assert(SZ(b.freq) == SZ(a.freq));
+	#endif
+	
+	int sz = SZ(a.freq);
+	float fz = 0., fa = 0., fb = 0.;
+	
+	rep(i, 0, sz) {
+		fz = a.freq[i] * b.freq[i];
+		fa += a.freq[i] * a.freq[i];
+		fb += b.freq[i] * b.freq[i];
+	}
+	
+	return fz / (sqrt(fa) * sqrt(fb));
+}
+
+float similarity(const slice_t& a, const float fa, const slice_t& b){
+	#ifdef DEBUG
+	assert(SZ(b.freq) == SZ(a.freq));
+	#endif
+	
+	int sz = SZ(a.freq);
+	float fz = 0., fb = 0.;
+	
+	rep(i, 0, sz) {
+		fz = a.freq[i] * b.freq[i];
+		fb += b.freq[i] * b.freq[i];
+	}
+	
+	return fz / (fa * sqrt(fb));
+}
+
+float similarity(const slice_t& a, const float& fa, const slice_t& b, const float fb){
+	#ifdef DEBUG
+	assert(SZ(b.freq) == SZ(a.freq));
+	#endif
+	
+	int sz = SZ(a.freq);
+	float fz = 0.;
+	
+	rep(i, 0, sz) {
+		fz = a.freq[i] * b.freq[i];
+	}
+	
+	return fz / (fa * fb);
+}
+
+typedef slice_t group_t;
 
 // constant parameter
 int sep_len;		/* pay attention to update qsize */
@@ -94,10 +162,11 @@ const char* acgtn_s = "acgtn";
 const int max_hash_size = 1050;
 const int max_sep_len = 50;
 unsigned int hash_seed, has_size;
-int hash_base[max_sep_len];
+uint hash_base[max_sep_len];
 int sep_id[max_hash_size];
 unsigned int all_id[max_hash_size];
 unsigned int sep_cnt[max_hash_size];
+float sepFreq_read[max_hash_size];
 unsigned int sep_cnt_ubound, sep_cnt_lbound;
 unsigned int topk_sep_chr;
 vector<pair<uint,uint> > sep_freq;
@@ -105,14 +174,18 @@ char buffer[max_sep_len];
 
 // about slice
 int slice_len;
+float slice_simi_ubound, slice_simi_lbound;
 
 // about group
 int group_len;
+int topk_grp;
+float grp_simi_ubound, grp_simi_lbound;
 
 // about global feature
 unsigned int topk_sep_all;
 int nbits_ubound, nbits_lbound;
 uint sep_cnt_all_ubound, sep_cnt_all_lbound;
+int topk_chr;
 
 typedef long long LL;
 char Complements[128];
@@ -199,8 +272,9 @@ void trav_trie_chr(trie_ptr rt, int dep, unsigned int val) {
 		return ;
 	}
 
-	unsigned int _val = val * hash_seed;
-	rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, _val+acgtn_s[i]);
+	// unsigned int _val = val * hash_seed;
+	// rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, _val+acgtn_s[i]);
+	rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, val+acgtn_s[i]*hash_base[dep]);
 }
 
 inline int getBits(int x) {
@@ -229,8 +303,9 @@ void trav_trie_all(trie_ptr rt, int dep, unsigned int val) {
 		return ;
 	}
 
-	unsigned int _val = val * hash_seed;
-	rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, _val+acgtn_s[i]);
+	// unsigned int _val = val * hash_seed;
+	// rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, _val+acgtn_s[i]);
+	rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, val+acgtn_s[i]*hash_base[dep]);
 }
 
 class DNASequencing {
@@ -252,6 +327,12 @@ public:
 			nbits_lbound = 0;
 			sep_cnt_all_ubound = 1e9;
 			sep_cnt_all_lbound = 50;
+			topk_chr = 1;
+			topk_grp = 100;
+			grp_simi_ubound = 2;
+			grp_simi_lbound = 0;
+			slice_simi_ubound = 2;
+			slice_simi_lbound = 0;
 		} else if (testDifficulty == 1) {
 			sep_len = 10;
 			slice_len = 170;		// slice_len%sep_len = 0
@@ -265,6 +346,12 @@ public:
 			nbits_lbound = 0;
 			sep_cnt_all_ubound = 1e9;
 			sep_cnt_all_lbound = 50;
+			topk_chr = 3;
+			topk_grp = 100;
+			grp_simi_ubound = 2;
+			grp_simi_lbound = 0;
+			slice_simi_ubound = 2;
+			slice_simi_lbound = 0;
 		} else {
 			sep_len = 10;
 			slice_len = 170;		// slice_len%sep_len = 0
@@ -278,7 +365,17 @@ public:
 			nbits_lbound = 1;
 			sep_cnt_all_ubound = 1e9;
 			sep_cnt_all_lbound = 50;
+			topk_chr = 3;
+			topk_grp = 100;
+			grp_simi_ubound = 2;
+			grp_simi_lbound = 0;
+			slice_simi_ubound = 2;
+			slice_simi_lbound = 0;
 		}
+		
+		hash_base[0] = 1;
+		rep(i, 1, sep_len) hash_base[i] = hash_base[i-1] * hash_seed;
+		reverse(hash_base, hash_base+sep_len);
 	}
 
 	string getReverseComplement(const string& line) {
@@ -477,7 +574,7 @@ public:
 				slice.idx = bi;
 				rep(k, 0, nfeature) {
 					#ifdef SLICE_USE_FREQ
-					slice[k] = sep_cnt[k] / (double) tot;
+					slice[k] = sep_cnt[k] / (float) tot;
 					#else
 					slice[k] = sep_cnt[k];
 					#endif
@@ -503,7 +600,7 @@ public:
 				bi = sliceChromat[chrId][i].idx;
 
 				while (i<nslice && sliceChromat[chrId][i].idx-bi<=group_len) {
-					const vector<double>& vc = sliceChromat[chrId][i].freq;
+					const vector<float>& vc = sliceChromat[chrId][i].freq;
 					rep(ii, 0, nfeature) grp.freq[ii] += vc[ii];
 					++i;
 				}
@@ -549,14 +646,161 @@ public:
 		return qname + ",20,1,150," + strand + ",0.9";
 		#endif
 	}
-
-	void alignRead(const string& read, info_t& info) {
+	
+	inline void init_read(const string& s) {
+		const int len = s.length();
+		uint val = 0;
 		
-
+		rep(i, 0, sep_len) val = s[i]*hash_base[i];
+		val %= hash_size;
+		
+		for (int i=0,j=sep_len; j<len; ++i,++j) {
+			++sep_cnt[val];
+			val = (val - s[0]*hash_base[0] + s[j]) % hash_size;
+		}
+	}
+	
+	void init_readPair(const string& l1, const string& l2) {
+		memset(sep_cnt, 0, sizeof(sep_cnt));
+		init_read(l1);
+		init_read(l2);
+		
+		float tot = l1.length() + l2.length() - (sep_len << 1) + 2;
+		
+		rep(i, 0, hash_size) {
+			sepFreq_read[i] = sep_cnt[i] / tot;
+		}
+	}
+	
+	vi chooseBestChrId(float &conf) {
+		conf = 1.0;
+		slice_t slice_read;
+		vector<float>& freq_read = slice_read.req;
+		vector<pair<float,int> > vp;
+		vi ret;
+		
+		freq_read.resize(SZ(allFeatureH));
+		for (map<int,int>::iterator iter=allFeatureH.begin(); iter!=allFeatureH.end(); ++iter) {
+			freq_read[iter->fir] = sep_cnt[iter->sec]>0 ? 1:0;
+		}
+		
+		float slice_read_len = slice_read.length();
+		for (int chrId : chrIds) {
+			const slice_t& slice_chr = allFeature[chrId];
+			float simi = similarity(slice_read, slice_read_len, slice_chr);
+			vp.pb(mp(simi, chrId));
+		}
+		
+		sort(all(vp), greater<pair<float,int> >());
+		int mnsz = min(SZ(vp), topk_chr);
+		
+		rep(i, 0, mnsz) ret.pb(vp[i].sec);
+		
+		return ret;
+	}
+	
+	vi chooseBestGrpIdx(const int& chrId, double& conf) {
+		conf = 1.0;
+		group_t grp_read;
+		vector<float>& freq_read = grp_read.req;
+		vector<pair<float,int> > vp;
+		vi ret;
+		
+		freq_read.resize(SZ(chrFeatureH[chrId]))
+		for (map<uint,int>::iterator iter=chrFeatureH[chrId]; iter!=chrFeatureH[chrId].end(); ++iter) {
+			freq_read[iter->sec] = sepFreq_read[iter->fir];
+		}
+		
+		int sz_grp = SZ(groupChromat[chrId]);
+		float grp_read_len = grp_read.length();
+		
+		rep(i, 0, sz_grp) {
+			const group_t& grp_chr = groupChromat[chrId][i];
+			float simi = similarity(grp_read, grp_read_len, grp_chr);
+			if (simi > grp_simi_ubound) {
+				vp.pb(mp(simi, grp_chr.idx));
+			}
+		}
+		
+		sort(all(vp), greater<pair<float,int> >());
+		int mnsz = min(SZ(vp), topk_grp);
+		
+		rep(i, 0, mnsz) ret.pb(vp[i].sec);
+		
+		return ret;
+	}
+	
+	double chooseBestSliceIdx(bstGrpIdx, st1, st2, conf_slice) {
 		
 	}
+	
+	bool alignRead(const string& read1, const string& read2, info_t& info1, info_t& info2) {
+		// init the slice for readpair
+		init_readPair(rea1, read2);
+		float conf = 1;
+		float bst_conf_grp = 1, bst_conf_slice = 1;
+		float conf_chr, conf_grp, conf_slice;
+		int &bst_st1 = info1.st, &bst_st2 = info2.st;
+		int st1, st2;
+		double ret = NEG_INF;
+		
+		/**
+			\step 1: find the best match chrId
+		*/
+		vi bstChrIds = chooseBestChrId(conf_chr);
+		
+		
+		for (int chrId : bstChrIds) {			
+			/**
+				\step 2: choose the best group
+			*/
+			vi bstGrpIdx = chooseBestGrpIdx(chrId, conf_grp);
+			/**
+				\step 3: choose the best slice
+			*/
+			double tmp = chooseBestSliceIdx(bstGrpIdx, st1, st2, conf_slice);
+			if (tmp > ret) {
+				ret = tmp;
+				bst_st1 = st1;
+				bst_st2 = st2;
+				bst_conf_grp = conf_grp;
+				bst_conf_slice = conf_slice;
+			}
+		}
+		
+		/**
+			\step 4: calculate the confidence
+		*/
+		float conf = conf_chr * bst_conf_grp * bst_conf_slice;
+		
+		conf = max(0.0, conf);
+		conf = min(1.0, conf);
+		info1.conf = info2.conf = conf;
+		
+		return ret;
+	}
 
-	vector<string> getAlignment(int N, double normA, double normS, const vector<string>& readName, const vector<string>& readSequence) {
+	bool alignReadPair(const string& read1, const string& read2, info_t& info1, info_t& info2) {
+		info_t info1_, info2_;
+		
+		info1.strand = '+';
+		info2.strand = '-';
+		info1_.strand = '-';
+		info2_.strand = '+';
+		float score1 = alignRead(read1, getReverseComplement(read2), info1, info2);
+		float score2 = alignRead(getReverseComplement(read1), read2, info1_, info2_);
+		
+		if (score1 < score2) {
+			info1 = info1_;
+			info2 = info2_;
+		}
+		info1.ed = info1.st + 150.;
+		info2.ed = info2.st + 150.;
+		
+		return score > NEG_INF;
+	}
+
+	vector<string> getAlignment(int N, float normA, float normS, const vector<string>& readName, const vector<string>& readSequence) {
 		vstr ret;
 		bool flag;
 		info_t info1, info2;
@@ -600,10 +844,10 @@ typedef struct {
 	Constants from the problem statement
 */
 const int MAX_DIF_DIST = 300;
-const double NORM_A_SMALL = -3.392;
-const double NORM_A_MEDIUM = -3.962;
-const double NORM_A_LARGE = -2.710;
-const double MAX_AUC = 0.999999;
+const float NORM_A_SMALL = -3.392;
+const float NORM_A_MEDIUM = -3.962;
+const float NORM_A_LARGE = -2.710;
+const float MAX_AUC = 0.999999;
 FILE* logout;
 
 #define LOGFILENAME "dna.log"
@@ -624,7 +868,7 @@ typedef struct Result_t {
 	\brief Match of the align
 */
 typedef struct Match_t {
-	double conf;	/* condfidence */
+	float conf;	/* condfidence */
 	int r;			/* 0 or 1 */
 
 	// bool operator< (const Match_t& oth) const {
@@ -864,7 +1108,7 @@ vector<Match_t> calcMatch(const vstr& ans, const string& filename) {
 /**
 	\breif calculate the `Accuracy` of the algorithm
 */
-double calcAccuarcy(const double norm_a, const int n, vector<Match_t>& vmatch) {
+float calcAccuarcy(const float norm_a, const int n, vector<Match_t>& vmatch) {
 	sort(all(vmatch));
 
 	// merge results of equal confidence
@@ -884,18 +1128,18 @@ double calcAccuarcy(const double norm_a, const int n, vector<Match_t>& vmatch) {
 	}
 
 	// compute the AuC
-	double auc = 0.0;
-	double invn = 1.0 / n;
-	double invnp1 = 1.0 / (n + 1.0);
-	double lgnp1 = 1.0 / log(n + 1.0);
+	float auc = 0.0;
+	float invn = 1.0 / n;
+	float invnp1 = 1.0 / (n + 1.0);
+	float lgnp1 = 1.0 / log(n + 1.0);
 	int m = SZ(cumul_si);
 	rep(i, 0, m) {
-		// double fi = (2 + pos[i] - cumul_si[i]);
-		// double fip1 = (i==m-1) ? (n+1) : (2 + pos[i+1] - cumul_si[i+1]);
-		double fi = (2+pos[i] - cumul_si[i]) * invnp1;
-		double fip1 = (i==m-1) ? 1.0 : (2+pos[i+1] - cumul_si[i+1]) * invnp1;
-		double lgfi = log(fi) * lgnp1;
-		double lgfip1 = log(fip1) * lgnp1;
+		// float fi = (2 + pos[i] - cumul_si[i]);
+		// float fip1 = (i==m-1) ? (n+1) : (2 + pos[i+1] - cumul_si[i+1]);
+		float fi = (2+pos[i] - cumul_si[i]) * invnp1;
+		float fip1 = (i==m-1) ? 1.0 : (2+pos[i+1] - cumul_si[i+1]) * invnp1;
+		float lgfi = log(fi) * lgnp1;
+		float lgfip1 = log(fip1) * lgnp1;
 		auc += cumul_si[i] * (lgfip1 - lgfi) * invn;
 	}
 
@@ -908,14 +1152,14 @@ double calcAccuarcy(const double norm_a, const int n, vector<Match_t>& vmatch) {
 /**
 	\brief calculate the `Speed` of the algorithm
 */
-double calcSpeed(const double norm_s, const double Time, const double TimeCutOff) {
+float calcSpeed(const float norm_s, const float Time, const float TimeCutOff) {
 	return (1.0 - Time/TimeCutOff) / norm_s;
 }
 
 /**
 	\brief calculate the `Score` of the algorithm
 */
-double calcScore(const double testNorm, const double accuracy, const double speed) {
+float calcScore(const float testNorm, const float accuracy, const float speed) {
 	return max(0.0, testNorm * accuracy * speed);
 }
 
@@ -949,26 +1193,26 @@ static void save_time(program_t& prog) {
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &prog.proc);
 }
 
-static double calc_time(const program_t& st, const program_t& ed) {
-	double ret;
+static float calc_time(const program_t& st, const program_t& ed) {
+	float ret;
 
 	#ifdef USING_PROC_TIME
-	double proc_st = st.proc.tv_sec + (double)st.proc.tv_nsec / 1e9;
-	double proc_ed = ed.proc.tv_sec + (double)ed.proc.tv_nsec / 1e9;
+	float proc_st = st.proc.tv_sec + (float)st.proc.tv_nsec / 1e9;
+	float proc_ed = ed.proc.tv_sec + (float)ed.proc.tv_nsec / 1e9;
 	ret = proc_ed - proc_st;
 	#else
-	double real_st = st.real.tv_sec + (double)st.real.tv_nsec / 1e9;
-	double real_ed = ed.real.tv_sec + (double)ed.real.tv_nsec / 1e9;
+	float real_st = st.real.tv_sec + (float)st.real.tv_nsec / 1e9;
+	float real_ed = ed.real.tv_sec + (float)ed.real.tv_nsec / 1e9;
 	ret = real_ed - real_st;
 	#endif /* USING_PROC_TIME */
 
 	return ret;
 }
 
-double norm_a;
-double norm_s;
-double prep_time, _prep_time;
-double cut_time, _cut_time;
+float norm_a;
+float norm_s;
+float prep_time, _prep_time;
+float cut_time, _cut_time;
 string fa1_path;
 string fa2_path;
 string minisam_path;
@@ -1081,7 +1325,7 @@ vstr perform_test(int seed, const vi& chrId, int& n, bool& flag) {
 
 static void _test(int seed) {
 	vi chrId;
-	double testNorm;
+	float testNorm;
 
 	norm_s = 0.5;
 	if (seed == 0) {
@@ -1124,14 +1368,14 @@ static void _test(int seed) {
 	int n;
 	bool flag;
 	vstr ans = perform_test(seed, chrId, n, flag);
-	double score;
+	float score;
 
 	if (!flag) {
 		score = 0;
 	} else {
 		vector<Match_t> vmatch = calcMatch(ans, minisam_path);
-		double accuracy = calcAccuarcy(norm_a, n, vmatch);
-		double speed = calcSpeed(norm_s, _cut_time, cut_time*2);
+		float accuracy = calcAccuarcy(norm_a, n, vmatch);
+		float speed = calcSpeed(norm_s, _cut_time, cut_time*2);
 		score = calcScore(testNorm, accuracy, speed);
 
 		printf("accuracy = %.4lf\n", accuracy);
