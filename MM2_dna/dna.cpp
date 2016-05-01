@@ -76,6 +76,10 @@ struct slice_t {
 		freq.clr();
 	}
 	
+	bool operator< (const slice_t& oth) const {
+		return idx < oth.idx;
+	}
+	
 	float similarity(const slice_t& a) const {
 		#ifdef DEBUG
 		assert(SZ(freq) == SZ(a.freq));
@@ -166,7 +170,7 @@ uint hash_base[max_sep_len];
 int sep_id[max_hash_size];
 unsigned int all_id[max_hash_size];
 unsigned int sep_cnt[max_hash_size];
-float sepFreq_read[max_hash_size];
+float sepFreq_read[max_hash_size], sepFreq_read_[max_hash_size];
 unsigned int sep_cnt_ubound, sep_cnt_lbound;
 unsigned int topk_sep_chr;
 vector<pair<uint,uint> > sep_freq;
@@ -672,10 +676,21 @@ public:
 		}
 	}
 	
+	void init_readSeq(const string& s, float *sepFreq_read) {
+		memset(sep_cnt, 0, sizeof(sep_cnt));
+		init_read(s);
+		
+		float = s.length() - sep_len + 1;
+		
+		rep(i, 0, hash_size) {
+			sepFreq_read[i] = sep_cnt[i] / tot;
+		}
+	}
+	
 	vi chooseBestChrId(float &conf) {
 		conf = 1.0;
 		slice_t slice_read;
-		vector<float>& freq_read = slice_read.req;
+		vector<float>& freq_read = slice_read.freq;
 		vector<pair<float,int> > vp;
 		vi ret;
 		
@@ -702,7 +717,7 @@ public:
 	vi chooseBestGrpIdx(const int& chrId, double& conf) {
 		conf = 1.0;
 		group_t grp_read;
-		vector<float>& freq_read = grp_read.req;
+		vector<float>& freq_read = grp_read.freq;
 		vector<pair<float,int> > vp;
 		vi ret;
 		
@@ -730,13 +745,60 @@ public:
 		return ret;
 	}
 	
-	double chooseBestSliceIdx(bstGrpIdx, st1, st2, conf_slice) {
+	double chooseBestSliceIdx(const int chrId, const vi& bstGrpIdx, int& st1, int& st2, float& conf_slice) {
+		conf_slice = 1.0;
+		int szGrp = SZ(bstGrpIdx);
+		double ret = NEG_INF;
 		
+		if (szGrp == 0)	return ret;
+		
+		slice_t slc_read1, scl_read2;
+		vector<float>& freq_read1 = slc_read1.freq;
+		vector<float>& freq_read2 = slc_read2.freq;
+		vector<pair<float,int> > vp;
+		vi ret;
+		
+		freq_read1.resize(SZ(chrFeatureH[chrId]))
+		freq_read2.resize(SZ(chrFeatureH[chrId]))
+		for (map<uint,int>::iterator iter=chrFeatureH[chrId]; iter!=chrFeatureH[chrId].end(); ++iter) {
+			freq_read1[iter->sec] = sepFreq_read[iter->fir];
+			freq_read2[iter->sec] = sepFreq_read_[iter->fir];
+		}
+		float slc_read1_len = slc_read1.length();
+		float slc_read2_len = slc_read2.length();
+		
+		const vector<slice_t>& vslc = sliceChromat[chrId];
+		vector<slice_t>::iterator iter;
+		slice_t slc;
+		float mx1 = NEG_INF, mx2 = NEG_INF;
+		float tmp;
+		
+		rep(gid, 0, szGrp) {
+			const int& idx = bstGrpIdx[gid];
+			slc.idx = idx;
+			iter = lower_bound(all(vslc), slc);
+			while (iter != vslc.end()) {
+				if (iter->idx-idx >= group_len)	break;
+				tmp = similarity(slc_read1, slc_read1_len, *iter);
+				if (tmp > mx1) {
+					mx1 = tmp;
+					st1 = iter->idx;
+				}
+				tmp = similarity(slc_read2, slc_read2_len, *iter);
+				if (tmp > mx2) {
+					mx2 = tmp;
+					st2 = iter->idx;
+				}
+				++iter;
+			}
+		}
+		
+		return mx1 + mx2;
 	}
 	
 	bool alignRead(const string& read1, const string& read2, info_t& info1, info_t& info2) {
 		// init the slice for readpair
-		init_readPair(rea1, read2);
+		init_readPair(read1, read2);
 		float conf = 1;
 		float bst_conf_grp = 1, bst_conf_slice = 1;
 		float conf_chr, conf_grp, conf_slice;
@@ -749,7 +811,11 @@ public:
 		*/
 		vi bstChrIds = chooseBestChrId(conf_chr);
 		
-		
+		/**
+			\step 1.5: init the frequence slice of each read
+		*/
+		init_readSeq(read1, sepFreq_read);
+		init_readSeq(read2, sepFreq_read_);
 		for (int chrId : bstChrIds) {			
 			/**
 				\step 2: choose the best group
@@ -758,7 +824,7 @@ public:
 			/**
 				\step 3: choose the best slice
 			*/
-			double tmp = chooseBestSliceIdx(bstGrpIdx, st1, st2, conf_slice);
+			double tmp = chooseBestSliceIdx(chrId, bstGrpIdx, st1, st2, conf_slice);
 			if (tmp > ret) {
 				ret = tmp;
 				bst_st1 = st1;
@@ -794,8 +860,9 @@ public:
 			info1 = info1_;
 			info2 = info2_;
 		}
-		info1.ed = info1.st + 150.;
-		info2.ed = info2.st + 150.;
+		info1.ed = info1.st + 149.;
+		info2.ed = info2.st + 149.;
+		info1.cond = info2.cond = 0.7;
 		
 		return score > NEG_INF;
 	}
@@ -810,6 +877,7 @@ public:
 		#endif
 
 		for(int i=0; i<N; i+=2) {
+			info1.st = info2.st = 0;
 			flag = alignReadPair(readSequence[i], readSequence[i+1], info1, info2);
 			if (flag) {
 				line1 = readName[i] + info1.to_string();
