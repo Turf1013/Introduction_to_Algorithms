@@ -239,10 +239,9 @@ trie_ptr Insert(char *s, int chrId) {
 		p->nxt[id] = new trie_t();
 		p = p->nxt[id];
 	}
-	++p->nxt[0];
-	int tmp = (p->nxt[2] - (trie_ptr)NULL) | (1<<chrId);
-	p->nxt[2] = NULL;
-	p->nxt[2] += tmp;
+	p->nxt[0]= (trie_ptr) (p->nxt[0] - (trie_ptr)NULL + 1);
+	uint tmp = (p->nxt[2] - (trie_ptr)NULL) | (1<<chrId);
+	p->nxt[2] = (trie_ptr) tmp;
 
 	return p;
 }
@@ -263,7 +262,7 @@ trie_ptr Insert_chr(char *s) {
 		p->nxt[id] = new trie_t();
 		p = p->nxt[id];
 	}
-	++p->nxt[0];
+	p->nxt[0]= (trie_ptr) (p->nxt[0] - (trie_ptr)NULL + 1);
 
 	return p;
 }
@@ -288,7 +287,7 @@ void trav_trie_chr(trie_ptr rt, int dep, unsigned int val) {
 	if (dep == sep_len) {
 		unsigned int h = val % hash_size;
 		sep_cnt[h] += (rt->nxt[0] - (trie_ptr)NULL);
-		rt->nxt[1] += h;
+		rt->nxt[1] = (trie_ptr) h;
 		return ;
 	}
 
@@ -318,7 +317,7 @@ void trav_trie_all(trie_ptr rt, int dep, unsigned int val) {
 			(cnt > sep_cnt_all_lbound && cnt<sep_cnt_all_ubound)) {
 			all_id[h] |= state;
 			sep_cnt[h] += cnt;
-			rt->nxt[1] += h;
+			rt->nxt[1] = (trie_ptr) h;
 		}
 		return ;
 	}
