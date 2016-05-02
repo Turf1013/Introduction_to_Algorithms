@@ -458,6 +458,50 @@
 		限定范围$[0,1]$即可。
 		
 	\end{enumerate}
+
+	这个策略存在的问题
+	\begin{enumerate}	
+		
+		\item 时间复杂度还是太高了，因为没有考虑计算相似度的时间
+
+		\begin{align*}
+			T &= 2 \times N_{pair} \times ( T_{alignPair} + T_{initPair} )	\\
+			T_{initPair} &= O(len_{pair} \times 2) \\
+			T_{alignPair} &= T_{chooseChrIdx} + N_{topk-chr} \times T_{chooseGrpIdx} + N_{topk-chr} \times N_{topk-grp} \times T_{chooseSliceIdx}	\\
+			T_{chooseChrIdx} &= \sum_{i=1}^{N_{chromat}} (N_{feature-all})	\\
+			T_{chooseGrpIdx} &= \sum_{i=1}^{len_{chromat-i} / len_{group}} (N_{feature-chr}) \\
+			T_{chooseSliceIdx} &= \sum_{i=1}^{len_{group} / len_{slice}} (N_{feature-chr} \times 2)
+		\end{align*}
+		显然可知上述算法的时间复杂度为
+		\begin{align*}
+			T_{chooseSliceIdx} &= \sum_{i=1}^{7} (200) &= O(1.4 \times 10^3)	\\
+			T_{chooseGrpIdx} &= \sum_{i=1}^{6.4 \times 10^4} (100) &= O(6.4 \times 10^6) \\
+			T_{chooseChrIdx} &= \sum_{i=1}^{1} (100) &= O(100) \\
+			T_{alignPair} &= O(100) + 1 \times O(6.4 \times 10^6) + 1 \times 100 \times O(1.4 \times 10^3) &= O(6.6 \times 10^5) \\
+			T_{initPair} &= O(150 \times 2) &= O(300) \\
+			T &= 2 \times 10^4 \times (O(6.6 \times 10^5) + O(300)) = O(1.32 \times 10^10)
+		\end{align*}
+		这显然是超时的，刚好差了一个到2个量级。
+
+		\item 正确率太低了
+
+		造成正确率低的原因是正确定位group的概率太低了。对于小数据而言，共有$6.4 \times 10^4$个group。然而，我们只选出$100$个group。
+		这意味着，我们选择争取的概率是$0.0015625$，这个概率太低了。如果不能正确group，后面的判定都是毫无意义的。
+
+		那反思，为什么概率这么低。原因很简单，染色体的长度很长，但是group的长度不够长，简直是沧海一粟。这就好像计算机的存储系统一样。
+		每个层次需要有一个比较显然的差异，但是这个差异是可接受范围的。显然，group太短。同时，这也导致了时间复杂度太高。
+
+		那么改进的策略肯定是增加这个长度，那么同样需要改进的是相似度的数学模型。
+
+		\item 如何理解相似度
+
+		每个向量的元素表示的是这个子串在这个序列的频度。先不考虑哈希冲突的问题。group的集合很大，远远大于基因序列的长度。
+		因此，这个频度的变化与基因序列不一致是很重要的。其实我们希望的是，group中的每个sep的频数可以完全包含基因中的sep。
+		并且匹配的得分越大越好，两者的距离越大越好。这样有更大的概率匹配基因。同时，我们使用的是染色体和全局的特征序列去做\Emph{chooseChrIdx}
+		这个过程也是不靠谱。1号和2号染色体包含的sep种类太多了，而基因序列太短了。两者差了几个量级。做相似度完全不靠谱。
+		但是当group足够大的时候，即使比较24组染色体可能时间复杂度也是满足的。
+
+	\end{enumerate}
 	
 	
 \end{document}
