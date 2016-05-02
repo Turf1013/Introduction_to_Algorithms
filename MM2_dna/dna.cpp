@@ -89,7 +89,7 @@ struct slice_t {
 		float fz = 0., fa = 0., fb = 0.;
 
 		rep(i, 0, sz) {
-			fz = freq[i] * a.freq[i];
+			fz += freq[i] * a.freq[i];
 			fa += freq[i] * freq[i];
 			fb += a.freq[i] * a.freq[i];
 		}
@@ -117,7 +117,7 @@ float similarity(const slice_t& a, const slice_t& b){
 	float fz = 0., fa = 0., fb = 0.;
 
 	rep(i, 0, sz) {
-		fz = a.freq[i] * b.freq[i];
+		fz += a.freq[i] * b.freq[i];
 		fa += a.freq[i] * a.freq[i];
 		fb += b.freq[i] * b.freq[i];
 	}
@@ -134,7 +134,7 @@ float similarity(const slice_t& a, const float fa, const slice_t& b){
 	float fz = 0., fb = 0.;
 
 	rep(i, 0, sz) {
-		fz = a.freq[i] * b.freq[i];
+		fz += a.freq[i] * b.freq[i];
 		fb += b.freq[i] * b.freq[i];
 	}
 
@@ -150,7 +150,7 @@ float similarity(const slice_t& a, const float& fa, const slice_t& b, const floa
 	float fz = 0.;
 
 	rep(i, 0, sz) {
-		fz = a.freq[i] * b.freq[i];
+		fz += a.freq[i] * b.freq[i];
 	}
 
 	return fz / (fa * fb);
@@ -239,8 +239,8 @@ trie_ptr Insert(char *s, int chrId) {
 		p->nxt[id] = new trie_t();
 		p = p->nxt[id];
 	}
-	p->nxt[0]= (trie_ptr) (p->nxt[0] - (trie_ptr)NULL + 1);
-	uint tmp = (p->nxt[2] - (trie_ptr)NULL) | (1<<chrId);
+	p->nxt[0]= (trie_ptr) ((char *)p->nxt[0] - (char *)NULL + 1);
+	uint tmp = ((char *)p->nxt[2] - (char *)NULL) | (1<<chrId);
 	p->nxt[2] = (trie_ptr) tmp;
 
 	return p;
@@ -262,7 +262,7 @@ trie_ptr Insert_chr(char *s) {
 		p->nxt[id] = new trie_t();
 		p = p->nxt[id];
 	}
-	p->nxt[0]= (trie_ptr) (p->nxt[0] - (trie_ptr)NULL + 1);
+	p->nxt[0]= (trie_ptr) ((char *)p->nxt[0] - (char *)NULL + 1);
 
 	return p;
 }
@@ -285,15 +285,15 @@ void init_trie_chr() {
 
 void trav_trie_chr(trie_ptr rt, int dep, unsigned int val) {
 	if (dep == sep_len) {
-		unsigned int h = val % hash_size;
-		sep_cnt[h] += (rt->nxt[0] - (trie_ptr)NULL);
+		const uint &h = val;
+		sep_cnt[h] += ((char*)rt->nxt[0] - (char*)NULL);
 		rt->nxt[1] = (trie_ptr) h;
 		return ;
 	}
 
 	// unsigned int _val = val * hash_seed;
 	// rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, _val+acgtn_s[i]);
-	rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, val+acgtn_s[i]*hash_base[dep]);
+	rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, (val+acgtn_s[i]*hash_base[dep])%hash_size);
 }
 
 inline int getBits(int x) {
@@ -309,10 +309,10 @@ inline int getBits(int x) {
 
 void trav_trie_all(trie_ptr rt, int dep, unsigned int val) {
 	if (dep == sep_len) {
-		uint h = val % hash_size;
-		int state = (rt->nxt[2] - (trie_ptr)NULL);
+		const uint& h = val;
+		int state = ((char *)rt->nxt[2] - (char *)NULL);
 		int bits = getBits(state);
-		uint cnt = (rt->nxt[0] - (trie_ptr)NULL);
+		uint cnt = ((char *)rt->nxt[0] - (char *)NULL);
 		if ((bits > nbits_lbound && bits < nbits_ubound) &&
 			(cnt > sep_cnt_all_lbound && cnt<sep_cnt_all_ubound)) {
 			all_id[h] |= state;
@@ -324,7 +324,7 @@ void trav_trie_all(trie_ptr rt, int dep, unsigned int val) {
 
 	// unsigned int _val = val * hash_seed;
 	// rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, _val+acgtn_s[i]);
-	rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, val+acgtn_s[i]*hash_base[dep]);
+	rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, (val+acgtn_s[i]*hash_base[dep]) % hash_size);
 }
 
 class DNASequencing {
@@ -339,7 +339,7 @@ public:
 			slice_len = 170;	// slice_len%sep_len = 0
 			group_len = 1020;	// group_len%slice_len = 0;
 			hash_seed = 31;
-			hash_size = 123;
+			hash_size = 1009;
 			sep_cnt_ubound = 1e8;
 			sep_cnt_lbound = 0;
 			topk_sep_chr = 100;
@@ -359,12 +359,12 @@ public:
 			slice_len = 170;		// slice_len%sep_len = 0
 			group_len = 1020;		// group_len%slice_len = 0;
 			hash_seed = 31;
-			hash_size = 123;
+			hash_size = 1009;
 			sep_cnt_ubound = 1e8;
 			sep_cnt_lbound = 0;
 			topk_sep_chr = 100;
 			topk_slice_chr = 100;
-			nbits_ubound = 2;
+			nbits_ubound = 4;
 			nbits_lbound = 0;
 			sep_cnt_all_ubound = 1e9;
 			sep_cnt_all_lbound = 50;
@@ -379,7 +379,7 @@ public:
 			slice_len = 170;		// slice_len%sep_len = 0
 			group_len = 1020;		// group_len%slice_len = 0;
 			hash_seed = 31;
-			hash_size = 123;
+			hash_size = 1009;
 			sep_cnt_ubound = 1e8;
 			sep_cnt_lbound = 0;
 			topk_sep_chr = 100;
@@ -397,7 +397,7 @@ public:
 		}
 
 		hash_base[0] = 1;
-		rep(i, 1, sep_len) hash_base[i] = hash_base[i-1] * hash_seed;
+		rep(i, 1, sep_len) hash_base[i] = hash_base[i-1] * hash_seed % hash_size;
 		reverse(hash_base, hash_base+sep_len);
 	}
 
@@ -441,11 +441,13 @@ public:
 
 		// init the trie
 		init_trie();
+		init_trie_chr();
 
 		return 0;
 	}
 
 	int extractFeatureAll() {
+		memset(all_id, 0, sizeof(all_id));
 		memset(sep_cnt, 0, sizeof(sep_cnt));
 		memset(sep_id, -1, sizeof(sep_id));
 		trav_trie_all(root, 0, 0);
@@ -518,11 +520,15 @@ public:
 		int idx = 0;
 		sep_t sep;
 
+		#ifdef DEBUG
+		assert(sepChromat.size() == 0);
+		#endif
 		rep(k, 0, nline) {
 			const string& line = chromatidSequence[k];
 			const int len = line.length();
 
 			rep(i, 0, len) {
+				buffer[l++] = line[i];
 				if (!isACGT(line[i])) {
 					if (++unknown == unknown_bound) {
 						l = 0;
@@ -531,7 +537,7 @@ public:
 				}
 				if (l == sep_len) {
 					sep.leaf = Insert_chr(buffer);
-					sep.idx = idx + i;
+					sep.idx = idx + i - sep_len + 1;
 					sepChromat.pb(sep);
 					Insert(buffer, chrId);
 					l = 0;
@@ -578,7 +584,8 @@ public:
 			slice_t slice;
 
 			memset(sep_cnt, 0, sizeof(sep_cnt));
-			rep(ii, 0, nfeature) slice.freq.pb(0.);
+			// rep(ii, 0, nfeature) slice.freq.pb(0.);
+			slice.freq.resize(nfeature);
 
 			while (i < nsep) {
 				j = i;
@@ -586,7 +593,7 @@ public:
 				tot = 0;
 
 				while (i<nsep && sepChromat[i].idx-bi<=slice_len) {
-					int h = sepChromat[i].leaf->nxt[1] - (trie_ptr)NULL;
+					int h = (char *)sepChromat[i].leaf->nxt[1] - (char *)NULL;
 					if (sep_id[h] >= 0) {
 						++sep_cnt[sep_id[h]];
 					}
@@ -602,8 +609,8 @@ public:
 					slice.freq[k] = sep_cnt[k];
 					#endif
 					sep_cnt[k] = 0;
-					sliceChromat[chrId].pb(slice);
 				}
+				sliceChromat[chrId].pb(slice);
 			}
 		}
 
@@ -618,6 +625,8 @@ public:
 			group_t grp;
 
 			rep(ii, 0, nfeature) grp.freq.pb(0.);
+			// grp.freq.resize(nfeature);
+
 			while (i < nslice) {
 				j = i;
 				bi = sliceChromat[chrId][i].idx;
@@ -664,9 +673,9 @@ public:
 	*/
 	inline string getFailureResult(const string& qname, const char strand='+') {
 		#ifdef DEBUG
-		return qname + ",20,1,150," + strand + ",0.9";
+		return qname + ",20,1,150," + strand + ",0.0001";
 		#else
-		return qname + ",20,1,150," + strand + ",0.9";
+		return qname + ",20,1,150," + strand + ",0.0001";
 		#endif
 	}
 
@@ -674,12 +683,15 @@ public:
 		const int len = s.length();
 		uint val = 0;
 
-		rep(i, 0, sep_len) val = s[i]*hash_base[i];
-		val %= hash_size;
+		rep(i, 0, sep_len) val = (val + s[i]*hash_base[i]) % hash_size;
 
 		for (int i=0,j=sep_len; j<len; ++i,++j) {
+			#ifdef DEBUG
+			assert(val<hash_size);
+			#endif
 			++sep_cnt[val];
-			val = (val - s[0]*hash_base[0] + s[j]) % hash_size;
+			val = val + hash_size - s[i]*hash_base[0]%hash_size;
+			val = (val * hash_seed + s[j]) % hash_size;
 		}
 	}
 
@@ -715,7 +727,10 @@ public:
 
 		freq_read.resize(SZ(allFeatureH));
 		for (map<uint,int>::iterator iter=allFeatureH.begin(); iter!=allFeatureH.end(); ++iter) {
-			freq_read[iter->fir] = sep_cnt[iter->sec]>0 ? 1:0;
+			#ifdef DEBUG
+			assert(iter->sec < SZ(freq_read) && iter->sec>=0);
+			#endif
+			freq_read[iter->sec] = sep_cnt[iter->fir]>0 ? 1:0;
 		}
 
 		float slice_read_len = slice_read.length();
@@ -733,7 +748,7 @@ public:
 		return ret;
 	}
 
-	vi chooseBestGrpIdx(const int& chrId, float& conf) {
+	vi chooseBestGrpIdx(const int chrId, float& conf) {
 		conf = 1.0;
 		group_t grp_read;
 		vector<float>& freq_read = grp_read.freq;
@@ -751,7 +766,7 @@ public:
 		rep(i, 0, sz_grp) {
 			const group_t& grp_chr = groupChromat[chrId][i];
 			float simi = similarity(grp_read, grp_read_len, grp_chr);
-			if (simi > grp_simi_ubound) {
+			if (simi > grp_simi_lbound) {
 				vp.pb(mp(simi, grp_chr.idx));
 			}
 		}
@@ -796,7 +811,7 @@ public:
 			slc.idx = idx;
 			iter = lower_bound(all(vslc), slc);
 			while (iter != vslc.end()) {
-				if (iter->idx-idx >= group_len)	break;
+				if (iter->idx-idx > group_len)	break;
 				tmp = similarity(slc_read1, slc_read1_len, *iter);
 				if (tmp > mx1) {
 					mx1 = tmp;
@@ -819,6 +834,7 @@ public:
 		init_readPair(read1, read2);
 		float bst_conf_grp = 1, bst_conf_slice = 1;
 		float conf_chr, conf_grp, conf_slice;
+		int bstId = 20;
 		int &bst_st1 = info1.st, &bst_st2 = info2.st;
 		int st1, st2;
 		double ret = NEG_INF;
@@ -844,6 +860,7 @@ public:
 			double tmp = chooseBestSliceIdx(chrId, bstGrpIdx, st1, st2, conf_slice);
 			if (tmp > ret) {
 				ret = tmp;
+				bstId = chrId;
 				bst_st1 = st1;
 				bst_st2 = st2;
 				bst_conf_grp = conf_grp;
@@ -859,6 +876,7 @@ public:
 		conf = max(0.0f, conf);
 		conf = min(1.0f, conf);
 		info1.conf = info2.conf = conf;
+		info1.id = info2.id = bstId;
 
 		return ret;
 	}
@@ -866,6 +884,9 @@ public:
 	bool alignReadPair(const string& read1, const string& read2, info_t& info1, info_t& info2) {
 		info_t info1_, info2_;
 
+		info1.id = info2.id = 20;
+		info1.st = info2.st = 0;
+		info1_.st = info2_.st = 0;
 		info1.strand = '+';
 		info2.strand = '-';
 		info1_.strand = '-';
@@ -879,7 +900,7 @@ public:
 		}
 		info1.ed = info1.st + 149.;
 		info2.ed = info2.st + 149.;
-		info1.conf = info2.conf = 0.7;
+		info1.conf = info2.conf = 0.6;
 
 		return max(score1, score2) > NEG_INF;
 	}
@@ -893,8 +914,11 @@ public:
 		int fail = 0;
 		#endif
 
+		#ifdef DEBUG
+		assert(N%2 == 0);
+		#endif
+
 		for(int i=0; i<N; i+=2) {
-			info1.st = info2.st = 0;
 			flag = alignReadPair(readSequence[i], readSequence[i+1], info1, info2);
 			if (flag) {
 				line1 = readName[i] + info1.toString();
@@ -908,6 +932,11 @@ public:
 			}
 			ret.pb(line1);
 			ret.pb(line2);
+			#ifdef DEBUG
+			if (i%100 == 0) {
+				printf("%d finish.\n", i);
+			}
+			#endif
 		}
 
 		#ifdef DEBUG
@@ -1179,7 +1208,6 @@ vector<Match_t> calcMatch(const vstr& ans, const string& filename) {
 				(res.strand == _res.strand) &&
 				(abs(res.st-_res.st)<=MAX_DIF_DIST)
 			) ? 1 : 0;
-		r = 1;
 		correct += r;
 		ret.pb(match);
 	}
@@ -1331,6 +1359,7 @@ vstr perform_test(int seed, const vi& chrId, int& n, bool& flag) {
 		vstr chromatidSeq = getChromat(filename);
 		dna.passReferenceGenome(id, chromatidSeq);
 	}
+	sleep(5);
 
 	/**
 		\step 3: preProcessing
@@ -1408,6 +1437,28 @@ vstr perform_test(int seed, const vi& chrId, int& n, bool& flag) {
 	return ret;
 }
 
+void dumpAns(const int testDifficulty, const vstr& ans) {
+	string filename;
+
+	if (testDifficulty == 0)
+		filename = "result_small.res";
+	else if (testDifficulty == 1)
+		filename = "result_medium.res";
+	else
+		filename = "result_large.res";
+	ofstream fout(filename.c_str());
+
+	if (!fout.is_open()) {
+		fprintf(stderr, "%s can't open.\n", filename.c_str());
+		abort();
+	}
+
+	int n = SZ(ans);
+	rep(i, 0, n) fout << ans[i] << endl;
+
+	fout.close();
+}
+
 void _test(int seed) {
 	vi chrId;
 	float testNorm;
@@ -1471,6 +1522,8 @@ void _test(int seed) {
 
 	printf("score = %.4lf\n", score);
 	fprintf(logout, "score = %.4lf\n", score);
+
+	dumpAns(seed, ans);
 }
 
 void test(int testcase) {
