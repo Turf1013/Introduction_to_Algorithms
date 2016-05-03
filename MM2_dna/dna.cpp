@@ -26,7 +26,7 @@ using namespace std;
 #define sec				second
 #define all(x) 			(x).begin(),(x).end()
 #define SZ(x) 			((int)(x).size())
-
+#define INF				0x3f3f3f3f
 
 // #define getComplement(ch) Complements[(ch)]
 // #define getCharId(ch)	charId[(ch)]
@@ -124,19 +124,6 @@ typedef slice_t group_t;
 
 // about score
 typedef long long score_type;
-struct read_t {
-	int chrId, idx;
-	score_type score;
-	
-	read_t() {}
-	read_t(int chrId, int idx, score_type score):
-		chrId(charId), idx(idx), score(score) {}
-		
-		
-	friend bool operator< (const read_t& oth) {
-		return score > oth.score;
-	}
-};
 
 struct read_chr_t {
 	int idx;
@@ -146,19 +133,71 @@ struct read_chr_t {
 	read_chr_t(int idx, score_type score):
 		idx(idx), score(score) {}
 	
-	
 	friend bool operator< (const read_chr_t& oth) {
 		return score > oth.score;
 	}
 };
 
+struct readpair_chr_t {
+	int lidx, ridx;
+	score_type score;
+	
+	read_chr_t() {}
+	read_chr_t(int lidx, int ridx, score_type score):
+		lidx(lidx), ridx(ridx), score(score) {}
+	
+	friend bool operator< (const read_chr_t& oth) {
+		return score > oth.score;
+	}
+}
+
+struct read_t {
+	int chrId, lidx, ridx;
+	score_type score;
+	
+	read_t() {}
+	read_t(int chrId, const readpair_chr_t& rp):chrId(chrId) {
+		lidx = rp.lidx;
+		ridx = rp.ridx;
+		score = rp.score;
+	}
+	read_t(int chrId, int lidx, int ridx, score_type score):
+		chrId(charId), lidx(lidx), ridx(ridx), score(score) {}
+		
+		
+	friend bool operator< (const read_t& oth) {
+		return score > oth.score;
+	}
+};
+
 // aboud layer
-struct layer {
+struct layer_t {
 	uint feature_num;
 	uint feature_ubound, feature_lbound;
 	uint len;
 	uint topk;
 	score_type score_bound;
+};
+
+// about acgt
+struct acgt_t {
+	unsigned short c[4];
+	
+	acgt_t() {c[0] = c[1] = c[2] = c[3] = 0;}
+	acgt_t(unsigned short a, unsigned short c, unsigned short g, unsigned short t) {
+		c[0] = a;
+		c[1] = c;
+		c[2] = g;
+		c[3] = t;
+	}
+	
+	inline void clear() {
+		c[0] = c[1] = c[2] = c[3] = 0;
+	}
+	
+	acgt_t operator+ (const acgt_t& oth) const {
+		return acgt_t(c[0]+oth[0], c[1]+oth[1], c[2]+oth[2], c[3]+oth[3]);
+	}
 };
 
 // hash
@@ -178,29 +217,31 @@ const int max_ibuffer = 1e8;
 int ibuffer[max_ibuffer];
 
 // sep
-layer layer_sep;
+layer_t layer_sep;
 int sep_id[max_hash_size];
 int all_id[max_hash_size];
 uint sep_cnt[max_hash_size], sep_cnt_[max_hash_size];
 char buffer[max_sep_len];
 
 // slice
-layer layer_slice;
+layer_t layer_slice;
 
 // about sub-group
-layer layer_sgroup;
+layer_t layer_sgroup;
 
 // about group
-layer layer_group;
+layer_t layer_group;
 
 // about read
-layer layer_read;
+layer_t layer_read;
 
 
+// store feature of chromat
+vector<acgt_t> acgtChromat[25];
 vector<slice_t> sliceChromat[25];
 vector<sgroup_t> sgroupChromat[25];
 vector<group_t> groupChromat[25];
-vector<sep_t> sepChromat;
+vector<sep_t> sepChromat[25];
 
 inline int getCharId(char c) {
 	return charId[c];
@@ -383,6 +424,19 @@ score_type score_sgroup(const slice_t& a, const slice_t& b) {
 	return ret;
 }
 
+/**
+	\brief calculate the score between chromat-read and query-read
+*/
+score_type score_read(const acgt_t& a, const acgt_t& b) {
+	score_type ret = 0;
+	
+	rep(i, 0, 4) {
+		ret += abs(a.c[i] - b.c[i]) << 2;
+	}
+	
+	return ret;
+}
+
 class DNASequencing {
 public:
 	int C[26];
@@ -437,6 +491,8 @@ public:
 
 		// clear the feature & presents of chromatid
 		rep(i, 1, 25) {
+			acgtChromat[i].clr();
+			sepChromat[i].clr();
 			sliceChromat[i].clr();
 			sgroupChromat[i].clr();
 			groupChromat[i].clr();
@@ -461,12 +517,13 @@ public:
 	*/
 	void separateChromat(const vstr& chromatidSequence) {
 		const int chrId = *chrIds.rbegin();
+		vector<sep_t>& vsep = sepChromat[chrId];
 		int nline = SZ(chromatidSequence);
 		int idx = 0, l = 0;
 		sep_t sep;
 
 		#ifdef DEBUG
-		assert(sepChromat.size() == 0);
+		assert(vsep.size() == 0);
 		#endif
 		rep(k, 0, nline) {
 			const string& line = chromatidSequence[k];
@@ -477,7 +534,7 @@ public:
 				if (l == sep_len) {
 					sep.leaf = Insert_chr(buffer);
 					sep.idx = idx + i - sep_len + 1;
-					sepChromat.pb(sep);
+					vsep.pb(sep);
 					l = 0;
 				}
 			}
@@ -486,12 +543,41 @@ public:
 	}
 	
 	/**
-		\brief pile up the sep to slice, and then clear the sepChromat
+		\brief pile up the sep to read
+	*/
+	void pileChromat_read() {
+		const int chrId = *chrIds.rbegin();
+		vector<sep_t>& vsep = sepChromat[chrId];
+		vector<acgt_t>& vacgt = acgtChromat[chrId];
+		const int nsep = SZ(vsep);
+		const int m = layer_slice.len / layer_read.len
+		acgt_t acgt;
+		int i = 0, j;
+		
+		while (i < nsep) {
+			acgt.clr();
+			
+			for (j=0; j<m&&i<nsep; ++j,++i) {
+				const trie_ptr& leaf = vsep[i].leaf;
+				uint val = (char *)leaf->nxt[0] - (char *)NULL;
+				acgt.c[0] += val & 255;
+				acgt.c[1] += (val>>8) & 255;
+				acgt.c[2] += (val>>16) & 255;
+				acgt.c[3] += (val>>24) & 255;
+			}
+			
+			vacgt.pb(acgt);
+		}
+	}
+	
+	/**
+		\brief pile up the sep to slice
 	*/
 	void pileChromat_slice() {
 		const int chrId = *chrIds.rbegin();
+		vector<sep_t>& vsep = sepChromat[chrId];
 		vector<slice_t>& vslc = sliceChromat[chrId];
-		const int nsep = SZ(sepChromat);
+		const int nsep = SZ(vsep);
 		const int nfeature = layer_slice.feature_num;
 		int bidx, szvf;
 		vector<feature_t> vfeat;
@@ -499,11 +585,11 @@ public:
 		int i = 0, j;
 		
 		while (i < nsep) {
-			bidx = sepChromat[j=i].idx;
+			bidx = vsep[j=i].idx;
 			szvf = 0;
 			
-			while (i<nsep && sepChromat[i].idx-bidx<=layer_slice.len) {
-				const trie_ptr& leaf = sepChromat[i].leaf;
+			while (i<nsep && vsep[i].idx-bidx<=layer_slice.len) {
+				const trie_ptr& leaf = vsep[i].leaf;
 				int k = (char *)leaf->nxt[1] - (char*)NULL;
 				#ifdef DEBUG
 				assert(k > 0);
@@ -686,14 +772,19 @@ public:
 	*/
 	void pileChromat() {
 		/**
+			\step 0: pile up the layer 0 -- read
+		*/
+		pileChromat_read();
+		
+		/**
 			\step 1: pile up layer 1 -- `slice`
 		*/
 		pileChromat_slice();
 		
-		/**
-			\step 1.5: clear sepChromat to release memory
-		*/
-		sepChromat.clr();
+		// /**
+			// \step 1.5: clear sepChromat to release memory
+		// */
+		// sepChromat.clr();
 		
 		/**
 			\step 2: pile up layer 2 -- `sgroup`
@@ -735,8 +826,28 @@ public:
 		return qname + ",20,1,150," + strand + ",0.0001";
 		#endif
 	}
+	
+	acgt_t calcACGT(const string& s) {
+		const int len = s.length();
+		acgt_t ret;
+		
+		rep(i, 0, len) ++ret.c[getCharId(s[i])];
+		return ret;
+	}
+	
+	acgt_t calcACGT(const string& s1, const string& s2) {
+		int len;
+		acgt_t ret;
+		
+		len = s1.length();
+		rep(i, 0, len) ++ret.c[getCharId(s1[i])];
+		len = s2.length();
+		rep(i, 0, len) ++ret.c[getCharId(s2[i])];
+		
+		return ret;
+	}
 
-	inline slice_t init_read(const string& s, const int idx=0) {
+	slice_t calcSlice(const string& s, const int idx=0) {
 		int len = s.length();
 		int szvf = 0;
 		slice_t ret;
@@ -765,7 +876,7 @@ public:
 		return ret;
 	}
 
-	void init_readPair(const string& l1, const string& l2) {
+	slice_t calcSlice(const string& l1, const string& l2) {
 		int len;
 		int szvf;
 		slice_t ret;
@@ -810,11 +921,206 @@ public:
 	}
 	
 	/**
+		\brief choose the best group
+	*/
+	vi chooseBstGrp(const int chrId, const slice_t& slice) {
+		const vector<group_t>& vgrp = groupChromat[chrId];
+		int sz = SZ(vgrp);
+		const int topk = layer_group.topk;
+		const int score_bound = layer_group.score_bound;
+		priority_queue<read_chr_t> Q;
+		score_type score;
+		int szQ = 0;
+		
+		rep(i, 0, sz) {
+			score = score_group(vgrp[i], slice);
+			if (score <= score_bound) {
+				if (szQ < topk) {
+					szQ++;
+					Q.push(read_chr_t(vgrp[i].idx, score));
+				} else if (score < Q.top().score) {
+					Q.pop();
+					Q.push(read_chr_t(vgrp[i].idx, score));
+				}
+			}
+		}
+		
+		#ifdef DEBUG
+		assert(SZ(Q) == szQ);
+		#endif
+		vi ret;
+		
+		while (!Q.empty()) {
+			ret.pb(Q.top().idx);
+			Q.pop();
+		}
+		sort(all(ret));
+		
+		return ret;
+	}
+	
+	/**
+		\brief choose the best sub-group
+	*/
+	vi chooseBstGrp(const int chrId, const slice_t& slice, const vi& bstGrp) {
+		const vector<sgroup_t>& vsgrp = sgroupChromat[chrId];
+		int sz = SZ(vsgrp), szgp = SZ(bstGrp);
+		const int topk = layer_sgroup.topk;
+		const int score_bound = layer_sgroup.score_bound;
+		const int m = group_len / sgroup_len;
+		priority_queue<read_chr_t> Q;
+		score_type score;
+		int szQ = 0;
+		
+		rep(j, 0, szgp) {
+			for (int i=bstGrp[j],k=0; k<m&&i<sz; ++k,++i) {
+				score = score_sgroup(vsgrp[i], slice);
+				if (score <= score_bound) {
+					if (szQ < topk) {
+						szQ++;
+						Q.push(read_chr_t(vsgrp[i].idx, score));
+					} else if (score < Q.top().score) {
+						Q.pop();
+						Q.push(read_chr_t(vsgrp[i].idx, score));
+					}
+				}
+			}
+		}
+		
+		#ifdef DEBUG
+		assert(SZ(Q) == szQ);
+		#endif
+		vi ret;
+		
+		while (!Q.empty()) {
+			ret.pb(Q.top().idx);
+			Q.pop();
+		}
+		sort(all(ret));
+		
+		return ret;
+	}
+	
+	/**
+		\brief choose the best slice
+	*/
+	vi chooseBstSlc(const int chrId, const slice_t& slice, const vi& bstSgrp) {
+		const vector<slice_t>& vslc = sliceChromat[chrId];
+		int sz = SZ(vslc), szsgp = SZ(bstSgrp);
+		const int topk = layer_slice.topk;
+		const int score_bound = layer_slice.score_bound;
+		const int m = sgroup_len / slice_len;
+		priority_queue<read_chr_t> Q;
+		score_type = score;
+		int szQ = 0;
+		
+		rep(j, 0, szsgp) {
+			for (int i=bstSgrp[j],k=0; k<m&&i<sz; ++k,++i) {
+				score = score_slice(vslc[i], slice);
+				if (score <= score_bound) {
+					if (szQ < topk) {
+						szQ++;
+						Q.push(read_chr_t(vslc[i].idx, score));
+					} else if (score < Q.top().score) {
+						Q.pop();
+						Q.push(read_chr_t(vslc[i].idx, score));
+					}
+				}
+			}
+		}
+		
+		#ifdef DEBUG
+		assert(SZ(Q) == szQ);
+		#endif
+		vi ret;
+		
+		while (!Q.empty()) {
+			ret.pb(Q.top().idx);
+			Q.pop();
+		}
+		sort(all(ret));
+		
+		return ret;
+	}
+	
+	/**
+		\brief choose best readpair
+	*/
+	void chooseBstRead(const int chrId, const vi& bstSlcIdx, const acgt_t& acgt1, const acgt_t& acgt2, vector<readpair_chr_t>& vread) {
+		// just random choose is fine
+		const vector<acgt>& vacgt = acgtChromat[chrId];
+		const int sz = SZ(vacgt);
+		const int szslc = SZ(bstSlcIdx);
+		const int m = layer_slice.len / layer_read.len;
+		int lidx, lidx_, ridx, ridx_;
+		score_type mn, mn_, tmp1, tmp2;
+		
+		rep(i, 0, szslc) {
+			mn = mn_ = INF;
+			for (int j=bstSlcIdx[i]/m,k=0; k<m&&j<sz; ++j,++k) {
+				tmp1 = score_acgt(vacgt[j], acgt1);
+				if (k+3<m && j+3<sz) {
+					// l x x r
+					tmp2 = score_acgt(vacgt[j+3], acgt2);
+					if (tmp1+tmp2 < mn) {
+						lidx_ = lidx;
+						ridx_ = ridx;
+						mn_ = mn;
+						
+						lidx = j;
+						ridx = j + 3;
+						mn = tmp1 + tmp2;
+					} else if (tmp1+tmp2 < mn_) {
+						mn_ = tmp1 + tmp2;
+						lidx_ = j;
+						ridx_ = j + 3;
+					}
+					// l x x x r
+					if (k+4<m && j+4<sz) {
+						tmp2 = score_acgt(vacgt[j+4], acgt2);
+						if (tmp1+tmp2 < mn) {
+							lidx_ = lidx;
+							ridx_ = ridx;
+							mn_ = mn;
+							
+							lidx = j;
+							ridx = j + 4;
+							mn = tmp1 + tmp2;
+						} else if (tmp1+tmp2 < mn_) {
+							mn_ = tmp1 + tmp2;
+							lidx_ = j;
+							ridx_ = j + 4;
+						}
+					}
+				}
+			}
+		}
+		
+		if (mn  < INF) vread.pb(readpair_chr_t(lidx, ridx, mn));
+		if (mn_ < INF) vread.pb(readpair_chr_t(lidx_, ridx_, mn_));
+	}
+	
+	/**
 		\brief fuzzy match the read with assigned chromat
 		\note store pair of (position, score) into vread
 	*/
-	void alignRead_chrId(const int chrId, const slice_t& slice, vector<read_chr_t>& vread) {
+	vi alignRead_chrId(const int chrId, const slice_t& slice) {
+		/**
+			\step 1 choose best group
+		*/
+		vi bstGroup = chooseBstGrp(chrId, slice);
 		
+		/**
+			\step 2 choose best sub-group
+		*/
+		vi bstSgroup = chooseBstSgrp(chrId, slice, bstGroup);
+		bstGroup.clr();
+		
+		/**
+			\step 3 choose best slice
+		*/
+		vi bstSlc = chooseBstSlc(chrId, slice, bstSgroup);
+		return bstSlc;
 	}
 	
 	/**
@@ -825,31 +1131,48 @@ public:
 	score_type alignExactRead(const read_t& can_read, const string& read1, const string& read2, int& idx1, int& idx2) {
 		
 	}
-
+	
+	/**
+		\brief align the readpair
+		\return best score
+	*/
 	score_type alignRead(const string& read1, const string& read2, info_t& info1, info_t& info2) {
 		const int topk = layer_read.topk;
 		const int score_bound = layer_read.score_bound;
-		const slice_t slice = init_readPair(read1, read2);
+		const slice_t slice = calcSlice(read1, read2);
+		const acgt_t acgt1 = calcACGT(read1);
+		const acgt_t acgt2 = calcACGT(read2);
 		score_type ret = NEG_INF, tmp;
-		vector<read_chr_t> vread_chr;
+		vector<readpair_chr_t> vreadpair;
 		priority_queue<read_t> Q;
 		int szQ = 0;
 		
+		/**
+			\step 1: foreach format find the best read
+		*/
 		for (int chrId : chrIds) {
-			alignRead_chrId(chrid, slice, vread_chr);
-			int sz = SZ(vread_chr);
+			/**
+				\step 2: find the best slice
+			*/
+			vi bstSlc = alignRead_chrId(chrId, slice);
+			/**
+				\step 3: find the best readpair
+			*/
+			chooseBstRead(chrId, acgt1, acgt2, vreadpair);
+			
+			int sz = SZ(vreadpair);
 			rep(i, 0, sz) {
-				if (vread_chr[i].score <= score_bound) {
+				if (vreadpair[i].score <= score_bound) {
 					if (szQ < topk) {
-						Q.push(read_t(chrId, vread_chr[i].idx, vrea_chr[i].score));
+						Q.push(read_t(chrId, vreadpair[i]));
 						++szQ;
-					} else if (vread_chr[i].score < Q.top().score) {
+					} else if (vreadpair[i].score < Q.top().score) {
 						Q.pop();
-						Q.push(read_t(chrId, vread_chr[i].idx, vrea_chr[i].score));
+						Q.push(read_t(chrId, vreadpair[i]));
 					}
 				}
 			}
-			vread_chr.clr();
+			vreadpair.clr();
 		}
 		
 		#ifdef DEBUG
@@ -882,7 +1205,7 @@ public:
 		return ret;
 	}
 
-	float alignReadPair(const string& read1, const string& read2, info_t& info1, info_t& info2) {
+	score_type alignReadPair(const string& read1, const string& read2, info_t& info1, info_t& info2) {
 		info_t info1_, info2_;
 
 		info1.id = info2.id = 20;
@@ -892,8 +1215,8 @@ public:
 		info2.strand = '-';
 		info1_.strand = '-';
 		info2_.strand = '+';
-		float score1 = alignRead(read1, getReverseComplement(read2), info1, info2);
-		float score2 = alignRead(getReverseComplement(read1), read2, info1_, info2_);
+		score_type score1 = alignRead(read1, getReverseComplement(read2), info1, info2);
+		score_type score2 = alignRead(getReverseComplement(read1), read2, info1_, info2_);
 
 		if (score1 < score2) {
 			info1 = info1_;
@@ -920,8 +1243,8 @@ public:
 		#endif
 
 		for(int i=0; i<N; i+=2) {
-			float score = alignReadPair(readSequence[i], readSequence[i+1], info1, info2);
-			if (score > NEG_INF) {
+			score_type score = alignReadPair(readSequence[i], readSequence[i+1], info1, info2);
+			if (score < POS_INF) {
 				line1 = readName[i] + info1.toString();
 				line2 = readName[i+1] + info2.toString();
 			} else {
