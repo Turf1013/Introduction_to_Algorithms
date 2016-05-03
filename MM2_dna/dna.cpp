@@ -50,9 +50,10 @@ struct info_t {
 // trie
 typedef struct trie_t* trie_ptr;
 struct trie_t {
+	trie_ptr fa;
 	trie_ptr nxt[5];
 
-	trie_t() {
+	trie_t(trie_ptr fa=NULL):fa(fa) {
 		rep(i, 0, 5) nxt[i] = NULL;
 	}
 };
@@ -208,6 +209,7 @@ unsigned int hash_seed, hash_size;
 uint hash_base[max_sep_len];
 
 // global parameter
+int sep_len = 10;
 const float NEG_INF = -1e9;
 const float POS_INF = 1e9;
 char Complements[128];
@@ -215,6 +217,7 @@ int charId[128];
 char buffer[1005];
 const int max_ibuffer = 1e8;
 int ibuffer[max_ibuffer];
+const char* acgt_s = "ACGTN";
 
 // sep
 layer_t layer_sep;
@@ -242,6 +245,10 @@ vector<slice_t> sliceChromat[25];
 vector<sgroup_t> sgroupChromat[25];
 vector<group_t> groupChromat[25];
 vector<sep_t> sepChromat[25];
+
+inline int calcScore(char a, char b) {
+	return (a==b) ? 1:-1;
+}
 
 inline int getCharId(char c) {
 	return charId[c];
@@ -283,7 +290,7 @@ trie_ptr Insert_chr(char *s) {
 
 	while(i < sep_len) {
 		id = getCharId(s[i++]);
-		p->nxt[id] = new trie_t();
+		p->nxt[id] = new trie_t(p);
 		p = p->nxt[id];
 	}
 
@@ -303,7 +310,7 @@ int Insert_read(char *s) {
 
 	while(i < sep_len) {
 		id = getCharId(s[i++]);
-		p->nxt[id] = new trie_t();
+		p->nxt[id] = new trie_t(p);
 		p = p->nxt[id];
 	}
 	id = (char *)p->nxt[1] - (char *)NULL;
@@ -1123,13 +1130,78 @@ public:
 		return bstSlc;
 	}
 	
+	score_type alignExactRead(const int chrId, const int idx, const string& line) {
+		const vetctor<sep_t>& vsep = sepChromat[chrId];
+		const int szsep = SZ(vsep);
+		const int m = layer_read.len / sep_len;
+		int l = 0;
+		score_type ret;
+		
+		// restore the string
+		{
+			for (int i=0,j=idx; i<m&&j<szsep; ++i,++j) {
+				trie_ptr p = vsep[j].leaf, q;
+				
+				#ifdef DEBUG
+				bool flag = false;
+				#endif
+				while (p->fa != NULL) {
+					q = p->fa;
+					rep(k, 0, 5) {
+						if (q->nxt[k] == p) {
+							#ifdef DEBUG
+							bool flag = true;
+							#endif
+							buffer[l++] = acgt_s[k];
+							break;
+						}
+					}
+					p = q;
+				}
+				#ifdef DEBUG
+				assert(flag);
+				#endif
+			}
+			buffer[l++] = '\0';
+		}
+		
+		// calculate the score using dp
+		{
+			const int mlen = min(l, line.length());
+			int dp[2][5];
+			int p = 0, q = 1;
+			
+			memset(dp, 0, sizeof(dp));
+			dp[0][2] = 0;
+			dp[0][3] = -1;
+			dp[0][4] = -2;
+			rep(i, 1, l+1) {
+				int bj = max(1, i-2);
+				for (int j=bj; j<=mlen&&j<=i+2; ++j) {
+					int k = j - i + 2;
+					dp[q][k] = dp[p][k] + calcScore(buffer[l-1], line[j-1]);
+					if (j <= i+1)
+						dp[q][k] = max(dp[q][k], dp[p][k+1]-1);
+					if (j > bj)
+						dp[q][k] = max(dp[q][k], dp[q][k-1]-1);
+				}
+				p ^= 1;
+				q ^= 1;
+			}
+			
+			ret = dp[p][2];
+		}
+		
+		return ret;
+	}
+	
 	/**
 		\breif exact match the read with assigned read
 		\note assign the best position to idx1 & idx2
 		\return score of exact match
 	*/
-	score_type alignExactRead(const read_t& can_read, const string& read1, const string& read2, int& idx1, int& idx2) {
-		
+	inline score_type alignExactRead(const read_t& can_read, const string& read1, const string& read2) {
+		return alignExactRead(can_read.chrId, can_read.lidx, read1) + alignExactRead(can_read.chrId, can_read.ridx, read2);
 	}
 	
 	/**
@@ -1182,18 +1254,17 @@ public:
 		
 		int bstChrId;
 		int bstIdx1, bstIdx2;
-		int idx1, idx2;
 		
 		bstChrId = 20;
 		bstIdx1 = bstIdx2 = idx1 = idx2 = 0;
 		while (!Q.empty()) {
-			read_t can_read = Q.top();
+			read_t read = Q.top();
 			Q.pop();
-			tmp = alignExactRead(can_read, read1, read2, idx1, idx2);
+			tmp = alignExactRead(read, read1, read2);
 			if (tmp > ret) {
-				bstChrId = can_read.chrId;
-				bstIdx1 = idx1;
-				bstIdx2 = idx2;
+				bstChrId = read.chrId;
+				bstIdx1 = read.lidx;
+				bstIdx2 = read.ridx;
 				ret = tmp;
 			}
 		}
