@@ -34,6 +34,20 @@ using namespace std;
 typedef unsigned int uint;
 typedef long long LL;
 
+// info
+struct info_t {
+	int id;			/* ChromatidSequenceId */
+	int st;			/* Start position */
+	int ed; 		/* End position */
+	char strand;	/* strand */
+	float conf;
+
+	string toString() const {
+		return ',' + to_string(id) + ',' + to_string(st+1) + ',' + to_string(ed+1) + ',' + strand + ',' + to_string(conf);
+	}
+};
+
+// trie
 typedef struct trie_t* trie_ptr;
 struct trie_t {
 	trie_ptr nxt[5];
@@ -42,6 +56,26 @@ struct trie_t {
 		rep(i, 0, 5) nxt[i] = NULL;
 	}
 };
+
+trie_ptr root_chr = NULL;
+uint nleaf = 0;
+
+struct feature_t {
+	int c;
+	int id;
+	
+	feature_t() {}
+	feature_t(int c, int id):
+		c(c), id(id) {}
+		
+	bool operator< (const node_t& oth) const {
+		return c > oth.c;
+	}
+};
+
+bool feat_compid(const feature_t& a, const feature_t& b) {
+	return a.id < b.id;
+}
 
 struct sep_t {
 	trie_ptr leaf;
@@ -56,164 +90,81 @@ struct sep_t {
 	}
 };
 
-struct info_t {
-	int id;			/* ChromatidSequenceId */
-	int st;			/* Start position */
-	int ed; 		/* End position */
-	char strand;	/* strand */
-	float conf;
-
-	string toString() const {
-		return ',' + to_string(id) + ',' + to_string(st+1) + ',' + to_string(ed+1) + ',' + strand + ',' + to_string(conf);
-	}
-};
-
 struct slice_t {
 	int idx;
-	vector<float> freq;
+	vector<feature_t> feat;
+	
+	inline void push_back(const feature_t& f) {
+		feat.push_back(f);
+	}
+	
+	inline void sorted() {
+		sort(all(feat), feat_compid);
+	}
+	
+	inline int size() const {
+		return SZ(feat);
+	}
+	
+	inline void resize(const int n) {
+		feat.resize(n);
+	}
 
-	void clear() {
-		freq.clr();
+	inline void clear() {
+		feat.clr();
 	}
 
 	bool operator< (const slice_t& oth) const {
 		return idx < oth.idx;
 	}
-
-	float similarity(const slice_t& a) const {
-		#ifdef DEBUG
-		assert(SZ(freq) == SZ(a.freq));
-		#endif
-
-		int sz = SZ(freq);
-		float fz = 0., fa = 0., fb = 0.;
-
-		rep(i, 0, sz) {
-			fz += freq[i] * a.freq[i];
-			fa += freq[i] * freq[i];
-			fb += a.freq[i] * a.freq[i];
-		}
-
-		return fz / (sqrt(fa) * sqrt(fb));
-	}
-
-	float length() const {
-		int sz = SZ(freq);
-
-		float sum = 0.;
-
-		rep(i, 0, sz) sum += freq[i] * freq[i];
-
-		return sqrt(sum);
-	}
 };
 
-float similarity(const slice_t& a, const slice_t& b){
-	#ifdef DEBUG
-	assert(SZ(b.freq) == SZ(a.freq));
-	#endif
-
-	int sz = SZ(a.freq);
-	float fz = 0., fa = 0., fb = 0.;
-
-	rep(i, 0, sz) {
-		fz += a.freq[i] * b.freq[i];
-		fa += a.freq[i] * a.freq[i];
-		fb += b.freq[i] * b.freq[i];
-	}
-
-	return fz / (sqrt(fa) * sqrt(fb));
-}
-
-float similarity(const slice_t& a, const float fa, const slice_t& b){
-	#ifdef DEBUG
-	assert(SZ(b.freq) == SZ(a.freq));
-	#endif
-
-	int sz = SZ(a.freq);
-	float fz = 0., fb = 0.;
-
-	rep(i, 0, sz) {
-		fz += a.freq[i] * b.freq[i];
-		fb += b.freq[i] * b.freq[i];
-	}
-
-	return fz / (fa * sqrt(fb));
-}
-
-float similarity(const slice_t& a, const float& fa, const slice_t& b, const float fb){
-	#ifdef DEBUG
-	assert(SZ(b.freq) == SZ(a.freq));
-	#endif
-
-	int sz = SZ(a.freq);
-	float fz = 0.;
-
-	rep(i, 0, sz) {
-		fz += a.freq[i] * b.freq[i];
-	}
-
-	return fz / (fa * fb);
-}
-
+typedef slice_t sgroup_t;
 typedef slice_t group_t;
+
+struct layer {
+	uint feature_num;
+	uint feature_ubound, feature_lbound;
+	uint len;
+	uint topk;
+};
+
+// hash
+const char* acgtn_s = "acgtn";
+const int max_hash_size = 1020;
+const int max_sep_len = 12;
+unsigned int hash_seed, hash_size;
+uint hash_base[max_sep_len];
 
 // global parameter
 const float NEG_INF = -1e9;
 const float POS_INF = 1e9;
-
-// constant parameter
-int sep_len;		/* pay attention to update qsize */
-int unknown_bound;
-
-// about sep
-const char* acgtn_s = "acgtn";
-const int max_hash_size = 1050;
-const int max_sep_len = 50;
-unsigned int hash_seed, hash_size;
-uint hash_base[max_sep_len];
-int sep_id[max_hash_size];
-unsigned int all_id[max_hash_size];
-unsigned int sep_cnt[max_hash_size];
-float sepFreq_read[max_hash_size], sepFreq_read_[max_hash_size];
-unsigned int sep_cnt_ubound, sep_cnt_lbound;
-vector<pair<uint,uint> > sep_freq;
-char buffer[max_sep_len];
-
-// about slice
-int slice_len;
-float slice_simi_ubound, slice_simi_lbound;
-
-// about group
-int group_len;
-int topk_grp;
-float grp_simi_ubound, grp_simi_lbound;
-
-// about global feature
-int topk_sep_chr;
-int topk_slice_chr;
-int topk_sep_all;
-int nbits_ubound, nbits_lbound;
-uint sep_cnt_all_ubound, sep_cnt_all_lbound;
-int topk_chr;
-
-typedef long long LL;
 char Complements[128];
 int charId[128];
+char buffer[1005];
+const int max_ibuffer = 1e8;
+int ibuffer[max_ibuffer];
+
+// sep
+layer layer_sep;
+int sep_id[max_hash_size];
+int all_id[max_hash_size];
+uint sep_cnt[max_hash_size], sep_cnt_[max_hash_size];
+char buffer[max_sep_len];
+
+// slice
+layer layer_slice;
+
+// about sub-group
+layer layer_sgroup;
+
+// about group
+layer layer_group;
+
 vector<slice_t> sliceChromat[25];
+vector<sgroup_t> sgroupChromat[25];
 vector<group_t> groupChromat[25];
 vector<sep_t> sepChromat;
-slice_t allFeature[25];
-map<uint,int> allFeatureH;
-map<uint,int> chrFeatureH[25];
-trie_ptr root = NULL;
-trie_ptr root_chr = NULL;
-
-void Delete_trie(trie_ptr rt, int dep) {
-	if (dep == sep_len)	return ;
-	rep(i, 0, 5) if (rt->nxt[i]) Delete_trie(rt->nxt[i], dep+1);
-	delete rt;
-}
 
 inline int getCharId(char c) {
 	return charId[c];
@@ -223,27 +174,23 @@ inline char getComplement(char c) {
 	return Complements[c];
 }
 
-trie_ptr Insert(char *s, int chrId) {
-	int i = 0, id;
-	trie_ptr p = root;
+inline bool isACGT(char ch) {
+	return ch=='A' || ch=='G' || ch=='C' || ch=='T';
+}
 
-	while (i < sep_len) {
-		id = getCharId(s[i]);
-		if (!p->nxt[id]) break;
-		p = p->nxt[id];
-		++i;
-	}
 
-	while(i < sep_len) {
-		id = getCharId(s[i++]);
-		p->nxt[id] = new trie_t();
-		p = p->nxt[id];
-	}
-	p->nxt[0]= (trie_ptr) ((char *)p->nxt[0] - (char *)NULL + 1);
-	uint tmp = ((char *)p->nxt[2] - (char *)NULL) | (1<<chrId);
-	p->nxt[2] = (trie_ptr) tmp;
+inline string getRC(const string& line) {
+	int len = line.length();
+	string ret;
 
-	return p;
+	per(i, 0, len)	ret.pb(getComplement(line[i]));
+	return ret;
+}
+	
+void Delete_trie(trie_ptr rt, int dep) {
+	if (dep == sep_len)	return ;
+	rep(i, 0, 5) if (rt->nxt[i]) Delete_trie(rt->nxt[i], dep+1);
+	delete rt;
 }
 
 trie_ptr Insert_chr(char *s) {
@@ -262,19 +209,8 @@ trie_ptr Insert_chr(char *s) {
 		p->nxt[id] = new trie_t();
 		p = p->nxt[id];
 	}
-	p->nxt[0]= (trie_ptr) ((char *)p->nxt[0] - (char *)NULL + 1);
 
 	return p;
-}
-
-inline bool isACGT(char ch) {
-	return ch=='A' || ch=='G' || ch=='C' || ch=='T';
-}
-
-void init_trie() {
-	if (root)
-		Delete_trie(root, 0);
-	root = new trie_t();
 }
 
 void init_trie_chr() {
@@ -283,136 +219,26 @@ void init_trie_chr() {
 	root_chr = new trie_t();
 }
 
-void trav_trie_chr(trie_ptr rt, int dep, unsigned int val) {
+void map_trie_chr(trie_ptr rt, int dep) {
 	if (dep == sep_len) {
-		const uint &h = val;
-		sep_cnt[h] += ((char*)rt->nxt[0] - (char*)NULL);
-		rt->nxt[1] = (trie_ptr) h;
+		int k = (char *)rt->nxt[1] - (char *)NULL;
+		if (k == 0) rt->nxt[1] = (trie_ptr) (++nleaf);
 		return ;
 	}
-
-	// unsigned int _val = val * hash_seed;
-	// rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, _val+acgtn_s[i]);
-	rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, (val+acgtn_s[i]*hash_base[dep])%hash_size);
+	
+	rep(i, 0, 5) if (rt->nxt[i]) map_trie_chr(rt->nxt[i], dep+1);
 }
 
-inline int getBits(int x) {
-	int ret = 0;
-
-	while (x) {
-		++ret;
-		x -= (-x & x);
-	}
-
-	return ret;
-}
-
-void trav_trie_all(trie_ptr rt, int dep, unsigned int val) {
-	if (dep == sep_len) {
-		const uint& h = val;
-		int state = ((char *)rt->nxt[2] - (char *)NULL);
-		int bits = getBits(state);
-		uint cnt = ((char *)rt->nxt[0] - (char *)NULL);
-		if ((bits > nbits_lbound && bits < nbits_ubound) &&
-			(cnt > sep_cnt_all_lbound && cnt<sep_cnt_all_ubound)) {
-			all_id[h] |= state;
-			sep_cnt[h] += cnt;
-			rt->nxt[1] = (trie_ptr) h;
-		}
-		return ;
-	}
-
-	// unsigned int _val = val * hash_seed;
-	// rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, _val+acgtn_s[i]);
-	rep(i, 0, 5) if (rt->nxt[i]) trav_trie_chr(rt->nxt[i], dep+1, (val+acgtn_s[i]*hash_base[dep]) % hash_size);
+void clear_trie_chr() {
+	/* do nothing */;
 }
 
 class DNASequencing {
 public:
 	int C[26];
 	vi chrIds;
-
-	void init_param(const int testDifficulty) {
-		unknown_bound = 2;
-		if (testDifficulty == 0) {
-			sep_len = 10;
-			slice_len = 170;	// slice_len%sep_len = 0
-			group_len = 1020;	// group_len%slice_len = 0;
-			hash_seed = 31;
-			hash_size = 1009;
-			sep_cnt_ubound = 1e8;
-			sep_cnt_lbound = 0;
-			topk_sep_chr = 100;
-			topk_slice_chr = 100;
-			nbits_ubound = 2;
-			nbits_lbound = 0;
-			sep_cnt_all_ubound = 1e9;
-			sep_cnt_all_lbound = 50;
-			topk_chr = 1;
-			topk_grp = 100;
-			grp_simi_ubound = 2;
-			grp_simi_lbound = 0;
-			slice_simi_ubound = 2;
-			slice_simi_lbound = 0;
-		} else if (testDifficulty == 1) {
-			sep_len = 10;
-			slice_len = 170;		// slice_len%sep_len = 0
-			group_len = 1020;		// group_len%slice_len = 0;
-			hash_seed = 31;
-			hash_size = 1009;
-			sep_cnt_ubound = 1e8;
-			sep_cnt_lbound = 0;
-			topk_sep_chr = 100;
-			topk_slice_chr = 100;
-			nbits_ubound = 4;
-			nbits_lbound = 0;
-			sep_cnt_all_ubound = 1e9;
-			sep_cnt_all_lbound = 50;
-			topk_chr = 3;
-			topk_grp = 100;
-			grp_simi_ubound = 2;
-			grp_simi_lbound = 0;
-			slice_simi_ubound = 2;
-			slice_simi_lbound = 0;
-		} else {
-			sep_len = 10;
-			slice_len = 170;		// slice_len%sep_len = 0
-			group_len = 1020;		// group_len%slice_len = 0;
-			hash_seed = 31;
-			hash_size = 1009;
-			sep_cnt_ubound = 1e8;
-			sep_cnt_lbound = 0;
-			topk_sep_chr = 100;
-			topk_slice_chr = 100;
-			nbits_ubound = 12;
-			nbits_lbound = 1;
-			sep_cnt_all_ubound = 1e9;
-			sep_cnt_all_lbound = 50;
-			topk_chr = 3;
-			topk_grp = 100;
-			grp_simi_ubound = 2;
-			grp_simi_lbound = 0;
-			slice_simi_ubound = 2;
-			slice_simi_lbound = 0;
-		}
-
-		hash_base[0] = 1;
-		rep(i, 1, sep_len) hash_base[i] = hash_base[i-1] * hash_seed % hash_size;
-		reverse(hash_base, hash_base+sep_len);
-	}
-
-	string getReverseComplement(const string& line) {
-		int len = line.length();
-		string ret;
-
-		per(i, 0, len)	ret.pb(getComplement(line[i]));
-		return ret;
-	}
-
-	int initTest(int testDifficulty) {
-		// init the parameter
-		init_param(testDifficulty);
-
+	
+	DNASequencing() {
 		// init the complement array
 		rep(i, 0, 128) Complements[i] = 'N';
 		Complements['A'] = 'T';
@@ -426,6 +252,35 @@ public:
 		charId['C'] = 1;
 		charId['G'] = 2;
 		charId['T'] = 3;
+	}
+
+	void init_param(const int testDifficulty) {
+		hash_seed = 31;
+		hash_size = 1009;
+		if (testDifficulty == 0) {
+			sep_len = 10;
+			slice_len = 10 * 15;
+			sgroup_len = slice_len * 7;
+			group_len = sgroup_len * 96;	
+			
+		} else if (testDifficulty == 1) {
+			sep_len = 10;
+			slice_len = 10 * 15;
+			sgroup_len = slice_len * 7;
+			group_len = sgroup_len * 96;	
+			
+		} else {
+			abort();
+		}
+
+		hash_base[0] = 1;
+		rep(i, 1, sep_len) hash_base[i] = hash_base[i-1] * hash_seed % hash_size;
+		reverse(hash_base, hash_base+sep_len);
+	}
+
+	int initTest(int testDifficulty) {
+		// init the parameter
+		init_param(testDifficulty);
 
 		// clear the chrIds
 		chrIds.clr();
@@ -433,91 +288,28 @@ public:
 		// clear the feature & presents of chromatid
 		rep(i, 1, 25) {
 			sliceChromat[i].clr();
+			sgroupChromat[i].clr();
 			groupChromat[i].clr();
-			allFeature[i].clr();
-			chrFeatureH[i].clr();
 		}
-		allFeatureH.clr();
 
 		// init the trie
-		init_trie();
 		init_trie_chr();
 
 		return 0;
 	}
 
-	int extractFeatureAll() {
-		memset(all_id, 0, sizeof(all_id));
-		memset(sep_cnt, 0, sizeof(sep_cnt));
-		memset(sep_id, -1, sizeof(sep_id));
-		trav_trie_all(root, 0, 0);
-
-		rep(i, 0, hash_size) {
-			const int& cnt = sep_cnt[i];
-			const int& state = all_id[i];
-			int bits = getBits(state);
-			if ((bits > nbits_lbound && bits < nbits_ubound) &&
-				(cnt > sep_cnt_all_lbound && cnt < sep_cnt_all_ubound)) {
-				sep_freq.pb(mp(cnt, i));
-			}
-		}
-
-		sort(all(sep_freq), greater<pair<uint,uint> >());
-		int mn_sz = min(topk_sep_all, SZ(sep_freq));
-
-		rep(i, 0, mn_sz) {
-			sep_id[sep_freq[i].sec] = i;
-		}
-
-		sep_freq.clr();
-		return mn_sz;
-	}
-
-	void mergeAll(int nfeature) {
-		int sz_chr = SZ(chrIds);
-
-		rep(i, 0, sz_chr) {
-			const int& chrId = chrIds[i];
-//			rep(j, 0, nfeature)	allFeature[chrId].freq.pb(0);
-			allFeature[chrId].freq.resize(nfeature);
-		}
-
-		rep(i, 0, hash_size) {
-			if (sep_id[i] != -1) {
-				allFeatureH[i] = sep_id[i];
-				const int& state = all_id[i];
-				for (int chrId : chrIds) {
-					if (state & (1<<chrId))
-						allFeature[chrId].freq[sep_id[i]] = 1;
-				}
-			}
-		}
-	}
-
 	int preProcessing() {
-		/**
-			\step 1: extract global feature
-		*/
-		int nfeature = extractFeatureAll();
-
-		/**
-			\step 2: free the global trie
-		*/
-		init_trie();
-
-		/**
-			\step 3: merge the global feature
-		*/
-		mergeAll(nfeature);
 
 		return 0;
 	}
-
+	
+	/**
+		\brief separate the chromat into sep, and store trie's leaf ptr into `SepChromat`
+	*/
 	void separateChromat(const vstr& chromatidSequence) {
 		const int chrId = *chrIds.rbegin();
 		int nline = SZ(chromatidSequence);
-		int l = 0, unknown = 0;
-		int idx = 0;
+		int idx = 0, l = 0;
 		sep_t sep;
 
 		#ifdef DEBUG
@@ -529,141 +321,251 @@ public:
 
 			rep(i, 0, len) {
 				buffer[l++] = line[i];
-				if (!isACGT(line[i])) {
-					if (++unknown == unknown_bound) {
-						l = 0;
-						unknown = 0;
-					}
-				}
 				if (l == sep_len) {
 					sep.leaf = Insert_chr(buffer);
 					sep.idx = idx + i - sep_len + 1;
 					sepChromat.pb(sep);
-					Insert(buffer, chrId);
 					l = 0;
-					unknown = 0;
 				}
 			}
 			idx += len;
 		}
 	}
-
-	int extractFeatureChromat() {
+	
+	/**
+		\brief pile up the sep to slice, and then clear the sepChromat
+	*/
+	void pileChromat_slice() {
 		const int chrId = *chrIds.rbegin();
-		memset(sep_cnt, 0, sizeof(sep_cnt));
-		memset(sep_id, -1, sizeof(sep_id));
-		trav_trie_chr(root_chr, 0, 0);
-
-		rep(i, 0, hash_size) {
-			if (sep_cnt[i]>sep_cnt_lbound && sep_cnt[i]<sep_cnt_ubound) {
-				sep_freq.pb(mp(sep_cnt[i], i));
+		vector<slice_t>& vslc = sliceChromat[chrId];
+		const int nsep = SZ(sepChromat);
+		const int nfeature = layer_slice.feature_num;
+		int bidx, szvf;
+		vector<feature_t> vfeat;
+		slice_t slice;
+		int i = 0, j;
+		
+		while (i < nsep) {
+			bidx = sepChromat[j=i].idx;
+			szvf = 0;
+			
+			while (i<nsep && sepChromat[i].idx-bidx<=layer_slice.len) {
+				const trie_ptr& leaf = sepChromat[i].leaf;
+				int k = (char *)leaf->nxt[1] - (char*)NULL;
+				#ifdef DEBUG
+				assert(k > 0);
+				#endif
+				--k;
+				if (ibuffer[k] < 0) {
+					ibuffer[k] = szvf++;
+					vfeat.pb(feature_t(1, k));
+				} else {
+					++vfeat[ibuffer[k]].c;
+				}
+				++i;
 			}
+			
+			#ifdef DEBUG
+			assert(SZ(feat) == szvf);
+			#endif
+			// resize vfeat according the bound of feature
+			{
+				int ii = 0, jj = 0;
+				
+				while (ii < szvf) {
+					if (vfeat[ii].c>=layer_slice.feature_lbound && vfeat[ii].c<=layer_slice.feature_ubound)
+						vfeat[jj++] = vfeat[ii];
+					ibuffer[vfeat[ii].id] = -1;
+					++ii;
+				}
+			
+				szvf = jj;
+				vfeat.resize(szvf);
+			}
+			sort(all(vfeat));
+			#ifdef DEBUG
+			assert(SZ(vfeat) == szvf);
+			#endif
+			
+			int szfeature = min(nfeature, szvf);
+			slice.idx = bidx;
+			rep(ii, 0, szfeature) {
+				slice.pb(vfeat[ii]);
+			}
+			slice.sorted();
+			vslc.pb(slice);
+			slice.clr();
+			
+			vfeat.clr();
 		}
-
-		sort(all(sep_freq), greater<pair<uint,uint> >());
-		int mn_sz = min(topk_slice_chr, SZ(sep_freq));
-
-		rep(i, 0, mn_sz) {
-			sep_id[sep_freq[i].sec] = i;
-			chrFeatureH[chrId][sep_freq[i].sec] = i;
+	}
+	
+	/**
+		\brief pile up the slice to sub-group
+	*/
+	void pileChromat_sgroup() {
+		const int chrId = *chrIds.rbegin();
+		vector<sgroup_t>& vsgrp = sgroupChromat[chrId];
+		const vector<slice_t>& vslc = sliceChromat[chrId];
+		const int m = layer_sgroup.len / layer_slice.len;
+		const int nslice = SZ(vslc);
+		const int nfeature = layer_sgroup.feature_num;
+		int bidx, szvf;
+		vector<feature_t> vfeat;
+		sgroup_t sgroup;
+		int i = 0, j;
+		
+		while (i < nslice) {
+			bidx = i;
+			szvf = 0;
+			
+			for (j=0; j<m&&i<nslice; ++i,++j) {
+				const int& k = vslc[i].id;
+				if (ibuffer[k] < 0) {
+					ibuffer[k] = szvf++;
+					vfeat.pb(vslc[i]);
+				} else {
+					vfeat[ibuffer[k]] += vslc[i].c;
+				}
+			}
+			
+			#ifdef DEBUG
+			assert(SZ(vfeat) = szvf);
+			#endif
+			// resize vfeat according the bound of feature
+			{
+				int ii = 0, jj = 0;
+				
+				while (ii < szvf) {
+					if (vfeat[ii].c>=layer_sgroup.feature_lbound && vfeat[ii].c<=layer_sgroup.feature_ubound)
+						vfeat[jj++] = vfeat[ii];
+					ibuffer[vfeat[ii].id] = -1;
+					++ii;
+				}
+				
+				szvf = jj;
+				vfeat.resize(szvf);
+			}
+			
+			#ifdef DEBUG
+			assett(SZ(bfeat) == szvf);
+			#endif
+			
+			int szfeature = min(nfeature, szvf);
+			sgroup.idx = bidx;
+			rep(ii, 0, szfeature) {
+				sgroup.pb(vfeat[ii]);
+			}
+			sgroup.sorted();
+			vsgrp.pb(sgroup);
+			sgroup.clr();
+			
+			vfeat.clr();
 		}
-		sep_freq.clr();
-
-		return mn_sz;
+	}
+	
+	/**
+		\brief pile up the sgroup to group
+	*/
+	void pileChromat_group() {
+		const int chrId = *chrIds.rbegin();
+		vector<group_t>& vgrp = groupChromat[chrId];
+		const vector<sgroup_t> vsgrp = sgroupChromat[chrId];
+		const int m = layer_group.len / layer_sgroup.len;
+		const int nsgrp = SZ(vsgrp);
+		const int nfeature = layer_group.feature_num;
+		int bidx, szvf;
+		vector<feature_t> vfeat;
+		group_t grp;
+		int i = 0, j;
+		
+		while (i < nsgrp) {
+			bidx = i;
+			szvf = 0;
+			
+			for (j=0; j<m&&i<nsgrp; ++i,++j) {
+				const int& k = vsgrp[i].id;
+				if (ibuffer[k] < 0) {
+					ibuffer[k] = szvf++;
+					vfeat.pb(vsgrp[i]);
+				} else {
+					vfeat[ibuffer[k]] += vsgrp[i].c;
+				}
+			}
+			
+			#ifdef DEBUG
+			assert(SZ(vfeat) == szvf);
+			#endif
+			// resize vfeat according the boundary of feature
+			{
+				int ii = 0, jj = 0;
+				
+				while (ii < szvf) {
+					if (vfeat[ii].c>=layer_group.feature_lbound && vfeat[ii].c<=layer_group.feature_ubound)
+						vfeat[jj++] = vfeat[ii];
+					ibuffer[vfeat[ii].id] = -1;
+					++ii;
+				}
+				
+				szvf = jj;
+				vfeat.resize(szvf);
+			}
+			#ifdef DEBUG
+			assert(SZ(vfeat) == szvf);
+			#endif
+			
+			int szfeature = min(nfeature, szvf);
+			group.idx = bidx;
+			rep(ii, 0, szfeature) {
+				group.pb(vfeat[ii]);
+			}
+			group.sorted();
+			vgrp.pb(group);
+			group.clr();
+			
+			vfeat.clr();
+		}
 	}
 
-	void mergeChromat(int nfeature) {
-		const int chrId = *chrIds.rbegin();
-		int nsep = SZ(sepChromat);
-
-		// merge the sep into slice
-		{
-			int i = 0, j;
-			int bi;
-			uint tot;
-			slice_t slice;
-
-			memset(sep_cnt, 0, sizeof(sep_cnt));
-			// rep(ii, 0, nfeature) slice.freq.pb(0.);
-			slice.freq.resize(nfeature);
-
-			while (i < nsep) {
-				j = i;
-				bi = sepChromat[i].idx;
-				tot = 0;
-
-				while (i<nsep && sepChromat[i].idx-bi<=slice_len) {
-					int h = (char *)sepChromat[i].leaf->nxt[1] - (char *)NULL;
-					if (sep_id[h] >= 0) {
-						++sep_cnt[sep_id[h]];
-					}
-					++tot;
-					++i;
-				}
-
-				slice.idx = bi;
-				rep(k, 0, nfeature) {
-					#ifdef SLICE_USE_FREQ
-					slice.freq[k] = sep_cnt[k] / (float) tot;
-					#else
-					slice.freq[k] = sep_cnt[k];
-					#endif
-					sep_cnt[k] = 0;
-				}
-				sliceChromat[chrId].pb(slice);
-			}
-		}
-
-		// release sepChromat, we don't need them
+	void pileChromat() {
+		memset(ibuffer, -1, sizeof(ibuffer));
+		
+		/**
+			\step 1: pile up layer 1 -- `slice`
+		*/
+		pileChromat_slice();
+		
+		/**
+			\step 1.5: clear sepChromat to release memory
+		*/
 		sepChromat.clr();
-
-		// merge the slice into group
-		int nslice = SZ(sliceChromat[chrId]);
-		{
-			int i = 0, j;
-			int bi;
-			group_t grp;
-
-			rep(ii, 0, nfeature) grp.freq.pb(0.);
-			// grp.freq.resize(nfeature);
-
-			while (i < nslice) {
-				j = i;
-				bi = sliceChromat[chrId][i].idx;
-
-				while (i<nslice && sliceChromat[chrId][i].idx-bi<=group_len) {
-					const vector<float>& vc = sliceChromat[chrId][i].freq;
-					rep(ii, 0, nfeature) grp.freq[ii] += vc[ii];
-					++i;
-				}
-
-				#ifdef DEBUG
-				assert(i > j);
-				#endif
-				j = i - j;
-				grp.idx = bi;
-				rep(ii, 0, nfeature) grp.freq[ii] /= j;
-				groupChromat[chrId].pb(grp);
-				rep(ii, 0, nfeature) grp.freq[ii] = 0;
-			}
-		}
+		
+		/**
+			\step 2: pile up layer 2 -- `sgroup`
+		*/
+		pileChromat_sgroup();
+		
+		/**
+			\step 3: pile up layer 3 -- `group`
+		*/
+		pileChromat_group();
 	}
 
 	int passReferenceGenome(int chromatidSequenceId, const vector<string>& chromatidSequence) {
 		// push chrId into chrIds
 		chrIds.pb(chromatidSequenceId);
 
-		// split the chromat into slices, may exists bad separated
+		// split the chromat into sep.
 		separateChromat(chromatidSequence);
+		
+		// mapping the leaf with integer
+		map_trie_chr();
 
-		// Find the feature of current chromat
-		int nfeature = extractFeatureChromat();
+		// pile up the lowest sep into layers.
+		pileChromat();
 
 		// release the memory of chr's trie
-		init_trie_chr();
-
-		// merge the slice to present the chromat
-		mergeChromat(nfeature);
+		clear_trie_chr();
 
 		return 0;
 	}
@@ -686,16 +588,11 @@ public:
 		rep(i, 0, sep_len) val = (val + s[i]*hash_base[i]) % hash_size;
 
 		for (int i=0,j=sep_len; j<len; ++i,++j) {
-//			#ifdef DEBUG
-//			assert(val<hash_size);
-//			#endif
 			++sep_cnt[val];
 			val = val + hash_size - s[i]*hash_base[0]%hash_size;
 			val = (val * hash_seed + s[j]) % hash_size;
 		}
-//		#ifdef DEBUG
-//			assert(val<hash_size);
-//		#endif
+
 		++sep_cnt[val];
 	}
 

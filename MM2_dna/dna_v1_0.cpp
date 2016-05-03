@@ -686,13 +686,17 @@ public:
 		rep(i, 0, sep_len) val = (val + s[i]*hash_base[i]) % hash_size;
 
 		for (int i=0,j=sep_len; j<len; ++i,++j) {
-			#ifdef DEBUG
-			assert(val<hash_size);
-			#endif
+//			#ifdef DEBUG
+//			assert(val<hash_size);
+//			#endif
 			++sep_cnt[val];
 			val = val + hash_size - s[i]*hash_base[0]%hash_size;
 			val = (val * hash_seed + s[j]) % hash_size;
 		}
+//		#ifdef DEBUG
+//			assert(val<hash_size);
+//		#endif
+		++sep_cnt[val];
 	}
 
 	void init_readPair(const string& l1, const string& l2) {
@@ -829,7 +833,7 @@ public:
 		return mx1 + mx2;
 	}
 
-	bool alignRead(const string& read1, const string& read2, info_t& info1, info_t& info2) {
+	float alignRead(const string& read1, const string& read2, info_t& info1, info_t& info2) {
 		// init the slice for readpair
 		init_readPair(read1, read2);
 		float bst_conf_grp = 1, bst_conf_slice = 1;
@@ -837,7 +841,7 @@ public:
 		int bstId = 20;
 		int &bst_st1 = info1.st, &bst_st2 = info2.st;
 		int st1, st2;
-		double ret = NEG_INF;
+		float ret = NEG_INF;
 
 		/**
 			\step 1: find the best match chrId
@@ -1308,16 +1312,16 @@ void save_time(program_t& prog) {
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &prog.proc);
 }
 
-float calc_time(const program_t& st, const program_t& ed) {
-	float ret;
+double calc_time(const program_t& st, const program_t& ed) {
+	double ret;
 
 	#ifdef USING_PROC_TIME
-	float proc_st = st.proc.tv_sec + (float)st.proc.tv_nsec / 1e9;
-	float proc_ed = ed.proc.tv_sec + (float)ed.proc.tv_nsec / 1e9;
+	double proc_st = st.proc.tv_sec + (float)st.proc.tv_nsec / 1e9;
+	double proc_ed = ed.proc.tv_sec + (float)ed.proc.tv_nsec / 1e9;
 	ret = proc_ed - proc_st;
 	#else
-	float real_st = st.real.tv_sec + (float)st.real.tv_nsec / 1e9;
-	float real_ed = ed.real.tv_sec + (float)ed.real.tv_nsec / 1e9;
+	double real_st = st.real.tv_sec + (float)st.real.tv_nsec / 1e9;
+	double real_ed = ed.real.tv_sec + (float)ed.real.tv_nsec / 1e9;
 	ret = real_ed - real_st;
 	#endif /* USING_PROC_TIME */
 
@@ -1326,8 +1330,8 @@ float calc_time(const program_t& st, const program_t& ed) {
 
 float norm_a;
 float norm_s;
-float prep_time, _prep_time;
-float cut_time, _cut_time;
+double prep_time, _prep_time;
+double cut_time, _cut_time;
 string fa1_path;
 string fa2_path;
 string minisam_path;
@@ -1361,7 +1365,6 @@ vstr perform_test(int seed, const vi& chrId, int& n, bool& flag) {
 		vstr chromatidSeq = getChromat(filename);
 		dna.passReferenceGenome(id, chromatidSeq);
 	}
-	sleep(5);
 
 	/**
 		\step 3: preProcessing
@@ -1443,11 +1446,11 @@ void dumpAns(const int testDifficulty, const vstr& ans) {
 	string filename;
 
 	if (testDifficulty == 0)
-		filename = "result_small.res";
+		filename = "result_small.log";
 	else if (testDifficulty == 1)
-		filename = "result_medium.res";
+		filename = "result_medium.log";
 	else
-		filename = "result_large.res";
+		filename = "result_large.log";
 	ofstream fout(filename.c_str());
 
 	if (!fout.is_open()) {
