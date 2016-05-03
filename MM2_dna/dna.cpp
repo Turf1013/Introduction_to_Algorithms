@@ -328,14 +328,25 @@ void init_trie_chr() {
 	trie_root = new trie_t();
 }
 
+int mapc[5];
 void map_trie_chr(trie_ptr rt, int dep) {
 	if (dep == sep_len) {
 		int k = (char *)rt->nxt[1] - (char *)NULL;
-		if (k == 0) rt->nxt[1] = (trie_ptr) (++nleaf);
+		if (k == 0) {
+			rt->nxt[1] = (trie_ptr) (++nleaf);
+			uint tmp = (mapc[3]<<24) | (mapc[2]<<16) | (mapc[1]<<8) | mapc[0];
+			rt->nxt[0] = (trie_ptr) tmp;
+		}
 		return ;
 	}
 	
-	rep(i, 0, 5) if (rt->nxt[i]) map_trie_chr(rt->nxt[i], dep+1);
+	rep(i, 0, 5) {
+		if (rt->nxt[i]) {
+			++mapc[i];
+			map_trie_chr(rt->nxt[i], dep+1);
+			--mapc[i];
+		}
+	}
 }
 
 void clear_trie_chr() {
@@ -403,7 +414,7 @@ score_type score_sgroup(const sgroup_t& a, const slice_t& b) {
 /**
 	\brief calculate the score between readpair and slice
 */
-score_type score_sgroup(const slice_t& a, const slice_t& b) {
+score_type score_slice(const slice_t& a, const slice_t& b) {
 	const vector<feature_t>& afeat = a.feat;
 	const vector<feature_t>& bfeat = b.feat;
 	const int sza = SZ(afeat);
@@ -812,6 +823,7 @@ public:
 		separateChromat(chromatidSequence);
 		
 		// mapping the leaf with integer
+		memset(mapc, 0, sizeof(mapc));
 		map_trie_chr();
 
 		// pile up the lowest sep into layers.
@@ -836,22 +848,26 @@ public:
 	
 	acgt_t calcACGT(const string& s) {
 		const int len = s.length();
-		acgt_t ret;
+		int c[5];
 		
-		rep(i, 0, len) ++ret.c[getCharId(s[i])];
-		return ret;
+		memset(c, 0, sizeof(c));
+		rep(i, 0, len) ++c[getCharId(s[i])];
+
+		return acgt_t(c[0], c[1], c[2], c[3]);
 	}
 	
 	acgt_t calcACGT(const string& s1, const string& s2) {
 		int len;
-		acgt_t ret;
+		int c[5];
+
+		memset(c, 0, sizeof(c));
 		
 		len = s1.length();
-		rep(i, 0, len) ++ret.c[getCharId(s1[i])];
+		rep(i, 0, len) ++c[getCharId(s1[i])];
 		len = s2.length();
-		rep(i, 0, len) ++ret.c[getCharId(s2[i])];
+		rep(i, 0, len) ++c[getCharId(s2[i])];
 		
-		return ret;
+		return acgt_t(c[0], c[1], c[2], c[3]);
 	}
 
 	slice_t calcSlice(const string& s, const int idx=0) {

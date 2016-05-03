@@ -29,11 +29,14 @@ slices: slice.cpp
 hash: hash.cpp
 	$(CXX) $(CFLAGS) -o hash hash.cpp $(LIBS)
 
+train: train.cpp
+	$(CXX) $(CFLAGS) -o train train.cpp $(LIBS)
+
 .PHONY: clean test
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm dna dna.g* 2> /dev/null || true	
-		-@rm ob freq algo sl hash 2> /dev/null || true	
+		-@rm ob freq algo sl hash train 2> /dev/null || true	
 
 test: build
 		./dna 12
