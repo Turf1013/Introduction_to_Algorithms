@@ -7,9 +7,6 @@ using namespace std;
 #define LOCAL_DEBUG
 #define DEBUG
 
-// #define SLICE_USE_CNT
-#define SLICE_USE_FREQ
-
 #define sti				set<int>
 #define stpii			set<pair<int, int> >
 #define mpii			map<int,int>
@@ -64,12 +61,12 @@ uint nleaf = 0;
 struct feature_t {
 	int c;
 	int id;
-	
+
 	feature_t() {}
 	feature_t(int c, int id):
 		c(c), id(id) {}
-		
-	bool operator< (const node_t& oth) const {
+
+	bool operator< (const feature_t& oth) const {
 		return c > oth.c;
 	}
 };
@@ -94,19 +91,19 @@ struct sep_t {
 struct slice_t {
 	int idx;
 	vector<feature_t> feat;
-	
+
 	inline void push_back(const feature_t& f) {
 		feat.push_back(f);
 	}
-	
+
 	inline void sorted() {
 		sort(all(feat), feat_compid);
 	}
-	
+
 	inline int size() const {
 		return SZ(feat);
 	}
-	
+
 	inline void resize(const int n) {
 		feat.resize(n);
 	}
@@ -118,6 +115,12 @@ struct slice_t {
 	bool operator< (const slice_t& oth) const {
 		return idx < oth.idx;
 	}
+
+	#ifdef DEBUG
+	void print() const {
+		cout << "idx = " << idx << ", SZ(feat) = " << SZ(feat) << "." << endl;
+	}
+	#endif
 };
 
 typedef slice_t sgroup_t;
@@ -129,33 +132,45 @@ typedef long long score_type;
 struct read_chr_t {
 	int idx;
 	score_type score;
-	
+
 	read_chr_t() {}
 	read_chr_t(int idx, score_type score):
 		idx(idx), score(score) {}
-	
-	friend bool operator< (const read_chr_t& oth) {
+
+	bool operator< (const read_chr_t& oth) const {
 		return score > oth.score;
 	}
+
+	#ifdef DEBUG
+	void print() const {
+		cout << "idx = " << idx << ", score = " << score << endl;
+	}
+	#endif
 };
 
 struct readpair_chr_t {
 	int lidx, ridx;
 	score_type score;
-	
-	read_chr_t() {}
-	read_chr_t(int lidx, int ridx, score_type score):
+
+	readpair_chr_t() {}
+	readpair_chr_t(int lidx, int ridx, score_type score):
 		lidx(lidx), ridx(ridx), score(score) {}
-	
-	friend bool operator< (const read_chr_t& oth) {
+
+	bool operator< (const readpair_chr_t& oth) {
 		return score > oth.score;
 	}
-}
+
+	#ifdef DEBUG
+	void print() const {
+		cout << "[" << lidx  << ", " << ridx << "], score = " << score << endl;
+	}
+	#endif
+};
 
 struct read_t {
 	int chrId, lidx, ridx;
 	score_type score;
-	
+
 	read_t() {}
 	read_t(int chrId, const readpair_chr_t& rp):chrId(chrId) {
 		lidx = rp.lidx;
@@ -163,12 +178,18 @@ struct read_t {
 		score = rp.score;
 	}
 	read_t(int chrId, int lidx, int ridx, score_type score):
-		chrId(charId), lidx(lidx), ridx(ridx), score(score) {}
-		
-		
-	friend bool operator< (const read_t& oth) {
+		chrId(chrId), lidx(lidx), ridx(ridx), score(score) {}
+
+
+	bool operator< (const read_t& oth) const {
 		return score > oth.score;
 	}
+
+	#ifdef DEBUG
+	void print() const {
+		cout << "chrId = " << chrId << ", score = " << score << ", [" << lidx << ", " << ridx << "]." << endl;
+	}
+	#endif
 };
 
 // aboud layer
@@ -183,48 +204,45 @@ struct layer_t {
 // about acgt
 struct acgt_t {
 	unsigned short c[4];
-	
+
 	acgt_t() {c[0] = c[1] = c[2] = c[3] = 0;}
-	acgt_t(unsigned short a, unsigned short c, unsigned short g, unsigned short t) {
+	acgt_t(unsigned short a, unsigned short cc, unsigned short g, unsigned short t) {
 		c[0] = a;
-		c[1] = c;
+		c[1] = cc;
 		c[2] = g;
 		c[3] = t;
 	}
-	
+
 	inline void clear() {
 		c[0] = c[1] = c[2] = c[3] = 0;
 	}
-	
+
 	acgt_t operator+ (const acgt_t& oth) const {
-		return acgt_t(c[0]+oth[0], c[1]+oth[1], c[2]+oth[2], c[3]+oth[3]);
+		return acgt_t(c[0]+oth.c[0], c[1]+oth.c[1], c[2]+oth.c[2], c[3]+oth.c[3]);
 	}
+
+	#ifdef DEBUG
+	void print() const {
+		printf("a = %d, c = %d, g = %d, t = %d\n", c[0], c[1], c[2], c[3]);
+	}
+	#endif
 };
 
-// hash
-const char* acgtn_s = "acgtn";
-const int max_hash_size = 1020;
-const int max_sep_len = 12;
-unsigned int hash_seed, hash_size;
-uint hash_base[max_sep_len];
 
 // global parameter
+const char* acgtn_s = "acgtn";
 int sep_len = 10;
 const float NEG_INF = -1e9;
 const float POS_INF = 1e9;
 char Complements[128];
 int charId[128];
-char buffer[1005];
+char buffer[1024];
 const int max_ibuffer = 1e8;
 int ibuffer[max_ibuffer];
 const char* acgt_s = "ACGTN";
 
 // sep
 layer_t layer_sep;
-int sep_id[max_hash_size];
-int all_id[max_hash_size];
-uint sep_cnt[max_hash_size], sep_cnt_[max_hash_size];
-char buffer[max_sep_len];
 
 // slice
 layer_t layer_slice;
@@ -263,14 +281,14 @@ inline bool isACGT(char ch) {
 }
 
 
-inline string getRC(const string& line) {
+inline string getReverseComplement(const string& line) {
 	int len = line.length();
 	string ret;
 
 	per(i, 0, len)	ret.pb(getComplement(line[i]));
 	return ret;
 }
-	
+
 void Delete_trie(trie_ptr rt, int dep) {
 	if (dep == sep_len)	return ;
 	rep(i, 0, 5) if (rt->nxt[i]) Delete_trie(rt->nxt[i], dep+1);
@@ -300,7 +318,7 @@ trie_ptr Insert_chr(char *s) {
 int Insert_read(char *s) {
 	int i = 0, id;
 	trie_ptr p = trie_root;
-	
+
 	while (i < sep_len) {
 		id = getCharId(s[i]);
 		if (!p->nxt[id]) break;
@@ -318,7 +336,7 @@ int Insert_read(char *s) {
 		p->nxt[1] = (trie_ptr) (++nleaf);
 		id = nleaf;
 	}
-	
+
 	return id;
 }
 
@@ -339,7 +357,7 @@ void map_trie_chr(trie_ptr rt, int dep) {
 		}
 		return ;
 	}
-	
+
 	rep(i, 0, 5) {
 		if (rt->nxt[i]) {
 			++mapc[i];
@@ -362,9 +380,9 @@ score_type score_group(const group_t& a, const slice_t& b) {
 	const int sza = SZ(afeat);
 	const int szb = SZ(bfeat);
 	score_type ret = 0;
-	
+
 	int i = 0, j = 0;
-	
+
 	while (i<sza && j<szb) {
 		if (afeat[i].id == bfeat[j].id) {
 			ret += afeat[i].c>=bfeat[j].c ? 0:bfeat[j].c-afeat[i].c;
@@ -378,7 +396,7 @@ score_type score_group(const group_t& a, const slice_t& b) {
 		}
 	}
 	while (j < szb) ret += bfeat[j++].c;
-	
+
 	return ret;
 }
 
@@ -391,9 +409,9 @@ score_type score_sgroup(const sgroup_t& a, const slice_t& b) {
 	const int sza = SZ(afeat);
 	const int szb = SZ(bfeat);
 	score_type ret = 0;
-	
+
 	int i = 0, j = 0;
-	
+
 	while (i<sza && j<szb) {
 		if (afeat[i].id == bfeat[j].id) {
 			ret += afeat[i].c>=bfeat[j].c ? 0:bfeat[j].c-afeat[i].c;
@@ -407,7 +425,7 @@ score_type score_sgroup(const sgroup_t& a, const slice_t& b) {
 		}
 	}
 	while (j < szb) ret += bfeat[j++].c;
-	
+
 	return ret;
 }
 
@@ -420,9 +438,9 @@ score_type score_slice(const slice_t& a, const slice_t& b) {
 	const int sza = SZ(afeat);
 	const int szb = SZ(bfeat);
 	score_type ret = 0;
-	
+
 	int i = 0, j = 0;
-	
+
 	while (i<sza && j<szb) {
 		if (afeat[i].id == bfeat[j].id) {
 			ret += afeat[i].c>=bfeat[j].c ? 0:bfeat[j].c-afeat[i].c;
@@ -437,29 +455,28 @@ score_type score_slice(const slice_t& a, const slice_t& b) {
 		}
 	}
 	while (j < szb) ret += bfeat[j++].c;
-	while (i < sza) ret += afeat[i++].c;
-	
+	while (i < sza) ret += afeat[i++].c >> 2;
+
 	return ret;
 }
 
 /**
 	\brief calculate the score between chromat-read and query-read
 */
-score_type score_read(const acgt_t& a, const acgt_t& b) {
+score_type score_acgt(const acgt_t& a, const acgt_t& b) {
 	score_type ret = 0;
-	
+
 	rep(i, 0, 4) {
 		ret += abs(a.c[i] - b.c[i]) << 2;
 	}
-	
+
 	return ret;
 }
 
 class DNASequencing {
 public:
-	int C[26];
 	vi chrIds;
-	
+
 	DNASequencing() {
 		// init the complement array
 		rep(i, 0, 128) Complements[i] = 'N';
@@ -477,27 +494,50 @@ public:
 	}
 
 	void init_param(const int testDifficulty) {
-		hash_seed = 31;
-		hash_size = 1009;
+
 		if (testDifficulty == 0) {
 			sep_len = 10;
-			slice_len = 10 * 15;
-			sgroup_len = slice_len * 7;
-			group_len = sgroup_len * 96;	
-			
+			layer_read.len = 150;
+			layer_slice.len = 1050;
+			layer_sgroup.len = 10500;
+			layer_group.len = 105000;
+
+			layer_read.feature_num = 80;
+			layer_slice.feature_num = 100;
+			layer_sgroup.feature_num = 1000;
+			layer_group.feature_num = 10000;
+
+			layer_read.topk = 2400;
+			layer_slice.topk = 2;
+			layer_sgroup.topk = 30;
+			layer_group.topk = 200;
+
+			layer_read.feature_ubound = 80;
+			layer_read.feature_lbound = 80;
+			layer_slice.feature_ubound = 1050;
+			layer_slice.feature_lbound = 100;
+			layer_sgroup.feature_ubound = 10500;
+			layer_sgroup.feature_lbound = 1000;
+			layer_group.feature_ubound = 105000;
+			layer_group.feature_lbound = 10000;
+
+			layer_read.score_bound = 70;
+			layer_slice.score_bound = 160;
+			layer_sgroup.score_bound = 60;
+			layer_group.score_bound = 40;
+
+
 		} else if (testDifficulty == 1) {
 			sep_len = 10;
-			slice_len = 10 * 15;
-			sgroup_len = slice_len * 7;
-			group_len = sgroup_len * 96;	
-			
+			layer_read.len = 150;
+			layer_slice.len = 1050;
+			layer_sgroup.len = 10500;
+			layer_group.len = 105000;
+
 		} else {
 			abort();
 		}
 
-		hash_base[0] = 1;
-		rep(i, 1, sep_len) hash_base[i] = hash_base[i-1] * hash_seed % hash_size;
-		reverse(hash_base, hash_base+sep_len);
 	}
 
 	int initTest(int testDifficulty) {
@@ -518,7 +558,7 @@ public:
 
 		// init the trie
 		init_trie_chr();
-		
+
 		// clear the ibuffer
 		memset(ibuffer, -1, sizeof(ibuffer));
 
@@ -529,7 +569,7 @@ public:
 
 		return 0;
 	}
-	
+
 	/**
 		\brief separate the chromat into sep, and store trie's leaf ptr into `SepChromat`
 	*/
@@ -559,7 +599,7 @@ public:
 			idx += len;
 		}
 	}
-	
+
 	/**
 		\brief pile up the sep to read
 	*/
@@ -568,13 +608,13 @@ public:
 		vector<sep_t>& vsep = sepChromat[chrId];
 		vector<acgt_t>& vacgt = acgtChromat[chrId];
 		const int nsep = SZ(vsep);
-		const int m = layer_slice.len / layer_read.len
+		const int m = layer_slice.len / layer_read.len;
 		acgt_t acgt;
 		int i = 0, j;
-		
+
 		while (i < nsep) {
 			acgt.clr();
-			
+
 			for (j=0; j<m&&i<nsep; ++j,++i) {
 				const trie_ptr& leaf = vsep[i].leaf;
 				uint val = (char *)leaf->nxt[0] - (char *)NULL;
@@ -583,11 +623,16 @@ public:
 				acgt.c[2] += (val>>16) & 255;
 				acgt.c[3] += (val>>24) & 255;
 			}
-			
+
 			vacgt.pb(acgt);
+
+			#ifdef DEBUG
+			if (i>0 && i%2000==0)
+				acgt.print();
+			#endif
 		}
 	}
-	
+
 	/**
 		\brief pile up the sep to slice
 	*/
@@ -601,11 +646,11 @@ public:
 		vector<feature_t> vfeat;
 		slice_t slice;
 		int i = 0, j;
-		
+
 		while (i < nsep) {
 			bidx = vsep[j=i].idx;
 			szvf = 0;
-			
+
 			while (i<nsep && vsep[i].idx-bidx<=layer_slice.len) {
 				const trie_ptr& leaf = vsep[i].leaf;
 				int k = (char *)leaf->nxt[1] - (char*)NULL;
@@ -621,21 +666,21 @@ public:
 				}
 				++i;
 			}
-			
+
 			#ifdef DEBUG
-			assert(SZ(feat) == szvf);
+			assert(SZ(vfeat) == szvf);
 			#endif
 			// resize vfeat according the bound of feature
 			{
 				int ii = 0, jj = 0;
-				
+
 				while (ii < szvf) {
 					if (vfeat[ii].c>=layer_slice.feature_lbound && vfeat[ii].c<=layer_slice.feature_ubound)
 						vfeat[jj++] = vfeat[ii];
 					ibuffer[vfeat[ii].id] = -1;
 					++ii;
 				}
-			
+
 				szvf = jj;
 				vfeat.resize(szvf);
 			}
@@ -643,7 +688,7 @@ public:
 			#ifdef DEBUG
 			assert(SZ(vfeat) == szvf);
 			#endif
-			
+
 			int szfeature = min(nfeature, szvf);
 			slice.idx = bidx;
 			rep(ii, 0, szfeature) {
@@ -651,12 +696,17 @@ public:
 			}
 			slice.sorted();
 			vslc.pb(slice);
+
+			#ifdef DEBUG
+			if (i>0 && i%2000 == 0)
+				slice.print();
+			#endif
+
 			slice.clr();
-			
 			vfeat.clr();
 		}
 	}
-	
+
 	/**
 		\brief pile up the slice to sub-group
 	*/
@@ -671,43 +721,47 @@ public:
 		vector<feature_t> vfeat;
 		sgroup_t sgroup;
 		int i = 0, j;
-		
+
 		while (i < nslice) {
 			bidx = i;
 			szvf = 0;
-			
+
 			for (j=0; j<m&&i<nslice; ++i,++j) {
-				const int& k = vslc[i].id;
-				if (ibuffer[k] < 0) {
-					ibuffer[k] = szvf++;
-					vfeat.pb(vslc[i]);
-				} else {
-					vfeat[ibuffer[k]].c += vslc[i].c;
+				const slice_t& slice = vslc[i];
+				int sz_feat = SZ(slice);
+				rep(ii, 0, sz_feat) {
+					const int& k = slice.feat[ii].id;
+					if (ibuffer[k] < 0) {
+						ibuffer[k] = szvf++;
+						vfeat.pb(slice.feat[ii]);
+					} else {
+						vfeat[ibuffer[k]].c += slice.feat[ii].c;
+					}
 				}
 			}
-			
+
 			#ifdef DEBUG
-			assert(SZ(vfeat) = szvf);
+			assert(SZ(vfeat) == szvf);
 			#endif
 			// resize vfeat according the bound of feature
 			{
 				int ii = 0, jj = 0;
-				
+
 				while (ii < szvf) {
 					if (vfeat[ii].c>=layer_sgroup.feature_lbound && vfeat[ii].c<=layer_sgroup.feature_ubound)
 						vfeat[jj++] = vfeat[ii];
 					ibuffer[vfeat[ii].id] = -1;
 					++ii;
 				}
-				
+
 				szvf = jj;
 				vfeat.resize(szvf);
 			}
-			
+
 			#ifdef DEBUG
-			assett(SZ(bfeat) == szvf);
+			assert(SZ(vfeat) == szvf);
 			#endif
-			
+
 			int szfeature = min(nfeature, szvf);
 			sgroup.idx = bidx;
 			rep(ii, 0, szfeature) {
@@ -715,12 +769,17 @@ public:
 			}
 			sgroup.sorted();
 			vsgrp.pb(sgroup);
+
+			#ifdef DEBUG
+			if (i>0 && i%2000 == 0)
+				sgroup.print();
+			#endif
+
 			sgroup.clr();
-			
 			vfeat.clr();
 		}
 	}
-	
+
 	/**
 		\brief pile up the sgroup to group
 	*/
@@ -733,44 +792,48 @@ public:
 		const int nfeature = layer_group.feature_num;
 		int bidx, szvf;
 		vector<feature_t> vfeat;
-		group_t grp;
+		group_t group;
 		int i = 0, j;
-		
+
 		while (i < nsgrp) {
 			bidx = i;
 			szvf = 0;
-			
+
 			for (j=0; j<m&&i<nsgrp; ++i,++j) {
-				const int& k = vsgrp[i].id;
-				if (ibuffer[k] < 0) {
-					ibuffer[k] = szvf++;
-					vfeat.pb(vsgrp[i]);
-				} else {
-					vfeat[ibuffer[k]].c += vsgrp[i].c;
+				const sgroup_t& sgrp = vsgrp[i];
+				int sz_feat = SZ(sgrp);
+				rep(ii, 0, sz_feat) {
+					const int& k = sgrp.feat[ii].id;
+					if (ibuffer[k] < 0) {
+						ibuffer[k] = szvf++;
+						vfeat.pb(sgrp.feat[ii]);
+					} else {
+						vfeat[ibuffer[k]].c += sgrp.feat[ii].c;
+					}
 				}
 			}
-			
+
 			#ifdef DEBUG
 			assert(SZ(vfeat) == szvf);
 			#endif
 			// resize vfeat according the boundary of feature
 			{
 				int ii = 0, jj = 0;
-				
+
 				while (ii < szvf) {
 					if (vfeat[ii].c>=layer_group.feature_lbound && vfeat[ii].c<=layer_group.feature_ubound)
 						vfeat[jj++] = vfeat[ii];
 					ibuffer[vfeat[ii].id] = -1;
 					++ii;
 				}
-				
+
 				szvf = jj;
 				vfeat.resize(szvf);
 			}
 			#ifdef DEBUG
 			assert(SZ(vfeat) == szvf);
 			#endif
-			
+
 			int szfeature = min(nfeature, szvf);
 			group.idx = bidx;
 			rep(ii, 0, szfeature) {
@@ -778,12 +841,16 @@ public:
 			}
 			group.sorted();
 			vgrp.pb(group);
+
+			#ifdef DEBUG
+			if (i>0 && i%2000 == 0)
+				group.print();
+			#endif
 			group.clr();
-			
 			vfeat.clr();
 		}
 	}
-	
+
 	/**
 		\brief pile up the chromat to form 3 layers:
 			`group`、`sgroup`、`slice`
@@ -793,22 +860,22 @@ public:
 			\step 0: pile up the layer 0 -- read
 		*/
 		pileChromat_read();
-		
+
 		/**
 			\step 1: pile up layer 1 -- `slice`
 		*/
 		pileChromat_slice();
-		
+
 		// /**
 			// \step 1.5: clear sepChromat to release memory
 		// */
 		// sepChromat.clr();
-		
+
 		/**
 			\step 2: pile up layer 2 -- `sgroup`
 		*/
 		pileChromat_sgroup();
-		
+
 		/**
 			\step 3: pile up layer 3 -- `group`
 		*/
@@ -821,10 +888,10 @@ public:
 
 		// split the chromat into sep.
 		separateChromat(chromatidSequence);
-		
+
 		// mapping the leaf with integer
 		memset(mapc, 0, sizeof(mapc));
-		map_trie_chr();
+		map_trie_chr(trie_root, 0);
 
 		// pile up the lowest sep into layers.
 		pileChromat();
@@ -845,28 +912,28 @@ public:
 		return qname + ",20,1,150," + strand + ",0.0001";
 		#endif
 	}
-	
+
 	acgt_t calcACGT(const string& s) {
 		const int len = s.length();
 		int c[5];
-		
+
 		memset(c, 0, sizeof(c));
 		rep(i, 0, len) ++c[getCharId(s[i])];
 
 		return acgt_t(c[0], c[1], c[2], c[3]);
 	}
-	
+
 	acgt_t calcACGT(const string& s1, const string& s2) {
 		int len;
 		int c[5];
 
 		memset(c, 0, sizeof(c));
-		
+
 		len = s1.length();
 		rep(i, 0, len) ++c[getCharId(s1[i])];
 		len = s2.length();
 		rep(i, 0, len) ++c[getCharId(s2[i])];
-		
+
 		return acgt_t(c[0], c[1], c[2], c[3]);
 	}
 
@@ -874,28 +941,28 @@ public:
 		int len = s.length();
 		int szvf = 0;
 		slice_t ret;
-		vctor<feature_t>& vfeat;
-		
+		vector<feature_t>& vfeat = ret.feat;
+
 		strncpy(buffer, s.c_str(), len);
 		len = len - sep_len + 1;
-		
+
 		rep(i, 0, len) {
 			const int k = Insert_read(buffer + i);
 			if (ibuffer[k] < 0) {
 				ibuffer[k] = szvf++;
-				vfeat.pb(feature(1, k));
+				vfeat.pb(feature_t(1, k));
 			} else {
 				++vfeat[ibuffer[k]].c;
 			}
 		}
-		
+
 		#ifdef DEBUG
-		assert(SZ(vfeat) == szvff);
+		assert(SZ(vfeat) == szvf);
 		#endif
-		rep(i, 0, szvf) ibuffer[vfeat[i]] = -1;
-		ret.idx = 0;
+		rep(i, 0, szvf) ibuffer[vfeat[i].id] = -1;
+		ret.idx = idx;
 		ret.sorted();
-		
+
 		return ret;
 	}
 
@@ -903,8 +970,8 @@ public:
 		int len;
 		int szvf;
 		slice_t ret;
-		vctor<feature_t>& vfeat;
-		
+		vector<feature_t>& vfeat = ret.feat;
+
 		// handle first string
 		len = l1.length();
 		szvf = 0;
@@ -914,12 +981,12 @@ public:
 			const int k = Insert_read(buffer + i);
 			if (ibuffer[k] < 0) {
 				ibuffer[k] = szvf++;
-				feat.pb(feature_t(1, k));
+				vfeat.pb(feature_t(1, k));
 			} else {
 				++vfeat[ibuffer[k]].c;
 			}
 		}
-		
+
 		// handle second string
 		len = l2.length();
 		strncpy(buffer, l2.c_str(), len);
@@ -928,21 +995,21 @@ public:
 			const int k = Insert_read(buffer + i);
 			if (ibuffer[k] < 0) {
 				ibuffer[k] = szvf++;
-				feat.pb(feature_t(1, k));
+				vfeat.pb(feature_t(1, k));
 			} else {
 				++vfeat[ibuffer[k]].c;
 			}
 		}
-		
+
 		#ifdef DEBUG
 		assert(SZ(vfeat) == szvf);
 		#endif
-		rep(i, 0, szvf) ibuffer[vfeat[i]] = -1;
+		rep(i, 0, szvf) ibuffer[vfeat[i].id] = -1;
 		ret.sorted();
-		
+
 		return ret;
 	}
-	
+
 	/**
 		\brief choose the best group
 	*/
@@ -954,7 +1021,7 @@ public:
 		priority_queue<read_chr_t> Q;
 		score_type score;
 		int szQ = 0;
-		
+
 		rep(i, 0, sz) {
 			score = score_group(vgrp[i], slice);
 			if (score <= score_bound) {
@@ -967,34 +1034,37 @@ public:
 				}
 			}
 		}
-		
+
 		#ifdef DEBUG
 		assert(SZ(Q) == szQ);
 		#endif
 		vi ret;
-		
+
 		while (!Q.empty()) {
+			#ifdef DEBUG
+			Q.top().print();
+			#endif
 			ret.pb(Q.top().idx);
 			Q.pop();
 		}
 		sort(all(ret));
-		
+
 		return ret;
 	}
-	
+
 	/**
 		\brief choose the best sub-group
 	*/
-	vi chooseBstGrp(const int chrId, const slice_t& slice, const vi& bstGrp) {
+	vi chooseBstSgrp(const int chrId, const slice_t& slice, const vi& bstGrp) {
 		const vector<sgroup_t>& vsgrp = sgroupChromat[chrId];
 		int sz = SZ(vsgrp), szgp = SZ(bstGrp);
 		const int topk = layer_sgroup.topk;
 		const int score_bound = layer_sgroup.score_bound;
-		const int m = group_len / sgroup_len;
+		const int m = layer_group.len / layer_sgroup.len;
 		priority_queue<read_chr_t> Q;
 		score_type score;
 		int szQ = 0;
-		
+
 		rep(j, 0, szgp) {
 			for (int i=bstGrp[j],k=0; k<m&&i<sz; ++k,++i) {
 				score = score_sgroup(vsgrp[i], slice);
@@ -1009,21 +1079,24 @@ public:
 				}
 			}
 		}
-		
+
 		#ifdef DEBUG
 		assert(SZ(Q) == szQ);
 		#endif
 		vi ret;
-		
+
 		while (!Q.empty()) {
+			#ifdef DEBUG
+			Q.top().print();
+			#endif
 			ret.pb(Q.top().idx);
 			Q.pop();
 		}
 		sort(all(ret));
-		
+
 		return ret;
 	}
-	
+
 	/**
 		\brief choose the best slice
 	*/
@@ -1032,11 +1105,11 @@ public:
 		int sz = SZ(vslc), szsgp = SZ(bstSgrp);
 		const int topk = layer_slice.topk;
 		const int score_bound = layer_slice.score_bound;
-		const int m = sgroup_len / slice_len;
+		const int m = layer_sgroup.len / layer_slice.len;
 		priority_queue<read_chr_t> Q;
-		score_type = score;
+		score_type score;
 		int szQ = 0;
-		
+
 		rep(j, 0, szsgp) {
 			for (int i=bstSgrp[j],k=0; k<m&&i<sz; ++k,++i) {
 				score = score_slice(vslc[i], slice);
@@ -1051,33 +1124,36 @@ public:
 				}
 			}
 		}
-		
+
 		#ifdef DEBUG
 		assert(SZ(Q) == szQ);
 		#endif
 		vi ret;
-		
+
 		while (!Q.empty()) {
+			#ifdef DEBUG
+			Q.top().print();
+			#endif
 			ret.pb(Q.top().idx);
 			Q.pop();
 		}
 		sort(all(ret));
-		
+
 		return ret;
 	}
-	
+
 	/**
 		\brief choose best readpair
 	*/
 	void chooseBstRead(const int chrId, const vi& bstSlcIdx, const acgt_t& acgt1, const acgt_t& acgt2, vector<readpair_chr_t>& vread) {
 		// just random choose is fine
-		const vector<acgt>& vacgt = acgtChromat[chrId];
+		const vector<acgt_t>& vacgt = acgtChromat[chrId];
 		const int sz = SZ(vacgt);
 		const int szslc = SZ(bstSlcIdx);
 		const int m = layer_slice.len / layer_read.len;
 		int lidx, lidx_, ridx, ridx_;
 		score_type mn, mn_, tmp1, tmp2;
-		
+
 		rep(i, 0, szslc) {
 			mn = mn_ = INF;
 			for (int j=bstSlcIdx[i]/m,k=0; k<m&&j<sz; ++j,++k) {
@@ -1089,7 +1165,7 @@ public:
 						lidx_ = lidx;
 						ridx_ = ridx;
 						mn_ = mn;
-						
+
 						lidx = j;
 						ridx = j + 3;
 						mn = tmp1 + tmp2;
@@ -1105,7 +1181,7 @@ public:
 							lidx_ = lidx;
 							ridx_ = ridx;
 							mn_ = mn;
-							
+
 							lidx = j;
 							ridx = j + 4;
 							mn = tmp1 + tmp2;
@@ -1118,11 +1194,15 @@ public:
 				}
 			}
 		}
-		
+
+		#ifdef DEBUG
+		cout << "mn = " << mn << ", mn_ = " << mn_ << "." << endl;
+		#endif
+
 		if (mn  < INF) vread.pb(readpair_chr_t(lidx, ridx, mn));
 		if (mn_ < INF) vread.pb(readpair_chr_t(lidx_, ridx_, mn_));
 	}
-	
+
 	/**
 		\brief fuzzy match the read with assigned chromat
 		\note store pair of (position, score) into vread
@@ -1132,32 +1212,32 @@ public:
 			\step 1 choose best group
 		*/
 		vi bstGroup = chooseBstGrp(chrId, slice);
-		
+
 		/**
 			\step 2 choose best sub-group
 		*/
 		vi bstSgroup = chooseBstSgrp(chrId, slice, bstGroup);
 		bstGroup.clr();
-		
+
 		/**
 			\step 3 choose best slice
 		*/
 		vi bstSlc = chooseBstSlc(chrId, slice, bstSgroup);
 		return bstSlc;
 	}
-	
+
 	score_type alignExactRead(const int chrId, const int idx, const string& line) {
-		const vetctor<sep_t>& vsep = sepChromat[chrId];
+		const vector<sep_t>& vsep = sepChromat[chrId];
 		const int szsep = SZ(vsep);
 		const int m = layer_read.len / sep_len;
 		int l = 0;
 		score_type ret;
-		
+
 		// restore the string
 		{
 			for (int i=0,j=idx; i<m&&j<szsep; ++i,++j) {
 				trie_ptr p = vsep[j].leaf, q;
-				
+
 				#ifdef DEBUG
 				bool flag = false;
 				#endif
@@ -1166,7 +1246,7 @@ public:
 					rep(k, 0, 5) {
 						if (q->nxt[k] == p) {
 							#ifdef DEBUG
-							bool flag = true;
+							flag = true;
 							#endif
 							buffer[l++] = acgt_s[k];
 							break;
@@ -1180,13 +1260,13 @@ public:
 			}
 			buffer[l++] = '\0';
 		}
-		
+
 		// calculate the score using dp
 		{
-			const int mlen = min(l, line.length());
+			const int mlen = min(l, (int)line.length());
 			int dp[2][5];
 			int p = 0, q = 1;
-			
+
 			memset(dp, 0, sizeof(dp));
 			dp[0][2] = 0;
 			dp[0][3] = -1;
@@ -1204,13 +1284,13 @@ public:
 				p ^= 1;
 				q ^= 1;
 			}
-			
+
 			ret = dp[p][2];
 		}
-		
+
 		return ret;
 	}
-	
+
 	/**
 		\breif exact match the read with assigned read
 		\note assign the best position to idx1 & idx2
@@ -1219,7 +1299,7 @@ public:
 	inline score_type alignExactRead(const read_t& can_read, const string& read1, const string& read2) {
 		return alignExactRead(can_read.chrId, can_read.lidx, read1) + alignExactRead(can_read.chrId, can_read.ridx, read2);
 	}
-	
+
 	/**
 		\brief align the readpair
 		\return best score
@@ -1234,7 +1314,7 @@ public:
 		vector<readpair_chr_t> vreadpair;
 		priority_queue<read_t> Q;
 		int szQ = 0;
-		
+
 		/**
 			\step 1: foreach format find the best read
 		*/
@@ -1246,8 +1326,8 @@ public:
 			/**
 				\step 3: find the best readpair
 			*/
-			chooseBstRead(chrId, acgt1, acgt2, vreadpair);
-			
+			chooseBstRead(chrId, bstSlc, acgt1, acgt2, vreadpair);
+
 			int sz = SZ(vreadpair);
 			rep(i, 0, sz) {
 				if (vreadpair[i].score <= score_bound) {
@@ -1262,21 +1342,24 @@ public:
 			}
 			vreadpair.clr();
 		}
-		
+
 		#ifdef DEBUG
 		assert(SZ(Q) <= topk);
 		assert(SZ(Q) == szQ);
 		#endif
-		
+
 		int bstChrId;
 		int bstIdx1, bstIdx2;
-		
+
 		bstChrId = 20;
-		bstIdx1 = bstIdx2 = idx1 = idx2 = 0;
+		bstIdx1 = bstIdx2 = 0;
 		while (!Q.empty()) {
 			read_t read = Q.top();
 			Q.pop();
 			tmp = alignExactRead(read, read1, read2);
+			#ifdef DEBUG
+			cout << "alignExact = " << tmp << "." << endl;
+			#endif
 			if (tmp > ret) {
 				bstChrId = read.chrId;
 				bstIdx1 = read.lidx;
@@ -1285,9 +1368,9 @@ public:
 			}
 		}
 		info1.id = bstChrId;
-		info1.st = idx1;
-		info2.id = bstCHrId;
-		info2.st = idx2;
+		info1.st = bstIdx1;
+		info2.id = bstChrId;
+		info2.st = bstIdx2;
 
 		return ret;
 	}
@@ -1344,7 +1427,7 @@ public:
 			ret.pb(line1);
 			ret.pb(line2);
 			#ifdef DEBUG
-			if (i>0 && i%100==0) {
+			if (i>0 && i%1000==0) {
 				printf("%d finish, avg = %.12lf\n", i, tot/100);
 				tot = 0;
 			}
@@ -1877,9 +1960,15 @@ void _test(int seed) {
 
 	norm_s = 0.5;
 	if (seed == 0) {
+		#ifdef DEBUG
+		minisam_path = "./example/test5.minisam";
+		fa1_path = "./example/test5.fa1";
+		fa2_path = "./example/test5.fa2";
+		#else
 		minisam_path = "./example/small5.minisam";
 		fa1_path = "./example/small5.fa1";
 		fa2_path = "./example/small5.fa2";
+		#endif
 
 		norm_a = NORM_A_SMALL;
 		testNorm = 1000 / 1.05;
