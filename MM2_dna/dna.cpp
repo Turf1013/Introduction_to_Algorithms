@@ -672,15 +672,15 @@ public:
 			layer_read.feature_ubound = 80;
 			layer_read.feature_lbound = 80;
 			layer_slice.feature_ubound = 1000;
-			layer_slice.feature_lbound = 1;
+			layer_slice.feature_lbound = 3;
 			layer_sgroup.feature_ubound = 10500;
-			layer_sgroup.feature_lbound = 1;
+			layer_sgroup.feature_lbound = 4;
 			layer_group.feature_ubound = 105000;
-			layer_group.feature_lbound = 2;
+			layer_group.feature_lbound = 6;
 			#ifdef DEBUG
-			layer_slice.feature_lbound = 2;
-			layer_sgroup.feature_lbound = 6;
-			layer_group.feature_lbound = 12;
+			layer_slice.feature_lbound = 3;
+			layer_sgroup.feature_lbound = 3;
+			layer_group.feature_lbound = 3;
 			#endif
 
 			layer_read.score_bound = 240;
@@ -741,9 +741,7 @@ public:
 		bool flag;
 		sep_t sep;
 
-		#ifdef DEBUG
-		assert(vsep.size() == 0);
-		#endif
+		/*
 		for (k=0; k<nline; ++k) {
 			const string& line = chromatidSequence[k];
 			const int len = line.length();
@@ -803,6 +801,68 @@ public:
 				++i;
 			}
 		}
+		*/
+		// find the begin index
+		int begIdx = 0;
+		flag = true;
+		while (begIdx < nline) {
+			const string& line = chromatidSequence[begIdx];
+			const int len = line.length();
+			for (i=0; i<len; ++i) {
+				if (line[i] != 'N') {
+					flag = false;
+					break;
+				}
+			}
+			if (!flag) break;
+			++begIdx;
+		}
+
+		// find the end index
+		int endIdx = nline - 1;
+		flag = true;
+		while (endIdx > begIdx) {
+			const string& line = chromatidSequence[endIdx];
+			const int len = line.length();
+			for (i=len-1; i>=0; --i) {
+				if (line[i] != 'N') {
+					flag = false;
+					break;
+				}
+			}
+			if (!flag) break;
+			--endIdx;
+		}
+
+		for (k=begIdx; k<=endIdx; ++k) {
+			const string& line = chromatidSequence[k];
+			const int len = line.length();
+
+			for (i=l=0; i<len; ++i) {
+				buffer[ll++] = line[i];
+				s[l++] = line[i];
+				if (l == sep_len) {
+					sep.leaf = Insert_chr(s);
+					sep.idx = idx + i - sep_len + 1;
+					vsep.pb(sep);
+					l = 0;
+				}
+			}
+
+			if (ll >= layer_slice.len) {
+				int ed = layer_slice.len - sep_len + 1;
+
+				for (i=0; i<ed; ++i) Insert(buffer+i);
+				for (j=0,i=ed+sep_len-1; i<ll; ++i,++j) buffer[j] = buffer[i];
+				ll = j;
+			}
+			idx += len;
+		}
+		if (ll >= sep_len) {
+			int ed = ll - sep_len + 1;
+
+			for (i=0; i<ed; ++i) Insert(buffer+i);
+		}
 	}
 
 	/**
@@ -851,12 +911,12 @@ public:
 		int bidx, szvf;
 		vector<feature_t> vfeat;
 		slice_t slice;
-		int i = 0, j = 0, k, idx = 0, pidx;
+		int i = 0, j = 0, k, pidx;
 		trie_ptr p, q;
 
 		// rep(i, 1, sep_len) buffer[l++] = 'N';
 		while (i < nsep) {
-			bidx = pidx = idx;
+			bidx = pidx = vsep[i].idx;
 			l = 0;
 
 			while (i<nsep && vsep[i].idx-bidx<layer_slice.len) {
@@ -868,7 +928,7 @@ public:
 				p = vsep[i].leaf;
 				k = l + sep_len;
 				while ((q = p->fa) != NULL) {
-					for (j=0; j<4; ++j) {
+					for (j=0; j<5; ++j) {
 						if (q->nxt[j] == p) {
 							buffer[--k] = acgt_s[j];
 							break;
@@ -932,10 +992,10 @@ public:
 			slice.sorted();
 			vslc.pb(slice);
 
-			// #ifdef DEBUG
-			// if (i>0 && i%2000 == 0)
-			// 	slice.print();
-			// #endif
+			#ifdef DEBUG
+			if (i>0 && i%1 == 0)
+				slice.print();
+			#endif
 
 			slice.clr();
 			vfeat.clr();
@@ -1005,10 +1065,10 @@ public:
 			sgroup.sorted();
 			vsgrp.pb(sgroup);
 
-			// #ifdef DEBUG
-			// if (i>0 && i%2000 == 0)
-			// 	sgroup.print();
-			// #endif
+			#ifdef DEBUG
+			if (i>0 && i%1 == 0)
+				sgroup.print();
+			#endif
 
 			sgroup.clr();
 			vfeat.clr();
@@ -1077,10 +1137,10 @@ public:
 			group.sorted();
 			vgrp.pb(group);
 
-			// #ifdef DEBUG
-			// if (i>0 && i%2000 == 0)
-			// 	group.print();
-			// #endif
+			#ifdef DEBUG
+			if (i>0 && i%1 == 0)
+				group.print();
+			#endif
 			group.clr();
 			vfeat.clr();
 		}
@@ -1101,6 +1161,7 @@ public:
 		#ifdef DEBUG
 		if( !check_ibuffer() )
 			cout << "check ibuffer wrong" << endl;
+		cout << SZ(acgtChromat[chrId]) << endl;
 		#endif
 
 		/**
@@ -1113,6 +1174,7 @@ public:
 		#ifdef DEBUG
 		if( !check_ibuffer() )
 			cout << "check ibuffer wrong" << endl;
+		cout << SZ(sliceChromat[chrId]) << endl;
 		#endif
 
 		// /**
@@ -1130,6 +1192,7 @@ public:
 		#ifdef DEBUG
 		if( !check_ibuffer() )
 			cout << "check ibuffer wrong" << endl;
+		cout << SZ(sgroupChromat[chrId]) << endl;
 		#endif
 
 		/**
@@ -1142,6 +1205,7 @@ public:
 		#ifdef DEBUG
 		if( !check_ibuffer() )
 			cout << "check ibuffer wrong" << endl;
+		cout << SZ(groupChromat[chrId]) << endl;
 		#endif
 	}
 
@@ -1182,7 +1246,7 @@ public:
 	*/
 	inline string getFailureResult(const string& qname, const char strand='+') const {
 		#ifdef DEBUG
-		return qname + ",20,1,150," + strand + ",0.0001";
+		return qname + ",0,1,150," + strand + ",0.0001";
 		#else
 		return qname + ",20,1,150," + strand + ",0.0001";
 		#endif
@@ -1441,26 +1505,43 @@ public:
 
 		rep(i, 0, szslc) {
 			mn = mn_ = INF;
-			for (int j=bstSlcIdx[i]/m,k=0; k<m&&j<sz; ++j,++k) {
+			for (int j=bstSlcIdx[i]/layer_read.len,k=0; k<m&&j<sz; ++j,++k) {
 				tmp1 = score_acgt(vacgt[j], acgt1);
-				if (k+3<m && j+3<sz) {
+				#ifdef DEBUG
+				if (j+2<sz)
+				#else
+				if (j+3<sz)
+				#endif
+				{
 					// l x x r
+					#ifdef DEBUG
+					tmp2 = score_acgt(vacgt[j+2], acgt2);
+					#else
 					tmp2 = score_acgt(vacgt[j+3], acgt2);
+					#endif
 					if (tmp1+tmp2 < mn) {
 						lidx_ = lidx;
 						ridx_ = ridx;
 						mn_ = mn;
 
 						lidx = j;
+						#ifdef DEBUG
+						ridx = j + 2;
+						#else
 						ridx = j + 3;
+						#endif
 						mn = tmp1 + tmp2;
 					} else if (tmp1+tmp2 < mn_) {
 						mn_ = tmp1 + tmp2;
 						lidx_ = j;
+						#ifdef DEBUG
+						ridx_ = j + 2;
+						#else
 						ridx_ = j + 3;
+						#endif
 					}
 					// l x x x r
-					if (k+4<m && j+4<sz) {
+					if (j+4<sz) {
 						tmp2 = score_acgt(vacgt[j+4], acgt2);
 						if (tmp1+tmp2 < mn) {
 							lidx_ = lidx;
@@ -1479,9 +1560,9 @@ public:
 				}
 			}
 
-			#ifdef DEBUG
+			// #ifdef DEBUG
 			// cout << "mn = " << mn << ", mn_ = " << mn_ << "." << endl;
-			#endif
+			// #endif
 
 			if (mn_ < INF) vread.pb(readpair_chr_t(lidx, ridx, mn));
 			if (mn_ < INF) vread.pb(readpair_chr_t(lidx_, ridx_, mn_));
@@ -1532,7 +1613,7 @@ public:
 
 		// restore the string
 		{
-			for (int i=0,j=idx,k=l+sep_len; i<m&&j<szsep; ++i,++j,l+=sep_len) {
+			for (int i=0,j=idx*m,k=l+sep_len; i<m&&j<szsep; ++i,++j,l+=sep_len,k=l+sep_len) {
 				trie_ptr p = vsep[j].leaf, q;
 
 				#ifdef DEBUG
@@ -1570,9 +1651,9 @@ public:
 			dp[0][4] = -2;
 			rep(i, 1, l+1) {
 				int bj = max(1, i-2);
-				for (int j=bj; j<=mlen&&j<=i+2; ++j) {
+				for (int j=bj; j<=i+2&&j<=mlen; ++j) {
 					int k = j - i + 2;
-					dp[q][k] = dp[p][k] + calcScore(buffer[l-1], line[j-1]);
+					dp[q][k] = dp[p][k] + calcScore(buffer[i-1], line[j-1]);
 					if (j <= i+1)
 						dp[q][k] = max(dp[q][k], dp[p][k+1]-1);
 					if (j > bj)
@@ -1583,6 +1664,11 @@ public:
 			}
 
 			ret = dp[p][2];
+			#ifdef DEBUG
+			cout << buffer << endl;
+			cout << line << endl;
+			cout << ret << endl << endl;
+			#endif
 		}
 
 		return ret;
@@ -1651,7 +1737,11 @@ public:
 		int bstChrId;
 		int bstIdx1, bstIdx2;
 
+		#ifdef DEBUG
+		bstChrId = 0;
+		#else
 		bstChrId = 20;
+		#endif
 		bstIdx1 = bstIdx2 = 0;
 		while (!Q.empty()) {
 			read_t read = Q.top();
@@ -1667,10 +1757,12 @@ public:
 				ret = tmp;
 			}
 		}
+
+		const int m = layer_read.len / sep_len;
 		info1.id = bstChrId;
-		info1.st = bstIdx1;
+		info1.st = sepChromat[bstChrId][bstIdx1 * m].idx;
 		info2.id = bstChrId;
-		info2.st = bstIdx2;
+		info2.st = sepChromat[bstChrId][bstIdx2 * m].idx;
 
 		return ret;
 	}
@@ -1678,7 +1770,11 @@ public:
 	score_type alignReadPair(const string& read1, const string& read2, info_t& info1, info_t& info2) {
 		info_t info1_, info2_;
 
+		#ifdef DEBUG
+		info1.id = info2.id = 0;
+		#else
 		info1.id = info2.id = 20;
+		#endif
 		info1.st = info2.st = 0;
 		info1_.st = info2_.st = 0;
 		info1.strand = '+';
