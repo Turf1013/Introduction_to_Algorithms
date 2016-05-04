@@ -236,7 +236,7 @@ const float NEG_INF = -1e9;
 const float POS_INF = 1e9;
 char Complements[128];
 int charId[128];
-char buffer[1024];
+char buffer[1200];
 const int max_ibuffer = 1e8;
 int ibuffer[max_ibuffer];
 const char* acgt_s = "ACGTN";
@@ -263,6 +263,16 @@ vector<slice_t> sliceChromat[25];
 vector<sgroup_t> sgroupChromat[25];
 vector<group_t> groupChromat[25];
 vector<sep_t> sepChromat[25];
+
+
+#ifdef DEBUG
+bool check_ibuffer() {
+	rep(i, 0, max_ibuffer)
+		if (ibuffer[i] != -1)
+			return false;
+	return true;
+}
+#endif
 
 inline int calcScore(char a, char b) {
 	return (a==b) ? 1:-1;
@@ -331,8 +341,14 @@ int Insert_read(char *s) {
 		p->nxt[id] = new trie_t(p);
 		p = p->nxt[id];
 	}
+	int c[5];
+	memset(c, 0, sizeof(c));
+	rep(j, 0, sep_len) ++c[getCharId(s[j])];
+
 	id = (char *)p->nxt[1] - (char *)NULL;
 	if (id == 0) {
+		uint tmp = (c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0];
+		p->nxt[0] = (trie_ptr) tmp;
 		p->nxt[1] = (trie_ptr) (++nleaf);
 		id = nleaf;
 	}
@@ -514,17 +530,22 @@ public:
 
 			layer_read.feature_ubound = 80;
 			layer_read.feature_lbound = 80;
-			layer_slice.feature_ubound = 1050;
-			layer_slice.feature_lbound = 100;
+			layer_slice.feature_ubound = 1000;
+			layer_slice.feature_lbound = 1;
 			layer_sgroup.feature_ubound = 10500;
-			layer_sgroup.feature_lbound = 1000;
+			layer_sgroup.feature_lbound = 1;
 			layer_group.feature_ubound = 105000;
-			layer_group.feature_lbound = 10000;
+			layer_group.feature_lbound = 2;
+			#ifdef DEBUG
+			layer_slice.feature_lbound = 1;
+			layer_sgroup.feature_lbound = 1;
+			layer_group.feature_lbound = 1;
+			#endif
 
-			layer_read.score_bound = 70;
-			layer_slice.score_bound = 160;
-			layer_sgroup.score_bound = 60;
-			layer_group.score_bound = 40;
+			layer_read.score_bound = 240;
+			layer_slice.score_bound = 282;
+			layer_sgroup.score_bound = 282;
+			layer_group.score_bound = 282;
 
 
 		} else if (testDifficulty == 1) {
@@ -608,7 +629,7 @@ public:
 		vector<sep_t>& vsep = sepChromat[chrId];
 		vector<acgt_t>& vacgt = acgtChromat[chrId];
 		const int nsep = SZ(vsep);
-		const int m = layer_slice.len / layer_read.len;
+		const int m = layer_read.len / sep_len;
 		acgt_t acgt;
 		int i = 0, j;
 
@@ -626,45 +647,64 @@ public:
 
 			vacgt.pb(acgt);
 
-			#ifdef DEBUG
-			if (i>0 && i%2000==0)
-				acgt.print();
-			#endif
+			// #ifdef DEBUG
+			// if (i>0 && i%2000==0)
+			// 	acgt.print();
+			// #endif
 		}
 	}
 
 	/**
 		\brief pile up the sep to slice
 	*/
-	void pileChromat_slice() {
+	void pileChromat_slice(const vstr& chromtSeq) {
 		const int chrId = *chrIds.rbegin();
-		vector<sep_t>& vsep = sepChromat[chrId];
+		const int nline = SZ(chromtSeq);
+		int l = 0;
 		vector<slice_t>& vslc = sliceChromat[chrId];
-		const int nsep = SZ(vsep);
 		const int nfeature = layer_slice.feature_num;
 		int bidx, szvf;
 		vector<feature_t> vfeat;
 		slice_t slice;
-		int i = 0, j;
+		int i = 0, j = 0, k, idx = 0;
 
-		while (i < nsep) {
-			bidx = vsep[j=i].idx;
-			szvf = 0;
+		// rep(i, 1, sep_len) buffer[l++] = 'N';
+		while (i < nline) {
+			bidx = idx;
+			l = 0;
 
-			while (i<nsep && vsep[i].idx-bidx<=layer_slice.len) {
-				const trie_ptr& leaf = vsep[i].leaf;
-				int k = (char *)leaf->nxt[1] - (char*)NULL;
-				#ifdef DEBUG
-				assert(k > 0);
-				#endif
-				--k;
-				if (ibuffer[k] < 0) {
-					ibuffer[k] = szvf++;
-					vfeat.pb(feature_t(1, k));
-				} else {
-					++vfeat[ibuffer[k]].c;
+			while (i<nline && idx-bidx<layer_slice.len) {
+				const string& line = chromtSeq[i];
+				const int len = line.length();
+				while (j<len && idx-bidx<layer_slice.len) {
+					buffer[l++] = line[j++];
+					++idx;
 				}
-				++i;
+				if (j==len) {
+					++i;
+					j = 0;
+				}
+			}
+
+			// #ifdef DEBUG
+				// cout << "bidx: " << bidx << endl;
+				// rep(ii, 0, l) cout << buffer[ii];
+				// cout << endl;
+			// #endif
+			szvf = 0;
+			for (k=0; k<l-sep_len+1; ++k) {
+				int id = Insert_read(buffer+k);
+				// #ifdef DEBUG
+				// cout << id << ": ";
+				// rep(ii, 0, sep_len) cout << buffer[k+ii];
+				// cout << endl;
+				// #endif
+				if (ibuffer[id] < 0) {
+					ibuffer[id] = szvf++;
+					vfeat.pb(feature_t(1, id));
+				} else {
+					++vfeat[ibuffer[id]].c;
+				}
 			}
 
 			#ifdef DEBUG
@@ -697,10 +737,10 @@ public:
 			slice.sorted();
 			vslc.pb(slice);
 
-			#ifdef DEBUG
-			if (i>0 && i%2000 == 0)
-				slice.print();
-			#endif
+			// #ifdef DEBUG
+			// if (i>0 && i%2000 == 0)
+			// 	slice.print();
+			// #endif
 
 			slice.clr();
 			vfeat.clr();
@@ -770,10 +810,10 @@ public:
 			sgroup.sorted();
 			vsgrp.pb(sgroup);
 
-			#ifdef DEBUG
-			if (i>0 && i%2000 == 0)
-				sgroup.print();
-			#endif
+			// #ifdef DEBUG
+			// if (i>0 && i%2000 == 0)
+			// 	sgroup.print();
+			// #endif
 
 			sgroup.clr();
 			vfeat.clr();
@@ -791,8 +831,8 @@ public:
 		const int nsgrp = SZ(vsgrp);
 		const int nfeature = layer_group.feature_num;
 		int bidx, szvf;
-		vector<feature_t> vfeat;
 		group_t group;
+		vector<feature_t> vfeat;
 		int i = 0, j;
 
 		while (i < nsgrp) {
@@ -842,10 +882,10 @@ public:
 			group.sorted();
 			vgrp.pb(group);
 
-			#ifdef DEBUG
-			if (i>0 && i%2000 == 0)
-				group.print();
-			#endif
+			// #ifdef DEBUG
+			// if (i>0 && i%2000 == 0)
+			// 	group.print();
+			// #endif
 			group.clr();
 			vfeat.clr();
 		}
@@ -855,16 +895,30 @@ public:
 		\brief pile up the chromat to form 3 layers:
 			`group`、`sgroup`、`slice`
 	*/
-	void pileChromat() {
+	void pileChromat(const vstr& chromatidSequence) {
 		/**
 			\step 0: pile up the layer 0 -- read
 		*/
+		#ifdef DEBUG
+			cout << "pileChromat_read" << endl;
+		#endif
 		pileChromat_read();
+		#ifdef DEBUG
+		if( !check_ibuffer() )
+			cout << "check ibuffer wrong" << endl;
+		#endif
 
 		/**
 			\step 1: pile up layer 1 -- `slice`
 		*/
-		pileChromat_slice();
+		#ifdef DEBUG
+			cout << "pileChromat_slice" << endl;
+		#endif
+		pileChromat_slice(chromatidSequence);
+		#ifdef DEBUG
+		if( !check_ibuffer() )
+			cout << "check ibuffer wrong" << endl;
+		#endif
 
 		// /**
 			// \step 1.5: clear sepChromat to release memory
@@ -874,12 +928,26 @@ public:
 		/**
 			\step 2: pile up layer 2 -- `sgroup`
 		*/
+		#ifdef DEBUG
+			cout << "pileChromat_sgroup" << endl;
+		#endif
 		pileChromat_sgroup();
+		#ifdef DEBUG
+		if( !check_ibuffer() )
+			cout << "check ibuffer wrong" << endl;
+		#endif
 
 		/**
 			\step 3: pile up layer 3 -- `group`
 		*/
+		#ifdef DEBUG
+			cout << "pileChromat_group" << endl;
+		#endif
 		pileChromat_group();
+		#ifdef DEBUG
+		if( !check_ibuffer() )
+			cout << "check ibuffer wrong" << endl;
+		#endif
 	}
 
 	int passReferenceGenome(int chromatidSequenceId, const vector<string>& chromatidSequence) {
@@ -894,7 +962,7 @@ public:
 		map_trie_chr(trie_root, 0);
 
 		// pile up the lowest sep into layers.
-		pileChromat();
+		pileChromat(chromatidSequence);
 
 		// release the memory of chr's trie
 		clear_trie_chr();
@@ -1024,6 +1092,9 @@ public:
 
 		rep(i, 0, sz) {
 			score = score_group(vgrp[i], slice);
+			// #ifdef DEBUG
+			// cout << "group score = " << score << endl;
+			// #endif
 			if (score <= score_bound) {
 				if (szQ < topk) {
 					szQ++;
@@ -1041,9 +1112,9 @@ public:
 		vi ret;
 
 		while (!Q.empty()) {
-			#ifdef DEBUG
-			Q.top().print();
-			#endif
+			// #ifdef DEBUG
+			// Q.top().print();
+			// #endif
 			ret.pb(Q.top().idx);
 			Q.pop();
 		}
@@ -1068,6 +1139,9 @@ public:
 		rep(j, 0, szgp) {
 			for (int i=bstGrp[j],k=0; k<m&&i<sz; ++k,++i) {
 				score = score_sgroup(vsgrp[i], slice);
+				// #ifdef DEBUG
+				// cout << "sgroup score = " << score << endl;
+				// #endif
 				if (score <= score_bound) {
 					if (szQ < topk) {
 						szQ++;
@@ -1086,9 +1160,9 @@ public:
 		vi ret;
 
 		while (!Q.empty()) {
-			#ifdef DEBUG
-			Q.top().print();
-			#endif
+			// #ifdef DEBUG
+			// Q.top().print();
+			// #endif
 			ret.pb(Q.top().idx);
 			Q.pop();
 		}
@@ -1113,6 +1187,9 @@ public:
 		rep(j, 0, szsgp) {
 			for (int i=bstSgrp[j],k=0; k<m&&i<sz; ++k,++i) {
 				score = score_slice(vslc[i], slice);
+				// #ifdef DEBUG
+				// cout << "slice score = " << score << endl;
+				// #endif
 				if (score <= score_bound) {
 					if (szQ < topk) {
 						szQ++;
@@ -1131,9 +1208,9 @@ public:
 		vi ret;
 
 		while (!Q.empty()) {
-			#ifdef DEBUG
-			Q.top().print();
-			#endif
+			// #ifdef DEBUG
+			// Q.top().print();
+			// #endif
 			ret.pb(Q.top().idx);
 			Q.pop();
 		}
@@ -1193,14 +1270,14 @@ public:
 					}
 				}
 			}
+
+			#ifdef DEBUG
+			// cout << "mn = " << mn << ", mn_ = " << mn_ << "." << endl;
+			#endif
+
+			if (mn  < INF) vread.pb(readpair_chr_t(lidx, ridx, mn));
+			if (mn_ < INF) vread.pb(readpair_chr_t(lidx_, ridx_, mn_));
 		}
-
-		#ifdef DEBUG
-		cout << "mn = " << mn << ", mn_ = " << mn_ << "." << endl;
-		#endif
-
-		if (mn  < INF) vread.pb(readpair_chr_t(lidx, ridx, mn));
-		if (mn_ < INF) vread.pb(readpair_chr_t(lidx_, ridx_, mn_));
 	}
 
 	/**
@@ -1212,17 +1289,29 @@ public:
 			\step 1 choose best group
 		*/
 		vi bstGroup = chooseBstGrp(chrId, slice);
+		#ifdef DEBUG
+		int sz_bstGroup = SZ(bstGroup);
+		#endif
 
 		/**
 			\step 2 choose best sub-group
 		*/
 		vi bstSgroup = chooseBstSgrp(chrId, slice, bstGroup);
 		bstGroup.clr();
+		#ifdef DEBUG
+		int sz_bstSgroup = SZ(bstSgroup);
+		#endif
 
 		/**
 			\step 3 choose best slice
 		*/
 		vi bstSlc = chooseBstSlc(chrId, slice, bstSgroup);
+		#ifdef DEBUG
+		int sz_bstSlc = SZ(bstSlc);
+		// cout << "bstGrp = " << sz_bstGroup << ", bstSgrp = " << sz_bstSgroup << ", sz_bstSlc = " << sz_bstSlc << endl;
+		#endif
+
+
 		return bstSlc;
 	}
 
@@ -1235,7 +1324,7 @@ public:
 
 		// restore the string
 		{
-			for (int i=0,j=idx; i<m&&j<szsep; ++i,++j) {
+			for (int i=0,j=idx,k=l+sep_len; i<m&&j<szsep; ++i,++j,l+=sep_len) {
 				trie_ptr p = vsep[j].leaf, q;
 
 				#ifdef DEBUG
@@ -1243,12 +1332,12 @@ public:
 				#endif
 				while (p->fa != NULL) {
 					q = p->fa;
-					rep(k, 0, 5) {
-						if (q->nxt[k] == p) {
+					rep(ii, 0, 5) {
+						if (q->nxt[ii] == p) {
 							#ifdef DEBUG
 							flag = true;
 							#endif
-							buffer[l++] = acgt_s[k];
+							buffer[--k] = acgt_s[ii];
 							break;
 						}
 					}
@@ -1318,7 +1407,9 @@ public:
 		/**
 			\step 1: foreach format find the best read
 		*/
-		for (int chrId : chrIds) {
+		int sz_chrIds = SZ(chrIds);
+		rep(i, 0, sz_chrIds) {
+			const int chrId = chrIds[i];
 			/**
 				\step 2: find the best slice
 			*/
@@ -1346,6 +1437,7 @@ public:
 		#ifdef DEBUG
 		assert(SZ(Q) <= topk);
 		assert(SZ(Q) == szQ);
+		// cout << "candidate exact align = " << szQ << endl;
 		#endif
 
 		int bstChrId;
@@ -1357,9 +1449,9 @@ public:
 			read_t read = Q.top();
 			Q.pop();
 			tmp = alignExactRead(read, read1, read2);
-			#ifdef DEBUG
-			cout << "alignExact = " << tmp << "." << endl;
-			#endif
+			// #ifdef DEBUG
+			// cout << "alignExact = " << tmp << "." << endl;
+			// #endif
 			if (tmp > ret) {
 				bstChrId = read.chrId;
 				bstIdx1 = read.lidx;
@@ -1428,7 +1520,7 @@ public:
 			ret.pb(line2);
 			#ifdef DEBUG
 			if (i>0 && i%1000==0) {
-				printf("%d finish, avg = %.12lf\n", i, tot/100);
+				cout << i << " finish, avg = " << tot/100 << "\n";
 				tot = 0;
 			}
 			tot += score;
@@ -1436,7 +1528,7 @@ public:
 		}
 
 		#ifdef DEBUG
-		printf("fail = %d\n", fail);
+		cout << "fail = " << fail << endl;
 		#endif
 
 		return ret;
@@ -1650,7 +1742,7 @@ bool check_ans(const vstr& ans, int N, const vi& chrId, const vstr& readNames) {
 	string readName;
 
 	if (sz != N)	{
-		printf("|ans| != N\n");
+		printf("|ans| = N\n");
 		return false;
 	}
 
@@ -1840,7 +1932,7 @@ vstr perform_test(int seed, const vi& chrId, int& n, bool& flag) {
 		\step 1: initTest
 	*/
 	#ifdef DEBUG
-	puts("initTest");
+	cout << "initTest" <<endl;
 	#endif
 	dna.initTest(seed);
 
@@ -1848,19 +1940,26 @@ vstr perform_test(int seed, const vi& chrId, int& n, bool& flag) {
 		\step 2: passReferenceGenome
 	*/
 	#ifdef DEBUG
-	puts("passReferenceGenome");
+	cout << "passReferenceGenome" <<endl;
+	rep(ii, 0, SZ(chrId)) cout << chrId[ii] << " ";
+	cout << endl;
 	#endif
-	for (int id : chrId) {
+	rep(i, 0, SZ(chrId)) {
+		const int id = chrId[i];
 		string filename = "./example/chromatid" + to_string(id) + ".fa";
 		vstr chromatidSeq = getChromat(filename);
 		dna.passReferenceGenome(id, chromatidSeq);
+		#ifdef DEBUG
+		cout << id << " pass end" << endl;
+		#endif
+		chromatidSeq.clr();
 	}
 
 	/**
 		\step 3: preProcessing
 	*/
 	#ifdef DEBUG
-	puts("preProcessing");
+	cout << "preProcessing" <<endl;
 	#endif
 	dna.preProcessing();
 
@@ -1871,7 +1970,7 @@ vstr perform_test(int seed, const vi& chrId, int& n, bool& flag) {
 		\step 4: getRead
 	*/
 	#ifdef DEBUG
-	puts("getRead");
+	cout << "getRead" <<endl;
 	#endif
 	{
 		ifstream fin1(fa1_path);
@@ -1910,7 +2009,7 @@ vstr perform_test(int seed, const vi& chrId, int& n, bool& flag) {
 		\step 5: align
 	*/
 	#ifdef DEBUG
-	puts("align");
+	cout <<"align"<<endl;
 	#endif
 	ret = dna.getAlignment(n, norm_a, norm_s, readNames, readSeqs);
 	save_time(ed_prog);
@@ -1925,7 +2024,7 @@ vstr perform_test(int seed, const vi& chrId, int& n, bool& flag) {
 		\step 6: check result
 	*/
 	#ifdef DEBUG
-	puts("check result");
+	cout <<"check result"<<endl;
 	#endif
 	flag = check_ans(ret, n, chrId, readNames);
 
@@ -1961,13 +2060,15 @@ void _test(int seed) {
 	norm_s = 0.5;
 	if (seed == 0) {
 		#ifdef DEBUG
-		minisam_path = "./example/test5.minisam";
-		fa1_path = "./example/test5.fa1";
-		fa2_path = "./example/test5.fa2";
-		#else
+		// minisam_path = "./example/test5.minisam";
+		// fa1_path = "./example/test5.fa1";
+		// fa2_path = "./example/test5.fa2";
+		// chrId.pb(0);
+		// #else
 		minisam_path = "./example/small5.minisam";
 		fa1_path = "./example/small5.fa1";
 		fa2_path = "./example/small5.fa2";
+		chrId.pb(20);
 		#endif
 
 		norm_a = NORM_A_SMALL;
@@ -1975,7 +2076,6 @@ void _test(int seed) {
 		prep_time = 201;
 		cut_time = 16.1;
 
-		chrId.pb(20);
 	} else if (seed == 1) {
 		minisam_path = "./example/medium5.minisam";
 		fa1_path = "./example/medium5.fa1";
@@ -1990,7 +2090,7 @@ void _test(int seed) {
 		chrId.pb(11);
 		chrId.pb(20);
 	} else {
-		minisam_path = "../example/large5.minisam";
+		minisam_path = "./example/large5.minisam";
 		fa1_path = "./example/large5.fa1";
 		fa2_path = "./example/large5.fa2";
 
@@ -2065,6 +2165,8 @@ void close_log() {
 }
 
 int main(int argc, char **argv) {
+	// freopen("data.out", "w", stdout);
+
 	int testcase = argc > 1 ? stoi(argv[1]) : 1;
 
 	init_log();
