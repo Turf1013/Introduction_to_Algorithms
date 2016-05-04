@@ -236,7 +236,7 @@ const float NEG_INF = -1e9;
 const float POS_INF = 1e9;
 char Complements[128];
 int charId[128];
-char buffer[1200];
+char buffer[1500];
 const int max_ibuffer = 1e8;
 int ibuffer[max_ibuffer];
 const char* acgt_s = "ACGTN";
@@ -325,6 +325,30 @@ trie_ptr Insert_chr(char *s) {
 	return p;
 }
 
+#ifdef DEBUG
+	LL leaf_num = 0;
+#endif
+void Insert(char *s) {
+	int i = 0, id;
+	trie_ptr p = trie_root;
+
+	while (i < sep_len) {
+		id = getCharId(s[i]);
+		if (!p->nxt[id]) break;
+		p = p->nxt[id];
+		++i;
+	}
+#ifdef DEBUG
+	if (i < sep_len) ++leaf_num;
+#endif
+
+	while(i < sep_len) {
+		id = getCharId(s[i++]);
+		p->nxt[id] = new trie_t(p);
+		p = p->nxt[id];
+	}
+}
+
 int Insert_read(char *s) {
 	int i = 0, id;
 	trie_ptr p = trie_root;
@@ -341,12 +365,12 @@ int Insert_read(char *s) {
 		p->nxt[id] = new trie_t(p);
 		p = p->nxt[id];
 	}
-	int c[5];
-	memset(c, 0, sizeof(c));
-	rep(j, 0, sep_len) ++c[getCharId(s[j])];
 
 	id = (char *)p->nxt[1] - (char *)NULL;
 	if (id == 0) {
+		int c[5];
+		memset(c, 0, sizeof(c));
+		rep(j, 0, sep_len) ++c[getCharId(s[j])];
 		uint tmp = (c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0];
 		p->nxt[0] = (trie_ptr) tmp;
 		p->nxt[1] = (trie_ptr) (++nleaf);
@@ -362,23 +386,139 @@ void init_trie_chr() {
 	trie_root = new trie_t();
 }
 
-int mapc[5];
+#define USE_EXISTS_SEP
+void Insert_grp(char *d) {
+	#ifdef DEBUG
+	static int cnt = 0;
+	cout << ++cnt << endl;
+	#endif
+	const int gid = ++nleaf;
+	char s[16];
+	int c[5];
+	int i, j, k, id;
+	trie_ptr p;
+
+	memset(c, 0, sizeof(c));
+	for (i=1; i<=sep_len; ++i) ++c[s[i] = d[i-1]];
+
+	// shift right 1
+	--c[s[sep_len]];
+	for (j=0; j<4; ++j) {
+		++c[s[0] = j];
+		i = 0;
+		p = trie_root;
+
+		while (i < sep_len) {
+			id = s[i];
+			if (!p->nxt[id]) break;
+			p = p->nxt[id];
+			++i;
+		}
+
+	#ifndef USE_EXISTS_SEP
+		while (i < sep_len) {
+			id = s[i++];
+			p->nxt[id] = new trie_t(p);
+			p = p->nxt[id];
+		}
+		if (p->nxt[1] == NULL) {
+			p->nxt[1] = (trie_ptr) gid;
+			p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
+		}
+	#else
+		if (i>=sep_len && p->nxt[1]==NULL) {
+			p->nxt[1] = (trie_ptr) gid;
+			p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
+		}
+	#endif
+		--c[j];
+	}
+	++c[s[sep_len]];
+
+	// shift left 1
+	--c[s[1]];
+	for (j=0; j<4; ++j) {
+		++c[s[sep_len+1] = j];
+		i = 2;
+		p = trie_root;
+
+		while (i <= sep_len+1) {
+			id = s[i];
+			if (!p->nxt[id]) break;
+			p = p->nxt[id];
+			++i;
+		}
+
+	#ifndef USE_EXISTS_SEP
+		while (i <= sep_len+1) {
+			id = s[i++];
+			p->nxt[id] = new trie_t(p);
+			p = p->nxt[id];
+		}
+		if (i>sep_len+1 && p->nxt[1]==NULL) {
+			p->nxt[1] = (trie_ptr) gid;
+			p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
+		}
+	#else
+		if (i>sep_len+1 && p->nxt[1]==NULL) {
+			p->nxt[1] = (trie_ptr) gid;
+			p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
+		}
+	#endif
+		--c[j];
+	}
+	++c[s[1]];
+
+	// replace
+	int tmp;
+	for (k=1; k<=sep_len; ++k) {
+		--c[tmp = s[k]];
+		for (j=0; j<4; ++j) {
+			++c[s[k] = j];
+			i = 1;
+			p = trie_root;
+
+			while (i <= sep_len) {
+				id = s[i];
+				if (!p->nxt[id]) break;
+				p = p->nxt[id];
+				++i;
+			}
+		#ifndef USE_EXISTS_SEP
+			while (i <= sep_len) {
+				id = s[i++];
+				p->nxt[id] = new trie_t(p);
+				p = p->nxt[id];
+			}
+			if (p->nxt[1] == NULL) {
+				p->nxt[1] = (trie_ptr) gid;
+				p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
+			}
+		#else
+			if (i>sep_len && p->nxt[1]==NULL) {
+				p->nxt[1] = (trie_ptr) gid;
+				p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
+			}
+		#endif
+			--c[j];
+		}
+		++c[s[k] = tmp];
+	}
+}
+
 void map_trie_chr(trie_ptr rt, int dep) {
 	if (dep == sep_len) {
-		int k = (char *)rt->nxt[1] - (char *)NULL;
-		if (k == 0) {
-			rt->nxt[1] = (trie_ptr) (++nleaf);
-			uint tmp = (mapc[3]<<24) | (mapc[2]<<16) | (mapc[1]<<8) | mapc[0];
-			rt->nxt[0] = (trie_ptr) tmp;
+		// cout << (char *)rt->nxt[1] - (char *)NULL << endl;
+		if (rt->nxt[1] == NULL) {
+			Insert_grp(buffer);
 		}
 		return ;
 	}
 
 	rep(i, 0, 5) {
 		if (rt->nxt[i]) {
-			++mapc[i];
+			buffer[dep] = i;
 			map_trie_chr(rt->nxt[i], dep+1);
-			--mapc[i];
 		}
 	}
 }
@@ -492,6 +632,7 @@ score_type score_acgt(const acgt_t& a, const acgt_t& b) {
 class DNASequencing {
 public:
 	vi chrIds;
+	int chrId;
 
 	DNASequencing() {
 		// init the complement array
@@ -537,9 +678,9 @@ public:
 			layer_group.feature_ubound = 105000;
 			layer_group.feature_lbound = 2;
 			#ifdef DEBUG
-			layer_slice.feature_lbound = 1;
-			layer_sgroup.feature_lbound = 1;
-			layer_group.feature_lbound = 1;
+			layer_slice.feature_lbound = 2;
+			layer_sgroup.feature_lbound = 6;
+			layer_group.feature_lbound = 12;
 			#endif
 
 			layer_read.score_bound = 240;
@@ -586,38 +727,81 @@ public:
 		return 0;
 	}
 
-	int preProcessing() {
-
-		return 0;
-	}
-
 	/**
 		\brief separate the chromat into sep, and store trie's leaf ptr into `SepChromat`
 	*/
 	void separateChromat(const vstr& chromatidSequence) {
+		char s[32];
 		const int chrId = *chrIds.rbegin();
 		vector<sep_t>& vsep = sepChromat[chrId];
 		int nline = SZ(chromatidSequence);
 		int idx = 0, l = 0;
+		int ll = 0;
+		int i, j, k;
+		bool flag;
 		sep_t sep;
 
 		#ifdef DEBUG
 		assert(vsep.size() == 0);
 		#endif
-		rep(k, 0, nline) {
+		for (k=0; k<nline; ++k) {
 			const string& line = chromatidSequence[k];
 			const int len = line.length();
 
-			rep(i, 0, len) {
-				buffer[l++] = line[i];
-				if (l == sep_len) {
-					sep.leaf = Insert_chr(buffer);
-					sep.idx = idx + i - sep_len + 1;
-					vsep.pb(sep);
-					l = 0;
+			// check line is all 'N'
+			flag = true;
+			if (line[0] == 'N') {
+				flag = false;
+				for (i=0; i<len; ++i) {
+					if (line[i] != 'N')	{
+						flag = true;
+						break;
+					}
 				}
 			}
+
+			if (flag) {
+				l = 0;
+				for (i=0; i<len; ++i) {
+					buffer[ll++] = line[i];
+					s[l++] = line[i];
+					if (l == sep_len) {
+						sep.leaf = Insert_chr(s);
+						sep.idx = idx + i - sep_len + 1;
+						vsep.pb(sep);
+						l = 0;
+					}
+					if (ll == layer_slice.len) {
+
+					}
+				}
+			} else {
+				for (i=0; i<len; ++i)
+					buffer[ll++] = line[i];
+			}
+
+			if (ll >= layer_slice.len) {
+				int ed = layer_slice.len - sep_len + 1;
+				i = 0;
+
+				while (i < ed) {
+					Insert(buffer+i);
+					++i;
+				}
+
+				for (j=0,i=ed+sep_len-1; i<ll; ++i,++j) buffer[j] = buffer[i];
+				ll = j;
+			}
 			idx += len;
+		}
+		if (ll >= sep_len) {
+			int ed = ll - sep_len + 1;
+			i = 0;
+
+			while (i < ed) {
+				Insert(buffer+i);
+				++i;
+			}
 		}
 	}
 
@@ -625,7 +809,7 @@ public:
 		\brief pile up the sep to read
 	*/
 	void pileChromat_read() {
-		const int chrId = *chrIds.rbegin();
+		// const int chrId = *chrIds.rbegin();
 		vector<sep_t>& vsep = sepChromat[chrId];
 		vector<acgt_t>& vacgt = acgtChromat[chrId];
 		const int nsep = SZ(vsep);
@@ -657,33 +841,44 @@ public:
 	/**
 		\brief pile up the sep to slice
 	*/
-	void pileChromat_slice(const vstr& chromtSeq) {
-		const int chrId = *chrIds.rbegin();
-		const int nline = SZ(chromtSeq);
+	void pileChromat_slice() {
+		// const int chrId = *chrIds.rbegin();
+		const vector<sep_t> vsep = sepChromat[chrId];
+		const int nsep = SZ(vsep);
 		int l = 0;
 		vector<slice_t>& vslc = sliceChromat[chrId];
 		const int nfeature = layer_slice.feature_num;
 		int bidx, szvf;
 		vector<feature_t> vfeat;
 		slice_t slice;
-		int i = 0, j = 0, k, idx = 0;
+		int i = 0, j = 0, k, idx = 0, pidx;
+		trie_ptr p, q;
 
 		// rep(i, 1, sep_len) buffer[l++] = 'N';
-		while (i < nline) {
-			bidx = idx;
+		while (i < nsep) {
+			bidx = pidx = idx;
 			l = 0;
 
-			while (i<nline && idx-bidx<layer_slice.len) {
-				const string& line = chromtSeq[i];
-				const int len = line.length();
-				while (j<len && idx-bidx<layer_slice.len) {
-					buffer[l++] = line[j++];
-					++idx;
+			while (i<nsep && vsep[i].idx-bidx<layer_slice.len) {
+				if (vsep[i].idx-pidx >= 80) {
+					for (j=0; j<sep_len; ++j) buffer[l++] = 'N';
 				}
-				if (j==len) {
-					++i;
-					j = 0;
+				pidx = vsep[i].idx;
+
+				p = vsep[i].leaf;
+				k = l + sep_len;
+				while ((q = p->fa) != NULL) {
+					for (j=0; j<4; ++j) {
+						if (q->nxt[j] == p) {
+							buffer[--k] = acgt_s[j];
+							break;
+						}
+					}
+					p = q;
 				}
+				l += sep_len;
+
+				++i;
 			}
 
 			// #ifdef DEBUG
@@ -751,7 +946,7 @@ public:
 		\brief pile up the slice to sub-group
 	*/
 	void pileChromat_sgroup() {
-		const int chrId = *chrIds.rbegin();
+		// const int chrId = *chrIds.rbegin();
 		vector<sgroup_t>& vsgrp = sgroupChromat[chrId];
 		const vector<slice_t>& vslc = sliceChromat[chrId];
 		const int m = layer_sgroup.len / layer_slice.len;
@@ -824,7 +1019,7 @@ public:
 		\brief pile up the sgroup to group
 	*/
 	void pileChromat_group() {
-		const int chrId = *chrIds.rbegin();
+		// const int chrId = *chrIds.rbegin();
 		vector<group_t>& vgrp = groupChromat[chrId];
 		const vector<sgroup_t> vsgrp = sgroupChromat[chrId];
 		const int m = layer_group.len / layer_sgroup.len;
@@ -895,7 +1090,7 @@ public:
 		\brief pile up the chromat to form 3 layers:
 			`group`、`sgroup`、`slice`
 	*/
-	void pileChromat(const vstr& chromatidSequence) {
+	void pileChromat() {
 		/**
 			\step 0: pile up the layer 0 -- read
 		*/
@@ -914,7 +1109,7 @@ public:
 		#ifdef DEBUG
 			cout << "pileChromat_slice" << endl;
 		#endif
-		pileChromat_slice(chromatidSequence);
+		pileChromat_slice();
 		#ifdef DEBUG
 		if( !check_ibuffer() )
 			cout << "check ibuffer wrong" << endl;
@@ -957,12 +1152,24 @@ public:
 		// split the chromat into sep.
 		separateChromat(chromatidSequence);
 
+		return 0;
+	}
+
+	int preProcessing() {
+		int sz = SZ(chrIds);
+
+		#ifdef DEBUG
+		cout << "leaf_num = " << leaf_num << endl;
+		#endif
 		// mapping the leaf with integer
-		memset(mapc, 0, sizeof(mapc));
 		map_trie_chr(trie_root, 0);
 
-		// pile up the lowest sep into layers.
-		pileChromat(chromatidSequence);
+		rep(i, 0, sz) {
+			chrId = chrIds[i];
+
+			// pile up the lowest sep into layers.
+			pileChromat();
+		}
 
 		// release the memory of chr's trie
 		clear_trie_chr();
@@ -1135,6 +1342,7 @@ public:
 		priority_queue<read_chr_t> Q;
 		score_type score;
 		int szQ = 0;
+		vi ret, vtmp;
 
 		rep(j, 0, szgp) {
 			for (int i=bstGrp[j],k=0; k<m&&i<sz; ++k,++i) {
@@ -1152,21 +1360,20 @@ public:
 					}
 				}
 			}
-		}
 
-		#ifdef DEBUG
-		assert(SZ(Q) == szQ);
-		#endif
-		vi ret;
+			while (!Q.empty()) {
+				// #ifdef DEBUG
+				// Q.top().print();
+				// #endif
+				vtmp.pb(Q.top().idx);
+				Q.pop();
+			}
 
-		while (!Q.empty()) {
-			// #ifdef DEBUG
-			// Q.top().print();
-			// #endif
-			ret.pb(Q.top().idx);
-			Q.pop();
+			sort(all(vtmp));
+			int sz_vtmp = SZ(vtmp);
+			rep(ii, 0, sz_vtmp) ret.pb(vtmp[ii]);
+			vtmp.clr();
 		}
-		sort(all(ret));
 
 		return ret;
 	}
@@ -1183,6 +1390,7 @@ public:
 		priority_queue<read_chr_t> Q;
 		score_type score;
 		int szQ = 0;
+		vi ret, vtmp;
 
 		rep(j, 0, szsgp) {
 			for (int i=bstSgrp[j],k=0; k<m&&i<sz; ++k,++i) {
@@ -1200,21 +1408,21 @@ public:
 					}
 				}
 			}
-		}
 
-		#ifdef DEBUG
-		assert(SZ(Q) == szQ);
-		#endif
-		vi ret;
 
-		while (!Q.empty()) {
-			// #ifdef DEBUG
-			// Q.top().print();
-			// #endif
-			ret.pb(Q.top().idx);
-			Q.pop();
+			while (!Q.empty()) {
+				// #ifdef DEBUG
+				// Q.top().print();
+				// #endif
+				vtmp.pb(Q.top().idx);
+				Q.pop();
+			}
+
+			sort(all(vtmp));
+			int sz_vtmp = SZ(vtmp);
+			rep(ii, 0, sz_vtmp) ret.pb(vtmp[ii]);
+			vtmp.clr();
 		}
-		sort(all(ret));
 
 		return ret;
 	}
@@ -1275,7 +1483,7 @@ public:
 			// cout << "mn = " << mn << ", mn_ = " << mn_ << "." << endl;
 			#endif
 
-			if (mn  < INF) vread.pb(readpair_chr_t(lidx, ridx, mn));
+			if (mn_ < INF) vread.pb(readpair_chr_t(lidx, ridx, mn));
 			if (mn_ < INF) vread.pb(readpair_chr_t(lidx_, ridx_, mn_));
 		}
 	}
@@ -2060,11 +2268,11 @@ void _test(int seed) {
 	norm_s = 0.5;
 	if (seed == 0) {
 		#ifdef DEBUG
-		// minisam_path = "./example/test5.minisam";
-		// fa1_path = "./example/test5.fa1";
-		// fa2_path = "./example/test5.fa2";
-		// chrId.pb(0);
-		// #else
+		minisam_path = "./example/test5.minisam";
+		fa1_path = "./example/test5.fa1";
+		fa2_path = "./example/test5.fa2";
+		chrId.pb(0);
+		#else
 		minisam_path = "./example/small5.minisam";
 		fa1_path = "./example/small5.fa1";
 		fa2_path = "./example/small5.fa2";
