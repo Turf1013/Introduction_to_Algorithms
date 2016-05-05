@@ -1224,11 +1224,11 @@ public:
 	int preProcessing() {
 		int sz = SZ(chrIds);
 
+		// mapping the leaf with integer
+		map_trie_chr(trie_root, 0);
 		#ifdef DEBUG
 		cout << "leaf_num = " << leaf_num << endl;
 		#endif
-		// mapping the leaf with integer
-		map_trie_chr(trie_root, 0);
 
 		rep(i, 0, sz) {
 			chrId = chrIds[i];
@@ -1615,9 +1615,10 @@ public:
 			\step 3 choose best slice
 		*/
 		chooseBstSlc(chrId, slice, vbst, ret);
+		vbst.clr();
 		#ifdef DEBUG
 		int sz_bstSlc = SZ(ret);
-		// cout << "bstGrp = " << sz_bstGroup << ", bstSgrp = " << sz_bstSgroup << ", sz_bstSlc = " << sz_bstSlc << endl;
+		cout << "bstGrp = " << sz_bstGroup << ", bstSgrp = " << sz_bstSgroup << ", sz_bstSlc = " << sz_bstSlc << endl;
 		#endif
 	}
 
