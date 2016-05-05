@@ -32,11 +32,15 @@ hash: hash.cpp
 train: train.cpp
 	$(CXX) $(CFLAGS) -o train train.cpp $(LIBS)
 
+score: score.cpp
+	$(CXX) $(CFLAGS) -o score score.cpp $(LIBS)
+	
+
 .PHONY: clean test
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm dna dna.g* 2> /dev/null || true	
-		-@rm ob freq algo sl hash train 2> /dev/null || true	
+		-@rm ob freq algo sl hash train score 2> /dev/null || true	
 
 test: build
 		./dna 12

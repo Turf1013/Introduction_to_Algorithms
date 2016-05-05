@@ -8,8 +8,8 @@ using namespace std;
 /**
 	`Comment this line when submit`
 */
-#define LOCAL_DEBUG
-#define DEBUG
+// #define LOCAL_DEBUG
+// #define DEBUG
 
 #define sti				set<int>
 #define stpii			set<pair<int, int> >
@@ -293,13 +293,13 @@ bool check_acgt() {
 		if (sz == 0)	continue;
 		
 		const vector<acgt_t>& vacgt = acgtChromat[i];
-		int tmp = 0;
+		int tmp;
 		rep(i, 0, sz) {
 			const acgt_t& acgt = vacgt[i];
-			tmp += acgt.c[0] + acgt.c[1] + acgt.c[2] + acgt.c[3];
+			tmp = acgt.c[0] + acgt.c[1] + acgt.c[2] + acgt.c[3];
+			if (tmp >= layer_read.len+10)
+				ret = false;
 		}
-		if (tmp >= layer_read.len+10)
-			ret = false;
 		cout << "sizeof acgtChromat[" << i << "] = " << sz * sizeof(acgt_t) << endl;
 		tot += sz;
 	}
@@ -1191,10 +1191,10 @@ public:
 		int i = 0, j = 0, k;
 
 		while (i < nsep) {
-			bidx =v sep[i].idx;
+			bidx = vsep[i].idx;
 			l = 0;
 			
-			for (j=0,; j<m&&i<nsep; ++j,++i) {
+			for (j=0; j<m&&i<nsep; ++j,++i) {
 				restore_sep(vsep[i].leaf, buffer+l+sep_len-1);
 				l += sep_len;
 			}
@@ -1501,7 +1501,7 @@ public:
 		// mapping the similar leaf with same id
 		map_trie_chr(trie_root, 0);
 		#ifdef DEBUG
-		cout << "leaf_num = " << leaf_num << ", node_num = " << node_unm << "." << endl;
+		cout << "leaf_num = " << leaf_num << ", node_num = " << node_num << "." << endl;
 		#endif
 		
 		// pile up the chromat to form layers
@@ -1522,7 +1522,7 @@ public:
 				strand: flag of read pair
 	*/
 	inline string getFailureResult(const string& prefix, const char strand='+') {
-		#ifdef DEBUG
+		#ifdef LOCAL_DEBUG
 		return prefix + ",0,1,150," + strand + ",0.0001";
 		#else
 		return prefix + ",20,1,150," + strand + ",0.0001";
@@ -1882,7 +1882,7 @@ public:
 		*/
 		vi vbst, vbst_;
 		
-		chooseBstGrp(chrId, slice, vbst_);
+		chooseBstGrp(slice, vbst_);
 		#ifdef DEBUG
 		int sz_bstGroup = SZ(vbst_);
 		#endif
@@ -1890,7 +1890,7 @@ public:
 		/**
 			\step 2 choose best sub-group
 		*/
-		chooseBstSgrp(chrId, slice, vbst_, vbst);
+		chooseBstSgrp(slice, vbst_, vbst);
 		vbst_.clr();
 		#ifdef DEBUG
 		int sz_bstSgroup = SZ(vbst);
@@ -1899,11 +1899,15 @@ public:
 		/**
 			\step 3 choose best slice
 		*/
-		chooseBstSlc(chrId, slice, vbst, ret);
+		chooseBstSlc(slice, vbst, ret);
 		vbst.clr();
 		#ifdef DEBUG
 		int sz_bstSlc = SZ(ret);
-		cout << "bstGrp = " << sz_bstGroup << ", bstSgrp = " << sz_bstSgroup << ", sz_bstSlc = " << sz_bstSlc << endl;
+
+		static int cnt = 0;
+		++cnt;
+		if (cnt%5000 == 0)
+			cout << "bstGrp = " << sz_bstGroup << ", bstSgrp = " << sz_bstSgroup << ", sz_bstSlc = " << sz_bstSlc << endl;
 		#endif
 	}
 	
@@ -1915,8 +1919,8 @@ public:
 		const int szsep = SZ(vsep);
 		const int m = layer_read.len / sep_len;
 		int l = 0;
-		score_type ret;
-
+		score_type ret
+;
 		// restore the string
 		{
 			for (int i=0,j=idx*m; i<m&&j<szsep; ++i,++j) {
@@ -2007,7 +2011,7 @@ public:
 			/**
 				\step 3: find the best readpair
 			*/
-			chooseBstRead(chrId, bstSlc, acgt1, acgt2, vreadpair);
+			chooseBstRead(bstSlc, acgt1, acgt2, vreadpair);
 
 			int sz = SZ(vreadpair);
 			rep(i, 0, sz) {
@@ -2132,7 +2136,7 @@ public:
 			#ifdef DEBUG
 			tot += score;
 			if (i>0 && i%1000==0) {
-				cout << i << " finish, avg = " << tot/100.0 << "\n";
+				cout << i << " finish, avg = " << setprecision(6) << tot/1000.0 << "\n";
 				tot = 0;
 			}
 			#endif
@@ -2776,6 +2780,8 @@ void close_log() {
 }
 
 int main(int argc, char **argv) {
+	ios::sync_with_stdio(false);
+	cin.tie(0);
 	// freopen("data.out", "w", stdout);
 
 	int testcase = argc > 1 ? stoi(argv[1]) : 1;
