@@ -236,7 +236,7 @@ const float NEG_INF = -1e9;
 const float POS_INF = 1e9;
 char Complements[128];
 int charId[128];
-char buffer[1500];
+char buffer[1600];
 const int max_ibuffer = 1e8;
 int ibuffer[max_ibuffer];
 const char* acgt_s = "ACGTN";
@@ -390,7 +390,9 @@ void init_trie_chr() {
 void Insert_grp(char *d) {
 	#ifdef DEBUG
 	static int cnt = 0;
-	cout << ++cnt << endl;
+	++cnt;
+	if (cnt%10000 == 0)
+		cout << cnt << endl;
 	#endif
 	const int gid = ++nleaf;
 	char s[16];
@@ -455,7 +457,7 @@ void Insert_grp(char *d) {
 			p->nxt[id] = new trie_t(p);
 			p = p->nxt[id];
 		}
-		if (i>sep_len+1 && p->nxt[1]==NULL) {
+		if (p->nxt[1] == NULL) {
 			p->nxt[1] = (trie_ptr) gid;
 			p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
 		}
@@ -677,16 +679,16 @@ public:
 			layer_sgroup.feature_lbound = 4;
 			layer_group.feature_ubound = 105000;
 			layer_group.feature_lbound = 6;
-			#ifdef DEBUG
-			layer_slice.feature_lbound = 3;
-			layer_sgroup.feature_lbound = 3;
-			layer_group.feature_lbound = 3;
-			#endif
+			// #ifdef DEBUG
+			// layer_slice.feature_lbound = 3;
+			// layer_sgroup.feature_lbound = 3;
+			// layer_group.feature_lbound = 3;
+			// #endif
 
-			layer_read.score_bound = 240;
-			layer_slice.score_bound = 282;
-			layer_sgroup.score_bound = 282;
-			layer_group.score_bound = 282;
+			layer_read.score_bound = 220;
+			layer_slice.score_bound = 284;
+			layer_sgroup.score_bound = 280;
+			layer_group.score_bound = 280;
 
 
 		} else if (testDifficulty == 1) {
@@ -993,7 +995,7 @@ public:
 			vslc.pb(slice);
 
 			#ifdef DEBUG
-			if (i>0 && i%1 == 0)
+			if (i>0 && i%100000 == 0)
 				slice.print();
 			#endif
 
@@ -1066,7 +1068,7 @@ public:
 			vsgrp.pb(sgroup);
 
 			#ifdef DEBUG
-			if (i>0 && i%1 == 0)
+			if (i>0 && i%10000 == 0)
 				sgroup.print();
 			#endif
 
@@ -1138,7 +1140,7 @@ public:
 			vgrp.pb(group);
 
 			#ifdef DEBUG
-			if (i>0 && i%1 == 0)
+			if (i>0 && i%1000 == 0)
 				group.print();
 			#endif
 			group.clr();
@@ -1352,7 +1354,7 @@ public:
 	/**
 		\brief choose the best group
 	*/
-	vi chooseBstGrp(const int chrId, const slice_t& slice) {
+	void chooseBstGrp(const int chrId, const slice_t& slice, vi& ret) {
 		const vector<group_t>& vgrp = groupChromat[chrId];
 		int sz = SZ(vgrp);
 		const int topk = layer_group.topk;
@@ -1380,8 +1382,8 @@ public:
 		#ifdef DEBUG
 		assert(SZ(Q) == szQ);
 		#endif
-		vi ret;
-
+		
+		ret.clr();
 		while (!Q.empty()) {
 			// #ifdef DEBUG
 			// Q.top().print();
@@ -1390,14 +1392,12 @@ public:
 			Q.pop();
 		}
 		sort(all(ret));
-
-		return ret;
 	}
 
 	/**
 		\brief choose the best sub-group
 	*/
-	vi chooseBstSgrp(const int chrId, const slice_t& slice, const vi& bstGrp) {
+	void chooseBstSgrp(const int chrId, const slice_t& slice, const vi& bstGrp, vi& ret) {
 		const vector<sgroup_t>& vsgrp = sgroupChromat[chrId];
 		int sz = SZ(vsgrp), szgp = SZ(bstGrp);
 		const int topk = layer_sgroup.topk;
@@ -1406,9 +1406,15 @@ public:
 		priority_queue<read_chr_t> Q;
 		score_type score;
 		int szQ = 0;
-		vi ret, vtmp;
+		vi vtmp;
 
+		ret.clr();
 		rep(j, 0, szgp) {
+			szQ = 0;
+			#ifdef DEBUG
+			assert(SZ(Q) == szQ);
+			#endif
+
 			for (int i=bstGrp[j],k=0; k<m&&i<sz; ++k,++i) {
 				score = score_sgroup(vsgrp[i], slice);
 				// #ifdef DEBUG
@@ -1424,6 +1430,9 @@ public:
 					}
 				}
 			}
+			#ifdef DEBUG
+			assert(SZ(Q) == szQ);
+			#endif
 
 			while (!Q.empty()) {
 				// #ifdef DEBUG
@@ -1437,15 +1446,18 @@ public:
 			int sz_vtmp = SZ(vtmp);
 			rep(ii, 0, sz_vtmp) ret.pb(vtmp[ii]);
 			vtmp.clr();
-		}
 
-		return ret;
+			// #ifdef DEBUG
+			// cout << "sz_vtmp = " << sz_vtmp << endl;
+			// cout << "SZ(ret) = " << SZ(ret) << endl;
+			// #endif
+		}
 	}
 
 	/**
 		\brief choose the best slice
 	*/
-	vi chooseBstSlc(const int chrId, const slice_t& slice, const vi& bstSgrp) {
+	void chooseBstSlc(const int chrId, const slice_t& slice, const vi& bstSgrp, vi& ret) {
 		const vector<slice_t>& vslc = sliceChromat[chrId];
 		int sz = SZ(vslc), szsgp = SZ(bstSgrp);
 		const int topk = layer_slice.topk;
@@ -1453,10 +1465,16 @@ public:
 		const int m = layer_sgroup.len / layer_slice.len;
 		priority_queue<read_chr_t> Q;
 		score_type score;
-		int szQ = 0;
-		vi ret, vtmp;
+		int szQ;
+		vi vtmp;
 
+		ret.clr();
 		rep(j, 0, szsgp) {
+			szQ = 0;
+			#ifdef DEBUG
+			assert(SZ(Q) == szQ);
+			#endif
+
 			for (int i=bstSgrp[j],k=0; k<m&&i<sz; ++k,++i) {
 				score = score_slice(vslc[i], slice);
 				// #ifdef DEBUG
@@ -1472,7 +1490,9 @@ public:
 					}
 				}
 			}
-
+			#ifdef DEBUG
+			assert(SZ(Q) == szQ);
+			#endif
 
 			while (!Q.empty()) {
 				// #ifdef DEBUG
@@ -1487,8 +1507,6 @@ public:
 			rep(ii, 0, sz_vtmp) ret.pb(vtmp[ii]);
 			vtmp.clr();
 		}
-
-		return ret;
 	}
 
 	/**
@@ -1573,35 +1591,34 @@ public:
 		\brief fuzzy match the read with assigned chromat
 		\note store pair of (position, score) into vread
 	*/
-	vi alignRead_chrId(const int chrId, const slice_t& slice) {
+	void alignRead_chrId(const int chrId, const slice_t& slice, vi& ret) {
 		/**
 			\step 1 choose best group
 		*/
-		vi bstGroup = chooseBstGrp(chrId, slice);
+		vi vbst, vbst_;
+
+		chooseBstGrp(chrId, slice, vbst_);
 		#ifdef DEBUG
-		int sz_bstGroup = SZ(bstGroup);
+		int sz_bstGroup = SZ(vbst_);
 		#endif
 
 		/**
 			\step 2 choose best sub-group
 		*/
-		vi bstSgroup = chooseBstSgrp(chrId, slice, bstGroup);
-		bstGroup.clr();
+		chooseBstSgrp(chrId, slice, vbst_, vbst);
+		vbst_.clr();
 		#ifdef DEBUG
-		int sz_bstSgroup = SZ(bstSgroup);
+		int sz_bstSgroup = SZ(vbst);
 		#endif
 
 		/**
 			\step 3 choose best slice
 		*/
-		vi bstSlc = chooseBstSlc(chrId, slice, bstSgroup);
+		chooseBstSlc(chrId, slice, vbst, ret);
 		#ifdef DEBUG
-		int sz_bstSlc = SZ(bstSlc);
+		int sz_bstSlc = SZ(ret);
 		// cout << "bstGrp = " << sz_bstGroup << ", bstSgrp = " << sz_bstSgroup << ", sz_bstSlc = " << sz_bstSlc << endl;
 		#endif
-
-
-		return bstSlc;
 	}
 
 	score_type alignExactRead(const int chrId, const int idx, const string& line) {
@@ -1664,11 +1681,11 @@ public:
 			}
 
 			ret = dp[p][2];
-			#ifdef DEBUG
-			cout << buffer << endl;
-			cout << line << endl;
-			cout << ret << endl << endl;
-			#endif
+			// #ifdef DEBUG
+			// cout << buffer << endl;
+			// cout << line << endl;
+			// cout << ret << endl << endl;
+			// #endif
 		}
 
 		return ret;
@@ -1707,7 +1724,9 @@ public:
 			/**
 				\step 2: find the best slice
 			*/
-			vi bstSlc = alignRead_chrId(chrId, slice);
+			vi bstSlc;
+			alignRead_chrId(chrId, slice, bstSlc);
+
 			/**
 				\step 3: find the best readpair
 			*/
@@ -2364,11 +2383,11 @@ void _test(int seed) {
 	norm_s = 0.5;
 	if (seed == 0) {
 		#ifdef DEBUG
-		minisam_path = "./example/test5.minisam";
-		fa1_path = "./example/test5.fa1";
-		fa2_path = "./example/test5.fa2";
-		chrId.pb(0);
-		#else
+		// minisam_path = "./example/test5.minisam";
+		// fa1_path = "./example/test5.fa1";
+		// fa2_path = "./example/test5.fa2";
+		// chrId.pb(0);
+		// #else
 		minisam_path = "./example/small5.minisam";
 		fa1_path = "./example/small5.fa1";
 		fa2_path = "./example/small5.fa2";
