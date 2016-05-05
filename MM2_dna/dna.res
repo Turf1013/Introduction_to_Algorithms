@@ -1,3 +1,172 @@
+TR
+=======================================
+------------->**************<-------------
+layer_slice.feature_lbound = 3;
+layer_sgroup.feature_lbound = 4;
+layer_group.feature_lbound = 6;
+
+layer_read.score_bound = 160;
+layer_slice.score_bound = 284;
+layer_sgroup.score_bound = 280;
+layer_group.score_bound = 280;
+
+layer_read.topk = 2400;
+layer_slice.topk = 2;
+layer_sgroup.topk = 30;
+layer_group.topk = 200;
+
+test Small:
+prep_time = 22.3601, prep_bound = 603.0000
+cut_time = 373.9993, cut_bound = 32.2000
+Number of correct answers: 37/19116 = 0.0019
+
+------------->**************<-------------
+layer_slice.feature_lbound = 3;
+layer_sgroup.feature_lbound = 3;
+layer_group.feature_lbound = 5;
+
+layer_read.score_bound = 120;
+layer_slice.score_bound = 280;
+layer_sgroup.score_bound = 270;
+layer_group.score_bound = 270;
+
+layer_read.topk = 1800;
+layer_slice.topk = 2;
+layer_sgroup.topk = 30;
+layer_group.topk = 200;
+
+test Small:
+prep_time = 23.2847, prep_bound = 603.0000
+cut_time = 93.4056, cut_bound = 32.2000
+Number of correct answers: 9/19116 = 0.0005
+
+------------->**************<-------------
+layer_slice.feature_lbound = 3;
+layer_sgroup.feature_lbound = 3;
+layer_group.feature_lbound = 5;
+
+layer_read.score_bound = 160;
+layer_slice.score_bound = 300;
+layer_sgroup.score_bound = 280;
+layer_group.score_bound = 280;
+
+layer_read.topk = 1800;
+layer_slice.topk = 2;
+layer_sgroup.topk = 30;
+layer_group.topk = 200;
+test Small:
+prep_time = 19.6296, prep_bound = 603.0000
+cut_time = 473.4644, cut_bound = 32.2000
+Number of correct answers: 71/19116 = 0.0037
+
+
+------------->**************<-------------
+layer_slice.feature_lbound = 2;
+layer_sgroup.feature_lbound = 3;
+layer_group.feature_lbound = 3;
+
+layer_read.score_bound = 160;
+layer_slice.score_bound = 320;
+layer_sgroup.score_bound = 310;
+layer_group.score_bound = 300;
+
+layer_read.topk = 1000;
+layer_slice.topk = 2;
+layer_sgroup.topk = 30;
+layer_group.topk = 180;
+
+test Small:
+prep_time = 20.0608, prep_bound = 603.0000
+cut_time = 684.8564, cut_bound = 32.2000
+Number of correct answers: 89/19116 = 0.0047
+
+------------->**************<-------------
+ayer_slice.feature_lbound = 2;
+layer_sgroup.feature_lbound = 3;
+layer_group.feature_lbound = 3;
+
+layer_read.score_bound = 160;
+layer_slice.score_bound = 320;
+layer_sgroup.score_bound = 310;
+layer_group.score_bound = 300;
+
+layer_read.topk = 800;
+layer_slice.topk = 2;
+layer_sgroup.topk = 30;
+layer_group.topk = 120;
+
+test Small:
+prep_time = 20.0608, prep_bound = 603.0000
+cut_time = 684.8564, cut_bound = 32.2000
+Number of correct answers: 89/19116 = 0.0047
+prep_time = 20.1763, prep_bound = 603.0000
+cut_time = 537.5296, cut_bound = 32.2000
+Number of correct answers: 81/19116 = 0.0042
+
+
+DELL
+=======================================
+------------->**************<-------------
+layer_slice.feature_lbound = 3;
+layer_sgroup.feature_lbound = 3;
+layer_group.feature_lbound = 5;
+
+layer_read.score_bound = 120;
+layer_slice.score_bound = 280;
+layer_sgroup.score_bound = 270;
+layer_group.score_bound = 270;
+
+layer_read.topk = 1800;
+layer_slice.topk = 2;
+layer_sgroup.topk = 30;
+layer_group.topk = 200;
+
+test Small:
+prep_time = 29.6527, prep_bound = 603.0000
+cut_time = 606.1264, cut_bound = 32.2000
+Number of correct answers: 33/19116 = 0.0017
+
+------------->**************<-------------
+layer_slice.feature_lbound = 2;
+layer_sgroup.feature_lbound = 4;
+layer_group.feature_lbound = 5;
+
+layer_read.topk = 2400;
+layer_slice.topk = 2;
+layer_sgroup.topk = 30;
+layer_group.topk = 200;
+
+layer_read.score_bound = 120;
+layer_slice.score_bound = 280;
+layer_sgroup.score_bound = 270;
+layer_group.score_bound = 270;
+test Small:
+prep_time = 30.0954, prep_bound = 603.0000
+cut_time = 603.7418, cut_bound = 32.2000
+Number of correct answers: 33/19116 = 0.0017
+
+------------->**************<-------------
+layer_slice.feature_lbound = 2;
+layer_sgroup.feature_lbound = 3;
+layer_group.feature_lbound = 3;
+
+layer_read.topk = 1200;
+layer_slice.topk = 2;
+layer_sgroup.topk = 30;
+layer_group.topk = 200;
+
+layer_read.score_bound = 200;
+layer_slice.score_bound = 3000;
+layer_sgroup.score_bound = 290;
+layer_group.score_bound = 280;
+test Small:
+prep_time = 30.2757, prep_bound = 603.0000
+cut_time = 1579.7327, cut_bound = 32.2000
+Number of correct answers: 77/19116 = 0.0040
+
+
+
+
 slice = 160
 =======================================
 test Small:

@@ -131,8 +131,8 @@ typedef slice_t sgroup_t;
 typedef slice_t group_t;
 
 // about score
-typedef long long score_type;
-// typedef int score_type;
+//typedef long long score_type;
+typedef int score_type;
 
 struct read_chr_t {
 	int idx;
@@ -604,7 +604,7 @@ void init_trie() {
 /**
 	\brief	insert the haiming distance <= 1's node with same id.
 */
-#define USE_EXISTS_SEP
+//#define USE_EXISTS_SEP
 void Insert_grp(char *d) {
 	#ifdef DEBUG
 	static int cnt = 0;
@@ -940,27 +940,27 @@ public:
 			layer_sgroup.feature_num = 1000;
 			layer_group.feature_num = 10000;
 
-			layer_read.topk = 2400;
+			layer_read.topk = 800;
 			layer_slice.topk = 2;
 			layer_sgroup.topk = 30;
-			layer_group.topk = 200;
+			layer_group.topk = 120;
 
 			layer_slice.feature_ubound = 1000;
-			layer_slice.feature_lbound = 3;
+			layer_slice.feature_lbound = 2;
 			layer_sgroup.feature_ubound = 10500;
-			layer_sgroup.feature_lbound = 4;
+			layer_sgroup.feature_lbound = 3;
 			layer_group.feature_ubound = 105000;
-			layer_group.feature_lbound = 6;
+			layer_group.feature_lbound = 3;
 			#ifdef LOCAL_DEBUG
 			layer_slice.feature_lbound = 3;
 			layer_sgroup.feature_lbound = 3;
 			layer_group.feature_lbound = 3;
 			#endif
 
-			layer_read.score_bound = 220;
-			layer_slice.score_bound = 284;
-			layer_sgroup.score_bound = 280;
-			layer_group.score_bound = 280;
+			layer_read.score_bound = 160;
+			layer_slice.score_bound = 320;
+			layer_sgroup.score_bound = 310;
+			layer_group.score_bound = 300;
 
 
 		} else if (testDifficulty == 1) {
@@ -1868,7 +1868,7 @@ public:
 			// #endif
 
 			if (mn  < POS_INF) vread.pb(readpair_chr_t(lidx, ridx, mn));
-			if (mn_ < POS_INF) vread.pb(readpair_chr_t(lidx_, ridx_, mn_));
+			//if (mn_ < POS_INF) vread.pb(readpair_chr_t(lidx_, ridx_, mn_));
 		}
 	}
 
