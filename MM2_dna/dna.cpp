@@ -1,3 +1,7 @@
+/**
+	\author	Trasier
+	\brief	TCO-MM-DNA
+*/
 #include <bits/stdc++.h>
 using namespace std;
 
@@ -128,6 +132,7 @@ typedef slice_t group_t;
 
 // about score
 typedef long long score_type;
+// typedef int score_type;
 
 struct read_chr_t {
 	int idx;
@@ -232,8 +237,8 @@ struct acgt_t {
 // global parameter
 const char* acgtn_s = "acgtn";
 int sep_len = 10;
-const float NEG_INF = -1e9;
-const float POS_INF = 1e9;
+const score_type POS_INF = 0x3f3f3f3f;
+const score_type NEG_INF = -POS_INF;
 char Complements[128];
 int charId[128];
 char buffer[1600];
@@ -266,31 +271,211 @@ vector<sep_t> sepChromat[25];
 
 
 #ifdef DEBUG
+/**
+	\brief	check if ibuffer's item is all < 0
+*/
 bool check_ibuffer() {
 	rep(i, 0, max_ibuffer)
 		if (ibuffer[i] != -1)
 			return false;
 	return true;
 }
+
+/**
+	\brief	check acgtChromat
+*/
+bool check_acgt() {
+	LL tot = 0;
+	bool ret = true;
+	
+	rep(i, 0, 25) {
+		int sz = SZ(acgtChromat[i]);
+		if (sz == 0)	continue;
+		
+		const vector<acgt_t>& vacgt = acgtChromat[i];
+		int tmp = 0;
+		rep(i, 0, sz) {
+			const acgt_t& acgt = vacgt[i];
+			tmp += acgt.c[0] + acgt.c[1] + acgt.c[2] + acgt.c[3];
+		}
+		if (tmp >= layer_read.len+10)
+			ret = false;
+		cout << "sizeof acgtChromat[" << i << "] = " << sz * sizeof(acgt_t) << endl;
+		tot += sz;
+	}
+	cout << "tot sizeof acgtCrhomat = " << tot * sizeof(acgt_t) << endl;
+	
+	return ret;
+}
+
+/**
+	\brief check sepChromat
+*/
+bool check_sep() {
+	LL tot = 0;
+	bool ret = true;
+	
+	rep(i, 0, 25) {
+		int sz = SZ(sepChromat[i]);
+		if (sz == 0)	continue;
+		
+		const vector<sep_t> vsep = sepChromat[i];
+		bool flag = true;
+		rep(i, 1, sz) {
+			if (vsep[i].idx < vsep[i-1].idx) {
+				flag = false;
+				break;
+			}
+		}
+		ret &= flag;
+		if (!flag)
+			cout << "sepChromat[" << i << "] is not `Increasing`." << endl;
+		cout << "sizeof sepChromat[" << i << "] = " << sz * sizeof(sep_t) << endl;
+		tot += sz;
+	}
+	cout << "tot sizeof sepChromat = " << tot * sizeof(sep_t) << endl;
+	
+	return ret;
+}
+
+/**
+	\brief check sliceChromat
+*/
+bool check_slice() {
+	LL tot = 0, tmp;
+	bool ret = true;
+	
+	rep(i, 0, 25) {
+		int sz = SZ(sliceChromat[i]);
+		if (sz == 0)	continue;
+		
+		const vector<slice_t> vslc = sliceChromat[i];
+		bool flag = true;
+		rep(i, 1, sz) {
+			if (vslc[i].idx < vslc[i-1].idx) {
+				flag = false;
+				break;
+			}
+		}
+		ret &= flag;
+		tmp = 0;
+		rep(i, 0, sz) {
+			tmp += sizeof(int);
+			tmp += SZ(vslc[i]) * sizeof(feature_t);
+		}
+		if (!flag)
+			cout << "sliceChromat[" << i << "] is not `Increasing`." << endl;
+		cout << "sizeof sliceChromat[" << i << "] = " << tmp << endl;
+		tot += tmp;
+	}
+	cout << "tot sizeof sliceChromat = " << tot << endl;
+	
+	return ret;
+}
+
+/**
+	\brief check sgroupChromat
+*/
+bool check_sgroup() {
+	LL tot = 0, tmp;
+	bool ret = true;
+	
+	rep(i, 0, 25) {
+		int sz = SZ(sgroupChromat[i]);
+		if (sz == 0)	continue;
+		
+		const vector<sgroup_t> vsgrp = sgroupChromat[i];
+		bool flag = true;
+		rep(i, 1, sz) {
+			if (vsgrp[i].idx < vsgrp[i-1].idx) {
+				flag = false;
+				break;
+			}
+		}
+		ret &= flag;
+		tmp = 0;
+		rep(i, 0, sz) {
+			tmp += sizeof(int);
+			tmp += SZ(vsgrp[i]) * sizeof(feature_t);
+		}
+		if (!flag)
+			cout << "sgroupChromat[" << i << "] is not `Increasing`." << endl;
+		cout << "sizeof sgroupChromat[" << i << "] = " << tmp << endl;
+		tot += tmp;
+	}
+	cout << "tot sizeof sgroupChromat = " << tot << endl;
+	
+	return ret;
+}
+
+/**
+	\brief check groupChromat
+*/
+bool check_group() {
+	LL tot = 0, tmp;
+	bool ret = true;
+	
+	rep(i, 0, 25) {
+		int sz = SZ(groupChromat[i]);
+		if (sz == 0)	continue;
+		
+		const vector<group_t> vgrp = groupChromat[i];
+		bool flag = true;
+		rep(i, 1, sz) {
+			if (vgrp[i].idx < vgrp[i-1].idx) {
+				flag = false;
+				break;
+			}
+		}
+		ret &= flag;
+		tmp = 0;
+		rep(i, 0, sz) {
+			tmp += sizeof(int);
+			tmp += SZ(vgrp[i]) * sizeof(feature_t);
+		}
+		if (!flag)
+			cout << "groupChromat[" << i << "] is not `Increasing`." << endl;
+		cout << "sizeof groupChromat[" << i << "] = " << tmp << endl;
+		tot += tmp;
+	}
+	cout << "tot sizeof groupChromat = " << tot << endl;
+	
+	return ret;
+}
 #endif
 
+/**
+	\brief	calculate the score for needman's function updated.
+*/
 inline int calcScore(char a, char b) {
 	return (a==b) ? 1:-1;
 }
 
+/**
+	\brief	get the id of char
+*/
 inline int getCharId(char c) {
 	return charId[c];
 }
 
+/**
+	\brief get the reverse complement of char
+*/
 inline char getComplement(char c) {
 	return Complements[c];
 }
 
+/**
+	\brief check if the char is `ACGT`
+	\note	using charId[ch]==4 may be faster
+*/
 inline bool isACGT(char ch) {
 	return ch=='A' || ch=='G' || ch=='C' || ch=='T';
 }
 
-
+/**
+	\brief get the reverse complement of string
+*/
 inline string getReverseComplement(const string& line) {
 	int len = line.length();
 	string ret;
@@ -299,12 +484,24 @@ inline string getReverseComplement(const string& line) {
 	return ret;
 }
 
+/**
+	\brief 	delete the trie
+	\param	rt: root of current sub-tree
+			dep: depth of current node, if dep==sep_len, obviously a leaf node.
+*/
 void Delete_trie(trie_ptr rt, int dep) {
 	if (dep == sep_len)	return ;
 	rep(i, 0, 5) if (rt->nxt[i]) Delete_trie(rt->nxt[i], dep+1);
 	delete rt;
 }
 
+#ifdef DEBUG
+	LL leaf_num = 0, node_num = 0;
+#endif
+/**
+	\brief	Insert the string into trie with return value
+	\return	the leaf node of the string
+*/
 trie_ptr Insert_chr(char *s) {
 	int i = 0, id;
 	trie_ptr p = trie_root;
@@ -315,7 +512,11 @@ trie_ptr Insert_chr(char *s) {
 		p = p->nxt[id];
 		++i;
 	}
-
+	#ifdef DEBUG
+	node_num += sep_len - i;
+	assert(node_num < 12207050);
+	if (i < sep_len) ++leaf_num;
+	#endif
 	while(i < sep_len) {
 		id = getCharId(s[i++]);
 		p->nxt[id] = new trie_t(p);
@@ -325,9 +526,9 @@ trie_ptr Insert_chr(char *s) {
 	return p;
 }
 
-#ifdef DEBUG
-	LL leaf_num = 0;
-#endif
+/**
+	\brief Insert the string into trie without return value
+*/
 void Insert(char *s) {
 	int i = 0, id;
 	trie_ptr p = trie_root;
@@ -339,6 +540,8 @@ void Insert(char *s) {
 		++i;
 	}
 #ifdef DEBUG
+	node_num += sep_len - i;
+	assert(node_num < 12207050);
 	if (i < sep_len) ++leaf_num;
 #endif
 
@@ -349,6 +552,10 @@ void Insert(char *s) {
 	}
 }
 
+/**
+	\brief Insert the string into trie with return value
+	\return	int, id of the string.
+*/
 int Insert_read(char *s) {
 	int i = 0, id;
 	trie_ptr p = trie_root;
@@ -359,7 +566,11 @@ int Insert_read(char *s) {
 		p = p->nxt[id];
 		++i;
 	}
-
+#ifdef DEBUG
+	node_num += sep_len - i;
+	assert(node_num < 12207050);
+	if (i < sep_len) ++leaf_num;
+#endif
 	while(i < sep_len) {
 		id = getCharId(s[i++]);
 		p->nxt[id] = new trie_t(p);
@@ -371,6 +582,7 @@ int Insert_read(char *s) {
 		int c[5];
 		memset(c, 0, sizeof(c));
 		rep(j, 0, sep_len) ++c[getCharId(s[j])];
+		
 		uint tmp = (c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0];
 		p->nxt[0] = (trie_ptr) tmp;
 		p->nxt[1] = (trie_ptr) (++nleaf);
@@ -380,12 +592,18 @@ int Insert_read(char *s) {
 	return id;
 }
 
-void init_trie_chr() {
+/**
+	\brief	init the trie, if root not NULL, then delete the whole tree
+*/
+void init_trie() {
 	if (trie_root)
 		Delete_trie(trie_root, 0);
 	trie_root = new trie_t();
 }
 
+/**
+	\brief	insert the haiming distance <= 1's node with same id.
+*/
 #define USE_EXISTS_SEP
 void Insert_grp(char *d) {
 	#ifdef DEBUG
@@ -418,6 +636,11 @@ void Insert_grp(char *d) {
 		}
 
 	#ifndef USE_EXISTS_SEP
+	#ifdef DEBUG
+		node_num += sep_len - i;
+		assert(node_num < 12207050);
+		if (i < sep_len) ++leaf_num;
+	#endif
 		while (i < sep_len) {
 			id = s[i++];
 			p->nxt[id] = new trie_t(p);
@@ -452,6 +675,11 @@ void Insert_grp(char *d) {
 		}
 
 	#ifndef USE_EXISTS_SEP
+	#ifdef DEBUG
+		node_num += sep_len + 1 - i;
+		assert(node_num < 12207050);
+		if (i <= sep_len+1) ++leaf_num;
+	#endif
 		while (i <= sep_len+1) {
 			id = s[i++];
 			p->nxt[id] = new trie_t(p);
@@ -487,6 +715,11 @@ void Insert_grp(char *d) {
 				++i;
 			}
 		#ifndef USE_EXISTS_SEP
+		#ifdef DEBUG
+			node_num += sep_len - i;
+			assert(node_num < 12207050);
+			if (i <= sep_len) ++leaf_num;
+		#endif
 			while (i <= sep_len) {
 				id = s[i++];
 				p->nxt[id] = new trie_t(p);
@@ -508,6 +741,9 @@ void Insert_grp(char *d) {
 	}
 }
 
+/**
+	\brief	traverse the trie and fuzzy match the node with same id.
+*/
 void map_trie_chr(trie_ptr rt, int dep) {
 	if (dep == sep_len) {
 		// cout << (char *)rt->nxt[1] - (char *)NULL << endl;
@@ -525,12 +761,44 @@ void map_trie_chr(trie_ptr rt, int dep) {
 	}
 }
 
-void clear_trie_chr() {
+/**
+	\brief	restore the string of sep
+*/
+inline void restore_sep(trie_ptr leaf, char *s) {
+	trie_ptr p = leaf, q;
+	int i;
+	
+	while ((q=p->fa) != NULL) {	
+	#ifdef DEBUG
+		bool flag = false;
+	#endif
+		for (i=0; i<5; ++i) {
+			if (q->nxt[i] == p) {
+				#ifdef DEBUG
+					flag = true;
+				#endif
+				*s = acgt_s[i];
+				--s;
+				break;
+			}
+		}
+	#ifdef DEBUG
+		assert(flag);
+	#endif
+		p = q;
+	}
+}
+
+/**
+	\brief void function
+*/
+void clear_trie_chr(void) {
 	/* do nothing */;
 }
 
 /**
-	\brief calculate the score between readpair and group
+	\brief 	calculate the score between `group a` and `read-pair b`
+	\return	score
 */
 score_type score_group(const group_t& a, const slice_t& b) {
 	const vector<feature_t>& afeat = a.feat;
@@ -559,7 +827,8 @@ score_type score_group(const group_t& a, const slice_t& b) {
 }
 
 /**
-	\brief calculate the score between readpair and sgroup
+	\brief	calculate the score between `sgroup a` and `read-pair b`
+	\return score
 */
 score_type score_sgroup(const sgroup_t& a, const slice_t& b) {
 	const vector<feature_t>& afeat = a.feat;
@@ -588,7 +857,8 @@ score_type score_sgroup(const sgroup_t& a, const slice_t& b) {
 }
 
 /**
-	\brief calculate the score between readpair and slice
+	\brief 	calculate the score between `slice a` and `read-pair b`
+	\return score
 */
 score_type score_slice(const slice_t& a, const slice_t& b) {
 	const vector<feature_t>& afeat = a.feat;
@@ -619,7 +889,8 @@ score_type score_slice(const slice_t& a, const slice_t& b) {
 }
 
 /**
-	\brief calculate the score between chromat-read and query-read
+	\brief 	calculate the score between `chromat-read a` and `query-read b`
+	\return score
 */
 score_type score_acgt(const acgt_t& a, const acgt_t& b) {
 	score_type ret = 0;
@@ -651,7 +922,11 @@ public:
 		charId['G'] = 2;
 		charId['T'] = 3;
 	}
-
+	
+	/**
+		\brief	init the parameter of layer
+		\param	testDifficulty: 0, small case; 1, medium case; 2, large case.
+	*/
 	void init_param(const int testDifficulty) {
 
 		if (testDifficulty == 0) {
@@ -661,7 +936,6 @@ public:
 			layer_sgroup.len = 10500;
 			layer_group.len = 105000;
 
-			layer_read.feature_num = 80;
 			layer_slice.feature_num = 100;
 			layer_sgroup.feature_num = 1000;
 			layer_group.feature_num = 10000;
@@ -671,19 +945,17 @@ public:
 			layer_sgroup.topk = 30;
 			layer_group.topk = 200;
 
-			layer_read.feature_ubound = 80;
-			layer_read.feature_lbound = 80;
 			layer_slice.feature_ubound = 1000;
 			layer_slice.feature_lbound = 3;
 			layer_sgroup.feature_ubound = 10500;
 			layer_sgroup.feature_lbound = 4;
 			layer_group.feature_ubound = 105000;
 			layer_group.feature_lbound = 6;
-			// #ifdef DEBUG
-			// layer_slice.feature_lbound = 3;
-			// layer_sgroup.feature_lbound = 3;
-			// layer_group.feature_lbound = 3;
-			// #endif
+			#ifdef LOCAL_DEBUG
+			layer_slice.feature_lbound = 3;
+			layer_sgroup.feature_lbound = 3;
+			layer_group.feature_lbound = 3;
+			#endif
 
 			layer_read.score_bound = 220;
 			layer_slice.score_bound = 284;
@@ -697,13 +969,17 @@ public:
 			layer_slice.len = 1050;
 			layer_sgroup.len = 10500;
 			layer_group.len = 105000;
-
+			abort();
 		} else {
 			abort();
 		}
 
 	}
-
+	
+	/**
+		\brief	init the environment according `testDifficulty`
+		\param	testDifficulty: 0, small case; 1, medium case; 2, large case.
+	*/
 	int initTest(int testDifficulty) {
 		// init the parameter
 		init_param(testDifficulty);
@@ -721,7 +997,7 @@ public:
 		}
 
 		// init the trie
-		init_trie_chr();
+		init_trie();
 
 		// clear the ibuffer
 		memset(ibuffer, -1, sizeof(ibuffer));
@@ -730,14 +1006,15 @@ public:
 	}
 
 	/**
-		\brief separate the chromat into sep, and store trie's leaf ptr into `SepChromat`
+		\brief 	separate the chromat into sep, and store trie's leaf node into `SepChromat`
+		\param	chromatidSequence, sequence of the chromat
 	*/
 	void separateChromat(const vstr& chromatidSequence) {
-		char s[32];
-		const int chrId = *chrIds.rbegin();
+		char s[24];
 		vector<sep_t>& vsep = sepChromat[chrId];
+		int slice_ed = layer_slice.len - sep_len + 1;
 		int nline = SZ(chromatidSequence);
-		int idx = 0, l = 0;
+		int idx = 0, l;
 		int ll = 0;
 		int i, j, k;
 		bool flag;
@@ -818,6 +1095,7 @@ public:
 			}
 			if (!flag) break;
 			++begIdx;
+			idx += len;
 		}
 
 		// find the end index
@@ -852,18 +1130,15 @@ public:
 			}
 
 			if (ll >= layer_slice.len) {
-				int ed = layer_slice.len - sep_len + 1;
-
-				for (i=0; i<ed; ++i) Insert(buffer+i);
-				for (j=0,i=ed+sep_len-1; i<ll; ++i,++j) buffer[j] = buffer[i];
+				for (i=0; i<slice_ed; ++i) Insert(buffer+i);
+				for (j=0,i=slice_ed+sep_len-1; i<ll; ++i,++j) buffer[j] = buffer[i];
 				ll = j;
 			}
 			idx += len;
 		}
 		if (ll >= sep_len) {
-			int ed = ll - sep_len + 1;
-
-			for (i=0; i<ed; ++i) Insert(buffer+i);
+			slice_ed = ll - sep_len + 1;
+			for (i=0; i<slice_ed; ++i) Insert(buffer+i);
 		}
 	}
 
@@ -871,10 +1146,9 @@ public:
 		\brief pile up the sep to read
 	*/
 	void pileChromat_read() {
-		// const int chrId = *chrIds.rbegin();
-		vector<sep_t>& vsep = sepChromat[chrId];
-		vector<acgt_t>& vacgt = acgtChromat[chrId];
+		const vector<sep_t>& vsep = sepChromat[chrId];
 		const int nsep = SZ(vsep);
+		vector<acgt_t>& vacgt = acgtChromat[chrId];
 		const int m = layer_read.len / sep_len;
 		acgt_t acgt;
 		int i = 0, j;
@@ -893,10 +1167,10 @@ public:
 
 			vacgt.pb(acgt);
 
-			// #ifdef DEBUG
-			// if (i>0 && i%2000==0)
-			// 	acgt.print();
-			// #endif
+			#ifdef LOCAL_DEBUG
+			if (i>0 && i%10000==0)
+				acgt.print();
+			#endif
 		}
 	}
 
@@ -904,46 +1178,28 @@ public:
 		\brief pile up the sep to slice
 	*/
 	void pileChromat_slice() {
-		// const int chrId = *chrIds.rbegin();
-		const vector<sep_t> vsep = sepChromat[chrId];
+		const vector<sep_t>& vsep = sepChromat[chrId];
 		const int nsep = SZ(vsep);
-		int l = 0;
 		vector<slice_t>& vslc = sliceChromat[chrId];
 		const int nfeature = layer_slice.feature_num;
-		int bidx, szvf;
+		const int feature_ubound = layer_slice.feature_ubound;
+		const int feature_lbound = layer_slice.feature_lbound;
+		const int m = layer_slice.len / sep_len;
+		int bidx, szvf, l, szfeature;
 		vector<feature_t> vfeat;
 		slice_t slice;
-		int i = 0, j = 0, k, pidx;
-		trie_ptr p, q;
+		int i = 0, j = 0, k;
 
-		// rep(i, 1, sep_len) buffer[l++] = 'N';
 		while (i < nsep) {
-			bidx = pidx = vsep[i].idx;
+			bidx =v sep[i].idx;
 			l = 0;
-
-			while (i<nsep && vsep[i].idx-bidx<layer_slice.len) {
-				if (vsep[i].idx-pidx >= 80) {
-					for (j=0; j<sep_len; ++j) buffer[l++] = 'N';
-				}
-				pidx = vsep[i].idx;
-
-				p = vsep[i].leaf;
-				k = l + sep_len;
-				while ((q = p->fa) != NULL) {
-					for (j=0; j<5; ++j) {
-						if (q->nxt[j] == p) {
-							buffer[--k] = acgt_s[j];
-							break;
-						}
-					}
-					p = q;
-				}
+			
+			for (j=0,; j<m&&i<nsep; ++j,++i) {
+				restore_sep(vsep[i].leaf, buffer+l+sep_len-1);
 				l += sep_len;
-
-				++i;
 			}
 
-			// #ifdef DEBUG
+			// #ifdef LOCAL_DEBUG
 				// cout << "bidx: " << bidx << endl;
 				// rep(ii, 0, l) cout << buffer[ii];
 				// cout << endl;
@@ -951,7 +1207,7 @@ public:
 			szvf = 0;
 			for (k=0; k<l-sep_len+1; ++k) {
 				int id = Insert_read(buffer+k);
-				// #ifdef DEBUG
+				// #ifdef LOCAL_DEBUG
 				// cout << id << ": ";
 				// rep(ii, 0, sep_len) cout << buffer[k+ii];
 				// cout << endl;
@@ -972,7 +1228,7 @@ public:
 				int ii = 0, jj = 0;
 
 				while (ii < szvf) {
-					if (vfeat[ii].c>=layer_slice.feature_lbound && vfeat[ii].c<=layer_slice.feature_ubound)
+					if (vfeat[ii].c>=feature_lbound && vfeat[ii].c<=feature_ubound)
 						vfeat[jj++] = vfeat[ii];
 					ibuffer[vfeat[ii].id] = -1;
 					++ii;
@@ -986,7 +1242,7 @@ public:
 			assert(SZ(vfeat) == szvf);
 			#endif
 
-			int szfeature = min(nfeature, szvf);
+			szfeature = min(nfeature, szvf);
 			slice.idx = bidx;
 			rep(ii, 0, szfeature) {
 				slice.pb(vfeat[ii]);
@@ -1008,13 +1264,14 @@ public:
 		\brief pile up the slice to sub-group
 	*/
 	void pileChromat_sgroup() {
-		// const int chrId = *chrIds.rbegin();
-		vector<sgroup_t>& vsgrp = sgroupChromat[chrId];
 		const vector<slice_t>& vslc = sliceChromat[chrId];
-		const int m = layer_sgroup.len / layer_slice.len;
 		const int nslice = SZ(vslc);
+		vector<sgroup_t>& vsgrp = sgroupChromat[chrId];
+		const int m = layer_sgroup.len / layer_slice.len;
 		const int nfeature = layer_sgroup.feature_num;
-		int bidx, szvf;
+		const int feature_ubound = layer_sgroup.feature_ubound;
+		const int feature_lbound = layer_sgroup.feature_lbound;
+		int bidx, szvf, szfeature;
 		vector<feature_t> vfeat;
 		sgroup_t sgroup;
 		int i = 0, j;
@@ -1025,8 +1282,8 @@ public:
 
 			for (j=0; j<m&&i<nslice; ++i,++j) {
 				const slice_t& slice = vslc[i];
-				int sz_feat = SZ(slice);
-				rep(ii, 0, sz_feat) {
+				szfeature = SZ(slice);
+				rep(ii, 0, szfeature) {
 					const int& k = slice.feat[ii].id;
 					if (ibuffer[k] < 0) {
 						ibuffer[k] = szvf++;
@@ -1045,7 +1302,7 @@ public:
 				int ii = 0, jj = 0;
 
 				while (ii < szvf) {
-					if (vfeat[ii].c>=layer_sgroup.feature_lbound && vfeat[ii].c<=layer_sgroup.feature_ubound)
+					if (vfeat[ii].c>=feature_lbound && vfeat[ii].c<=feature_ubound)
 						vfeat[jj++] = vfeat[ii];
 					ibuffer[vfeat[ii].id] = -1;
 					++ii;
@@ -1054,12 +1311,13 @@ public:
 				szvf = jj;
 				vfeat.resize(szvf);
 			}
-
+			sort(all(vfeat));
+			
 			#ifdef DEBUG
 			assert(SZ(vfeat) == szvf);
 			#endif
 
-			int szfeature = min(nfeature, szvf);
+			szfeature = min(nfeature, szvf);
 			sgroup.idx = bidx;
 			rep(ii, 0, szfeature) {
 				sgroup.pb(vfeat[ii]);
@@ -1081,13 +1339,14 @@ public:
 		\brief pile up the sgroup to group
 	*/
 	void pileChromat_group() {
-		// const int chrId = *chrIds.rbegin();
-		vector<group_t>& vgrp = groupChromat[chrId];
 		const vector<sgroup_t> vsgrp = sgroupChromat[chrId];
-		const int m = layer_group.len / layer_sgroup.len;
 		const int nsgrp = SZ(vsgrp);
+		vector<group_t>& vgrp = groupChromat[chrId];
+		const int m = layer_group.len / layer_sgroup.len;
 		const int nfeature = layer_group.feature_num;
-		int bidx, szvf;
+		const int feature_ubound = layer_group.feature_ubound;
+		const int feature_lbound = layer_group.feature_lbound;
+		int bidx, szvf, szfeature;
 		group_t group;
 		vector<feature_t> vfeat;
 		int i = 0, j;
@@ -1098,8 +1357,8 @@ public:
 
 			for (j=0; j<m&&i<nsgrp; ++i,++j) {
 				const sgroup_t& sgrp = vsgrp[i];
-				int sz_feat = SZ(sgrp);
-				rep(ii, 0, sz_feat) {
+				szfeature = SZ(sgrp);
+				rep(ii, 0, szfeature) {
 					const int& k = sgrp.feat[ii].id;
 					if (ibuffer[k] < 0) {
 						ibuffer[k] = szvf++;
@@ -1118,7 +1377,7 @@ public:
 				int ii = 0, jj = 0;
 
 				while (ii < szvf) {
-					if (vfeat[ii].c>=layer_group.feature_lbound && vfeat[ii].c<=layer_group.feature_ubound)
+					if (vfeat[ii].c>=feature_lbound && vfeat[ii].c<=feature_ubound)
 						vfeat[jj++] = vfeat[ii];
 					ibuffer[vfeat[ii].id] = -1;
 					++ii;
@@ -1127,11 +1386,13 @@ public:
 				szvf = jj;
 				vfeat.resize(szvf);
 			}
+			sort(all(vfeat));
+			
 			#ifdef DEBUG
 			assert(SZ(vfeat) == szvf);
 			#endif
 
-			int szfeature = min(nfeature, szvf);
+			szfeature = min(nfeature, szvf);
 			group.idx = bidx;
 			rep(ii, 0, szfeature) {
 				group.pb(vfeat[ii]);
@@ -1149,8 +1410,8 @@ public:
 	}
 
 	/**
-		\brief pile up the chromat to form 3 layers:
-			`group`、`sgroup`、`slice`
+		\brief pile up the chromat to form 4 layers:
+			`group`、`sgroup`、`slice`, `read`(aka acgt)
 	*/
 	void pileChromat() {
 		/**
@@ -1163,7 +1424,8 @@ public:
 		#ifdef DEBUG
 		if( !check_ibuffer() )
 			cout << "check ibuffer wrong" << endl;
-		cout << SZ(acgtChromat[chrId]) << endl;
+		if ( !check_acgt() )
+			cout << "check acgt wrong" << endl;
 		#endif
 
 		/**
@@ -1176,7 +1438,8 @@ public:
 		#ifdef DEBUG
 		if( !check_ibuffer() )
 			cout << "check ibuffer wrong" << endl;
-		cout << SZ(sliceChromat[chrId]) << endl;
+		if ( !check_slice() )
+			cout << "check slice wrong" << endl;
 		#endif
 
 		// /**
@@ -1194,7 +1457,8 @@ public:
 		#ifdef DEBUG
 		if( !check_ibuffer() )
 			cout << "check ibuffer wrong" << endl;
-		cout << SZ(sgroupChromat[chrId]) << endl;
+		if ( !check_sgroup() )
+			cout << "check sgroup wrong" << endl;
 		#endif
 
 		/**
@@ -1207,33 +1471,42 @@ public:
 		#ifdef DEBUG
 		if( !check_ibuffer() )
 			cout << "check ibuffer wrong" << endl;
-		cout << SZ(groupChromat[chrId]) << endl;
+		if ( !check_group() )
+			cout << "check group wrong" << endl;
 		#endif
 	}
-
+	
+	/**
+		\brief	pass the reference chromat
+		\note	store the `chromatidSequenceId` into chrIds and compress the `chromatidSequence`
+	*/
 	int passReferenceGenome(int chromatidSequenceId, const vector<string>& chromatidSequence) {
 		// push chrId into chrIds
-		chrIds.pb(chromatidSequenceId);
+		chrIds.pb(chrId = chromatidSequenceId);
 
 		// split the chromat into sep.
 		separateChromat(chromatidSequence);
 
 		return 0;
 	}
-
+	
+	/**
+		\brief	preprecessing the trie and chromat
+		\note	1. map all leaf node of trie with same id if their haiming distance is less than 1.
+				2. pile up all the chromat to form 4 layers each.
+	*/
 	int preProcessing() {
 		int sz = SZ(chrIds);
 
-		// mapping the leaf with integer
+		// mapping the similar leaf with same id
 		map_trie_chr(trie_root, 0);
 		#ifdef DEBUG
-		cout << "leaf_num = " << leaf_num << endl;
+		cout << "leaf_num = " << leaf_num << ", node_num = " << node_unm << "." << endl;
 		#endif
-
+		
+		// pile up the chromat to form layers
 		rep(i, 0, sz) {
 			chrId = chrIds[i];
-
-			// pile up the lowest sep into layers.
 			pileChromat();
 		}
 
@@ -1244,27 +1517,35 @@ public:
 	}
 
 	/**
-		\brief Generate a failure but format right answer
+		\brief	Generate a failure but format right answer
+		\param	prefix: prefix of read
+				strand: flag of read pair
 	*/
-	inline string getFailureResult(const string& qname, const char strand='+') const {
+	inline string getFailureResult(const string& prefix, const char strand='+') {
 		#ifdef DEBUG
-		return qname + ",0,1,150," + strand + ",0.0001";
+		return prefix + ",0,1,150," + strand + ",0.0001";
 		#else
-		return qname + ",20,1,150," + strand + ",0.0001";
+		return prefix + ",20,1,150," + strand + ",0.0001";
 		#endif
 	}
-
-	acgt_t calcACGT(const string& s) {
+	
+	/**
+		\brief	calculate the `acgt` num of string
+	*/
+	void calcACGT(const string& s, acgt_t& acgt) {
 		const int len = s.length();
 		int c[5];
 
 		memset(c, 0, sizeof(c));
 		rep(i, 0, len) ++c[getCharId(s[i])];
-
-		return acgt_t(c[0], c[1], c[2], c[3]);
+		
+		rep(i, 0, 4) acgt.c[i] = c[i];
 	}
-
-	acgt_t calcACGT(const string& s1, const string& s2) {
+	
+	/**
+		\brief	calculate the `acgt` num of string pair
+	*/
+	void calcACGT(const string& s1, const string& s2, acgt_t& acgt) {
 		int len;
 		int c[5];
 
@@ -1275,20 +1556,23 @@ public:
 		len = s2.length();
 		rep(i, 0, len) ++c[getCharId(s2[i])];
 
-		return acgt_t(c[0], c[1], c[2], c[3]);
+		rep(i, 0, 4) acgt.c[i] = c[i];
 	}
 
-	slice_t calcSlice(const string& s, const int idx=0) {
+	/**
+		\brief	calculate the slice of string
+	*/
+	void calcSlice(const string& s, slice_t& slice, const int idx=0) {
 		int len = s.length();
-		int szvf = 0;
-		slice_t ret;
-		vector<feature_t>& vfeat = ret.feat;
-
+		int szvf = 0, k;
+		vector<feature_t>& vfeat = slice.feat;
+		
+		vfeat.clr();
+		
 		strncpy(buffer, s.c_str(), len);
 		len = len - sep_len + 1;
-
 		rep(i, 0, len) {
-			const int k = Insert_read(buffer + i);
+			k = Insert_read(buffer + i);
 			if (ibuffer[k] < 0) {
 				ibuffer[k] = szvf++;
 				vfeat.pb(feature_t(1, k));
@@ -1301,25 +1585,27 @@ public:
 		assert(SZ(vfeat) == szvf);
 		#endif
 		rep(i, 0, szvf) ibuffer[vfeat[i].id] = -1;
-		ret.idx = idx;
-		ret.sorted();
-
-		return ret;
+		slice.idx = idx;
+		slice.sorted();
 	}
-
-	slice_t calcSlice(const string& l1, const string& l2) {
-		int len;
-		int szvf;
-		slice_t ret;
-		vector<feature_t>& vfeat = ret.feat;
-
+	
+	/**
+		\brief	calculate the slice of string pair
+	*/
+	void calcSlice(const string& l1, const string& l2, slice_t& slice) {
+		int len, szvf;
+		int k;
+		vector<feature_t>& vfeat = slice.feat;
+		
+		vfeat.clr();
+		
 		// handle first string
 		len = l1.length();
 		szvf = 0;
 		strncpy(buffer, l1.c_str(), len);
 		len = len - sep_len + 1;
 		rep(i, 0, len) {
-			const int k = Insert_read(buffer + i);
+			k = Insert_read(buffer + i);
 			if (ibuffer[k] < 0) {
 				ibuffer[k] = szvf++;
 				vfeat.pb(feature_t(1, k));
@@ -1346,15 +1632,13 @@ public:
 		assert(SZ(vfeat) == szvf);
 		#endif
 		rep(i, 0, szvf) ibuffer[vfeat[i].id] = -1;
-		ret.sorted();
-
-		return ret;
+		slice.sorted();
 	}
 
 	/**
 		\brief choose the best group
 	*/
-	void chooseBstGrp(const int chrId, const slice_t& slice, vi& ret) {
+	void chooseBstGrp(const slice_t& slice, vi& ret) {
 		const vector<group_t>& vgrp = groupChromat[chrId];
 		int sz = SZ(vgrp);
 		const int topk = layer_group.topk;
@@ -1362,7 +1646,8 @@ public:
 		priority_queue<read_chr_t> Q;
 		score_type score;
 		int szQ = 0;
-
+		
+		ret.clr();
 		rep(i, 0, sz) {
 			score = score_group(vgrp[i], slice);
 			// #ifdef DEBUG
@@ -1383,7 +1668,6 @@ public:
 		assert(SZ(Q) == szQ);
 		#endif
 		
-		ret.clr();
 		while (!Q.empty()) {
 			// #ifdef DEBUG
 			// Q.top().print();
@@ -1397,7 +1681,7 @@ public:
 	/**
 		\brief choose the best sub-group
 	*/
-	void chooseBstSgrp(const int chrId, const slice_t& slice, const vi& bstGrp, vi& ret) {
+	void chooseBstSgrp(const slice_t& slice, const vi& bstGrp, vi& ret) {
 		const vector<sgroup_t>& vsgrp = sgroupChromat[chrId];
 		int sz = SZ(vsgrp), szgp = SZ(bstGrp);
 		const int topk = layer_sgroup.topk;
@@ -1405,7 +1689,7 @@ public:
 		const int m = layer_group.len / layer_sgroup.len;
 		priority_queue<read_chr_t> Q;
 		score_type score;
-		int szQ = 0;
+		int szQ;
 		vi vtmp;
 
 		ret.clr();
@@ -1457,7 +1741,7 @@ public:
 	/**
 		\brief choose the best slice
 	*/
-	void chooseBstSlc(const int chrId, const slice_t& slice, const vi& bstSgrp, vi& ret) {
+	void chooseBstSlc(const slice_t& slice, const vi& bstSgrp, vi& ret) {
 		const vector<slice_t>& vslc = sliceChromat[chrId];
 		int sz = SZ(vslc), szsgp = SZ(bstSgrp);
 		const int topk = layer_slice.topk;
@@ -1512,18 +1796,19 @@ public:
 	/**
 		\brief choose best readpair
 	*/
-	void chooseBstRead(const int chrId, const vi& bstSlcIdx, const acgt_t& acgt1, const acgt_t& acgt2, vector<readpair_chr_t>& vread) {
-		// just random choose is fine
+	void chooseBstRead( const vi& bstSlcIdx, const acgt_t& acgt1, const acgt_t& acgt2, vector<readpair_chr_t>& vread) {
 		const vector<acgt_t>& vacgt = acgtChromat[chrId];
 		const int sz = SZ(vacgt);
 		const int szslc = SZ(bstSlcIdx);
-		const int m = layer_slice.len / layer_read.len;
+		const int read_len = layer_read.len;
+		const int m = layer_slice.len / read_len;
 		int lidx, lidx_, ridx, ridx_;
 		score_type mn, mn_, tmp1, tmp2;
-
+		
+		vread.clr();
 		rep(i, 0, szslc) {
-			mn = mn_ = INF;
-			for (int j=bstSlcIdx[i]/layer_read.len,k=0; k<m&&j<sz; ++j,++k) {
+			mn = mn_ = POS_INF;
+			for (int j=bstSlcIdx[i]/read_len,k=0; k<m&&j<sz; ++j,++k) {
 				tmp1 = score_acgt(vacgt[j], acgt1);
 				#ifdef DEBUG
 				if (j+2<sz)
@@ -1582,8 +1867,8 @@ public:
 			// cout << "mn = " << mn << ", mn_ = " << mn_ << "." << endl;
 			// #endif
 
-			if (mn_ < INF) vread.pb(readpair_chr_t(lidx, ridx, mn));
-			if (mn_ < INF) vread.pb(readpair_chr_t(lidx_, ridx_, mn_));
+			if (mn  < POS_INF) vread.pb(readpair_chr_t(lidx, ridx, mn));
+			if (mn_ < POS_INF) vread.pb(readpair_chr_t(lidx_, ridx_, mn_));
 		}
 	}
 
@@ -1591,12 +1876,12 @@ public:
 		\brief fuzzy match the read with assigned chromat
 		\note store pair of (position, score) into vread
 	*/
-	void alignRead_chrId(const int chrId, const slice_t& slice, vi& ret) {
+	void alignRead_chrId(const slice_t& slice, vi& ret) {
 		/**
 			\step 1 choose best group
 		*/
 		vi vbst, vbst_;
-
+		
 		chooseBstGrp(chrId, slice, vbst_);
 		#ifdef DEBUG
 		int sz_bstGroup = SZ(vbst_);
@@ -1621,7 +1906,10 @@ public:
 		cout << "bstGrp = " << sz_bstGroup << ", bstSgrp = " << sz_bstSgroup << ", sz_bstSlc = " << sz_bstSlc << endl;
 		#endif
 	}
-
+	
+	/**
+		\brief	exact align the read with chromat
+	*/
 	score_type alignExactRead(const int chrId, const int idx, const string& line) {
 		const vector<sep_t>& vsep = sepChromat[chrId];
 		const int szsep = SZ(vsep);
@@ -1631,28 +1919,9 @@ public:
 
 		// restore the string
 		{
-			for (int i=0,j=idx*m,k=l+sep_len; i<m&&j<szsep; ++i,++j,l+=sep_len,k=l+sep_len) {
-				trie_ptr p = vsep[j].leaf, q;
-
-				#ifdef DEBUG
-				bool flag = false;
-				#endif
-				while (p->fa != NULL) {
-					q = p->fa;
-					rep(ii, 0, 5) {
-						if (q->nxt[ii] == p) {
-							#ifdef DEBUG
-							flag = true;
-							#endif
-							buffer[--k] = acgt_s[ii];
-							break;
-						}
-					}
-					p = q;
-				}
-				#ifdef DEBUG
-				assert(flag);
-				#endif
+			for (int i=0,j=idx*m; i<m&&j<szsep; ++i,++j) {
+				restore_sep(vsep[j].leaf, buffer+l+sep_len-1);
+				l += sep_len;
 			}
 			buffer[l++] = '\0';
 		}
@@ -1693,7 +1962,7 @@ public:
 	}
 
 	/**
-		\breif exact match the read with assigned read
+		\brief exact match the read with assigned read
 		\note assign the best position to idx1 & idx2
 		\return score of exact match
 	*/
@@ -1708,25 +1977,32 @@ public:
 	score_type alignRead(const string& read1, const string& read2, info_t& info1, info_t& info2) {
 		const int topk = layer_read.topk;
 		const int score_bound = layer_read.score_bound;
-		const slice_t slice = calcSlice(read1, read2);
-		const acgt_t acgt1 = calcACGT(read1);
-		const acgt_t acgt2 = calcACGT(read2);
+		slice_t slice;
+		acgt_t acgt1, acgt2;
 		score_type ret = NEG_INF, tmp;
 		vector<readpair_chr_t> vreadpair;
 		priority_queue<read_t> Q;
 		int szQ = 0;
-
+	
+		/**
+			\step 0: init
+		*/
+		calcSlice(read1, read2, slice);
+		calcACGT(read1, acgt1);
+		calcACGT(read2, acgt2);
+		
 		/**
 			\step 1: foreach format find the best read
 		*/
 		int sz_chrIds = SZ(chrIds);
+		vi bstSlc;
+			
 		rep(i, 0, sz_chrIds) {
-			const int chrId = chrIds[i];
+			chrId = chrIds[i];
 			/**
 				\step 2: find the best slice
 			*/
-			vi bstSlc;
-			alignRead_chrId(chrId, slice, bstSlc);
+			alignRead_chrId(slice, bstSlc);
 
 			/**
 				\step 3: find the best readpair
@@ -1749,22 +2025,22 @@ public:
 		}
 
 		#ifdef DEBUG
-		assert(SZ(Q) <= topk);
 		assert(SZ(Q) == szQ);
 		// cout << "candidate exact align = " << szQ << endl;
 		#endif
 
 		int bstChrId;
 		int bstIdx1, bstIdx2;
-
-		#ifdef DEBUG
+		read_t read;
+		
+		#ifdef LOCAL_DEBUG
 		bstChrId = 0;
 		#else
 		bstChrId = 20;
 		#endif
 		bstIdx1 = bstIdx2 = 0;
 		while (!Q.empty()) {
-			read_t read = Q.top();
+			read = Q.top();
 			Q.pop();
 			tmp = alignExactRead(read, read1, read2);
 			// #ifdef DEBUG
@@ -1779,6 +2055,10 @@ public:
 		}
 
 		const int m = layer_read.len / sep_len;
+		#ifdef DEBUG
+		assert(bstIdx1*m < SZ(sepChromat[bstChrId]));
+		assert(bstIdx2*m < SZ(sepChromat[bstChrId]));
+		#endif
 		info1.id = bstChrId;
 		info1.st = sepChromat[bstChrId][bstIdx1 * m].idx;
 		info2.id = bstChrId;
@@ -1786,11 +2066,14 @@ public:
 
 		return ret;
 	}
-
+	
+	/**
+		\brief	align a pair of read
+	*/
 	score_type alignReadPair(const string& read1, const string& read2, info_t& info1, info_t& info2) {
 		info_t info1_, info2_;
 
-		#ifdef DEBUG
+		#ifdef LOCAL_DEBUG
 		info1.id = info2.id = 0;
 		#else
 		info1.id = info2.id = 20;
@@ -1808,20 +2091,24 @@ public:
 			info1 = info1_;
 			info2 = info2_;
 		}
-		info1.ed = info1.st + 149.;
-		info2.ed = info2.st + 149.;
+		info1.ed = info1.st + 149;
+		info2.ed = info2.st + 149;
 		info1.conf = info2.conf = 0.6;
 
 		return max(score1, score2);
 	}
-
+	
+	/**
+		\brief	align all the read sequence
+		\param	readName: name of the sequence, using as prefix of answer
+	*/
 	vector<string> getAlignment(int N, float normA, float normS, const vector<string>& readName, const vector<string>& readSequence) {
 		vstr ret;
 		info_t info1, info2;
 		string line1, line2;
 		#ifdef DEBUG
 		int fail = 0;
-		double tot = 0.0;
+		score_type tot = 0;
 		#endif
 
 		#ifdef DEBUG
@@ -1830,7 +2117,7 @@ public:
 
 		for(int i=0; i<N; i+=2) {
 			score_type score = alignReadPair(readSequence[i], readSequence[i+1], info1, info2);
-			if (score < POS_INF) {
+			if (score > NEG_INF) {
 				line1 = readName[i] + info1.toString();
 				line2 = readName[i+1] + info2.toString();
 			} else {
@@ -1843,11 +2130,11 @@ public:
 			ret.pb(line1);
 			ret.pb(line2);
 			#ifdef DEBUG
+			tot += score;
 			if (i>0 && i%1000==0) {
-				cout << i << " finish, avg = " << tot/100 << "\n";
+				cout << i << " finish, avg = " << tot/100.0 << "\n";
 				tot = 0;
 			}
-			tot += score;
 			#endif
 		}
 
@@ -2383,12 +2670,12 @@ void _test(int seed) {
 
 	norm_s = 0.5;
 	if (seed == 0) {
-		#ifdef DEBUG
-		// minisam_path = "./example/test5.minisam";
-		// fa1_path = "./example/test5.fa1";
-		// fa2_path = "./example/test5.fa2";
-		// chrId.pb(0);
-		// #else
+		#ifdef LOCAL_DEBUG
+		minisam_path = "./example/test5.minisam";
+		fa1_path = "./example/test5.fa1";
+		fa2_path = "./example/test5.fa2";
+		chrId.pb(0);
+		#else
 		minisam_path = "./example/small5.minisam";
 		fa1_path = "./example/small5.fa1";
 		fa2_path = "./example/small5.fa2";
