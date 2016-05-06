@@ -10,6 +10,7 @@ using namespace std;
 */
 // #define LOCAL_DEBUG
 // #define DEBUG
+// #define TRAIN_DEBUG
 
 #define sti				set<int>
 #define stpii			set<pair<int, int> >
@@ -52,10 +53,10 @@ struct info_t {
 typedef struct trie_t* trie_ptr;
 struct trie_t {
 	trie_ptr fa;
-	trie_ptr nxt[5];
+	trie_ptr nxt[4];
 
 	trie_t(trie_ptr fa=NULL):fa(fa) {
-		rep(i, 0, 5) nxt[i] = NULL;
+		rep(i, 0, 4) nxt[i] = NULL;
 	}
 };
 
@@ -63,17 +64,22 @@ trie_ptr trie_root = NULL;
 uint nleaf = 0;
 
 struct feature_t {
-	int c;
-	int id;
+	unsigned short c;
+	unsigned short id;
 
 	feature_t() {}
-	feature_t(int c, int id):
+	feature_t(unsigned short c, unsigned short id):
 		c(c), id(id) {}
 
 	bool operator< (const feature_t& oth) const {
-		return c > oth.c;
+		return id < oth.id;
 	}
 };
+
+bool feat_compc(const feature_t& a, const feature_t& b) {
+	return a.c > b.c;
+}
+
 
 bool feat_compid(const feature_t& a, const feature_t& b) {
 	return a.id < b.id;
@@ -101,7 +107,7 @@ struct slice_t {
 	}
 
 	inline void sorted() {
-		sort(all(feat), feat_compid);
+		sort(all(feat));
 	}
 
 	inline int size() const {
@@ -200,7 +206,7 @@ struct read_t {
 // aboud layer
 struct layer_t {
 	uint feature_num;
-	uint feature_ubound, feature_lbound;
+	uint feature_lbound;
 	uint len;
 	uint topk;
 	score_type score_bound;
@@ -268,7 +274,7 @@ vector<slice_t> sliceChromat[25];
 vector<sgroup_t> sgroupChromat[25];
 vector<group_t> groupChromat[25];
 vector<sep_t> sepChromat[25];
-
+vector<trie_ptr> vleaf;
 
 #ifdef DEBUG
 /**
@@ -491,11 +497,11 @@ inline string getReverseComplement(const string& line) {
 */
 void Delete_trie(trie_ptr rt, int dep) {
 	if (dep == sep_len)	return ;
-	rep(i, 0, 5) if (rt->nxt[i]) Delete_trie(rt->nxt[i], dep+1);
+	rep(i, 0, 4) if (rt->nxt[i]) Delete_trie(rt->nxt[i], dep+1);
 	delete rt;
 }
 
-#ifdef DEBUG
+#ifdef TRAIN_DEBUG
 	LL leaf_num = 0, node_num = 0;
 #endif
 /**
@@ -512,15 +518,18 @@ trie_ptr Insert_chr(char *s) {
 		p = p->nxt[id];
 		++i;
 	}
-	#ifdef DEBUG
+	#ifdef TRAIN_DEBUG
 	node_num += sep_len - i;
 	assert(node_num < 12207050);
 	if (i < sep_len) ++leaf_num;
 	#endif
-	while(i < sep_len) {
-		id = getCharId(s[i++]);
-		p->nxt[id] = new trie_t(p);
-		p = p->nxt[id];
+	if (i < sep_len) {
+		while(i < sep_len) {
+			id = getCharId(s[i++]);
+			p->nxt[id] = new trie_t(p);
+			p = p->nxt[id];
+		}
+		vleaf.pb(p);
 	}
 
 	return p;
@@ -539,16 +548,18 @@ void Insert(char *s) {
 		p = p->nxt[id];
 		++i;
 	}
-#ifdef DEBUG
+#ifdef TRAIN_DEBUG
 	node_num += sep_len - i;
 	assert(node_num < 12207050);
 	if (i < sep_len) ++leaf_num;
 #endif
-
-	while(i < sep_len) {
-		id = getCharId(s[i++]);
-		p->nxt[id] = new trie_t(p);
-		p = p->nxt[id];
+	if (i < sep_len) {
+		while(i < sep_len) {
+			id = getCharId(s[i++]);
+			p->nxt[id] = new trie_t(p);
+			p = p->nxt[id];
+		}
+		vleaf.pb(p);
 	}
 }
 
@@ -566,7 +577,7 @@ int Insert_read(char *s) {
 		p = p->nxt[id];
 		++i;
 	}
-#ifdef DEBUG
+#ifdef TRAIN_DEBUG
 	node_num += sep_len - i;
 	assert(node_num < 12207050);
 	if (i < sep_len) ++leaf_num;
@@ -635,8 +646,7 @@ void Insert_grp(char *d) {
 			++i;
 		}
 
-	#ifndef USE_EXISTS_SEP
-	#ifdef DEBUG
+	#ifdef TRAIN_DEBUG
 		node_num += sep_len - i;
 		assert(node_num < 12207050);
 		if (i < sep_len) ++leaf_num;
@@ -650,12 +660,6 @@ void Insert_grp(char *d) {
 			p->nxt[1] = (trie_ptr) gid;
 			p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
 		}
-	#else
-		if (i>=sep_len && p->nxt[1]==NULL) {
-			p->nxt[1] = (trie_ptr) gid;
-			p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
-		}
-	#endif
 		--c[j];
 	}
 	++c[s[sep_len]];
@@ -674,9 +678,8 @@ void Insert_grp(char *d) {
 			++i;
 		}
 
-	#ifndef USE_EXISTS_SEP
-	#ifdef DEBUG
-		node_num += sep_len + 1 - i;
+	#ifdef TRAIN_DEBUG
+		node_num += sep_len + 2 - i;
 		assert(node_num < 12207050);
 		if (i <= sep_len+1) ++leaf_num;
 	#endif
@@ -689,12 +692,6 @@ void Insert_grp(char *d) {
 			p->nxt[1] = (trie_ptr) gid;
 			p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
 		}
-	#else
-		if (i>sep_len+1 && p->nxt[1]==NULL) {
-			p->nxt[1] = (trie_ptr) gid;
-			p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
-		}
-	#endif
 		--c[j];
 	}
 	++c[s[1]];
@@ -714,9 +711,9 @@ void Insert_grp(char *d) {
 				p = p->nxt[id];
 				++i;
 			}
-		#ifndef USE_EXISTS_SEP
-		#ifdef DEBUG
-			node_num += sep_len - i;
+
+		#ifdef TRAIN_DEBUG
+			node_num += sep_len +1 - i;
 			assert(node_num < 12207050);
 			if (i <= sep_len) ++leaf_num;
 		#endif
@@ -729,15 +726,134 @@ void Insert_grp(char *d) {
 				p->nxt[1] = (trie_ptr) gid;
 				p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
 			}
-		#else
-			if (i>sep_len && p->nxt[1]==NULL) {
-				p->nxt[1] = (trie_ptr) gid;
-				p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
-			}
-		#endif
 			--c[j];
 		}
 		++c[s[k] = tmp];
+	}
+
+	// replace 2
+	{
+		int kk, jj;
+		int tmp1, tmp2;
+		for (k=1; k<=sep_len; ++k) {
+			--c[tmp1 = s[k]];
+			for (kk=k+1; kk<=sep_len; ++kk) {
+				--c[tmp2 = s[kk]];
+				for (j=0; j<4; ++j) {
+					++c[s[k] = j];
+					for (jj=0; jj<4; ++jj) {
+						++c[s[kk] = jj];
+						i = 1;
+						p = trie_root;
+
+						while (i <= sep_len) {
+							id = s[i];
+							if (!p->nxt[id]) break;
+							p = p->nxt[id];
+							++i;
+						}
+					#ifdef TRAIN_DEBUG
+						node_num += sep_len +1 - i;
+						assert(node_num < 12207050);
+						if (i <= sep_len) ++leaf_num;
+					#endif
+						while (i <= sep_len) {
+							id = s[i++];
+							p->nxt[id] = new trie_t(p);
+							p = p->nxt[id];
+						}
+						if (p->nxt[1] == NULL) {
+							p->nxt[1] = (trie_ptr) gid;
+							p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
+						}
+						--c[jj];
+					}
+					--c[j];
+				}
+				++c[s[k] = tmp2];
+			}
+			++c[s[k] = tmp1];
+		}
+	}
+
+	// shift right 2
+	{
+		int tmp1, tmp2;
+
+		memset(c, 0, sizeof(0));
+		for (i=2; i<sep_len; ++i) ++c[s[i] = d[i-2]];
+		for (j=0; j<4; ++j) {
+			--c[tmp1 = s[0]];
+			for (k=0; k<4; ++k) {
+				--c[tmp2 = s[1]];
+				i = 0;
+				p = trie_root;
+
+				while (i < sep_len) {
+					id = s[i];
+					if (!p->nxt[id]) break;
+					p = p->nxt[id];
+					++i;
+				}
+
+			#ifdef TRAIN_DEBUG
+				node_num += sep_len - i;
+				assert(node_num < 12207050);
+				if (i < sep_len) ++leaf_num;
+			#endif
+				while (i < sep_len) {
+					id = s[i++];
+					p->nxt[id] = new trie_t(p);
+					p = p->nxt[id];
+				}
+				if (p->nxt[1] == NULL) {
+					p->nxt[1] = (trie_ptr) gid;
+					p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
+				}
+				++c[s[1] = tmp2];
+			}
+			++c[s[0] = tmp1];
+		}
+	}
+
+	// shift left 2
+	{
+		int tmp1, tmp2;
+
+		memset(c, 0, sizeof(0));
+		for (i=0; i<sep_len-2; ++i) ++c[s[i] = d[i+2]];
+		for (j=0; j<4; ++j) {
+			--c[tmp1 = s[0]];
+			for (k=0; k<4; ++k) {
+				--c[tmp2 = s[1]];
+				i = 0;
+				p = trie_root;
+
+				while (i < sep_len) {
+					id = s[i];
+					if (!p->nxt[id]) break;
+					p = p->nxt[id];
+					++i;
+				}
+
+			#ifdef TRAIN_DEBUG
+				node_num += sep_len - i;
+				assert(node_num < 12207050);
+				if (i < sep_len) ++leaf_num;
+			#endif
+				while (i < sep_len) {
+					id = s[i++];
+					p->nxt[id] = new trie_t(p);
+					p = p->nxt[id];
+				}
+				if (p->nxt[1] == NULL) {
+					p->nxt[1] = (trie_ptr) gid;
+					p->nxt[0] = (trie_ptr) ((c[3]<<24) | (c[2]<<16) | (c[1]<<8) | c[0]);
+				}
+				++c[s[1] = tmp2];
+			}
+			++c[s[0] = tmp1];
+		}
 	}
 }
 
@@ -748,17 +864,55 @@ void map_trie_chr(trie_ptr rt, int dep) {
 	if (dep == sep_len) {
 		// cout << (char *)rt->nxt[1] - (char *)NULL << endl;
 		if (rt->nxt[1] == NULL) {
+			// #ifdef TRAIN_DEBUG
+			// int tmp = (char *)rt->nxt[1] - (char *)NULL;
+			// cout << "rt->nxt[1] = " << tmp << endl;
+			// #endif
 			Insert_grp(buffer);
 		}
 		return ;
 	}
 
-	rep(i, 0, 5) {
+	rep(i, 0, 4) {
 		if (rt->nxt[i]) {
 			buffer[dep] = i;
 			map_trie_chr(rt->nxt[i], dep+1);
 		}
 	}
+}
+
+inline void restore_trie(trie_ptr leaf, char *s) {
+	trie_ptr p = leaf, q;
+	int i;
+	
+	while ((q=p->fa) != NULL) {	
+		for (i=0; i<4; ++i) {
+			if (q->nxt[i] == p) {
+				*s = i;
+				--s;
+				break;
+			}
+		}
+		p = q;
+	}
+}
+
+void map_trie_chr() {
+	int sz = SZ(vleaf);
+	char s[24];
+
+	#ifdef TRAIN_DEBUG
+	cout << "sz(vleaf) = " << sz << endl;
+	#endif;
+	rep(i, 0, sz) {
+		const trie_ptr& leaf = vleaf[i];
+		if (leaf->nxt[1] == NULL) {
+			restore_trie(leaf, s+sep_len-1);
+			Insert_grp(s);
+		}
+	}
+
+	vleaf.clr();
 }
 
 /**
@@ -769,22 +923,12 @@ inline void restore_sep(trie_ptr leaf, char *s) {
 	int i;
 	
 	while ((q=p->fa) != NULL) {	
-	#ifdef DEBUG
-		bool flag = false;
-	#endif
-		for (i=0; i<5; ++i) {
+		for (i=0; i<4; ++i) {
 			if (q->nxt[i] == p) {
-				#ifdef DEBUG
-					flag = true;
-				#endif
 				*s = acgt_s[i];
 				--s;
-				break;
 			}
 		}
-	#ifdef DEBUG
-		assert(flag);
-	#endif
 		p = q;
 	}
 }
@@ -806,22 +950,33 @@ score_type score_group(const group_t& a, const slice_t& b) {
 	const int sza = SZ(afeat);
 	const int szb = SZ(bfeat);
 	score_type ret = 0;
+	vector<feature_t>::const_iterator iter;
 
 	int i = 0, j = 0;
 
-	while (i<sza && j<szb) {
-		if (afeat[i].id == bfeat[j].id) {
-			ret += afeat[i].c>=bfeat[j].c ? 0:bfeat[j].c-afeat[i].c;
-			++i;
-			++j;
-		} else if (afeat[i].id < bfeat[j].id) {
-			++i;
+	while (j < szb) {
+		iter = lower_bound(all(afeat), bfeat[j]);
+		if (iter!=afeat.end() && iter->id==bfeat[j].id) {
+			ret += iter->c>=bfeat[j].c ? 0:bfeat[j].c-iter->c;
 		} else {
 			ret += bfeat[j].c;
-			++j;
 		}
+		++j;
 	}
-	while (j < szb) ret += bfeat[j++].c;
+
+	// while (i<sza && j<szb) {
+	// 	if (afeat[i].id == bfeat[j].id) {
+	// 		ret += afeat[i].c>=bfeat[j].c ? 0:bfeat[j].c-afeat[i].c;
+	// 		++i;
+	// 		++j;
+	// 	} else if (afeat[i].id < bfeat[j].id) {
+	// 		++i;
+	// 	} else {
+	// 		ret += bfeat[j].c;
+	// 		++j;
+	// 	}
+	// }
+	// while (j < szb) ret += bfeat[j++].c;
 
 	return ret;
 }
@@ -836,22 +991,33 @@ score_type score_sgroup(const sgroup_t& a, const slice_t& b) {
 	const int sza = SZ(afeat);
 	const int szb = SZ(bfeat);
 	score_type ret = 0;
+	vector<feature_t>::const_iterator iter;
 
 	int i = 0, j = 0;
 
-	while (i<sza && j<szb) {
-		if (afeat[i].id == bfeat[j].id) {
-			ret += afeat[i].c>=bfeat[j].c ? 0:bfeat[j].c-afeat[i].c;
-			++i;
-			++j;
-		} else if (afeat[i].id < bfeat[j].id) {
-			++i;
+	while (j < szb) {
+		iter = lower_bound(all(afeat), bfeat[j]);
+		if (iter!=afeat.end() && iter->id==bfeat[j].id) {
+			ret += iter->c>=bfeat[j].c ? 0:bfeat[j].c-iter->c;
 		} else {
 			ret += bfeat[j].c;
-			++j;
 		}
+		++j;
 	}
-	while (j < szb) ret += bfeat[j++].c;
+
+	// while (i<sza && j<szb) {
+	// 	if (afeat[i].id == bfeat[j].id) {
+	// 		ret += afeat[i].c>=bfeat[j].c ? 0:bfeat[j].c-afeat[i].c;
+	// 		++i;
+	// 		++j;
+	// 	} else if (afeat[i].id < bfeat[j].id) {
+	// 		++i;
+	// 	} else {
+	// 		ret += bfeat[j].c;
+	// 		++j;
+	// 	}
+	// }
+	// while (j < szb) ret += bfeat[j++].c;
 
 	return ret;
 }
@@ -866,24 +1032,35 @@ score_type score_slice(const slice_t& a, const slice_t& b) {
 	const int sza = SZ(afeat);
 	const int szb = SZ(bfeat);
 	score_type ret = 0;
+	vector<feature_t>::const_iterator iter;
 
 	int i = 0, j = 0;
 
-	while (i<sza && j<szb) {
-		if (afeat[i].id == bfeat[j].id) {
-			ret += afeat[i].c>=bfeat[j].c ? 0:bfeat[j].c-afeat[i].c;
-			++i;
-			++j;
-		} else if (afeat[i].id < bfeat[j].id) {
-			ret += afeat[i].c >> 2;
-			++i;
+	while (j < szb) {
+		iter = lower_bound(all(afeat), bfeat[j]);
+		if (iter!=afeat.end() && iter->id==bfeat[j].id) {
+			ret += iter->c>=bfeat[j].c ? 0:bfeat[j].c-iter->c;
 		} else {
 			ret += bfeat[j].c;
-			++j;
 		}
+		++j;
 	}
-	while (j < szb) ret += bfeat[j++].c;
-	while (i < sza) ret += afeat[i++].c >> 2;
+
+	// while (i<sza && j<szb) {
+	// 	if (afeat[i].id == bfeat[j].id) {
+	// 		ret += afeat[i].c>=bfeat[j].c ? 0:bfeat[j].c-afeat[i].c;
+	// 		++i;
+	// 		++j;
+	// 	} else if (afeat[i].id < bfeat[j].id) {
+	// 		//ret += afeat[i].c >> 2;
+	// 		++i;
+	// 	} else {
+	// 		ret += bfeat[j].c;
+	// 		++j;
+	// 	}
+	// }
+	// while (j < szb) ret += bfeat[j++].c;
+//	while (i < sza) ret += afeat[i++].c >> 2;
 
 	return ret;
 }
@@ -896,7 +1073,7 @@ score_type score_acgt(const acgt_t& a, const acgt_t& b) {
 	score_type ret = 0;
 
 	rep(i, 0, 4) {
-		ret += abs(a.c[i] - b.c[i]) << 2;
+		ret += abs(a.c[i] - b.c[i]);
 	}
 
 	return ret;
@@ -909,14 +1086,14 @@ public:
 
 	DNASequencing() {
 		// init the complement array
-		rep(i, 0, 128) Complements[i] = 'N';
+		rep(i, 0, 128) Complements[i] = 'A';
 		Complements['A'] = 'T';
 		Complements['T'] = 'A';
 		Complements['C'] = 'G';
 		Complements['G'] = 'C';
 
 		// init the id
-		rep(i, 0, 128) charId[i] = 4;
+		rep(i, 0, 128) charId[i] = 0;
 		charId['A'] = 0;
 		charId['C'] = 1;
 		charId['G'] = 2;
@@ -932,35 +1109,32 @@ public:
 		if (testDifficulty == 0) {
 			sep_len = 10;
 			layer_read.len = 150;
-			layer_slice.len = 1050;
-			layer_sgroup.len = 10500;
-			layer_group.len = 105000;
+			layer_slice.len = 750;
+			layer_sgroup.len = 15000;
+			layer_group.len = 300000;
 
-			layer_slice.feature_num = 100;
-			layer_sgroup.feature_num = 1000;
-			layer_group.feature_num = 10000;
+			layer_slice.feature_num = 400;
+			layer_sgroup.feature_num = 4000;
+			layer_group.feature_num = 8000;
 
-			layer_read.topk = 800;
+			layer_read.topk = 120;
 			layer_slice.topk = 2;
-			layer_sgroup.topk = 30;
-			layer_group.topk = 120;
+			layer_sgroup.topk = 5;
+			layer_group.topk = 100;
 
-			layer_slice.feature_ubound = 1000;
-			layer_slice.feature_lbound = 2;
-			layer_sgroup.feature_ubound = 10500;
-			layer_sgroup.feature_lbound = 3;
-			layer_group.feature_ubound = 105000;
+			layer_slice.feature_lbound = 1;
+			layer_sgroup.feature_lbound = 2;
 			layer_group.feature_lbound = 3;
-			#ifdef LOCAL_DEBUG
-			layer_slice.feature_lbound = 3;
+			#ifdef TRAIN_DEBUG
+			layer_slice.feature_lbound = 2;
 			layer_sgroup.feature_lbound = 3;
 			layer_group.feature_lbound = 3;
 			#endif
 
-			layer_read.score_bound = 160;
-			layer_slice.score_bound = 320;
-			layer_sgroup.score_bound = 310;
-			layer_group.score_bound = 300;
+			layer_read.score_bound = 40;
+			layer_slice.score_bound = 60;
+			layer_sgroup.score_bound = 50;
+			layer_group.score_bound = 40;
 
 
 		} else if (testDifficulty == 1) {
@@ -998,6 +1172,7 @@ public:
 
 		// init the trie
 		init_trie();
+		vleaf.clr();
 
 		// clear the ibuffer
 		memset(ibuffer, -1, sizeof(ibuffer));
@@ -1020,67 +1195,6 @@ public:
 		bool flag;
 		sep_t sep;
 
-		/*
-		for (k=0; k<nline; ++k) {
-			const string& line = chromatidSequence[k];
-			const int len = line.length();
-
-			// check line is all 'N'
-			flag = true;
-			if (line[0] == 'N') {
-				flag = false;
-				for (i=0; i<len; ++i) {
-					if (line[i] != 'N')	{
-						flag = true;
-						break;
-					}
-				}
-			}
-
-			if (flag) {
-				l = 0;
-				for (i=0; i<len; ++i) {
-					buffer[ll++] = line[i];
-					s[l++] = line[i];
-					if (l == sep_len) {
-						sep.leaf = Insert_chr(s);
-						sep.idx = idx + i - sep_len + 1;
-						vsep.pb(sep);
-						l = 0;
-					}
-					if (ll == layer_slice.len) {
-
-					}
-				}
-			} else {
-				for (i=0; i<len; ++i)
-					buffer[ll++] = line[i];
-			}
-
-			if (ll >= layer_slice.len) {
-				int ed = layer_slice.len - sep_len + 1;
-				i = 0;
-
-				while (i < ed) {
-					Insert(buffer+i);
-					++i;
-				}
-
-				for (j=0,i=ed+sep_len-1; i<ll; ++i,++j) buffer[j] = buffer[i];
-				ll = j;
-			}
-			idx += len;
-		}
-		if (ll >= sep_len) {
-			int ed = ll - sep_len + 1;
-			i = 0;
-
-			while (i < ed) {
-				Insert(buffer+i);
-				++i;
-			}
-		}
-		*/
 		// find the begin index
 		int begIdx = 0;
 		flag = true;
@@ -1182,7 +1296,6 @@ public:
 		const int nsep = SZ(vsep);
 		vector<slice_t>& vslc = sliceChromat[chrId];
 		const int nfeature = layer_slice.feature_num;
-		const int feature_ubound = layer_slice.feature_ubound;
 		const int feature_lbound = layer_slice.feature_lbound;
 		const int m = layer_slice.len / sep_len;
 		int bidx, szvf, l, szfeature;
@@ -1228,7 +1341,7 @@ public:
 				int ii = 0, jj = 0;
 
 				while (ii < szvf) {
-					if (vfeat[ii].c>=feature_lbound && vfeat[ii].c<=feature_ubound)
+					if (vfeat[ii].c>=feature_lbound)
 						vfeat[jj++] = vfeat[ii];
 					ibuffer[vfeat[ii].id] = -1;
 					++ii;
@@ -1237,7 +1350,7 @@ public:
 				szvf = jj;
 				vfeat.resize(szvf);
 			}
-			sort(all(vfeat));
+			sort(all(vfeat), feat_compc);
 			#ifdef DEBUG
 			assert(SZ(vfeat) == szvf);
 			#endif
@@ -1251,7 +1364,7 @@ public:
 			vslc.pb(slice);
 
 			#ifdef DEBUG
-			if (i>0 && i%100000 == 0)
+			if (i>0 && i%1000 == 0)
 				slice.print();
 			#endif
 
@@ -1269,7 +1382,6 @@ public:
 		vector<sgroup_t>& vsgrp = sgroupChromat[chrId];
 		const int m = layer_sgroup.len / layer_slice.len;
 		const int nfeature = layer_sgroup.feature_num;
-		const int feature_ubound = layer_sgroup.feature_ubound;
 		const int feature_lbound = layer_sgroup.feature_lbound;
 		int bidx, szvf, szfeature;
 		vector<feature_t> vfeat;
@@ -1302,7 +1414,7 @@ public:
 				int ii = 0, jj = 0;
 
 				while (ii < szvf) {
-					if (vfeat[ii].c>=feature_lbound && vfeat[ii].c<=feature_ubound)
+					if (vfeat[ii].c>=feature_lbound)
 						vfeat[jj++] = vfeat[ii];
 					ibuffer[vfeat[ii].id] = -1;
 					++ii;
@@ -1311,7 +1423,7 @@ public:
 				szvf = jj;
 				vfeat.resize(szvf);
 			}
-			sort(all(vfeat));
+			sort(all(vfeat), feat_compc);
 			
 			#ifdef DEBUG
 			assert(SZ(vfeat) == szvf);
@@ -1326,7 +1438,7 @@ public:
 			vsgrp.pb(sgroup);
 
 			#ifdef DEBUG
-			if (i>0 && i%10000 == 0)
+			if (i>0 && i%1000 == 0)
 				sgroup.print();
 			#endif
 
@@ -1344,7 +1456,6 @@ public:
 		vector<group_t>& vgrp = groupChromat[chrId];
 		const int m = layer_group.len / layer_sgroup.len;
 		const int nfeature = layer_group.feature_num;
-		const int feature_ubound = layer_group.feature_ubound;
 		const int feature_lbound = layer_group.feature_lbound;
 		int bidx, szvf, szfeature;
 		group_t group;
@@ -1377,7 +1488,7 @@ public:
 				int ii = 0, jj = 0;
 
 				while (ii < szvf) {
-					if (vfeat[ii].c>=feature_lbound && vfeat[ii].c<=feature_ubound)
+					if (vfeat[ii].c>=feature_lbound)
 						vfeat[jj++] = vfeat[ii];
 					ibuffer[vfeat[ii].id] = -1;
 					++ii;
@@ -1386,7 +1497,7 @@ public:
 				szvf = jj;
 				vfeat.resize(szvf);
 			}
-			sort(all(vfeat));
+			sort(all(vfeat), feat_compc);
 			
 			#ifdef DEBUG
 			assert(SZ(vfeat) == szvf);
@@ -1401,7 +1512,7 @@ public:
 			vgrp.pb(group);
 
 			#ifdef DEBUG
-			if (i>0 && i%1000 == 0)
+			if (i>0 && i%100 == 0)
 				group.print();
 			#endif
 			group.clr();
@@ -1499,15 +1610,18 @@ public:
 		int sz = SZ(chrIds);
 
 		// mapping the similar leaf with same id
-		map_trie_chr(trie_root, 0);
-		#ifdef DEBUG
-		cout << "leaf_num = " << leaf_num << ", node_num = " << node_num << "." << endl;
+		map_trie_chr();
+		#ifdef TRAIN_DEBUG
+		cout << "nleaf = " << nleaf << ", leaf_num = " << leaf_num << ", node_num = " << node_num << "." << endl;
 		#endif
 		
 		// pile up the chromat to form layers
 		rep(i, 0, sz) {
 			chrId = chrIds[i];
 			pileChromat();
+
+			cout << "ngroup = " << SZ(groupChromat[chrId]) << ", nsgroup = " << SZ(sgroupChromat[chrId])
+				 << ", nslice = " << SZ(sliceChromat[chrId]) << endl;
 		}
 
 		// release the memory of chr's trie
@@ -1570,9 +1684,27 @@ public:
 		vfeat.clr();
 		
 		strncpy(buffer, s.c_str(), len);
-		len = len - sep_len + 1;
-		rep(i, 0, len) {
+		// len = len - sep_len + 1;
+		// rep(i, 0, len) {
+		// 	k = Insert_read(buffer + i);
+		// 	if (ibuffer[k] < 0) {
+		// 		ibuffer[k] = szvf++;
+		// 		vfeat.pb(feature_t(1, k));
+		// 	} else {
+		// 		++vfeat[ibuffer[k]].c;
+		// 	}
+		// }
+		#ifdef TRAIN_DEBUG
+		int cnt = 0;
+		#endif
+		for (int i=0; i+sep_len<=len; i+=sep_len) {
+			#ifdef TRAIN_DEBUG
+			int leaf_num_ = leaf_num;
+			#endif
 			k = Insert_read(buffer + i);
+			#ifdef TRAIN_DEBUG
+			cnt += leaf_num > leaf_num_;
+			#endif
 			if (ibuffer[k] < 0) {
 				ibuffer[k] = szvf++;
 				vfeat.pb(feature_t(1, k));
@@ -1580,6 +1712,10 @@ public:
 				++vfeat[ibuffer[k]].c;
 			}
 		}
+
+		#ifdef TRAIN_DEBUG
+		cout << "delta_leaf = " << cnt << endl;
+		#endif
 
 		#ifdef DEBUG
 		assert(SZ(vfeat) == szvf);
@@ -1603,9 +1739,27 @@ public:
 		len = l1.length();
 		szvf = 0;
 		strncpy(buffer, l1.c_str(), len);
-		len = len - sep_len + 1;
-		rep(i, 0, len) {
+		// len = len - sep_len + 1;
+		// rep(i, 0, len) {
+		// 	k = Insert_read(buffer + i);
+		// 	if (ibuffer[k] < 0) {
+		// 		ibuffer[k] = szvf++;
+		// 		vfeat.pb(feature_t(1, k));
+		// 	} else {
+		// 		++vfeat[ibuffer[k]].c;
+		// 	}
+		// }
+		#ifdef TRAIN_DEBUG
+		int cnt = 0;
+		#endif
+		for (int i=0; i+sep_len<=len; i+=sep_len) {
+			#ifdef TRAIN_DEBUG
+			int leaf_num_ = leaf_num;
+			#endif
 			k = Insert_read(buffer + i);
+			#ifdef TRAIN_DEBUG
+			cnt += leaf_num > leaf_num_;
+			#endif
 			if (ibuffer[k] < 0) {
 				ibuffer[k] = szvf++;
 				vfeat.pb(feature_t(1, k));
@@ -1617,9 +1771,25 @@ public:
 		// handle second string
 		len = l2.length();
 		strncpy(buffer, l2.c_str(), len);
-		len = len - sep_len + 1;
-		rep(i, 0, len) {
-			const int k = Insert_read(buffer + i);
+		// len = len - sep_len + 1;
+		// rep(i, 0, len) {
+		// 	const int k = Insert_read(buffer + i);
+		// 	if (ibuffer[k] < 0) {
+		// 		ibuffer[k] = szvf++;
+		// 		vfeat.pb(feature_t(1, k));
+		// 	} else {
+		// 		++vfeat[ibuffer[k]].c;
+		// 	}
+		// }
+		
+		for (int i=0; i+sep_len<=len; i+=sep_len) {
+			#ifdef TRAIN_DEBUG
+			int leaf_num_ = leaf_num;
+			#endif
+			k = Insert_read(buffer + i);
+			#ifdef TRAIN_DEBUG
+			cnt += leaf_num > leaf_num_;
+			#endif
 			if (ibuffer[k] < 0) {
 				ibuffer[k] = szvf++;
 				vfeat.pb(feature_t(1, k));
@@ -1627,6 +1797,10 @@ public:
 				++vfeat[ibuffer[k]].c;
 			}
 		}
+
+		#ifdef TRAIN_DEBUG
+		cout << "delta_leaf = " << cnt << endl;
+		#endif
 
 		#ifdef DEBUG
 		assert(SZ(vfeat) == szvf);
@@ -1647,6 +1821,7 @@ public:
 		score_type score;
 		int szQ = 0;
 		
+
 		ret.clr();
 		rep(i, 0, sz) {
 			score = score_group(vgrp[i], slice);
@@ -1667,20 +1842,30 @@ public:
 		#ifdef DEBUG
 		assert(SZ(Q) == szQ);
 		#endif
-		
+
+		#ifdef TRAIN_DEBUG
+			cout << "chooseBstGrp" << endl;
+			cout << Q.top().score << " ";
+		#endif
 		while (!Q.empty()) {
 			// #ifdef DEBUG
 			// Q.top().print();
 			// #endif
 			ret.pb(Q.top().idx);
+			// #ifdef TRAIN_DEBUG
+			// cout << Q.top().score << " ";
+			// #endif
 			Q.pop();
 		}
-		sort(all(ret));
+		#ifdef TRAIN_DEBUG
+			cout << endl;
+		#endif
+		// sort(all(ret));
 	}
 
 	/**
 		\brief choose the best sub-group
-	*/
+	*/ 
 	void chooseBstSgrp(const slice_t& slice, const vi& bstGrp, vi& ret) {
 		const vector<sgroup_t>& vsgrp = sgroupChromat[chrId];
 		int sz = SZ(vsgrp), szgp = SZ(bstGrp);
@@ -1718,15 +1903,25 @@ public:
 			assert(SZ(Q) == szQ);
 			#endif
 
+		#ifdef TRAIN_DEBUG
+			cout << "chooseBstSgrp" << " ";
+			cout << Q.top().score << " " << endl;
+		#endif
 			while (!Q.empty()) {
 				// #ifdef DEBUG
 				// Q.top().print();
 				// #endif
 				vtmp.pb(Q.top().idx);
+				// #ifdef TRAIN_DEBUG
+				// cout << Q.top().score << " ";
+				// #endif
 				Q.pop();
 			}
+		// #ifdef TRAIN_DEBUG
+		// 	cout << endl;
+		// #endif
 
-			sort(all(vtmp));
+			// sort(all(vtmp));
 			int sz_vtmp = SZ(vtmp);
 			rep(ii, 0, sz_vtmp) ret.pb(vtmp[ii]);
 			vtmp.clr();
@@ -1778,15 +1973,25 @@ public:
 			assert(SZ(Q) == szQ);
 			#endif
 
+		#ifdef TRAIN_DEBUG
+			cout << "chooseBstSlice" << " ";
+			cout << Q.top().score << " ";
+		#endif
 			while (!Q.empty()) {
 				// #ifdef DEBUG
 				// Q.top().print();
 				// #endif
 				vtmp.pb(Q.top().idx);
+				// #ifdef TRAIN_DEBUG
+				// cout << Q.top().score << " ";
+				// #endif
 				Q.pop();
 			}
+		// #ifdef TRAIN_DEBUG
+		// 	cout << endl;
+		// #endif
 
-			sort(all(vtmp));
+			// sort(all(vtmp));
 			int sz_vtmp = SZ(vtmp);
 			rep(ii, 0, sz_vtmp) ret.pb(vtmp[ii]);
 			vtmp.clr();
@@ -1810,55 +2015,60 @@ public:
 			mn = mn_ = POS_INF;
 			for (int j=bstSlcIdx[i]/read_len,k=0; k<m&&j<sz; ++j,++k) {
 				tmp1 = score_acgt(vacgt[j], acgt1);
-				#ifdef DEBUG
-				if (j+2<sz)
-				#else
+				// #ifdef DEBUG
+				// if (j+2<sz)
+				// #else
+				// if (j+3<sz)
+				// #endif
 				if (j+3<sz)
-				#endif
 				{
 					// l x x r
-					#ifdef DEBUG
-					tmp2 = score_acgt(vacgt[j+2], acgt2);
-					#else
+					// #ifdef DEBUG
+					// tmp2 = score_acgt(vacgt[j+2], acgt2);
+					// #else
+					// tmp2 = score_acgt(vacgt[j+3], acgt2);
+					// #endif
 					tmp2 = score_acgt(vacgt[j+3], acgt2);
-					#endif
 					if (tmp1+tmp2 < mn) {
-						lidx_ = lidx;
-						ridx_ = ridx;
-						mn_ = mn;
+						// lidx_ = lidx;
+						// ridx_ = ridx;
+						// mn_ = mn;
 
 						lidx = j;
-						#ifdef DEBUG
-						ridx = j + 2;
-						#else
+						// #ifdef DEBUG
+						// ridx = j + 2;
+						// #else
+						// ridx = j + 3;
+						// #endif
 						ridx = j + 3;
-						#endif
 						mn = tmp1 + tmp2;
-					} else if (tmp1+tmp2 < mn_) {
-						mn_ = tmp1 + tmp2;
-						lidx_ = j;
-						#ifdef DEBUG
-						ridx_ = j + 2;
-						#else
-						ridx_ = j + 3;
-						#endif
 					}
+					// else if (tmp1+tmp2 < mn_) {
+					// 	mn_ = tmp1 + tmp2;
+					// 	lidx_ = j;
+					// 	#ifdef DEBUG
+					// 	ridx_ = j + 2;
+					// 	#else
+					// 	ridx_ = j + 3;
+					// 	#endif
+					// }
 					// l x x x r
 					if (j+4<sz) {
 						tmp2 = score_acgt(vacgt[j+4], acgt2);
 						if (tmp1+tmp2 < mn) {
-							lidx_ = lidx;
-							ridx_ = ridx;
-							mn_ = mn;
+							// lidx_ = lidx;
+							// ridx_ = ridx;
+							// mn_ = mn;
 
 							lidx = j;
 							ridx = j + 4;
 							mn = tmp1 + tmp2;
-						} else if (tmp1+tmp2 < mn_) {
-							mn_ = tmp1 + tmp2;
-							lidx_ = j;
-							ridx_ = j + 4;
 						}
+						// else if (tmp1+tmp2 < mn_) {
+						// 	mn_ = tmp1 + tmp2;
+						// 	lidx_ = j;
+						// 	ridx_ = j + 4;
+						// }
 					}
 				}
 			}
@@ -1869,6 +2079,11 @@ public:
 
 			if (mn  < POS_INF) vread.pb(readpair_chr_t(lidx, ridx, mn));
 			//if (mn_ < POS_INF) vread.pb(readpair_chr_t(lidx_, ridx_, mn_));
+
+			#ifdef TRAIN_DEBUG
+			if (mn < POS_INF)
+				cout << "chooseBstRead" << " " << mn << endl;
+			#endif
 		}
 	}
 
@@ -2110,17 +2325,18 @@ public:
 		vstr ret;
 		info_t info1, info2;
 		string line1, line2;
+		score_type score = 0;
 		#ifdef DEBUG
 		int fail = 0;
-		score_type tot = 0;
 		#endif
+		score_type tot = 0;
 
 		#ifdef DEBUG
 		assert(N%2 == 0);
 		#endif
 
 		for(int i=0; i<N; i+=2) {
-			score_type score = alignReadPair(readSequence[i], readSequence[i+1], info1, info2);
+			score = alignReadPair(readSequence[i], readSequence[i+1], info1, info2);
 			if (score > NEG_INF) {
 				line1 = readName[i] + info1.toString();
 				line2 = readName[i+1] + info2.toString();
@@ -2131,15 +2347,18 @@ public:
 				++fail;
 				#endif
 			}
+			// line1 = getFailureResult(readName[i], '+');
+			// line2 = getFailureResult(readName[i+1], '-');
 			ret.pb(line1);
 			ret.pb(line2);
-			#ifdef DEBUG
+			// #ifdef DEBUG
 			tot += score;
-			if (i>0 && i%1000==0) {
-				cout << i << " finish, avg = " << setprecision(6) << tot/1000.0 << "\n";
+			if (i>0 && i%3000==0) {
+				// cout << i << " finish, avg = " << setprecision(6) << tot/1000.0 << "\n";
+				printf("%d finish, avg = %.6lf\n", i, tot/3000.0);
 				tot = 0;
 			}
-			#endif
+			// #endif
 		}
 
 		#ifdef DEBUG
@@ -2782,7 +3001,10 @@ void close_log() {
 int main(int argc, char **argv) {
 	ios::sync_with_stdio(false);
 	cin.tie(0);
-	// freopen("data.out", "w", stdout);
+
+	#ifdef TRAIN_DEBUG
+	freopen("data.out", "w", stdout);
+	#endif
 
 	int testcase = argc > 1 ? stoi(argv[1]) : 1;
 
