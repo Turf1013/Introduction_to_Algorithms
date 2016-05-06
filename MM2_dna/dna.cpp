@@ -1075,8 +1075,8 @@ public:
 
 			layer_read.score_bound = 40;
 			layer_slice.score_bound = 30;
-			layer_sgroup.score_bound = 10;
-			layer_group.score_bound = 5;
+			layer_sgroup.score_bound = 14;
+			layer_group.score_bound = 6;
 		} else {
 			sep_len = 6;
 			layer_read.len = 6 * 25;
