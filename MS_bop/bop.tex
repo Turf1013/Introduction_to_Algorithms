@@ -211,7 +211,25 @@
 	\kw{$K_i$} is the total number of paths returned by the \Emph{REST} service,
 	\kw{$M_i$} is the number of distinct correct paths returned by the \Emph{REST} service.
 	
+\section{Background}
+\label{sec:Background}
+
+\subsection{MAG}
+
+	\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.6]{mag.png}
+    \caption{MAG的构建关系图}
+	\end{figure}
+	
 \section{Thought}	
+\label{sec:thought}
+
+\subsection{All possible paths}
+
+	根据题意Query共有4种类型，path有10种类型。hop最多为3跳，
+	因此，我们可以预处理对于每种查询的所有可能路径种类，包含1跳、2跳、3跳。
+	程序见\Emph{preprocess.cpp}。
 	
 \end{document}
 
