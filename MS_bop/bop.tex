@@ -1,0 +1,217 @@
+%-*- coding:UTF-8 -*-
+% MS-bop2016.tex
+\documentclass[hyperref,UTF8]{ctexart}
+\usepackage{geometry}
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{dsfont}
+\usepackage{amsthm}
+\usepackage{listings} %插入代码
+\usepackage{xcolor} %代码高亮
+\usepackage{blkarray}
+\usepackage{diagbox}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{color}
+\usepackage{multirow}
+\usepackage[all,pdf]{xy}
+\usepackage{verbatim}   %comment
+\usepackage{cases}
+\usepackage{clrscode3e}	% need clrscode3e package which is not included in CTex.
+\usepackage{hyperref}
+
+\geometry{screen}
+\hypersetup{
+    colorlinks=true,
+    bookmarks=true,
+    bookmarksopen=false,
+    pdfpagemode=FullScreen,
+    pdfstartview=fit,
+    pdftitle={DNA-Align},
+    pdfauthor={Trasier}
+}
+
+% THEOREM Environments --------------------------------------------------------
+\newtheorem{thm}{Theorem}[subsection]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{prob}[thm]{Problem}
+\newtheorem{mthm}[thm]{Main Theorem}
+\theoremstyle{definition}
+\newtheorem{defn}[thm]{Definition}
+\theoremstyle{remark}
+\newtheorem{rem}[thm]{Remark}
+\numberwithin{equation}{subsection}
+% MATH ------------------------------------------------------------------------
+\DeclareMathOperator{\RE}{Re}
+\DeclareMathOperator{\IM}{Im}
+\DeclareMathOperator{\ess}{ess}
+\newcommand{\eps}{\varepsilon}
+%\newcommand{\To}{\longrightarrow}  conflict with \package{clrscode3e}p
+\newcommand{\h}{\mathcal{H}}
+\newcommand{\s}{\mathcal{S}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\J}{\mathcal{J}}
+\newcommand{\M}{\mathcal{M}}
+\newcommand{\W}{\mathcal{W}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\BOP}{\mathbf{B}}
+\newcommand{\BH}{\mathbf{B}(\mathcal{H})}
+\newcommand{\KH}{\mathcal{K}(\mathcal{H})}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Complex}{\mathbb{C}}
+\newcommand{\Field}{\mathbb{F}}
+\newcommand{\RPlus}{\Real^{+}}
+\newcommand{\Polar}{\mathcal{P}_{\s}}
+\newcommand{\Poly}{\mathcal{P}(E)}
+\newcommand{\EssD}{\mathcal{D}}
+\newcommand{\Lom}{\mathcal{L}}
+\newcommand{\States}{\mathcal{T}}
+\newcommand{\abs}[1]{\left\vert#1\right\vert}
+\newcommand{\set}[1]{\left\{#1\right\}}
+\newcommand{\seq}[1]{\left<#1\right>}
+\newcommand{\norm}[1]{\left\Vert#1\right\Vert}
+\newcommand{\essnorm}[1]{\norm{#1}_{\ess}}
+
+
+% Some setup
+\pagestyle{plain}
+\geometry{a4paper, top=2cm, bottom=2cm, left=2cm, right=2cm}
+\CTEXsetup[format={\raggedright\bfseries\Large}]{section}
+\lstset{numbers=left, %设置行号位置
+        numberstyle=\small, %设置行号大小
+        keywordstyle=\color{blue}, %设置关键字颜色
+        commentstyle=\color{purple}, %设置注释颜色
+        %frame=single, %设置边框格式
+        escapeinside=``, %逃逸字符(1左面的键)，用于显示中文
+        breaklines, %自动折行
+        extendedchars=false, %解决代码跨页时，章节标题，页眉等汉字不显示的问题
+        %xleftmargin=2em,xrightmargin=2em, aboveskip=1em, %设置边距
+        tabsize=4, %设置tab空格数
+        showspaces=false %不显示空格
+       }
+
+% About math
+\newcommand{\rmnum}[1]{\romannumeral #1}
+\newcommand{\Emph}{\textbf}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\newcommand{\resetcounter}{\setcounter{equation}{0}}
+\newcommand{\equsuf}[1][x]{\equiv_{\textit{Suff(#1)}}}	
+\newcommand{\Suff}{\textit{Suff}}
+\newcommand{\len}[1][x]{\textit{length}_{#1}}
+
+% section deeep to 3 1.1.1
+\setcounter{secnumdepth}{3}
+
+\begin{document}
+
+\title{\Huge MS-bop2016}
+\vspace{2cm}
+\author{\Large Trasier}
+\date{\today}
+\maketitle
+
+\section{Problem Statement}
+\label{sec:problem_statement}
+	
+	Microsoft Academic Graph(MAG) is a large heterogeneous graph containing entities such as
+	authors, papers, journals, conferences and relations between them.
+	The Entity attributes are defined
+	\href{https://www.microsoft.com/cognitive-services/en-us/academic-knowledge-api/documentation/entityattributes}{here}.
+	Participants are supposed to provide a \Emph{REST} service endpoint that can find all the
+	\Emph{1-hop}, \Emph{2-hop}, and \Emph{3-hop} graph paths connecting a given pair of entity identifiers in MAG.
+	The given pair of entity identifiers could be
+	\begin{itemize}
+		\item $[\kw{Id},\quad \kw{Id}]$
+		\item $[\kw{Id},\quad \kw{AA.AuId}]$
+		\item $[\kw{AA.AuId},\quad \kw{Id}]$
+		\item $[\kw{AA.AuId},\quad \kw{AA.AuId}]$
+	\end{itemize}
+	Each node of a graph should be one of the following identifiers:
+	\begin{itemize}
+		\item \kw{Id}
+		\item \kw{F.FId}
+		\item \kw{J.Jid}
+		\item \kw{C.CId}
+		\item \kw{AA.AuId}
+		\item \kw{AA.AfId}
+	\end{itemize}
+	Possible edges (a pair of adjacent nodes) of a path are:
+	\begin{enumerate}[(1)]
+		
+		\item $Id_1 \rightarrow Id_2$ if and only if the \kw{RId} of the paper
+		with $Id_1$ is equal to $Id_2$.
+		
+		\item $Id_1 \rightarrow F.FId_2$ if and only if the \kw{F.FId} of the paper
+		with $Id_1$ is equal to $F.FId_2$.
+		
+		\item $F.FId_1 \rightarrow Id_2$ if and only if the \kw{F.FId} of the paper
+		with $Id_2$ is equal to $F.FId_1$.
+		
+		\item $Id_1 \rightarrow C.CId_2$ if and only if the \kw{C.CId} of the paper
+		with $Id_1$ is equal to $C.CId_2$.
+		
+		\item $C.CId_1 \rightarrow Id_2$ if and only if the \kw{C.CId} of the paper
+		with $Id_2$ is equal to $C.CId_1$.
+		
+		\item $Id_1 \rightarrow J.JId_2$ if and only if the \kw{J.JId} of the paper
+		with $Id_1$ is equal to $J.JId_2$.
+		
+		\item $J.JId_1 \rightarrow Id_2$ if and only if the \kw{J.JId} of the paper
+		with $Id_2$ is equal to $J.JId_1$.
+		
+		\item $AA.AuId_1 \rightarrow AA.AFId_2$ if and only if the \kw{AA.AFId} of the author
+		with $AA.AuId_1$ is equal to $AA.AFId_2$.
+		
+		\item $AA.AFId_1 \rightarrow AA.AuId_1$ if and only if the \kw{AA.AFId} of the author
+		with $AA.AuId_2$ is equal to $AA.AFId_1$.
+		
+		\item $AA.AuId_1 \rightarrow Id_2$ if and only if the \kw{Id} of the author
+		with $AA.AuId_1$ is equal to $Id_2$.
+		
+		\item $Id_1 \rightarrow AA.AuId_2$ if and only if the \kw{AA.AuId} of the paper
+		with $Id_1$ is equal to $AA.AuId_2$.
+		
+		
+	\end{enumerate}
+	For each test case, the REST service endpoint will receive a
+	\Emph{JSON} arrat via \Emph{HTTP} with a pair of entity identifiers,
+	where the identifiers are 64-bit integers, e.g. [123, 456].
+	The service endpoint needs to respond with a \Emph{JSON} array within \Emph{300 seconds}.
+	The response \Emph{JSON} array consists of a list of graph paths in to form of
+	$[path_1, path_2, \cdots, path_n]$, where each path is an array of identifiers.
+	For exmaple, if your program finds one 1-hop paths, two 2-hop paths, and one 3-hop paths,
+	the results may look like this:
+	$[[123, 456], [123, 2, 456], [123, 3, 456], [123, 4, 5, 6]]$.
+	For a path such as $[123, 4, 5, 6]$, the integers are the identifiers of the entities on the path.
+	After receiving the response, the evaluator will wait for a random period of time
+	before sending the next requests.
+	
+\section{Evaluation}
+\label{sec:evaluation}
+
+	The \Emph{REST} service must be developed to a \Emph{Standard\_A3} virtual machine for the final test.
+	There are no constraints on the programing 	language you can use.
+	
+	The test cases are not  available before the final evaluation.
+	When the evaluation starts, the evaluator system sends test cases
+	to the \Emph{REST} endpoint of each team individually.
+	Each team will receive \Emph{10} test case ($Q_1$ to $Q_{10}$).
+	The response time for test case \kw{$Q_i$} is recorded as \kw{$T_i$}$(1 \le i \le 10)$.
+	The final score is calculated using:
+	\[
+		Score = \frac{10}{99} \sum_{i=1}^{10} \Big( 100^{\frac{\kw{$M_i$}}{\max(\kw{$K_i$}, \kw{$N_i$})}} \Big) \big( 1 - \frac{T_i}{300} \big)
+	\]
+	where \kw{$N_i$} is the size of the solution (the total number of correct paths) for \kw{$Q_i$},
+	\kw{$K_i$} is the total number of paths returned by the \Emph{REST} service,
+	\kw{$M_i$} is the number of distinct correct paths returned by the \Emph{REST} service.
+	
+\section{Thought}	
+	
+\end{document}
+
