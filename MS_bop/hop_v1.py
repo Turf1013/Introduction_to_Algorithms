@@ -1,9 +1,12 @@
 #!/usr/bin/python
 import web
+import BaseHTTPServer
 import httplib, urllib, base64, json
+import urlparse
 
 urls = (
-	'/v1/(.*)', 'hop'
+	# '/v1(.*)', 'hop',
+	'/v1/eval(.*)', 'hop',
 )
 
 class constForAPI:
@@ -187,11 +190,11 @@ class Util:
 		
 	@staticmethod
 	def to_hop2(medium, st, ed):
-		return map(lambda x:[st, x, ed], medium)
+		return map(lambda x:[st, int(x), ed], medium)
 		
 	@staticmethod
 	def to_hop3(medium, st, ed):
-		return map(lambda x:[st] + x + [ed], medium)	
+		return map(lambda x:[st, int(x[0]), int(x[1]), ed], medium)
 	
 class Evaluation:
 	
@@ -442,10 +445,7 @@ class solution:
 		return ret
 
 		
-	def solve(self, qline):
-		L = qline.split('&')
-		stId = int(L[0].split('=')[1])
-		edId = int(L[1].split('=')[1])
+	def solve(self, stId, edId):
 		ret = self.get_hop(stId, edId)
 		return json.dumps(ret)
 
@@ -454,8 +454,11 @@ solver = solution()
 
 class hop:
 	def GET(self, query):
-		print query
-		return solver.solve(query)
+		d = web.input()
+		stId = int(d.id1)
+		edId = int(d.id2)
+		return solver.solve(stId, edId)
+		
 
 def localtest():
 	urls = [
@@ -469,8 +472,36 @@ def localtest():
 		print query
 		print solution().solve(query)
 
+class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+
+	def do_GET(self):
+		d = urlparse.urlparse(self.path)
+		query = d.query
+		
+		print "path =", self.path
+		print "query =", query
+		
+		L = query.split('&')
+		stId = int(L[0].split('=')[-1])
+		edId = int(L[1].split('=')[-1])
+		
+		print "stId =", stId
+		print "edId =", edId
+		
+		ans = solver.solve(stId, edId)
+		self.send_response(200)
+		self.end_headers()
+		self.wfile.write(ans)
+		
+		
+def remoteTest():
+	httpd = BaseHTTPServer.HTTPServer(('', 8000), RequestHandler)
+	print "server starting..."
+	httpd.serve_forever()
+	
 
 if __name__ == "__main__":
+	remoteTest()
 	# localtest()
-	app = web.application(urls, globals())
-	app.run()
+	# app = web.application(urls, globals())
+	# app.run()
