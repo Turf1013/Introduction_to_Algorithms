@@ -26,7 +26,7 @@ class Evaluate(object):
 		params = urllib.urlencode({
 			'expr': "Id=%s" % (Id),
 			'count': 2,
-			'attributes': 'Id,Ti,AA.AuId,AA.AfId,RId',
+			'attributes': 'Id,Ti,AA.AuId,AA.AfId,RId,C.CId,J.JId,F.FId',
 	    	'subscription-key': CFE.subKey,
 		})
 		try:
