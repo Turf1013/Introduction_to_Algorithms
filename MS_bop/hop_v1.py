@@ -427,6 +427,10 @@ class solution:
 		data = self.eval.getData(CFE.get_Id_params(id))
 		return len(json.loads(data)["entities"])>0
 		
+	def isAuId(self, id):
+		data = self.eval.getData(CFE.get_AuId_params(id))
+		return len(json.loads(data)["entities"])>0
+	
 		
 	def get_hop(self, stId, edId):
 		st_isId = self.isId(stId)
@@ -435,13 +439,22 @@ class solution:
 		if st_isId:
 			if ed_isId:
 				ret = self.id2id.get_hop(stId, edId)
-			else:
+			elif self.isAuId(edId):
 				ret = self.id2auid.get_hop(stId, edId)
-		else:
+			else:
+				print "unvalid"
+				ret = []
+		elif self.isAuId(stId):
 			if ed_isId:
 				ret = self.id2auid.get_rhop(stId, edId)
-			else:
+			elif self.isAuId(edId):
 				ret = self.auid2auid.get_hop(stId, edId)
+			else:
+				print "unvalid"
+				ret = []
+		else:
+			print "unvalid"
+			ret = []
 		return ret
 
 		
@@ -481,23 +494,37 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		print "path =", self.path
 		print "query =", query
 		
-		L = query.split('&')
-		stId = int(L[0].split('=')[-1])
-		edId = int(L[1].split('=')[-1])
+		try:
+			L = query.split('&')
+			stId = int(L[0].split('=')[-1])
+			edId = int(L[1].split('=')[-1])
+			
+			print "stId =", stId
+			print "edId =", edId
+			
+			ans = solver.solve(stId, edId)
+			print ans
+			self.wfile.write(ans)
+			self.wfile.flush()
+			self.send_response(200)
+			self.connection.close()
+			
+		except Exception as e:
+			print "unkown request"
+			print e
 		
-		print "stId =", stId
-		print "edId =", edId
-		
-		ans = solver.solve(stId, edId)
-		self.send_response(200)
-		self.end_headers()
-		self.wfile.write(ans)
+	def do_POST(self):
+		self.do_GET()
 		
 		
 def remoteTest():
-	httpd = BaseHTTPServer.HTTPServer(('', 8000), RequestHandler)
+	httpd = BaseHTTPServer.HTTPServer(('', 80), RequestHandler)
 	print "server starting..."
-	httpd.serve_forever()
+	try:
+		httpd.serve_forever()
+	except KeyboardInterrupt:
+		print "server closing..."
+		httpd.server_close()
 	
 
 if __name__ == "__main__":
