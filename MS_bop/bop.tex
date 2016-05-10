@@ -104,6 +104,15 @@
 \newcommand{\equsuf}[1][x]{\equiv_{\textit{Suff(#1)}}}	
 \newcommand{\Suff}{\textit{Suff}}
 \newcommand{\len}[1][x]{\textit{length}_{#1}}
+\newcommand{\Evaluate}{\Emph{Evaluate}}
+\newcommand{\Id}{\Emph{Id}}
+\newcommand{\RId}{\Emph{RId}}
+\newcommand{\FFId}{\Emph{F.FId}}
+\newcommand{\CCId}{\Emph{C.CId}}
+\newcommand{\JJId}{\Emph{J.JId}}
+\newcommand{\AAAuId}{\Emph{AA.AuId}}
+\newcommand{\AAAfId}{\Emph{AA.AfId}}
+
 
 % section deeep to 3 1.1.1
 \setcounter{secnumdepth}{3}
@@ -226,10 +235,140 @@
 \label{sec:thought}
 
 \subsection{All possible paths}
+\label{subsec:all_possible_paths}
 
 	根据题意Query共有4种类型，path有10种类型。hop最多为3跳，
 	因此，我们可以预处理对于每种查询的所有可能路径种类，包含1跳、2跳、3跳。
 	程序见\Emph{preprocess.cpp}。
+	
+\subsubsection{From \Emph{Id} to \Emph{Id}}
+\label{subsub:Id2Id}	
+
+	\begin{enumerate}[(1)]
+		
+		\item 1-hop
+		
+		\begin{align}
+		\resetcounter
+			\Id &\rightarrow \Id
+		\end{align}
+		需要\Evaluate 一次，条件是\Id ，属性需要包含\RId.
+		
+		\item 2-hop
+		
+		\begin{align}
+			\Id &\rightarrow \Id \rightarrow \Id	\\
+			\Id &\rightarrow \FFId \rightarrow \Id	\\
+			\Id &\rightarrow \CCId \rightarrow \Id	\\
+			\Id &\rightarrow \JJId \rightarrow \Id	\\
+			\Id &\rightarrow \AAAuId p\rightarrow \Id
+		\end{align}
+		
+		其中，$\Id \rightarrow \Id \rightarrow \Id$实际含义可以理解为论文A引用了论文B，论文B引用了论文C。
+		这里可以初步确定论文B的发表时间和领域。
+		其余path仅需要\Evaluate两次，条件分别是\Id，属性需要包含\FFId，\CCId，\JJId，\AAAuId。
+		
+		\item 3-hop
+		
+		\begin{align}
+			\Id &\rightarrow \Id 	\rightarrow 	\Id	\rightarrow \Id	\\
+			\Id &\rightarrow \FFId 	\rightarrow 	\Id	\rightarrow \Id	\\
+			\Id &\rightarrow \CCId 	\rightarrow 	\Id	\rightarrow \Id	\\
+			\Id &\rightarrow \JJId 	\rightarrow 	\Id	\rightarrow \Id	\\
+			\Id &\rightarrow \AAAuId \rightarrow 	\Id	\rightarrow \Id	\\
+			\Id &\rightarrow \Id 	\rightarrow	\FFId \rightarrow \Id	\\
+			\Id &\rightarrow \Id 	\rightarrow	\CCId \rightarrow \Id	\\
+			\Id &\rightarrow \Id 	\rightarrow	\JJId \rightarrow \Id	\\
+			\Id &\rightarrow \Id 	\rightarrow	\AAAuId \rightarrow \Id
+		\end{align}
+		
+		其中，$\Id \rightarrow \Id \rightarrow \Id \rightarrow \Id$应该是最难并且数据量最大的，
+		这里可以使用论文D的引用量简单判定是否存在解。
+		接下来的4种情况其实是在2-hop的基础上进行延拓，一定存在与论文相同领域、会议、期刊的论文C
+		引用了论文D的情况，这是显然的。同样这里可以使用时间进行剪枝。
+		最后的4种情况相对简单，对论文D进行一次\Evaluate，属性需要包属性\FFId，\CCId，\JJId，\AAAuId。（2-hop已经进行）
+		对论文A的参考文献分别\Evaluate一次，属性需要包含\FFId，\CCId，\JJId，\AAAuId。
+		
+	\end{enumerate}
+	
+	综上所述，我们需要对论文\id{stId}进行一次\Evaluate，属性需要包含\FFId，\CCId，\JJId，\AAAuId，\RId，\Emph{Y}。
+	需要对论文\id{edId}进行一次\Evaluate，属性需要包含\FFId，\CCId，\JJId，\AAAuId，\Emph{Y}。
+	
+\subsubsection{From \Emph{Id} to \Emph{AA.AuId}}
+\label{subsub:Id2AAAuId}
+
+	\begin{enumerate}[(1)]
+		
+		\item 1-hop
+		
+		\begin{align}
+			\Id &\rightarrow \AAAuId	
+		\end{align}
+		需要\Evaluate一次，条件是\Id，属性需要包含\AAAuId.
+		
+		\item 2-hop
+		
+		\begin{align}
+			\Id &\rightarrow \Id \rightarrow \AAAuId
+		\end{align}
+		首先\Evaluate一次，条件是\Id，属性需要包含\RId，
+		再对每个\RId进行遍历\Evaluate，条件是包含\AAAuId.
+		（亦可对\AAAuId进行\Evaluate，属性需要包含\Id）
+		
+		\item 3-hop
+		
+		\begin{align}
+			\Id &\rightarrow \Id \rightarrow \Id \rightarrow \AAAuId		\\
+			\Id &\rightarrow \FFId \rightarrow \Id \rightarrow \AAAuId	\\
+			\Id &\rightarrow \CCId \rightarrow \Id \rightarrow \AAAuId		\\
+			\Id &\rightarrow \JJId \rightarrow \Id \rightarrow \AAAuId		\\
+			\Id &\rightarrow \AAAuId \rightarrow \Id \rightarrow \AAAuId		\\
+			\Id &\rightarrow \AAAuId \rightarrow \AAAfId \rightarrow \AAAuId
+		\end{align}
+		显然论文级联引用比较麻烦，可以采用~\ref{subsub:Id2Id}的策略，
+		这样需要预先\Evaluate，条件是\AAAuId，属性需要包含\Id。
+		接下来的4个相对简单，预先对论文\id{Id}根据\Id进行\Evaluate，属性需要包含\FFId,\CCId,\JJId,\AAAuId。
+		可以对\AAAuId进行\Evaluate，属性需要包含\Id，
+		然后对每个\Id进行\Evaluate，属性需要包含\FFId,\CCId,\JJId,\AAAuId。
+		然后进行比较即可。
+		最后一种情况同样需要对论文\id{Id}进行预处理，同时需要\id{AA.AuId}的\AAAfId属性。然后再做第三次查询。
+		
+	\end{enumerate}
+	
+	综上所述，我们需要对论文\id{stId}进行一次\Evaluate，属性需要包含\FFId,\CCId,\JJId,\AAAuId,\AAAfId。
+	需要对\id{AA.AuId}进行一次\Evaluate，属性需要包含\Id, \FFId,\CCId,\JJId,\AAAuId,\AAAfId。
+	
+\subsubsection{From \Emph{AA.AuId} to \Emph{Id}}
+\label{subsub:AAAuId2Id}
+
+	这种情况的路径推导与~\ref{subsub:Id2AAAuId}完全相反，所以可以采用完全相反的策略，仅仅需要对顺序倒排即可。
+	
+\subsubsection{From \Emph{AA.AuId} to \Emph{AA.AuId}}
+
+	\begin{enumerate}[(1)]
+	
+		\item 1-hop
+		
+		$\nexists.$
+		
+		\item 2-hop
+		
+		\begin{align}
+			\AAAuId &\rightarrow \AAAfId \rightarrow \AAAuId	\\
+			\AAAuId &\rightarrow \Id	\rightarrow \AAAuId
+		\end{align}
+		
+		组合查找就好了。
+		
+		\item 3-hop
+		
+		\begin{align}
+			\AAAuId &\rightarrow \Id \rightarrow \Id \rightarrow \AAAuId
+		\end{align}
+		
+		分别预处理两个作者的paper，然后遍历作者\id{stId}的论文，分别查找\RId，判断是否存在可行路径。
+		
+	\end{enumerate}
 	
 \end{document}
 
