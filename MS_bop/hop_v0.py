@@ -178,9 +178,9 @@ class Util:
 		i,j = 0,0
 		while i<la and j<lb:
 			if a[i]==b[j]:
+				ret.append(a[i])
 				i += 1
 				j += 1
-				ret.append(a[i])
 			elif a[i]<b[j]:
 				i += 1
 			else:
@@ -285,7 +285,7 @@ class solution_Id_Id:
 		return []
 		
 	def get_hop(self, stId, edId):
-		# print "From Id to Id"
+		print "From Id to Id"
 		return self.get_1hop(stId, edId) + self.get_2hop(stId, edId) + self.get_3hop(stId, edId)	
 
 class solution_Id_AuId:
@@ -370,12 +370,12 @@ class solution_Id_AuId:
 	
 	
 	def get_hop(self, stId, edId):
-		# print "From Id to AuId"
+		print "From Id to AuId"
 		return self.get_1hop(stId, edId) + self.get_2hop(stId, edId) + self.get_3hop(stId, edId)	
 
 		
 	def get_rhop(self, stId, edId):
-		# print "From AuId to Id"
+		print "From AuId to Id"
 		return self.get_r1hop(edId, stId) + self.get_r2hop(edId, stId) + self.get_r3hop(edId, stId)	
 	
 	
@@ -410,7 +410,7 @@ class solution_AuId_AuId:
 		return []
 	
 	def get_hop(self, stId, edId):
-		# print "From AuId to AuId"
+		print "From AuId to AuId"
 		return self.get_1hop(stId, edId) + self.get_2hop(stId, edId) + self.get_3hop(stId, edId)
 	
 	
@@ -475,10 +475,9 @@ class hop:
 
 def localtest():
 	urls = [
-		"http://localhost:8080/?id1=2157025439&id2=2134746982",
-		"http://localhost:8080/?id1=2157025439&id2=1982462162",
-		"http://localhost:8080/?id1=1982462162&id2=2157025439",
-		"http://localhost:8080/?id1=1982462162&id2=2063838112",
+		"http://localhost/?id2=2310280492&id1=2332023333",
+		"http://localhost/?id2=2180737804&id1=2251253715",
+		"http://localhost/?id2=189831743&id1=2147152072",
 	]
 	for url in urls:
 		query = url[url.rindex('/')+1:]
@@ -542,7 +541,7 @@ def remoteTest():
 	
 
 if __name__ == "__main__":
-	remoteTest()
-	# localtest()
+	# remoteTest()
+	localtest()
 	# app = web.application(urls, globals())
 	# app.run()
