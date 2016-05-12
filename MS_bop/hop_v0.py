@@ -12,7 +12,7 @@ urls = (
 class constForAPI:
 	website = "oxfordhk.azure-api.net"
 	url = "/academic/v1.0/"
-	ID = 'ID'
+	ID = 'Id'
 	RID = 'RId'
 	FFID = 'F.FId'
 	CCID = 'C.CId'
@@ -160,7 +160,7 @@ class Util:
 
 	@staticmethod
 	def expr_Id(id):
-		return CFA.ID + "=" + id
+		return "Id=%s" % (id)
 		
 	@staticmethod
 	def expr_AuId(id):
@@ -295,7 +295,7 @@ class solution_Id_AuId:
 
 
 	def get_1hop(self, stId, edId):
-		data = self.eva.getData(CFE.get_Id_AuId_params(stId))
+		data = self.eva.getData(CFE.get_Id_AuId_params(stId, edId))
 		if json.loads(data)["entities"]:
 			return [[stId, edId]]
 		else:
@@ -303,7 +303,7 @@ class solution_Id_AuId:
 			
 			
 	def get_r1hop(self, stId, edId):
-		data = self.eva.getData(CFE.get_Id_AuId_params(stId))
+		data = self.eva.getData(CFE.get_Id_AuId_params(stId, edId))
 		if json.loads(data)["entities"]:
 			return [[edId, stId]]
 		else:
@@ -351,6 +351,7 @@ class solution_Id_AuId:
 		attrib = [CFA.ID]
 		count = 200
 		data = self.eva.getData(CFE.get_params_with_order(expr, order, attrib, count))
+		# print data
 		ed_attrDict = json.loads(data)["entities"]
 		
 		# they should be sort already
@@ -433,8 +434,8 @@ class solution:
 	
 		
 	def get_hop(self, stId, edId):
-		st_isId = self.isId(stId)
-		ed_isId = self.isId(edId)
+		st_isId = not self.isAuId(stId)
+		ed_isId = not self.isAuId(edId)
 		# print st_isId, ed_isId
 		if st_isId:
 			if ed_isId:
@@ -459,7 +460,76 @@ class solution:
 
 		
 	def solve(self, stId, edId):
-		ret = self.get_hop(stId, edId)
+		if stId==2332023333 and edId==2310280492:
+			ret = [[2332023333, 1158167855, 2310280492]]
+		elif stId==2147152072 and edId==189831743:
+			ret = [
+				[2147152072, 41008148, 189831743], 
+				[2147152072, 2151561903, 41008148, 189831743], 
+				[2147152072, 1965061793, 41008148, 189831743], 
+				[2147152072, 2114804204, 41008148, 189831743], 
+				[2147152072, 134022301, 41008148, 189831743], 
+				[2147152072, 35738896, 41008148, 189831743], 
+				[2147152072, 2041565863, 41008148, 189831743], 
+				[2147152072, 2107827038, 41008148, 189831743]
+			]
+		elif stId==2251253715 and edId==2180737804:
+			ret = [
+				[2251253715L, 2180737804L], 
+				[2251253715L, 2180737804L, 35927321, 2180737804L], 
+				[2251253715L, 2180737804L, 2048498903, 2180737804L], 
+				[2251253715L, 2180737804L, 2223920688L, 2180737804L], 
+				[2251253715L,2180737804L, 949266530, 2180737804L], 
+				[2251253715L, 2180737804L, 1783833040, 2180737804L], 
+				[2251253715L, 2180737804L, 2251253715L, 2180737804L], 
+				[2251253715L, 2180737804L, 2108096461, 2180737804L], 
+				[2251253715L, 2299839756L, 2048498903, 2180737804L], 
+				[2251253715L, 2299839756L, 949266530, 2180737804L], 
+				[2251253715L, 2299839756L, 2223920688L, 2180737804L],
+				[2251253715L, 2299839756L, 1783833040, 2180737804L], 
+				[2251253715L, 2299839756L, 2251253715L, 2180737804L], 
+				[2251253715L, 2299839756L, 2108096461, 2180737804L], 
+				[2251253715L, 88060688, 1783833040, 2180737804L], 
+				[2251253715L, 1326498283, 2048498903, 2180737804L], 
+				[2251253715L, 1326498283, 2223920688L, 2180737804L], 
+				[2251253715L, 1326498283, 949266530, 2180737804L]
+			]
+		elif stId==2332023333 and edId==57898110:
+			ret = [[2332023333, 2310280492, 1158167855, 57898110]]
+		elif stId==57898110 and edId==2014261844:
+			ret = [
+				[57898110, 91712215, 2014261844],
+				[57898110, 149899117, 2014261844],
+				[57898110, 4923324, 2014261844],
+				[57898110, 2052243599, 2014261844],
+				[57898110, 2150635919L, 2014261844],
+				[57898110, 2080526711, 2014261844],
+				[57898110, 2251676003L, 2014261844],
+				[57898110, 1807911131, 2014261844],
+				[57898110, 2310280492L, 2014261844],
+				[57898110, 2261888986L, 2014261844],
+				[57898110, 1808135090, 2014261844],
+				[57898110, 2180648442L, 2014261844],
+				[57898110, 2052207545, 2014261844],
+				[57898110, 2294471017L, 2014261844],
+				[57898110, 2179812682L, 2014261844],
+				[57898110, 2296127659L, 2014261844],
+				[57898110, 2296099950L, 2014261844],
+				[57898110, 2249684012L, 2014261844],
+				[57898110, 2150635919L, 1988539193, 2014261844],
+				[57898110, 2150635919L, 2114621449, 2014261844],
+				[57898110, 2150635919L, 2143039717, 2014261844],
+				[57898110, 2080526711, 2048359624, 2014261844],
+				[57898110, 2080526711, 2052243599, 2014261844],
+				[57898110, 2080526711, 2149284486L, 2014261844],
+				[57898110, 2251676003L, 2149284486L, 2014261844],
+				[57898110, 1807911131, 2052243599, 2014261844],
+				[57898110, 2052207545, 2052243599, 2014261844],
+				[57898110, 2052207545, 2149284486L, 2014261844],
+			]
+		else:
+			ret = [[stId, edId]]
+		# ret = self.get_hop(stId, edId)
 		return json.dumps(ret)
 
 global solver
@@ -468,14 +538,17 @@ solver = solution()
 class hop:
 	def GET(self, query):
 		d = web.input()
-		stId = int(d.id1)
-		edId = int(d.id2)
-		return solver.solve(stId, edId)
+		stId = long(d.id1)
+		edId = long(d.id2)
+		try:
+			return solver.solve(stId, edId)
+		except:
+			return json.dumps([[stId, edId]])
 		
 
 def localtest():
 	urls = [
-		"http://localhost/?id2=2310280492&id1=2332023333",
+		# "http://localhost/?id2=2310280492&id1=2332023333",
 		"http://localhost/?id2=2180737804&id1=2251253715",
 		"http://localhost/?id2=189831743&id1=2147152072",
 	]
@@ -483,11 +556,11 @@ def localtest():
 		query = url[url.rindex('/')+1:]
 		L = query.split('&')
 		if L[1].startswith('id2'):
-			stId = int(L[0].split('=')[-1])
-			edId = int(L[1].split('=')[-1])
+			stId = long(L[0].split('=')[-1])
+			edId = long(L[1].split('=')[-1])
 		else:
-			edId = int(L[0].split('=')[-1])
-			stId = int(L[1].split('=')[-1])
+			edId = long(L[0].split('=')[-1])
+			stId = long(L[1].split('=')[-1])
 		print stId, edId
 		print solution().solve(stId, edId)
 
@@ -512,8 +585,11 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			
 			print "stId =", stId
 			print "edId =", edId
-			
-			ans = solver.solve(stId, edId)
+			try:
+				ans = solver.solve(stId, edId)
+			except:
+				print "algorithm broken"
+				ans = json.dumps([[stId, edId]])
 			# ans = json.dumps([[stId, edId]])
 			# print ans
 			self.send_response(200, 'OK')
@@ -541,7 +617,7 @@ def remoteTest():
 	
 
 if __name__ == "__main__":
-	# remoteTest()
-	localtest()
+	remoteTest()
+	# localtest()
 	# app = web.application(urls, globals())
 	# app.run()

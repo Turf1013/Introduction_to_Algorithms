@@ -35,7 +35,7 @@ class Evaluate(object):
 			conn.request("GET", CFA.url+"evaluate?%s" % (params))
 			response = conn.getresponse()
 			data = response.read()
-			dumpData("Evaluate_Id.out", data)
+			dumpData("Evaluate_Id.out", data, "a")
 		except Exception as e:
 			# print e
 			print("[Errno {0}] {1}".format(e.errno, e.strerror))
@@ -163,7 +163,7 @@ def test_Both_Author(AuId1, AuId2):
 	expr = 	"Composite(And(AA.AuId=%s,AA.AuId=%s))" % (AuId1, AuId2)
 	params = urllib.urlencode({
 		'expr': expr,
-		'attributes': 'Id,Ti,AA.AuId,F.FId,C.CId,J.JId',
+		'attributes': 'Id,Ti,AA.AuId,F.FId,C.CId,J.JId,R.RId',
 		'count': count,
 		'subscription-key': CFE.subKey,
 	})
@@ -177,7 +177,76 @@ def test_Both_Author(AuId1, AuId2):
 		
 	conn.close()
 	
-
+	
+def FetchAll_ByAuId(auId):
+	count = 500
+	params = urllib.urlencode({
+		'expr': "Composite(AA.AuId=%s)" % (auId),
+		'attributes': 'Id,RId',
+		'count': count,
+		'subscription-key': CFE.subKey,
+	})
+	try:
+		conn = httplib.HTTPSConnection(CFA.website)
+		conn.request("GET", CFA.url+"evaluate?%s" % (params))
+		response = conn.getresponse()
+		data = response.read()
+		dumpData("auId_%s.out" % (auId), data)
+	except Exception as e:
+		print e
+		
+def FetchAll_ByCId_RId(CId, RId):
+	count = 500
+	params = urllib.urlencode({
+		'expr': "And(RId=%s,Composite(C.CId=%s))" % (RId, CId),
+		'attributes': 'Id,RId,C.CId',
+		'count': count,
+		'subscription-key': CFE.subKey,
+	})
+	try:
+		conn = httplib.HTTPSConnection(CFA.website)
+		conn.request("GET", CFA.url+"evaluate?%s" % (params))
+		response = conn.getresponse()
+		data = response.read()
+		dumpData("CId_%s_RId_%s.out" % (CId, RId), data)
+	except Exception as e:
+		print e
+		
+def FetchAll_ByCId(CId):
+	count = 10000
+	params = urllib.urlencode({
+		'expr': "Composite(C.CId=%s)" % (CId),
+		'attributes': 'Id,RId,C.CId',
+		'count': count,
+		'subscription-key': CFE.subKey,
+	})
+	try:
+		conn = httplib.HTTPSConnection(CFA.website)
+		conn.request("GET", CFA.url+"evaluate?%s" % (params))
+		response = conn.getresponse()
+		data = response.read()
+		dumpData("CId_%s.out" % (CId), data)
+	except Exception as e:
+		print e
+		
+def test_Author_and_or(AuId1, AuId2)
+	expr = 	"And(Composite(AA.AuId=%s),AA.AuId=%s))" % (AuId1, AuId2)
+	params = urllib.urlencode({
+		'expr': expr,
+		'attributes': 'Id,Ti,AA.AuId,F.FId,C.CId,J.JId,R.RId',
+		'count': count,
+		'subscription-key': CFE.subKey,
+	})
+	try:
+		conn.request("GET", CFA.url+"evaluate?%s" % (params))
+		response = conn.getresponse()
+		data = response.read()
+		dumpData("data_both_author_m2.out", data)
+	except Exception as e:
+		print e
+		
+	conn.close()
+	
 if __name__ == "__main__":
 	IdList = [
 		2180737804,
@@ -190,10 +259,17 @@ if __name__ == "__main__":
 	# for id in IdList:
 		# Evaluate.evaluate_ById(id)
 		# sleep(2)
-	# Evaluate.evaluate_ByAuId(2157025439)
+	Evaluate.evaluate_ByAuId(2157025439)
 	# Evaluate.evaluate_ByAfId(2157025439)
 	
 	# test_multi_id(IdList)
 	# for id in IdList:
 		# test_isAuId(id)
-	test_Both_Author(2048498903, 2223920688)
+	# test_Both_Author(2048498903, 2223920688)
+	# for auId in [2224185131L, 166801255, 2118962444, 2095616704, 2277027218L]:
+		# FetchAll_ByAuId(auId)
+		# sleep(1)
+	# for CId, RId in [[1158167855, 2310280492]]:
+		# FetchAll_ByCId_RId(CId, RId)
+		# sleep(1)
+	# FetchAll_ByCId(1158167855)
