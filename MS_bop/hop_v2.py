@@ -29,7 +29,7 @@ class constForAPI:
 	ref_attribs = [
 		'Y',
 	]
-	COUNT = 200
+	COUNT = 500
 	PACKET = 10
 
 class CFA(constForAPI):
@@ -298,7 +298,7 @@ class CFA(constForAPI):
 	
 	@staticmethod
 	def get_AfId_Dict(ent):
-		ret = defaultdict(list)
+		ret = defaultdict(set)
 		if isinstance(ent, dict):
 			ent = [ent]
 		if isinstance(ent, list):
@@ -310,7 +310,7 @@ class CFA(constForAPI):
 					afid = d.get("AfId")
 					auid = d.get("AuId")
 					if afid and auid:
-						ret[afid].append(auid)
+						ret[afid].add(auid)
 		return ret	
 		
 		
@@ -500,6 +500,12 @@ class Util:
 			raise ValueError, "[expr_ids] ids must not null"
 		return Util.expr_multi_or(ids, Util.expr_Id)
 		
+	@staticmethod
+	def expr_auids(auids):
+		if not auids:
+			raise ValueError, "[expr_auids] auids must not null"
+		return Util.expr_multi_or(auids, Util.expr_AuId)
+		
 		
 	@staticmethod
 	def expr_all_and_ids(items, ids):
@@ -584,9 +590,8 @@ class Util:
 		ret = []
 		d = CFA.get_AfId_Dict(entList)
 		for afid in afIds:
-			L = d.get(afid)
-			if L:
-				ret += map(lambda x:[x,afid], set(L))
+			st = d.get(afid)
+			ret += map(lambda x:[x,afid], st)
 		return ret
 		
 	@staticmethod
@@ -932,17 +937,43 @@ class solution_Id_AuId:
 		ret += tmpList	
 		
 		# step2: handle 6
-		st_auId_Dict = CFA.get_AuId_Dict(st_entList)
+		# st_auId_Dict = CFA.get_AuId_Dict(st_entList)
+		# ed_afId_Set = set(CFA.get_AfId(ed_entList, edId))
+		# print "st_auId_Dict =", st_auId_Dict
+		# print "ed_afId_Set =", ed_afId_Set
+		# if ed_afId_Set and st_auId_Dict:
+			# tmpList = []
+			# for st_auId, st_afId_Set in st_auId_Dict.iteritems():
+				# print st_auId, st_afId_Set
+				# tmpSet = st_afId_Set & ed_afId_Set
+				# tmpList += map(lambda x:[st_auId, x], tmpSet)
+			# ret += tmpList
+			
+		# step2: handle 6
+		st_AuId_Set = set(CFA.get_AuId(st_entList))
 		ed_afId_Set = set(CFA.get_AfId(ed_entList, edId))
-		print "st_auId_Dict =", st_auId_Dict
+		print "st_AuId_Set =", st_AuId_Set
 		print "ed_afId_Set =", ed_afId_Set
-		if ed_afId_Set and st_auId_Dict:
+		# here we find the afid of specific auid in all papers instead edId
+		if st_AuId_Set and ed_afId_Set:
+			st_AuId_List = list(st_AuId_Set)
+			expr = Util.expr_auids(st_AuId_List)
+			count = CFA.COUNT * 2
+			print "expr =", expr
+			attribs = [CFA.AAAUID, CFA.AAAFID]
+			data = self.eva.getData(CFE.get_params(expr, attribs, count))
+			print "entData =", data
+			entList = json.loads(data).get("entities")
+			print "entList =", entList
+			afId_Dict = CFA.get_AfId_Dict(entList)
+			print "afId_Dict =", afId_Dict
 			tmpList = []
-			for st_auId, st_afId_Set in st_auId_Dict.iteritems():
-				print st_auId, st_afId_Set
-				tmpSet = st_afId_Set & ed_afId_Set
-				tmpList += map(lambda x:[st_auId, x], tmpSet)
+			for afId in ed_afId_Set:
+				tmpSet = afId_Dict[afId]
+				tmpSet &= st_AuId_Set
+				tmpList += map(lambda x:[x, afId], tmpSet)
 			ret += tmpList
+			
 			
 		# step3: handle 1
 		Id3_List = CFA.get_Id(ed_entList)
@@ -1065,15 +1096,38 @@ class solution_AuId_Id:
 		ret += tmpList
 		
 		# step2: handle 6
+		# st_AfId_Set = set(CFA.get_AfId(st_entList, stId))
+		# ed_AfId_Dict = CFA.get_AfId_Dict(ed_entList)
+		# print "st_AfId_Set =", st_AfId_Set
+		# print "ed_AfId_Dict =", ed_AfId_Dict
+		# tmpList = []
+		# for st_AfId in st_AfId_Set:
+			# ed_AuId_Set = ed_AfId_Dict[st_AfId]
+			# tmpList += map(lambda x:[st_AfId, x], ed_AuId_Set)
+		# ret += tmpList
+		# step2: handle 6
 		st_AfId_Set = set(CFA.get_AfId(st_entList, stId))
-		ed_AfId_Dict = CFA.get_AfId_Dict(ed_entList)
 		print "st_AfId_Set =", st_AfId_Set
-		print "ed_AfId_Dict =", ed_AfId_Dict
-		tmpList = []
-		for st_AfId in st_AfId_Set:
-			ed_AuId_Set = ed_AfId_Dict[st_AfId]
-			tmpList += map(lambda x:[st_AfId, x], ed_AuId_Set)
-		ret += tmpList
+		print "ed_AuId_Set =", ed_AuId_Set
+		# here we find the afid of specific auid in all papers instead edId
+		if ed_AuId_Set and st_AfId_Set:
+			ed_AuId_List = list(ed_AuId_Set)
+			expr = Util.expr_auids(ed_AuId_List)
+			count = CFA.COUNT * 2
+			print "expr =", expr
+			attribs = [CFA.AAAUID, CFA.AAAFID]
+			data = self.eva.getData(CFE.get_params(expr, attribs, count))
+			print "entData =", data
+			entList = json.loads(data)["entities"]
+			print "entList =", entList
+			afId_Dict = CFA.get_AfId_Dict(entList)
+			print "afId_Dict =", afDict
+			tmpList = []
+			for st_AfId in st_AfId_Set:
+				tmpSet = afId_Dict[st_AfId]
+				tmpSet &= ed_AuId_Set
+				tmpList += map(lambda x:[st_AfId, x], tmpSet)
+			ret += tmpList
 		
 		# step3: handle 1
 		tmpList = []
@@ -1253,9 +1307,9 @@ class hop:
 def localtest():
 	urls = [
 		# "http://localhost/?id2=2310280492&id1=2332023333",
-		# "http://localhost/?id2=2180737804&id1=2251253715",
-		"http://localhost/?id2=189831743&id1=2147152072",
-		# "http://localhost/?id2=57898110&id1=2332023333",
+		"http://localhost/?id2=2180737804&id1=2251253715",
+		# "http://localhost/?id2=189831743&id1=2147152072",
+		"http://localhost/?id2=57898110&id1=2332023333",
 		# "http://localhost/?id2=2014261844&id1=57898110",
 	]
 	for url in urls:
