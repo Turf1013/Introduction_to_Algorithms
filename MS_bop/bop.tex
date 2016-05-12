@@ -261,7 +261,7 @@
 			\Id &\rightarrow \FFId \rightarrow \Id	\\
 			\Id &\rightarrow \CCId \rightarrow \Id	\\
 			\Id &\rightarrow \JJId \rightarrow \Id	\\
-			\Id &\rightarrow \AAAuId p\rightarrow \Id
+			\Id &\rightarrow \AAAuId \rightarrow \Id
 		\end{align}
 		
 		其中，$\Id \rightarrow \Id \rightarrow \Id$实际含义可以理解为论文A引用了论文B，论文B引用了论文C。
@@ -341,7 +341,46 @@
 \subsubsection{From \Emph{AA.AuId} to \Emph{Id}}
 \label{subsub:AAAuId2Id}
 
-	这种情况的路径推导与~\ref{subsub:Id2AAAuId}完全相反，所以可以采用完全相反的策略，仅仅需要对顺序倒排即可。
+	\begin{enumerate}[(1)]
+		
+		\item 1-hop
+		
+		\begin{align}
+			\AAAuId &\rightarrow \Id	
+		\end{align}
+		需要\Evaluate一次，条件是\Id，属性需要包含\AAAuId.
+		
+		\item 2-hop
+		
+		\begin{align}
+			\AAAuId &\rightarrow \Id \rightarrow \Id
+		\end{align}
+		首先\Evaluate一次，条件是\AAAuId，属性需要包含\RId，查询数据是\Id.
+		
+		\item 3-hop
+		
+		\begin{align}
+			\AAAuId &\rightarrow \Id \rightarrow \Id \rightarrow \Id		\\
+			\AAAuId &\rightarrow \Id \rightarrow \FFId \rightarrow \Id		\\
+			\AAAuId &\rightarrow \Id \rightarrow \CCId \rightarrow \Id		\\
+			\AAAuId &\rightarrow \Id \rightarrow \JJId \rightarrow \Id		\\
+			\AAAuId &\rightarrow \Id \rightarrow \AAAuId \rightarrow \Id		\\
+			\AAAuId &\rightarrow \AAAfId \rightarrow \AAAuId \rightarrow \Id
+		\end{align}
+		预先执行\Evaluate，条件是\Id，查询数据是\FFId,\CCId,\JJId,\AAAuId,\AAAfId。
+		并执行\Evaluate，条件是\AAAuId，查询数据是\Id,\RId。
+		然后组合属性\FFId,\CCId,\JJId,\AAAuId，并且满足\AAAuId属性为\id{stId}执行\Evaluate，
+		查询数据为\Id,\FFId,\CCId,\JJId,\AAAuId。
+		同理，组合户型\AAAfId，并且满足\AAAuId属性为\id{stId}执行\Evaluate，
+		查询数据为\Id,\AAAfId。
+		针对论文级联引用，对每组\RId执行一次\Evaluate，组合属性为\RId满足\id{edId}，
+		查询数据为\Id。
+		
+	\end{enumerate}
+	
+	综上所述，我们需要对论文\id{stId}进行一次\Evaluate,属性需要包含\FFId,\CCId,\JJId,
+    \AAAuId,\AAAfId。
+	需要对\id{AA.AuId}进行一次\Evaluate，属性需要包含\Id, \FFId,\CCId,\JJId,\AAAuId,\AAAfId。
 	
 \subsubsection{From \Emph{AA.AuId} to \Emph{AA.AuId}}
 

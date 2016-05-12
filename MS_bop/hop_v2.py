@@ -33,7 +33,17 @@ class constForAPI:
 	PACKET = 10
 
 class CFA(constForAPI):
-	
+
+	@staticmethod
+	def get_year(ent):
+		ret = None
+		if isinstance(ent, list):
+			if ent:
+				ret = ent[0].get('Y')
+		elif isinstance(ent, dict):
+			ret = ent.get('Y')
+		return ret
+		
 	@staticmethod
 	def get_ids(src, keyword):
 		if src is None:
@@ -321,7 +331,20 @@ class CFA(constForAPI):
 						ret[auid].add(afid)
 		return ret	
 
-		
+	@staticmethod
+	def get_RId_rDict(ent):
+		ret = defaultdict(set)
+		if isinstance(ent, dict):
+			ent = [ent]
+		if isinstance(ent, list):
+			for attrDict in ent:
+				id = attrDict.get("Id")
+				if not id:
+					continue
+				rid_List = CFA.get_RId(attrDict)
+				for rid in rid_List:
+					ret[rid].add(id)
+		return ret
 		
 
 class constForEvaluate:
@@ -620,11 +643,11 @@ class solution_Id_Id:
 			
 	def get_2hop(self, stId, edId):
 		"""
-		Id -> Id -> Id	(hard)
-		Id -> F.FId -> Id 
-		Id -> C.CId -> Id 
-		Id -> J.JId -> Id 
-		Id -> AA.AuId -> Id 
+		Id -> Id -> Id	(hard)		(1)
+		Id -> F.FId -> Id 			(2)
+		Id -> C.CId -> Id 			(3)
+		Id -> J.JId -> Id 			(4)
+		Id -> AA.AuId -> Id 		(5)
 		"""
 		ret = []
 		
@@ -640,56 +663,29 @@ class solution_Id_Id:
 		print "ed =", ed_entList
 		print "st =", st_entList
 		
-		# step1: check F.FId
-		stIds = CFA.get_FId(st_entList)
-		edIds = CFA.get_FId(ed_entList)
-		stIds.sort()
-		edIds.sort()
-		medium = Util.find_common(stIds, edIds)
-		ret += medium
+		# step1: handle 2-5
+		st_mainId_Set = CFA.get_mainId_Set(st_entList)
+		ed_mainId_Set = CFA.get_mainId_Set(ed_entList)
+		tmpSet = st_mainId_Set & ed_mainId_Set
+		tmpList = map(lambda x:long(x), tmpSet)
+		ret += tmpList
 		
-		# step2: check J.JId
-		stIds = CFA.get_JId(st_entList)
-		edIds = CFA.get_JId(ed_entList)
-		stIds.sort()
-		edIds.sort()
-		medium = Util.find_common(stIds, edIds)
-		ret += medium
-		
-		# step3: check C.CId
-		stIds = CFA.get_CId(st_entList)
-		edIds = CFA.get_CId(ed_entList)
-		stIds.sort()
-		edIds.sort()
-		medium = Util.find_common(stIds, edIds)
-		ret += medium
-		
-		# step4: check AA.AuId
-		stIds = CFA.get_AuId(st_entList)
-		edIds = CFA.get_AuId(ed_entList)
-		stIds.sort()
-		edIds.sort()
-		medium = Util.find_common(stIds, edIds)
-		ret += medium
-		
-		# step0: check Id's Rid's Rid
-		RIds = CFA.get_RId(st_entList)
-		# print RIds
-		medium = []
+		# step2: handle 1
+		RIds = list(set(CFA.get_RId(st_entList)))
+		print "RIds =", RIds
+		tmpList = []
 		RIds_length = len(RIds)
+		attribs = [CFA.ID]
 		for i in xrange(0, RIds_length, CFA.PACKET):
 			ids = RIds[i:i+CFA.PACKET]
-			expr = Util.expr_ids_and_rid(ids, edId)
-			# print expr
 			count = len(ids)
-			data = self.eva.getData(CFE.get_params(expr, attrib, count))
-			# print data
-			resList = json.loads(data)["entities"]
-			for resDict in resList:
-				id = resDict.get("Id")
-				if id:
-					medium.append(id)
-		ret += medium
+			expr = Util.expr_ids_and_rid(ids, edId)
+			print "expr =", expr
+			data = self.eva.getData(CFE.get_params(expr, attribs, count))
+			entList = json.loads(data)["entities"]
+			print "entList =", entList
+			tmpList += CFA.get_Id(entList)
+		ret += tmpList
 		
 		return Util.to_hop2(ret, stId, edId)
 		
@@ -709,7 +705,7 @@ class solution_Id_Id:
 		ret = []
 		
 		# Evaluate stId & edId
-		attrib = CFA.attribs
+		attrib = CFA.attribs + ['Y']
 		data = self.eva.getData(CFE.get_Id_params(edId, attrib))
 		ed_entList = json.loads(data)["entities"]
 		
@@ -721,138 +717,121 @@ class solution_Id_Id:
 		print "st =", st_entList
 		
 		# step1: handle 2-5
-		FIds = CFA.get_FId(st_entList)
-		CIds = CFA.get_CId(st_entList)
-		JIds = CFA.get_JId(st_entList)
-		AuIds = CFA.get_AuId(st_entList)
-		print "FIds =", FIds
-		print "CIds =", CIds
-		print "JIds =", JIds
-		print "AuIds =", AuIds
-		n_fid,n_cid,n_jid,n_auid = len(FIds), len(CIds), len(JIds), len(AuIds)
-		mx = max(n_fid,n_cid,n_jid,n_auid)
-		for i in xrange(mx):
-			L = []
-			attribs = []
-			if i<n_auid:
-				L.append([CFA.AAAUID, AuIds[i]])
-				attribs.append(CFA.AAAUID)
-			if i<n_cid:
-				L.append([CFA.CCID, CIds[i]])
-				attribs.append(CFA.CCID)
-			if i<n_jid:
-				L.append([CFA.JJID, JIds[i]])
-				attribs.append(CFA.JJID)
-			if i<n_fid:
-				L.append([CFA.FFID, FIds[i]])
-				attribs.append(CFA.FFID)
+		st_FId_Set = set(CFA.get_FId(st_entList))
+		st_CId_Set = set(CFA.get_CId(st_entList))
+		st_JId_Set = set(CFA.get_JId(st_entList))
+		st_AuId_Set = set(CFA.get_AuId(st_entList))
+		print "st_FId_Set =", st_FId_Set
+		print "st_CId_Set =", st_CId_Set
+		print "st_JId_Set =", st_JId_Set
+		print "st_AuId_Set =", st_AuId_Set
+		attribs = [CFA.ID]
+		L = []
+		if len(st_FId_Set):
+			attribs.append(CFA.FFID)
+			L += map(lambda x:[CFA.FFID, x], st_FId_Set)
+		if len(st_CId_Set):
+			attribs.append(CFA.CCID)
+			L += map(lambda x:[CFA.CCID, x], st_CId_Set)
+		if len(st_JId_Set):
+			attribs.append(CFA.JJID)
+			L += map(lambda x:[CFA.JJID, x], st_JId_Set)
+		if len(st_AuId_Set):
+			attribs.append(CFA.AAAUID)
+			L += map(lambda x:[CFA.AAAUID, x], st_AuId_Set)
+		if L:
 			expr = Util.expr_all_and_rid(L, edId)
-			print "%d: expr = %s" % (i+1, expr)
+			print "expr =", expr
 			count = CFA.COUNT
 			data = self.eva.getData(CFE.get_params(expr, attribs, count))
-			resList = json.loads(data)["entities"]
-			print "resList = ", resList
+			entList = json.loads(data)["entities"]
+			print "entList = ", entList
+			allSet = st_FId_Set | st_CId_Set | st_JId_Set | st_AuId_Set
 			tmpList = []
-			for resDict in resList:
-				id = resDict.get("Id")
+			for attrDict in entList:
+				id = attrDict.get("Id")
 				if not id:
 					continue
-				for idName, idVal in L:
-					if CFA.has_Id(resDict, idName, idVal):
-						tmpList.append([idVal, id])
+				tmpSet = CFA.get_mainId_Set(attrDict)
+				tmpSet &= allSet
+				tmpList += map(lambda x:[x, id], tmpSet)
 			ret += tmpList
 			
-		# step2: handle 6-9 & 1
-		data = self.eva.getData(CFE.get_Id_params(edId, ['Y']))
-		ed_refDict = json.loads(data)["entities"][0]
-		ed_year = ed_refDict.get("Y")
+		# step2: handle 6-9 
+		ed_year = CFA.get_year(ed_entList)
 		if not ed_year:
-			ed_year = 2020
-		RIds = CFA.get_RId(st_entList)
-		FIds = CFA.get_FId(ed_entList)
-		CIds = CFA.get_CId(ed_entList)
-		JIds = CFA.get_JId(ed_entList)
-		AuIds = CFA.get_AuId(ed_entList)
-		attribs = [CFA.ID, 'Y'] + CFA.attribs
-		Id2Id_List = []
-		RIds_length = len(RIds)
-		for j in xrange(0, RIds_length, CFA.PACKET):
-			ids = RIds[j:j+CFA.PACKET]
-			expr = Util.expr_ids(ids)
+			ed_year = 2014
+		print "ed_year = ", ed_year
+		st_RId_Set = CFA.get_RId(st_entList)
+		st_RId_List = list(st_RId_Set)
+		ed_FId_Set = set(CFA.get_FId(ed_entList))
+		ed_CId_Set = set(CFA.get_CId(ed_entList))
+		ed_JId_Set = set(CFA.get_JId(ed_entList))
+		ed_AuId_Set = set(CFA.get_AuId(ed_entList))
+		print "st_RId_Set =", st_RId_Set
+		print "ed_FId_Set =", ed_FId_Set
+		print "ed_CId_Set =", ed_CId_Set
+		print "ed_JId_Set =", ed_JId_Set
+		print "st_AuId_Set =", st_AuId_Set
+		attribs = [CFA.ID, CFA.RID, 'Y']
+		allSet = set()
+		if len(ed_FId_Set):
+			attribs.append(CFA.FFID)
+			allSet |= ed_FId_Set
+		if len(ed_CId_Set):
+			attribs.append(CFA.CCID)
+			allSet |= ed_CId_Set
+		if len(ed_JId_Set):
+			attribs.append(CFA.JJID)
+			allSet |= ed_JId_Set
+		if len(ed_AuId_Set):
+			attribs.append(CFA.AAAUID)
+			allSet |= ed_AuId_Set
+		st_RId_length = len(st_RId_List)
+		Id3_rDict = defaultdict(set)
+		for j in xrange(0, st_RId_length, CFA.PACKET):
+			id2s = st_RId_List[j:j+CFA.PACKET]
+			expr = Util.expr_ids(id2s)
 			print "%d: expr = %s" % (j, expr)
-			count = len(ids)
+			count = len(id2s)
 			data = self.eva.getData(CFE.get_params(expr, attribs, count))
 			print "data =", data
 			entList = json.loads(data)["entities"]
 			print "entList = ", entList
 			tmpList = []
 			for attrDict in entList:
-				id = attrDict.get("Id")
-				if not id:
+				id2 = attrDict.get("Id")
+				if not id2:
 					continue
-					
-				for fid in FIds:
-					if CFA.has_FId(attrDict, fid):
-						tmpList.append([id, fid])
-				for cid in CIds:
-					if CFA.has_CId(attrDict, cid):
-						tmpList.append([id, cid])
-				for jid in JIds:
-					if CFA.has_JId(attrDict, jid):
-						tmpList.append([id, jid])
-				for auid in AuIds:
-					if CFA.has_AuId(attrDict, auid):
-						tmpList.append([id, auid])
-				ret += tmpList
+				# calculate (6)-(9)
+				tmpSet = CFA.get_mainId_Set(attrDict)
+				tmpSet &= allSet
+				tmpList += map(lambda x:[id2, x], tmpSet)
 				
-				# check currenct rid's year for next `Id->Id`
+				# `stId->Id2->Id3->edId` store valid rid
 				year = attrDict.get('Y')
-				if year and year>=ed_year+2:
-					Id2Id_List.append(id)
-					
-		# rrid_Set is two layer's reference			
-		rref_Dict = defaultdict(list)
-		rrid_Set = set()		
-		Id2Id_length = len(Id2Id_List)
-		for j in xrange(0, Id2Id_length, CFA.PACKET):
-			ids = Id2Id_List[j:j+CFA.PACKET]
-			expr = Util.expr_ids(ids)
-			print "%d: expr = %s" % (j, expr)
-			count = len(ids)
-			attribs = [CFA.ID, CFA.RID, 'Y']
+				if not year or year>=ed_year+2:
+					rids_ = CFA.get_RId(attrDict)
+					for rid in rids_:
+						Id3_rDict[rid].add(id2)
+			ret += tmpList
+			
+		# step3: handle 1
+		Id3_List = Id3_rDict.keys()
+		Id3_length = len(Id3_List)
+		attribs = [CFA.ID]
+		for i in xrange(0, Id3_length, CFA.PACKET):
+			id3s = Id3_List[i:i+CFA.PACKET]
+			count = len(id3s)
+			expr = Util.expr_ids_and_rid(id3s, edId)
+			print "%d: expr = %s" % (i, expr)
 			data = self.eva.getData(CFE.get_params(expr, attribs, count))
-			entList = json.loads(data)["entities"]
+			entList = json.loads(data)["entitites"]
 			print "entList =", entList
+			id3s_ = CFA.get_Id(entList)
 			tmpList = []
-			for attrDict in entList:
-				id = attrDict.get("Id")
-				ridList = attrDict.get("RId")
-				if not ridList or not id:
-					continue
-				year = attrDict.get('Y')
-				if year and year>=ed_year+1:
-					for rid in ridList:
-						rref_Dict[rid].append(id)
-					tmpList += ridList
-			rrid_Set |= set(tmpList)
-		
-		rrid_List = list(rrid_Set)
-		rrid_length = len(rrid_List)
-		for j in xrange(0, rrid_length, CFA.PACKET):
-			ids = rrid_List[j:j+CFA.PACKET]
-			expr = Util.expr_ids_and_rid(ids, edId)
-			print "%d: expr = %s" % (j, expr)
-			count = len(ids)
-			attribs = [CFA.ID]
-			data = self.eva.getData(CFE.get_params(expr, attribs, count))
-			entList = json.loads(data)["entities"]
-			print "entList =", entList
-			tmpList = []
-			for attrDict in entList:
-				id = attrDict.get("Id")
-				if not id:
-					continue
-				tmpList += map(lambda x: [x, id], rref_Dict[id])
+			for id3 in id3s_:
+				tmpList += map(lambda id2:[id2, id3], Id3_rDict[id3])
 			ret += tmpList
 			
 		return Util.to_hop3(ret, stId, edId)
@@ -886,9 +865,8 @@ class solution_Id_AuId:
 			Id -> Id -> AA.AuId
 		"""
 		expr = Util.expr_Id(stId)
-		attrib = [CFA.RID]
-		count = CFA.COUNT
-		data = self.eva.getData(CFE.get_params(expr, attrib, count))
+		attrib = [CFA.ID, CFA.RID]
+		data = self.eva.getData(CFE.get_params(expr, attrib))
 		st_entList = json.loads(data)["entities"]
 		
 		expr = Util.expr_AuId(edId)
@@ -909,10 +887,9 @@ class solution_Id_AuId:
 		print "stRIds =", stRIds
 		print "edIds =", edIds
 		stRIds.sort()
-		medium = Util.find_common(stRIds, edIds)
+		ret = Util.find_common(stRIds, edIds)
 		
-		
-		return Util.to_hop2(medium, stId, edId)
+		return Util.to_hop2(ret, stId, edId)
 		
 		
 	def get_3hop(self, stId, edId):
@@ -926,51 +903,39 @@ class solution_Id_AuId:
 		"""
 		ret = []
 		
-		# step1 handle 2-5
-		attribs = CFA.attribs + [CFA.RID, CFA.AAAFID]
+		attribs = CFA.attribs + [CFA.RID, CFA.AAAFID, CFA.AAAUID]
 		data = self.eva.getData(CFE.get_Id_params(stId, attribs))
 		st_entList = json.loads(data).get("entities")
 		
-		# this could be error just because entry may fit the expression but query-data may not
-		attribs = [CFA.ID, CFA.AAAFID, CFA.AAAUID]
+		attribs = CFA.attribs + [CFA.ID, CFA.AAAFID, CFA.AAAUID]
 		expr = Util.expr_AuId(edId)
 		count = CFA.COUNT
-		data = self.eva.getData(CFE.get_params(expr, attribs, count))
+		order = CFE.order_ID
+		data = self.eva.getData(CFE.get_params_with_order(expr, order, attribs, count))
 		ed_entList = json.loads(data).get("entities")
 		
 		print "st_entList =", st_entList
 		print "ed_entList =", ed_entList
 		
-		ids = CFA.get_Id(ed_entList)
-		ids_length = len(ids)
-		attribs = CFA.attribs + [CFA.ID]
-		attrIds_Set = CFA.get_mainId_Set(st_entList)
-		print "ed_ids =", ids
-		print "st_attrIds =", attrIds_Set
-		for i in xrange(0, ids_length, CFA.PACKET):
-			ids_ = ids[i:i+CFA.PACKET]
-			count = len(ids_)
-			expr = Util.expr_ids(ids_)
-			print "%d: %s" % (i, expr)
-			data = self.eva.getData(CFE.get_params(expr, attribs, count))
-			entList = json.loads(data).get("entities")
-			print "entList = ", entList
-			tmpList = []
-			for attrDict in entList:
-				id = attrDict.get("Id")
-				if not id:
-					continue
-				idSet = CFA.get_mainId_Set(attrDict)
-				print "id = %s, idSet = %s" % (id, idSet)
-				tmpSet = attrIds_Set & idSet
-				tmpList += map(lambda x:[id, x], tmpSet)
-			ret += tmpList	
+		# step1: handle 2-5
+		st_mainId_Set = CFA.get_mainId_Set(st_entList)
+		print "st_mainId_Set =", st_mainId_Set
+		tmpList = []
+		for attrDict in ed_entList:
+			id = attrDict.get("Id")
+			if not id:
+				continue
+			ed_mainId_Set = CFA.get_mainId_Set(attrDict)
+			print "ed: id = %s, mainIds = %s" % (id, ed_mainId_Set)
+			tmpSet = st_mainId_Set & ed_mainId_Set
+			tmpList += map(lambda x:[x, id], tmpSet)
+		ret += tmpList	
 		
 		# step2: handle 6
-		ed_afId_Set = set(CFA.get_AfId(ed_entList, edId))
 		st_auId_Dict = CFA.get_AuId_Dict(st_entList)
-		print "ed_afId_Set =", ed_afId_Set
+		ed_afId_Set = set(CFA.get_AfId(ed_entList, edId))
 		print "st_auId_Dict =", st_auId_Dict
+		print "ed_afId_Set =", ed_afId_Set
 		if ed_afId_Set and st_auId_Dict:
 			tmpList = []
 			for st_auId, st_afId_Set in st_auId_Dict.iteritems():
@@ -980,24 +945,26 @@ class solution_Id_AuId:
 			ret += tmpList
 			
 		# step3: handle 1
-		rid_Set = set(CFA.get_Id(ed_entList))
-		rid_List = list(rid_Set)
-		id_List = CFA.get_RId(st_entList)
-		id_length = len(id_List)
-		if rid_List:
-			for i in xrange(0, id_length, CFA.PACKET):
-				ids = id_List[i:i+CFA.PACKET]
-				count = len(ids)
-				expr = Util.expr_ids_with_rids(ids, rid_List)
+		Id3_List = CFA.get_Id(ed_entList)
+		Id3_Set = set(Id3_List)
+		Id2_List = CFA.get_RId(st_entList)
+		print "Id3_List =", Id3_List
+		print "Id2_List =", Id2_List
+		if Id2_List and Id3_List:
+			Id2_length = len(Id2_List)
+			tmpList = []
+			for i in xrange(0, Id2_length, CFA.PACKET):
+				id2s = Id2_List[i:i+CFA.PACKET]
+				expr = Util.expr_ids_with_rids(id2s, Id3_List)
+				count = len(id2s)
 				print "expr =", expr
 				attribs = [CFA.ID, CFA.RID]
 				data = self.eva.getData(CFE.get_params(expr, attribs, count))
 				print "entData =", data
 				entList = json.loads(data).get("entities")
 				print "entList =", entList
-				tmpList = Util.find_rid_match_rid(entList, rid_Set)
-				ret += tmpList
-				
+				tmpList += Util.find_rid_match_rid(entList, Id3_Set)
+			ret += tmpList
 		
 		return Util.to_hop3(ret, stId, edId)
 	
@@ -1024,7 +991,7 @@ class solution_AuId_Id:
 			return []
 		
 		
-	def get_2hop(self, stId, edId, rev=False):
+	def get_2hop(self, stId, edId):
 		"""
 			AA.AuId -> Id -> Id
 		"""
@@ -1034,110 +1001,99 @@ class solution_AuId_Id:
 		count = CFA.COUNT
 		data = self.eva.getData(CFE.get_params(expr, attrib, count))
 		entList = json.loads(data)["entities"]
-		ids = CFA.get_Id(entList)
-		
 		print "entList =", entList
-		print "ids =", ids
 		
-		return Util.to_hop2(ids, stId, edId)
+		ret = CFA.get_Id(entList)
+		
+		return Util.to_hop2(ret, stId, edId)
 		
 		
 	def get_3hop(self, stId, edId):
 		"""
-			AA.AuId -> AA.AfId -> AA.AuId -> Id		(1)
-			AA.AuId -> Id -> Id -> Id				(2)
-			AA.AuId -> Id -> F.FId -> Id			(3)
-			AA.AuId -> Id -> C.CId -> Id			(4)
-			AA.AuId -> Id -> J.JId -> Id			(5)
-			AA.AuId -> Id -> AA.AuId -> Id			(6)
+			AA.AuId -> Id -> Id -> Id				(1)
+			AA.AuId -> Id -> F.FId -> Id			(2)
+			AA.AuId -> Id -> C.CId -> Id			(3)
+			AA.AuId -> Id -> J.JId -> Id			(4)
+			AA.AuId -> Id -> AA.AuId -> Id			(5)
+			AA.AuId -> AA.AfId -> AA.AuId -> Id		(6)
 		"""
 		ret = []
 		
-		# step1: handle (3)-(6)
-		attribs = CFA.attribs + ['Y']
+		attribs = CFA.attribs + [CFA.AAAFID]
 		data = self.eva.getData(CFE.get_Id_params(edId, attribs))
 		ed_entList = json.loads(data)["entities"]
 		
 		print "ed_entList =", ed_entList
 		
-		FIds = CFA.get_FId(ed_entList)
-		CIds = CFA.get_CId(ed_entList)
-		JIds = CFA.get_JId(ed_entList)
-		AuIds = CFA.get_AuId(ed_entList)
-		LL = map(lambda x:["AA.AuId", x], AuIds)
-		L = map(lambda x:["F.FId", x], FIds)+\
-			map(lambda x:["C.CId", x], CIds)+\
-			map(lambda x:["J.JId", x], JIds)+\
-			LL
+		ed_FId_Set = set(CFA.get_FId(ed_entList))
+		ed_CId_Set = set(CFA.get_CId(ed_entList))
+		ed_JId_Set = set(CFA.get_JId(ed_entList))
+		ed_AuId_Set = set(CFA.get_AuId(ed_entList))
+		print "ed_FId_Set =", ed_FId_Set
+		print "ed_CId_Set =", ed_CId_Set
+		print "ed_JId_Set =", ed_JId_Set
+		print "ed_AuId_Set =", ed_AuId_Set
+		attribs = [CFA.ID, CFA.RID, 'Y']
+		if ed_FId_Set:
+			attribs.append(CFA.FFID)
+		if ed_CId_Set:
+			attribs.append(CFA.CCID)
+		if ed_JId_Set:
+			attribs.append(CFA.JJID)
+		if ed_AuId_Set:
+			attribs += [CFA.AAAUID, CFA.AAAFID]
+		expr = Util.expr_AuId(stId)
 		count = CFA.COUNT
-		expr = Util.expr_all_and_auid(L, stId)
 		print "expr =", expr
-		attribs = CFA.attribs + [CFA.ID]
+		print "attribs =", attribs
 		data = self.eva.getData(CFE.get_params(expr, attribs, count))
-		entList = json.loads(data)["entities"]
+		st_entList = json.loads(data)["entities"]
 		
-		print "entList =", entList
-		id_Set = set(FIds + CIds + JIds + AuIds)
-		for attrDict in entList:
+		print "st_entList =", st_entList
+		
+		# step1: handle 2-5
+		allSet = ed_FId_Set | ed_CId_Set | ed_JId_Set | ed_AuId_Set
+		print "allSet =", allSet
+		tmpList = []
+		for attrDict in st_entList:
 			id = attrDict.get("Id")
 			if not id:
 				continue
-			ids_List = CFA.get_mainId_List(attrDict)
-			ids_List = filter(lambda id:id in id_Set, ids_List)
-			tmpList = map(lambda x:[id, x], ids_List)
-			ret += tmpList
+			tmpSet = CFA.get_mainId_Set(attrDict)
+			tmpSet &= allSet
+			tmpList += map(lambda x:[id, x], tmpSet)
+		ret += tmpList
 		
-		# step2: handle 1
-		count = CFA.COUNT
-		expr = Util.expr_all_and_auid(LL, stId)
-		print "expr =", expr
-		attribs = [CFA.AAAFID, CFA.AAAUID]
-		data = self.eva.getData(CFE.get_params(expr, attribs, count))
-		entList = json.loads(data)["entities"]
-		print "entList =", entList
-		afId_Dict = CFA.get_AfId_Dict(entList)
-		for afId, auIds in afId_Dict.iteritems():
-			try:
-				auIds.remove(stId)
-			except:
-				print "may invalid in AuId to Id 3-hop (1)"
-			tmpList = map(lambda x:[afId, x], auIds)
-			ret += tmpList
-			
-		# step3: handle 2
-		if ed_entList:
-			ed_attrDict = ed_entList[0]
-			year = ed_attrDict.get('Y')
-			if not year:
-				year = 2014
-			attribs = [CFA.ID, CFA.RID]
-			count = CFA.COUNT
-			expr = Util.expr_auid_and_year(stId, year+2)
+		# step2: handle 6
+		st_AfId_Set = set(CFA.get_AfId(st_entList, stId))
+		ed_AfId_Dict = CFA.get_AfId_Dict(ed_entList)
+		print "st_AfId_Set =", st_AfId_Set
+		print "ed_AfId_Dict =", ed_AfId_Dict
+		tmpList = []
+		for st_AfId in st_AfId_Set:
+			ed_AuId_Set = ed_AfId_Dict[st_AfId]
+			tmpList += map(lambda x:[st_AfId, x], ed_AuId_Set)
+		ret += tmpList
+		
+		# step3: handle 1
+		tmpList = []
+		Id2_rDict = CFA.get_RId_rDict(st_entList)
+		Id2_List = Id2_rDict.keys()
+		Id2_length = len(Id2_List)
+		attribs = [CFA.ID]
+		for i in xrange(0, Id2_length, CFA.PACKET):
+			id2s = Id2_List[i:i+CFA.PACKET]
+			count = len(id2s)
+			expr = Util.expr_ids_and_rid(id2s, edId)
 			print "expr =", expr
 			data = self.eva.getData(CFE.get_params(expr, attribs, count))
 			entList = json.loads(data)["entities"]
 			print "entList =", entList
-			
-			ids = CFA.get_RId(entList)
-			ids_length = len(ids)
-			attribs = [CFA.ID, CFA.RID]
-			for i in xrange(0, ids_length, CFA.PACKET):
-				ids_ = ids[i:i+CFA.PACKET]
-				count = len(ids_)
-				expr = Util.expr_ids_and_rid(ids_, edId)
-				print "expr =", expr
-				data = self.eva.getData(CFE.get_params(expr, attribs, count))
-				entList = json.loads(data)["entities"]
-				print "entList =", entList
-				tmpList = []
-				for attrDict in entList:
-					id = attrDict.get("Id")
-					if not id:
-						continue
-					rids = CFA.get_RId(attrDict)
-					tmpList += map(lambda x:[id, x], rids)
-				ret += tmpList
-				
+			id2s_ = CFA.get_Id(entList)
+			for id2 in id2s_:
+				tmpList += map(lambda x:[x, id2], Id2_rDict[id2])
+		ret += tmpList
+		
 		return Util.to_hop3(ret, stId, edId)
 		
 		
@@ -1163,24 +1119,38 @@ class solution_AuId_AuId:
 		"""
 		ret = []
 		
-		# step1: handle 1
-		expr = Util.expr_comp_AuId(stId, edId)
-		attrib = [CFA.AAAFID, CFA.AAAUID]
+		expr = Util.expr_AuId(stId)
+		attrib = [CFA.ID, CFA.AAAUID, CFA.AAAFID]
 		count = CFA.COUNT
-		data = self.eva.getData(CFE.get_params(expr, attrib, count))
-		entList = json.loads(data)["entities"]
+		order = CFE.order_ID
 		print "expr =", expr
-		print "entList =", entList
-		ret += 	CFA.get_AfId(entList, edId)
+		data = self.eva.getData(CFE.get_params_with_order(expr, order, attrib, count))
+		st_entList = json.loads(data)["entities"]
+		print "st_entList =", st_entList
+		
+		expr = Util.expr_AuId(edId)
+		attrib = [CFA.ID, CFA.AAAUID, CFA.AAAFID]
+		count = CFA.COUNT
+		order = CFE.order_ID
+		print "expr =", expr
+		data = self.eva.getData(CFE.get_params_with_order(expr, order, attrib, count))
+		ed_entList = json.loads(data)["entities"]
+		print "ed_entList =", ed_entList
+		
+		# step1: handle 1
+		st_AfId_Set = set(CFA.get_AfId(st_entList, stId))
+		ed_AfId_Set = set(CFA.get_AfId(ed_entList, edId))
+		print "st_AfId_Set =", st_AfId_Set
+		print "ed_AfId_Set =", ed_AfId_Set
+		tmpSet = st_AfId_Set & ed_AfId_Set
+		ret += list(tmpSet)
 		
 		# step2: handle 2
-		attrib = [CFA.ID]
-		count = CFA.COUNT
-		data = self.eva.getData(CFE.get_params(expr, attrib, count))
-		entList = json.loads(data)["entities"]
-		print "expr =", expr
-		print "entList =", entList
-		ret += 	CFA.get_Id(entList)
+		st_Id_List = CFA.get_Id(st_entList)
+		ed_Id_List = CFA.get_Id(ed_entList)
+		print "st_Id_List =", st_Id_List
+		print "ed_Id_List =", ed_Id_List
+		ret += Util.find_common(st_Id_List, ed_Id_List)
 		
 		return Util.to_hop2(ret, stId, edId)
 	
@@ -1206,19 +1176,21 @@ class solution_AuId_AuId:
 		data = self.eva.getData(CFE.get_params_with_order(expr, order, attribs, count))
 		ed_entList = json.loads(data)["entities"]
 		print "ed_entList =", ed_entList
-		ed_idsList = CFA.get_Id(ed_entList)
-		print "ed_idsList =", ed_idsList
 		
+		# handle 1
+		ed_Id_Set = set(CFA.get_Id(ed_entList))
+		print "ed_Id_Set =", ed_Id_Set
+		tmpList = []
 		for attrDict in st_entList:
-			id = attrDict.get("Id")
-			if not id:
+			st_Id = attrDict.get("Id")
+			if not st_Id:
 				continue
-			rids = CFA.get_RId(attrDict)
-			print "rids =", rids
-			rids.sort()
-			medium = Util.find_common(rids, ed_idsList)
-			tmpList = map(lambda x:[id, x], medium)
-			ret += tmpList
+			st_RId_Set = set(CFA.get_RId(attrDict))
+			print "st_Id = %s, st_RId_Set = %s" % (st_Id, st_RId_Set)
+			tmpSet = st_RId_Set & ed_Id_Set
+			tmpList += map(lambda x:[st_Id, x], tmpSet)
+			
+		ret += tmpList
 		
 		return Util.to_hop3(ret, stId, edId)
 	
@@ -1280,9 +1252,9 @@ class hop:
 
 def localtest():
 	urls = [
-		"http://localhost/?id2=2310280492&id1=2332023333",
+		# "http://localhost/?id2=2310280492&id1=2332023333",
 		# "http://localhost/?id2=2180737804&id1=2251253715",
-		# "http://localhost/?id2=189831743&id1=2147152072",
+		"http://localhost/?id2=189831743&id1=2147152072",
 		# "http://localhost/?id2=57898110&id1=2332023333",
 		# "http://localhost/?id2=2014261844&id1=57898110",
 	]

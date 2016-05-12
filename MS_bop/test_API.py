@@ -229,7 +229,7 @@ def FetchAll_ByCId(CId):
 	except Exception as e:
 		print e
 		
-def test_Author_and_or(AuId1, AuId2)
+def test_Author_and_or(AuId1, AuId2):
 	expr = 	"And(Composite(AA.AuId=%s),AA.AuId=%s))" % (AuId1, AuId2)
 	params = urllib.urlencode({
 		'expr': expr,
@@ -259,7 +259,7 @@ if __name__ == "__main__":
 	# for id in IdList:
 		# Evaluate.evaluate_ById(id)
 		# sleep(2)
-	Evaluate.evaluate_ByAuId(2157025439)
+	Evaluate.evaluate_ById(2332023333)
 	# Evaluate.evaluate_ByAfId(2157025439)
 	
 	# test_multi_id(IdList)
