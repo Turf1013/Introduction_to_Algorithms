@@ -29,7 +29,7 @@
     colorlinks=true,
     bookmarks=true,
     bookmarksopen=false,
-    pdfpagemode=FullScreen,
+    %pdfpagemode=FullScreen,
     pdfstartview=fit,
     pdftitle={DNA-Align},
     pdfauthor={Trasier}
@@ -250,18 +250,18 @@
 		
 		\begin{align}
 		\resetcounter
-			\Id &\rightarrow \Id
+			\Id &\rightarrow \Id	\label{equ:id-id}
 		\end{align}
 		需要\Evaluate 一次，条件是\Id ，属性需要包含\RId.
 		
 		\item 2-hop
 		
 		\begin{align}
-			\Id &\rightarrow \Id \rightarrow \Id	\\
-			\Id &\rightarrow \FFId \rightarrow \Id	\\
-			\Id &\rightarrow \CCId \rightarrow \Id	\\
-			\Id &\rightarrow \JJId \rightarrow \Id	\\
-			\Id &\rightarrow \AAAuId \rightarrow \Id
+			\Id &\rightarrow \Id \rightarrow \Id	\label{equ:id-id-id}	\\
+			\Id &\rightarrow \FFId \rightarrow \Id	\label{equ:id-fid-id}	\\
+			\Id &\rightarrow \CCId \rightarrow \Id	\label{equ:id-cid-id}	\\
+			\Id &\rightarrow \JJId \rightarrow \Id	\label{equ:id-jid-id}	\\
+			\Id &\rightarrow \AAAuId \rightarrow \Id \label{equ:id-auid-id}
 		\end{align}
 		
 		其中，$\Id \rightarrow \Id \rightarrow \Id$实际含义可以理解为论文A引用了论文B，论文B引用了论文C。
@@ -271,15 +271,15 @@
 		\item 3-hop
 		
 		\begin{align}
-			\Id &\rightarrow \Id 	\rightarrow 	\Id	\rightarrow \Id	\\
-			\Id &\rightarrow \FFId 	\rightarrow 	\Id	\rightarrow \Id	\\
-			\Id &\rightarrow \CCId 	\rightarrow 	\Id	\rightarrow \Id	\\
-			\Id &\rightarrow \JJId 	\rightarrow 	\Id	\rightarrow \Id	\\
-			\Id &\rightarrow \AAAuId \rightarrow 	\Id	\rightarrow \Id	\\
-			\Id &\rightarrow \Id 	\rightarrow	\FFId \rightarrow \Id	\\
-			\Id &\rightarrow \Id 	\rightarrow	\CCId \rightarrow \Id	\\
-			\Id &\rightarrow \Id 	\rightarrow	\JJId \rightarrow \Id	\\
-			\Id &\rightarrow \Id 	\rightarrow	\AAAuId \rightarrow \Id
+			\Id &\rightarrow \Id 	\rightarrow 	\Id	\rightarrow \Id		\label{equ:id-id-id-id}		\\
+			\Id &\rightarrow \FFId 	\rightarrow 	\Id	\rightarrow \Id		\label{equ:id-fid-id-id}	\\
+			\Id &\rightarrow \CCId 	\rightarrow 	\Id	\rightarrow \Id		\label{equ:id-cid-id-id}	\\
+			\Id &\rightarrow \JJId 	\rightarrow 	\Id	\rightarrow \Id		\label{equ:id-jid-id-id}	\\
+			\Id &\rightarrow \AAAuId \rightarrow 	\Id	\rightarrow \Id		\label{equ:id-auid-id-id}	\\
+			\Id &\rightarrow \Id 	\rightarrow	\FFId \rightarrow \Id		\label{equ:id-id-fid-id}	\\
+			\Id &\rightarrow \Id 	\rightarrow	\CCId \rightarrow \Id		\label{equ:id-id-cid-id}	\\
+			\Id &\rightarrow \Id 	\rightarrow	\JJId \rightarrow \Id		\label{equ:id-id-jid-id}	\\
+			\Id &\rightarrow \Id 	\rightarrow	\AAAuId \rightarrow \Id		\label{equ:id-id-auid-id}
 		\end{align}
 		
 		其中，$\Id \rightarrow \Id \rightarrow \Id \rightarrow \Id$应该是最难并且数据量最大的，
@@ -302,14 +302,14 @@
 		\item 1-hop
 		
 		\begin{align}
-			\Id &\rightarrow \AAAuId	
+			\Id &\rightarrow \AAAuId	\label{equ:id-auid}
 		\end{align}
 		需要\Evaluate一次，条件是\Id，属性需要包含\AAAuId.
 		
 		\item 2-hop
 		
 		\begin{align}
-			\Id &\rightarrow \Id \rightarrow \AAAuId
+			\Id &\rightarrow \Id \rightarrow \AAAuId	\label{equ:id-id-auid}
 		\end{align}
 		首先\Evaluate一次，条件是\Id，属性需要包含\RId，
 		再对每个\RId进行遍历\Evaluate，条件是包含\AAAuId.
@@ -318,12 +318,12 @@
 		\item 3-hop
 		
 		\begin{align}
-			\Id &\rightarrow \Id \rightarrow \Id \rightarrow \AAAuId		\\
-			\Id &\rightarrow \FFId \rightarrow \Id \rightarrow \AAAuId	\\
-			\Id &\rightarrow \CCId \rightarrow \Id \rightarrow \AAAuId		\\
-			\Id &\rightarrow \JJId \rightarrow \Id \rightarrow \AAAuId		\\
-			\Id &\rightarrow \AAAuId \rightarrow \Id \rightarrow \AAAuId		\\
-			\Id &\rightarrow \AAAuId \rightarrow \AAAfId \rightarrow \AAAuId
+			\Id &\rightarrow \Id \rightarrow \Id \rightarrow \AAAuId		\label{equ:id-id-id-auid}	\\
+			\Id &\rightarrow \FFId \rightarrow \Id \rightarrow \AAAuId		\label{equ:id-fid-id-auid}	\\
+			\Id &\rightarrow \CCId \rightarrow \Id \rightarrow \AAAuId		\label{equ:id-cid-id-auid}	\\
+			\Id &\rightarrow \JJId \rightarrow \Id \rightarrow \AAAuId		\label{equ:id-jid-id-auid}	\\
+			\Id &\rightarrow \AAAuId \rightarrow \Id \rightarrow \AAAuId	\label{equ:id-auid-id-auid}	\\
+			\Id &\rightarrow \AAAuId \rightarrow \AAAfId \rightarrow \AAAuId \label{equ:id-auid-afid-auid}
 		\end{align}
 		显然论文级联引用比较麻烦，可以采用~\ref{subsub:Id2Id}的策略，
 		这样需要预先\Evaluate，条件是\AAAuId，属性需要包含\Id。
@@ -346,26 +346,26 @@
 		\item 1-hop
 		
 		\begin{align}
-			\AAAuId &\rightarrow \Id	
+			\AAAuId &\rightarrow \Id	\label{equ:auid-id}
 		\end{align}
 		需要\Evaluate一次，条件是\Id，属性需要包含\AAAuId.
 		
 		\item 2-hop
 		
 		\begin{align}
-			\AAAuId &\rightarrow \Id \rightarrow \Id
+			\AAAuId &\rightarrow \Id \rightarrow \Id	\label{equ:auid-id-id}
 		\end{align}
 		首先\Evaluate一次，条件是\AAAuId，属性需要包含\RId，查询数据是\Id.
 		
 		\item 3-hop
 		
 		\begin{align}
-			\AAAuId &\rightarrow \Id \rightarrow \Id \rightarrow \Id		\\
-			\AAAuId &\rightarrow \Id \rightarrow \FFId \rightarrow \Id		\\
-			\AAAuId &\rightarrow \Id \rightarrow \CCId \rightarrow \Id		\\
-			\AAAuId &\rightarrow \Id \rightarrow \JJId \rightarrow \Id		\\
-			\AAAuId &\rightarrow \Id \rightarrow \AAAuId \rightarrow \Id		\\
-			\AAAuId &\rightarrow \AAAfId \rightarrow \AAAuId \rightarrow \Id
+			\AAAuId &\rightarrow \Id \rightarrow \Id \rightarrow \Id		\label{equ:auid-id-id-id}	\\
+			\AAAuId &\rightarrow \Id \rightarrow \FFId \rightarrow \Id		\label{equ:auid-id-fid-id}	\\
+			\AAAuId &\rightarrow \Id \rightarrow \CCId \rightarrow \Id		\label{equ:auid-id-cid-id}	\\
+			\AAAuId &\rightarrow \Id \rightarrow \JJId \rightarrow \Id		\label{equ:auid-id-jid-id}	\\
+			\AAAuId &\rightarrow \Id \rightarrow \AAAuId \rightarrow \Id	\label{equ:auid-id-auid-id}	\\
+			\AAAuId &\rightarrow \AAAfId \rightarrow \AAAuId \rightarrow \Id \label{equ:auid-afid-auid-id}
 		\end{align}
 		预先执行\Evaluate，条件是\Id，查询数据是\FFId,\CCId,\JJId,\AAAuId,\AAAfId。
 		并执行\Evaluate，条件是\AAAuId，查询数据是\Id,\RId。
@@ -393,8 +393,8 @@
 		\item 2-hop
 		
 		\begin{align}
-			\AAAuId &\rightarrow \AAAfId \rightarrow \AAAuId	\\
-			\AAAuId &\rightarrow \Id	\rightarrow \AAAuId
+			\AAAuId &\rightarrow \AAAfId \rightarrow \AAAuId	\label{equ:auid-afid-auid}	\\
+			\AAAuId &\rightarrow \Id	\rightarrow \AAAuId		\label{equ:auid-id-auid}
 		\end{align}
 		
 		组合查找就好了。
@@ -402,10 +402,123 @@
 		\item 3-hop
 		
 		\begin{align}
-			\AAAuId &\rightarrow \Id \rightarrow \Id \rightarrow \AAAuId
+			\AAAuId &\rightarrow \Id \rightarrow \Id \rightarrow \AAAuId	\label{equ:auid-id-id-auid}
 		\end{align}
 		
 		分别预处理两个作者的paper，然后遍历作者\id{stId}的论文，分别查找\RId，判断是否存在可行路径。
+		
+	\end{enumerate}
+	
+\subsection{refined}
+\label{subsec:refined}
+
+\subsubsection{From \Emph{Id} To \Emph{Id}}
+
+	\begin{enumerate}[(1)]
+	
+		\item \Evaluate条件是$\Emph{Id}=stId$，属性为\FFId,\CCId,\JJId,\AAAuId,\RId。
+		
+		\item \Evaluate条件是$\Emph{Id}=edId$，属性为\FFId,\CCId,\JJId,\AAAuId。
+		
+		判定$edId$是否在$stId$的\RId中，处理路径~\ref{equ:id-id}。
+		
+		由$stId$与$edId$两者主属性的交集，处理路径~\ref{equ:id-fid-id}、~\ref{equ:id-cid-id}、~\ref{equ:id-jid-id}、~\ref{equ:id-auid-id}。
+		
+		\item \Evaluate条件是$stId$的主属性并且$\Emph{RId}=edId$，属性为\Id, \FFId,\CCId,\JJId,\AAAuId。
+		
+		遍历得到的每个entry，求每个主属性的交集，处理路径~\ref{equ:id-fid-id-id}、~\ref{equ:id-cid-id-id}、~\ref{equ:id-jid-id-id}、~\ref{equ:id-auid-id-id}。
+		
+		\item \Evaluate条件是$\Emph{Id} \in \attrib{stId}{RId}$，属性为\FFId,\CCId,\JJId,\AAAuId,\RId。
+		
+		遍历每个$\attrib{st}{RId}$，获得它的\RId集合以及主属性集合，其中
+		主属性集合与$edId$的主属性集合的交集处理了路径~\ref{equ:id-id-fid-id}、~\ref{equ:id-id-cid-id}、~\ref{equ:id-id-jid-id}、~\ref{equ:id-id-auid-id}。
+		
+		\item \Evaluate条件是$\Emph{Id} \in \attribb{stId}{RId}{RId}$并且$\Emph{RId}=edId$，属性为\Id。
+		
+		预先生成$\attribb{stId}{RId}{RId}$的倒排字典，即主键为三层\Emph{Id},值为二层\Emph{Id}的集合。
+        由这个倒排表的键值为$edId$对应的值，可以处理路径~\ref{equ:id-id-id}。
+		与刚得到的每个entry的\Id集合求交集，并通过倒排字典可以处理路径~\ref{equ:id-id-id-id}。
+		
+	\end{enumerate}
+
+\subsubsection{From \Emph{Id} To \Emph{AA.AuId}}
+
+	\begin{enumerate}[(1)]
+	
+		\item \Evaluate条件是$\Emph{Id}=stId$，属性为\FFId,\CCId,\JJId,\AAAuId,\RId。
+	
+		\item \Evaluate条件是$\Emph{AuId}=edId$，属性为\Id,\FFId,\CCId,\JJId,\AAAuId,\AAAfId。
+		
+		判定$\attrib{stId}{AuId}$的集合中是否包含$edId$，可以处理路径~\ref{equ:id-auid}。
+		
+		由$\attrib{stId}{RId}$与$\attrib{edId}{Id}$的交集，可以处理路径~\ref{equ:id-id-auid}。
+		
+		生成$stId$的主属性集合，遍历$edId$的每个entry，生成主属性集合，两者做交集。
+		可以处理路径~\ref{equ:id-fid-id-auid},~\ref{equ:id-cid-id-auid},~\ref{equ:id-jid-id-auid},~\ref{equ:id-auid-id-auid}。
+		
+		预处理$\attrib{edId}{AfId}$中属于$edId$这个作者的\Emph{AfId}集合。
+		
+		\item \Evaluate条件是$\Emph{AuId} \in \attrib{stId}{AuId}$并且$\Emph{AfId} \in \attrib{edId}{AfId}$。
+		
+		生成刚得到数据的\AAAfId的倒排字典，即主键为\Emph{AfId}，值为\Emph{AuId}的集合。
+		遍历$\attrib{edId}{AfId}$的每个\Emph{AfId}，字典中对应值的集合与$\attrib{stId}{AuId}$集合的交集，
+		可以处理路径~\ref{equ:id-auid-afid-auid}。
+		
+		\item \Evaluate条件是$\Emph{Id} \in \attrib{stId}{RId}$并且$\Emph{RId} \in \attrib{edId}{Id}$，属性为\Id, \RId。
+		
+		或者\Evaluate条件是$\Emph{Id} \in \attrib{stId}{RId}$，属性为\Id, \RId。
+		对于新得到的每个entry，生成$\Emph{RId}$集合，并与$\attrib{edId}{Id}$求交集，
+		可以处理路径~\ref{equ:id-id-id-auid}。
+	
+	\end{enumerate}
+
+\subsubsection{From \Emph{AA.AuId} To \Emph{Id}}
+
+	\begin{enumerate}[(1)]
+	
+		\item \Evaluate条件是$\Emph{AuId}=stId$，属性为\Id,\FFId,\CCId,\JJId,\AAAuId,\AAAfId,\RId。
+	
+		\item \Evaluate条件是$\Emph{AuId}=edId$，属性为\Id,\FFId,\CCId,\JJId,\AAAuId。
+		
+		由$\attrib{stId}{Id}$中是否包含$edId$，处理路径~\ref{equ:auid-id}。
+		
+		由$\attrib{stId}{RId}$的集合中是否包含$edId$，处理路径~\ref{equ:auid-id-id}。
+		
+		遍历$\attrib{stId}{Id}$中每个\Emph{Id}对应的主属性集合，与$edId$的主属性集合做交集，
+		可以处理路径~\ref{equ:auid-id-fid-id},~\ref{equ:auid-id-cid-id},~\ref{equ:auid-id-jid-id},~\ref{equ:auid-id-auid-id}。
+		
+		预处理$\attrib{stId}{AfId}$中属于$stId$这个作者的\Emph{AfId}集合。
+		预处理$\attrib{edId}{AuId}$中的\Emph{AuId}集合。
+		
+		\item \Evaluate条件是$\Emph{AuId} \in \attrib{edId}{AuId}$并且$\Emph{AfId} \in \attrib{stId}{AfId}$，属性为\AAAuId, \AAAfId。
+		
+		生成刚得到数据的\AAAfId的倒排字典，即主键为\Emph{AfId}，值为\Emph{AuId}的集合。
+		遍历$\attrib{stId}{AfId}$的每个\Emph{AfId}，字典中对应值的集合与$\attrib{edId}{AuId}$集合的交集，
+		可以处理路径~\ref{equ:auid-afid-auid-id}。
+		
+		预先生成$\attrib{stId}{RId}$的倒排字典，即主键为$\Emph{RId}$，值为$\Emph{Id}$。
+		
+		\item \Evaluate条件是$\Emph{Id} \in \attrib{stId}{RId}$并且$\Emph{RId}=edId$，属性为\Id。
+		
+		遍历刚得到数据的每个entry，并通过倒排字典中对应$\Emph{Id}$的集合，可以处理路径~\ref{equ:auid-id-id-id}。
+	
+	\end{enumerate}
+
+\subsubsection{From \Emph{AA.AuId} To \Emph{AA.AuId}}
+
+	\begin{enumerate}[(1)]
+		
+		\item \Evaluate条件是$\Emph{AuId}=stId$，属性为\AAAuId, \AAAfId, \Id, \RId。
+		
+		\item \Evaluate条件是$\Emph{AuId}=edId$，属性为\AAAuId, \AAAfId, \Id。
+		
+		由$\attrib{stId}{Id}$与$\attrib{edId}{Id}$的交集可以处理路径~\ref{equ:auid-id-auid}。
+		
+		在$stId$的所有entry中查找$\Emph{AuId}=stId$的$\Emph{AfId}$，采用同样的方式处理$edId$。
+		两者的交集可以处理路径~\ref{equ:auid-afid-auid}。
+		
+		预先生成$\attrib{stId}{RId}$的倒排字典，即主键为两层\Emph{Id},值为一层\Emph{Id}的集合。
+		并与$edId$的\Id集合求并集，并通过倒排字典可以处理路径~\ref{equ:auid-id-id-auid}。
 		
 	\end{enumerate}
 	
