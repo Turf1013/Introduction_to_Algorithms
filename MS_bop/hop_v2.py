@@ -29,7 +29,7 @@ class constForAPI:
 	ref_attribs = [
 		'Y',
 	]
-	COUNT = 500
+	COUNT = 1000
 	PACKET = 10
 
 class CFA(constForAPI):
@@ -661,7 +661,7 @@ class solution_Id_Id:
 		data = self.eva.getData(CFE.get_Id_params(edId, attrib))
 		ed_entList = json.loads(data)["entities"]
 		
-		attrib += [CFA.RID]
+		attrib = CFA.attribs + [CFA.RID]
 		data = self.eva.getData(CFE.get_Id_params(stId, attrib))
 		st_entList = json.loads(data)["entities"]
 		
@@ -912,6 +912,7 @@ class solution_Id_AuId:
 		data = self.eva.getData(CFE.get_Id_params(stId, attribs))
 		st_entList = json.loads(data).get("entities")
 		
+		# print "CFA.attribs =", CFA.attribs
 		attribs = CFA.attribs + [CFA.ID, CFA.AAAFID, CFA.AAAUID]
 		expr = Util.expr_AuId(edId)
 		count = CFA.COUNT
@@ -1064,7 +1065,7 @@ class solution_AuId_Id:
 		print "ed_CId_Set =", ed_CId_Set
 		print "ed_JId_Set =", ed_JId_Set
 		print "ed_AuId_Set =", ed_AuId_Set
-		attribs = [CFA.ID, CFA.RID, 'Y']
+		attribs = [CFA.ID, CFA.RID]
 		if ed_FId_Set:
 			attribs.append(CFA.FFID)
 		if ed_CId_Set:
@@ -1074,7 +1075,7 @@ class solution_AuId_Id:
 		if ed_AuId_Set:
 			attribs += [CFA.AAAUID, CFA.AAAFID]
 		expr = Util.expr_AuId(stId)
-		count = CFA.COUNT
+		count = CFA.COUNT * 2
 		print "expr =", expr
 		print "attribs =", attribs
 		data = self.eva.getData(CFE.get_params(expr, attribs, count))
@@ -1175,7 +1176,7 @@ class solution_AuId_AuId:
 		
 		expr = Util.expr_AuId(stId)
 		attrib = [CFA.ID, CFA.AAAUID, CFA.AAAFID]
-		count = CFA.COUNT
+		count = CFA.COUNT * 2
 		order = CFE.order_ID
 		print "expr =", expr
 		data = self.eva.getData(CFE.get_params_with_order(expr, order, attrib, count))
@@ -1184,7 +1185,7 @@ class solution_AuId_AuId:
 		
 		expr = Util.expr_AuId(edId)
 		attrib = [CFA.ID, CFA.AAAUID, CFA.AAAFID]
-		count = CFA.COUNT
+		count = CFA.COUNT * 2
 		order = CFE.order_ID
 		print "expr =", expr
 		data = self.eva.getData(CFE.get_params_with_order(expr, order, attrib, count))
@@ -1216,7 +1217,7 @@ class solution_AuId_AuId:
 		ret = []
 		
 		attribs = [CFA.ID, CFA.RID]
-		count = CFA.COUNT
+		count = CFA.COUNT * 2
 		expr = Util.expr_AuId(stId)
 		print "expr =", expr
 		data = self.eva.getData(CFE.get_params(expr, attribs, count))
@@ -1226,7 +1227,8 @@ class solution_AuId_AuId:
 		attribs = [CFA.ID]
 		expr = Util.expr_AuId(edId)
 		print "expr =", expr
-		order = CFE.order_ID
+		order = CFE.order_ID 
+		count = CFA.COUNT * 2
 		data = self.eva.getData(CFE.get_params_with_order(expr, order, attribs, count))
 		ed_entList = json.loads(data)["entities"]
 		print "ed_entList =", ed_entList
@@ -1306,11 +1308,11 @@ class hop:
 
 def localtest():
 	urls = [
-		# "http://localhost/?id2=2310280492&id1=2332023333",
+		"http://localhost/?id2=2310280492&id1=2332023333",
 		"http://localhost/?id2=2180737804&id1=2251253715",
-		# "http://localhost/?id2=189831743&id1=2147152072",
+		"http://localhost/?id2=189831743&id1=2147152072",
 		"http://localhost/?id2=57898110&id1=2332023333",
-		# "http://localhost/?id2=2014261844&id1=57898110",
+		"http://localhost/?id2=2014261844&id1=57898110",
 	]
 	for url in urls:
 		query = url[url.rindex('/')+1:]
@@ -1324,6 +1326,7 @@ def localtest():
 		print stId, edId
 		ans = solution().solve(stId, edId)
 		print "ans =", ans
+		print 
 		
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):

@@ -238,14 +238,36 @@ def test_Author_and_or(AuId1, AuId2):
 		'subscription-key': CFE.subKey,
 	})
 	try:
+		conn = httplib.HTTPSConnection(CFA.website)
 		conn.request("GET", CFA.url+"evaluate?%s" % (params))
 		response = conn.getresponse()
 		data = response.read()
 		dumpData("data_both_author_m2.out", data)
+		conn.close()
 	except Exception as e:
 		print e
 		
-	conn.close()
+	
+def test_RId(rid):
+	expr = "RId=%s" % (rid)
+	count = 10000
+	params = urllib.urlencode({
+		'expr': expr,
+		'attributes': 'Id,Ti,AA.AuId,AA.AuN,AA.AfId,AA.AfN,RId',
+		'count': count,
+		'subscription-key': CFE.subKey,
+	})
+	try:
+		conn = httplib.HTTPSConnection(CFA.website)
+		conn.request("GET", CFA.url+"evaluate?%s" % (params))
+		response = conn.getresponse()
+		data = response.read()
+		dumpData("data_rid.out", data)
+		conn.close()
+	except Exception as e:
+		print e
+		
+	
 	
 if __name__ == "__main__":
 	IdList = [
@@ -259,7 +281,7 @@ if __name__ == "__main__":
 	# for id in IdList:
 		# Evaluate.evaluate_ById(id)
 		# sleep(2)
-	Evaluate.evaluate_ById(2332023333)
+	# Evaluate.evaluate_ById(2332023333)
 	# Evaluate.evaluate_ByAfId(2157025439)
 	
 	# test_multi_id(IdList)
@@ -273,3 +295,5 @@ if __name__ == "__main__":
 		# FetchAll_ByCId_RId(CId, RId)
 		# sleep(1)
 	# FetchAll_ByCId(1158167855)
+	
+	test_RId(1965061793)
