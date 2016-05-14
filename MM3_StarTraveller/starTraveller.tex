@@ -1,0 +1,228 @@
+%-*- coding:UTF-8 -*-
+% starTraveller.tex
+\documentclass[hyperref,UTF8]{ctexart}
+\usepackage{geometry}
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{dsfont}
+\usepackage{amsthm}
+\usepackage{listings} %插入代码
+\usepackage{xcolor} %代码高亮
+\usepackage{blkarray}
+\usepackage{diagbox}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{color}
+\usepackage{multirow}
+\usepackage[all,pdf]{xy}
+\usepackage{verbatim}   %comment
+\usepackage{cases}
+\usepackage{clrscode3e}	% need clrscode3e package which is not included in CTex.
+\usepackage{hyperref}
+
+\geometry{screen}
+\hypersetup{
+    colorlinks=true,
+    bookmarks=true,
+    bookmarksopen=false,
+    % pdfpagemode=FullScreen,
+    pdfstartview=fit,
+    pdftitle={DNA-Align},
+    pdfauthor={Trasier}
+}
+
+% THEOREM Environments --------------------------------------------------------
+\newtheorem{thm}{Theorem}[subsection]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{prob}[thm]{Problem}
+\newtheorem{mthm}[thm]{Main Theorem}
+\theoremstyle{definition}
+\newtheorem{defn}[thm]{Definition}
+\theoremstyle{remark}
+\newtheorem{rem}[thm]{Remark}
+\numberwithin{equation}{subsection}
+% MATH ------------------------------------------------------------------------
+\DeclareMathOperator{\RE}{Re}
+\DeclareMathOperator{\IM}{Im}
+\DeclareMathOperator{\ess}{ess}
+\newcommand{\eps}{\varepsilon}
+%\newcommand{\To}{\longrightarrow}  conflict with \package{clrscode3e}p
+\newcommand{\h}{\mathcal{H}}
+\newcommand{\s}{\mathcal{S}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\J}{\mathcal{J}}
+\newcommand{\M}{\mathcal{M}}
+\newcommand{\W}{\mathcal{W}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\BOP}{\mathbf{B}}
+\newcommand{\BH}{\mathbf{B}(\mathcal{H})}
+\newcommand{\KH}{\mathcal{K}(\mathcal{H})}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Complex}{\mathbb{C}}
+\newcommand{\Field}{\mathbb{F}}
+\newcommand{\RPlus}{\Real^{+}}
+\newcommand{\Polar}{\mathcal{P}_{\s}}
+\newcommand{\Poly}{\mathcal{P}(E)}
+\newcommand{\EssD}{\mathcal{D}}
+\newcommand{\Lom}{\mathcal{L}}
+\newcommand{\States}{\mathcal{T}}
+\newcommand{\abs}[1]{\left\vert#1\right\vert}
+\newcommand{\set}[1]{\left\{#1\right\}}
+\newcommand{\seq}[1]{\left<#1\right>}
+\newcommand{\norm}[1]{\left\Vert#1\right\Vert}
+\newcommand{\essnorm}[1]{\norm{#1}_{\ess}}
+
+
+% Some setup
+\pagestyle{plain}
+\geometry{a4paper, top=2cm, bottom=2cm, left=2cm, right=2cm}
+\CTEXsetup[format={\raggedright\bfseries\Large}]{section}
+\lstset{numbers=left, %设置行号位置
+        numberstyle=\small, %设置行号大小
+        keywordstyle=\color{blue}, %设置关键字颜色
+        commentstyle=\color{purple}, %设置注释颜色
+        %frame=single, %设置边框格式
+        escapeinside=``, %逃逸字符(1左面的键)，用于显示中文
+        breaklines, %自动折行
+        extendedchars=false, %解决代码跨页时，章节标题，页眉等汉字不显示的问题
+        %xleftmargin=2em,xrightmargin=2em, aboveskip=1em, %设置边距
+        tabsize=4, %设置tab空格数
+        showspaces=false %不显示空格
+       }
+
+% About math
+\newcommand{\rmnum}[1]{\romannumeral #1}
+\newcommand{\Emph}{\textbf}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\newcommand{\resetcounter}{\setcounter{equation}{0}}
+\newcommand{\equsuf}[1][x]{\equiv_{\textit{Suff(#1)}}}	
+\newcommand{\Suff}{\textit{Suff}}
+\newcommand{\len}[1][x]{\textit{length}_{#1}}
+
+% section deeep to 3 1.1.1
+\setcounter{secnumdepth}{3}
+
+\begin{document}
+
+\title{\Huge StarTraveller}
+\vspace{2cm}
+\author{\Large Trasier}
+\date{\today}
+\maketitle
+
+\section{Problem Statement}
+\label{sec:problem_statement}
+	
+	You are given \Emph{NStar} stars in 2D space.
+	You have \Emph{NShip} space ships that can travel between stars.
+	The amount of energy used by a space ship to travel from one star to another is calculated as the
+	\Emph{Euclidean} distance between these stars.
+	There are \Emph{NUfo} unidentified flying objects (UFO) moving around in space.
+	UFO's reduce the energy required to travel between two stars.
+	The energy consumed by your space ship is multiplied by 0.001 when your ship travels in the same direction at the same time as a UFO.
+	For example, if you travel between star A(0,0) and B(10,0) it will cost you 10 energy.
+	However, if one UFO is flying from A to B at the same time, it will cost you $10 \times 0.001=0.01$ energy.
+	If two UFO's are flying from A to B at the same time, it will cost you $10 \times 0.001 \times 0.001=0.00001$ energy.
+	Your task is to minimize the total energy used by your ships in order to visit every star at least once.
+
+\section{Functions}
+	
+	Your code should implement the methods \proc{init}(vector<int> stars) and \proc{makeMoves}(vector<int> ufos, vector<int> ships).
+	Your \proc{init} method will be called once and can return any integer.
+	Your \proc{makeMoves} method will be called until all stars have been travelled to or when you reached a maximum the NStar*4 turns.
+	Which means, the \Emph{Data Generator} will continue to generate data for calling \proc{makeMoves}
+	until one of previous two condition fits.
+	Your \proc{makeMoves} method should return a \Emph{vector<int>} containing your space ship moves for a single turn.
+	\begin{itemize}
+		\item \id{stars} gives you the location of each star.
+		
+		The 2D location of the ith star is given by $(\id{stars}[i*2], \id{stars}[i*2+1])$.
+		The range of values will be in $[0, 1023]$.
+		
+		\item \id{ufos} gives you the location of each ufo and the star indices where it is travelling towards in the next two turns.
+		
+		The star index of where the ith ufo is located, is given by $\id{ufos}[i*3]$.
+		In the next move, the ith ufo will travel to $\id{ufos}[i*3+1]$ and it will travel to $\id{ufos}[i*3+2]$ after that.
+		
+		\item \id{ships} gives you the location of each space ship.
+		
+		The star index of where the ith ship is located, is given by $\id{ships}[i]$.
+		A space ship can only travel directly between stars, therefor it's location is described by the star index where it is located.
+		
+	\end{itemize}
+	You must return the list of moves for each space ship.
+	The ith element of your return should give the zero based star index of the star where space ship i should travel towards.
+
+\section{Scoring}	
+\label{sec:scoring}
+
+	For each test case we will calculate your raw and normalized scores.
+	If you were not able to produce a valid return value, then your raw score is -1 and the normalized score is 0.
+	Otherwise, the raw score is equal to the sum of energy used over all space ship moves.
+	The normalized score for each test is $1,000,000.0 * BEST / YOUR$,
+	where BEST is the lowest raw score currently obtained on this test case (considering only the last submission from each competitor).
+	Finally, your total score is equal to the arithmetic average of normalized scores on all test cases.
+	You can see your raw scores on each example test case by making an example submit.
+	You can also see total scores of all competitors on provisional test set in the match standings.
+	No other information about scores is available during the match.
+
+	
+\section{Clarifications}
+\label{sec:clarifications}
+	
+	\begin{itemize}
+	
+		\item Space ships start at reandomly selected stars, these stars are not marked as visited
+		initially and need to travelled during a turn.
+		
+		\item A space ship may remain stationary at the same star. (The star will be marked as visited).
+		
+		\item You can visit the same star multiple times.
+		
+		\item A maximum of $\Emph{Nstar}*4$ turns are allowed, thereafter you will score zero for the test.
+		
+		\item A space ship can travel from it's current star to any other star.
+		
+		\item \Emph{NStar} will be in the range of $[100, 200]$ (Except for seed 1).
+		
+		\item \Emph{NShip} will be in the range of $[1, 10]$.
+		
+		\item \Emph{NUfo} will be in the range of $[0, \Emph{NStar}/100)$.
+		
+		\item The range of the integer star coordinates is $[0, 1023]$.
+		
+		\item Stars are generated around a random number of galaxy centers with a \Emph{Gaussian} distribution.
+		See the visualizer source code for exact implementation.
+	
+	\end{itemize}
+	
+\section{Notes}	
+\label{sec:notes}
+
+	\begin{itemize}
+	
+		\item The time limit is \Emph{20 seconds} per test case (this includes only the time spent in you code.)
+		
+		\item The memory limit is \Emph{1024 MB}.
+		
+		\item The implicit source code size limit is around \Emph{1 MB}.
+		Once you code is compiled, the binary size should not exceed \Emph{1 MB}.
+		
+		\item The compilation time limit is \Emph{30 seconds}.
+		
+		\item There are \Emph{10} example test cases and \Emph{100} full submission (provisional) test cases.
+
+		\item The match is \Emph{rated}.
+		
+	\end{itemize}
+	
+\section{Thought}
+\label{sec:thought}
+	
+\end{document}
