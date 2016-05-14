@@ -5,10 +5,6 @@ import httplib, urllib, json
 import urlparse
 from collections import defaultdict
 
-urls = (
-	# '/v1(.*)', 'hop',
-	'/v1/eval(.*)', 'hop',
-)
 
 class constForAPI:
 	website = "oxfordhk.azure-api.net"
@@ -523,8 +519,8 @@ class Util:
 	@staticmethod
 	def	expr_auids_and_afids(auids, afids):
 		auids_exp = Util.expr_multi_or(auids, Util.expr_AuId)
-		afids_exp = Util.expr_mutli_or(afids, Util.expr_AfId)
-		return "Composite(And(%s, %s))" % (auids_exp, afids_exp)
+		afids_exp = Util.expr_multi_or(afids, Util.expr_AfId)
+		return "And(%s,%s)" % (auids_exp, afids_exp)
 		
 		
 	@staticmethod
@@ -729,15 +725,15 @@ class vAuId:
 			if not id:
 				continue
 			self.vId_Dict[id] = vId(id, attrDict)
-		self.IdSet = self.vId_Dict.keys()
+		self.IdSet = set(self.vId_Dict.keys())
 		self.AfIdSet = set(CFA.get_AfId(entList, auid))
 		
 		
 	def	get_RId_rDict(self):
 		ret = defaultdict(set)
-		for vId in self.vId_Dict:
-			for rid in vId.RIdSet:
-				ret[rid].add(vId.Id)
+		for id,vnode in self.vId_Dict.iteritems():
+			for rid in vnode.RIdSet:
+				ret[rid].add(id)
 		return ret
 		
 		
@@ -790,7 +786,7 @@ class solution_Id_Id:
 		
 		
 	def get_hop(self, stId, edId):
-		print "From Id to Id"
+		# print "From Id to Id"
 		ret1, ret2, ret3 = [],[],[]
 		
 		# step1
@@ -820,7 +816,7 @@ class solution_Id_Id:
 		if st_vId.RIdSet:
 			RRId_rDict = defaultdict(set)
 			expr = Util.expr_ids(list(st_vId.RIdSet))
-			attribs = ed_vId.mainAttribs + [CFA.ID]
+			attribs = ed_vId.mainAttribs + [CFA.ID, CFA.RID]
 			count = len(st_vId.RIdSet)
 			entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
 			for attrDict in entList:
@@ -857,7 +853,7 @@ class solution_Id_AuId:
 	
 	
 	def get_hop(self, stId, edId):
-		print "From Id to AuId"
+		# print "From Id to AuId"
 		ret1, ret2, ret3 = [],[],[]
 		
 		st_vId = get_vId(stId)
@@ -909,7 +905,7 @@ class solution_AuId_Id:
 		self.eva = Evaluation()
 
 	def get_hop(self, stId, edId):
-		print "From AuId to Id"
+		# print "From AuId to Id"
 		ret1, ret2, ret3 = [],[],[]
 		
 		st_vAuId = get_vAuId(stId)
@@ -960,7 +956,7 @@ class solution_AuId_AuId:
 
 		
 	def get_hop(self, stId, edId):
-		print "From AuId to AuId"
+		# print "From AuId to AuId"
 		ret1, ret2, ret3 = [],[],[]
 		
 		st_vAuId = get_vAuId(stId)
@@ -972,7 +968,7 @@ class solution_AuId_AuId:
 		tmpSet = st_vAuId.IdSet & ed_vAuId.IdSet
 		ret2 += list(tmpSet)
 		
-		for st_id, st_vId in st_vAuId.vID_Dict.iteritems():
+		for st_id, st_vId in st_vAuId.vId_Dict.iteritems():
 			tmpSet = st_vId.RIdSet & ed_vAuId.IdSet
 			ret3 += map(lambda x:[st_id, x], tmpSet)
 		
@@ -1021,13 +1017,6 @@ class solution:
 		
 global solver
 solver = solution()
-
-class hop:
-	def GET(self, query):
-		d = web.input()
-		stId = long(d.id1)
-		edId = long(d.id2)
-		return solver.solve(stId, edId)
 		
 
 def localtest():
@@ -1056,13 +1045,8 @@ def localtest():
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 	def do_GET(self):
-		# self.protocal_version = "HTTP/1.1"
 		d = urlparse.urlparse(self.path)
 		query = d.query
-		
-		print "path =", self.path
-		print "query =", query
-		
 		try:
 			L = query.split('&')
 			if L[1].startswith('id2'):
@@ -1071,18 +1055,12 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			else:
 				edId = long(L[0].split('=')[-1])
 				stId = long(L[1].split('=')[-1])
-			
-			print "stId =", stId
-			print "edId =", edId
-			
+				
 			ans = solver.solve(stId, edId)
-			# ans = json.dumps([[stId, edId]])
-			# print ans
 			self.send_response(200, 'OK')
 			self.end_headers()
 			self.wfile.write(ans)
 			self.wfile.flush()
-			# self.connection.close()
 			
 		except Exception as e:
 			print "unkown request"
@@ -1103,7 +1081,7 @@ def remoteTest():
 	
 
 if __name__ == "__main__":
-	# remoteTest()
-	localtest()
+	remoteTest()
+	# localtest()
 	# app = web.application(urls, globals())
 	# app.run()

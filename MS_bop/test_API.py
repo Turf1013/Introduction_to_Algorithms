@@ -182,7 +182,7 @@ def FetchAll_ByAuId(auId):
 	count = 500
 	params = urllib.urlencode({
 		'expr': "Composite(AA.AuId=%s)" % (auId),
-		'attributes': 'Id,RId',
+		'attributes': 'Id,AA.AuId,AA.AuN,AA.AfId,AA.AfN',
 		'count': count,
 		'subscription-key': CFE.subKey,
 	})
@@ -266,7 +266,55 @@ def test_RId(rid):
 		conn.close()
 	except Exception as e:
 		print e
-		
+	
+def expr_auids(auids):
+	length = len(auids)
+	if length==1:
+		return "Composite(AA.AuId=%s)" % (auids[0])
+	mid = length>>1
+	lexpr = expr_auids(auids[:mid])
+	rexpr = expr_auids(auids[mid:])
+	return "Or(%s,%s)" % (lexpr, rexpr)
+	
+def expr_afids(afids):
+	length = len(afids)
+	if length==1:
+		return "Composite(AA.AfId=%s)" % (afids[0])
+	mid = length>>1
+	lexpr = expr_afids(afids[:mid])
+	rexpr = expr_afids(afids[mid:])
+	return "Or(%s,%s)" % (lexpr, rexpr)
+	
+def expr_auids_and_afids(auids, afids):
+	auids_expr = expr_auids(auids)
+	afids_expr = expr_afids(afids)
+	return "And(%s,%s)" % (auids_expr,afids_expr)
+	
+	
+def test_AuId_and_AfId():
+	auids = [
+		2095616704,2241113319,2095616704
+	]
+	afids = [
+		1290206253,125839683,98285908
+	]
+	expr = expr_auids_and_afids(auids, afids)
+	count = 5000
+	params = urllib.urlencode({
+		'expr': expr,
+		'attributes': 'Id,AA.AuId,AA.AfId',
+		'count': count,
+		'subscription-key': CFE.subKey,
+	})
+	try:
+		conn = httplib.HTTPSConnection(CFA.website)
+		conn.request("GET", CFA.url+"evaluate?%s" % (params))
+		response = conn.getresponse()
+		data = response.read()
+		dumpData("data_auid_and_afid.out", data)
+		conn.close()
+	except Exception as e:
+		print e
 	
 	
 if __name__ == "__main__":
@@ -296,4 +344,6 @@ if __name__ == "__main__":
 		# sleep(1)
 	# FetchAll_ByCId(1158167855)
 	
-	test_RId(1965061793)
+	# test_RId(1965061793)
+	# FetchAll_ByAuId(2095616704)
+	test_AuId_and_AfId()
