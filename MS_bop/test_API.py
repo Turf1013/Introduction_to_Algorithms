@@ -302,7 +302,7 @@ def test_AuId_and_AfId():
 	count = 5000
 	params = urllib.urlencode({
 		'expr': expr,
-		'attributes': 'Id,AA.AuId,AA.AfId',
+		'attributes': 'Id,AA.AuId,AA.AfId,RId',
 		'count': count,
 		'subscription-key': CFE.subKey,
 	})
@@ -329,7 +329,7 @@ if __name__ == "__main__":
 	# for id in IdList:
 		# Evaluate.evaluate_ById(id)
 		# sleep(2)
-	# Evaluate.evaluate_ById(2332023333)
+	Evaluate.evaluate_ById(1736339626)
 	# Evaluate.evaluate_ByAfId(2157025439)
 	
 	# test_multi_id(IdList)
@@ -346,4 +346,4 @@ if __name__ == "__main__":
 	
 	# test_RId(1965061793)
 	# FetchAll_ByAuId(2095616704)
-	test_AuId_and_AfId()
+	# test_AuId_and_AfId()

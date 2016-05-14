@@ -1308,11 +1308,40 @@ class hop:
 
 def localtest():
 	urls = [
-		"http://localhost/?id2=2310280492&id1=2332023333",
-		"http://localhost/?id2=2180737804&id1=2251253715",
-		"http://localhost/?id2=189831743&id1=2147152072",
-		"http://localhost/?id2=57898110&id1=2332023333",
-		"http://localhost/?id2=2014261844&id1=57898110",
+		# "http://localhost/?id2=2310280492&id1=2332023333",
+		# "http://localhost/?id2=2180737804&id1=2251253715",
+		# "http://localhost/?id2=189831743&id1=2147152072",
+		# "http://localhost/?id2=57898110&id1=2332023333",
+		# "http://localhost/?id2=2014261844&id1=57898110",
+		
+		# From Id to Id
+		"http://localhost/?id1=2169574628&id2=2104095591",
+		"http://localhost/?id1=2129963373&id2=2104095591",
+		"http://localhost/?id1=1935460876&id2=2104095591",
+		"http://localhost/?id1=2090373321&id2=2169551590",
+
+		# From Id to AuId
+		# "http://localhost/?id1=2169574628&id2=2047672443",
+		# "http://localhost/?id1=2169574628&id2=1985324749",
+		# "http://localhost/?id1=2169574628&id2=2096139825",
+		# "http://localhost/?id1=2083117615&id2=2147380636",
+		# "http://localhost/?id1=2070068582&id2=2147380636",
+
+		# From AuId to Id
+		# "http://localhost/?id1=2095616704&id2=2104095591",
+		# "http://localhost/?id1=2095616704&id2=2101309634",
+		# "http://localhost/?id1=2095616704&id2=2104095591",
+		# "http://localhost/?id1=2241113319&id2=2294662270",
+		# "http://localhost/?id2=2083117615&id1=2147380636",
+		# "http://localhost/?id2=2070068582&id1=2147380636",
+
+		# From AuId to AuId
+		# "http://localhost/?id1=2095616704&id2=1985324749",
+		# "http://localhost/?id1=2145586907&id2=2141729011",
+		# "http://localhost/?id1=2145586907&id2=2141729011",
+		# "http://localhost/?id1=2103501775&id2=2121612746",
+		# "http://localhost/?id1=2096377446&id2=1804221844",
+		# "http://localhost/?id1=2103501775&id2=1804221844",
 	]
 	for url in urls:
 		query = url[url.rindex('/')+1:]
