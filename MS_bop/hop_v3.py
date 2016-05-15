@@ -1,10 +1,9 @@
 #!/usr/bin/python
-import web
 import BaseHTTPServer
 import httplib, urllib, json
 import urlparse
 from collections import defaultdict
-
+from time import clock
 
 class constForAPI:
 	website = "oxfordhk.azure-api.net"
@@ -638,7 +637,7 @@ class Evaluation:
 	def __init__(self):
 		self.conn = httplib.HTTPSConnection(CFA.website)
 		self.null_data = json.dumps({"entities":[]})
-		self.max_times = 15
+		self.max_times = 10
 		
 		
 	def getData(self, expr):
@@ -655,7 +654,7 @@ class Evaluation:
 		for i in xrange(self.max_times):
 			self.conn.request("GET", CFA.url+"evaluate?%s" % (expr))
 			data = self.conn.getresponse().read()
-			print "data =", data
+			#print "data =", data
 			try:
 				d = json.loads(data)
 				ret = d.get("entities")
@@ -762,7 +761,7 @@ def get_vId(id):
 	ret = vId_Dict.get(id)
 	if not ret:
 		expr = Util.expr_Id(id)
-		print "expr =", expr
+		#print "expr =", expr
 		entList = eva.getEnt(CFE.get_params(expr, CFA.vId_attribs, count=1))
 		ret = vId(id, entList)
 		vId_Dict[id] =  ret
@@ -777,8 +776,8 @@ def get_vAuId(id):
 	ret = vAuId_Dict.get(id)
 	if not ret:
 		expr = Util.expr_AuId(id)
-		count = CFA.COUNT * 2
-		print "expr =", expr
+		count = CFA.COUNT * 3
+		#print "expr =", expr
 		entList = eva.getEnt(CFE.get_params(expr, CFA.vAuId_attribs, count))
 		ret = vAuId(id, entList)
 		vAuId_Dict[id] = ret
@@ -808,7 +807,7 @@ class solution_Id_Id:
 		if st_vId.mainSet:
 			mainItems = st_vId.get_mainItems()
 			expr = Util.expr_all_and_rid(mainItems, edId)
-			print "expr =", expr
+			#print "expr =", expr
 			attribs = st_vId.mainAttribs + [CFA.ID]
 			count = CFA.COUNT * 5
 			entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
@@ -823,7 +822,7 @@ class solution_Id_Id:
 		if st_vId.RIdSet:
 			RRId_rDict = defaultdict(set)
 			expr = Util.expr_ids(list(st_vId.RIdSet))
-			print "expr =", expr
+			#print "expr =", expr
 			attribs = ed_vId.mainAttribs + [CFA.ID, CFA.RID]
 			count = len(st_vId.RIdSet)
 			entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
@@ -844,7 +843,7 @@ class solution_Id_Id:
 			RRId_length = len(RRId_List)
 			for i in xrange(0, RRId_length, CFA.PACKET):
 				expr = Util.expr_ids_and_rid(RRId_List[i:i+CFA.PACKET], edId)
-				print "expr =", expr
+				#print "expr =", expr
 				attribs = [CFA.ID]
 				count = CFA.PACKET
 				entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
@@ -885,7 +884,7 @@ class solution_Id_AuId:
 		if st_vId.AuIdSet and ed_vAuId.AfIdSet:
 			'!!!!!! here may be wrong.'
 			expr = Util.expr_auids_and_afids(list(st_vId.AuIdSet), list(ed_vAuId.AfIdSet))
-			print "expr =", expr
+			#print "expr =", expr
 			count = CFA.COUNT * 6
 			attribs = [CFA.AAAUID, CFA.AAAFID]
 			entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
@@ -902,7 +901,7 @@ class solution_Id_AuId:
 			for i in xrange(0, ed_Id_length, CFA.PACKET):
 				rids = ed_Id_List[i:i+CFA.PACKET]
 				expr = Util.expr_ids_and_rids(st_RId_List, rids)
-				print "expr =", expr
+				#print "expr =", expr
 				attribs = [CFA.ID, CFA.RID]
 				count = CFA.COUNT * 5
 				entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
@@ -944,11 +943,10 @@ class solution_AuId_Id:
 		if st_vAuId.AfIdSet and ed_vId.AuIdSet:
 			'!!!!!! here may be wrong.'
 			expr = Util.expr_auids_and_afids(list(ed_vId.AuIdSet), list(st_vAuId.AfIdSet))	
-			print "expr =", expr
+			#print "expr =", expr
 			count = CFA.COUNT * 6
 			attribs = [CFA.AAAUID, CFA.AAAFID]
 			entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
-			print "expr =", expr
 			AuId_Dict = CFA.get_AuId_Dict(entList)
 			for auid in ed_vId.AuIdSet:
 				tmpSet = AuId_Dict[auid]
@@ -962,7 +960,7 @@ class solution_AuId_Id:
 			for i in xrange(0, st_RId_length, CFA.PACKET):
 				rids = st_RId_List[i:i+CFA.PACKET]
 				expr = Util.expr_ids_and_rid(rids, edId)
-				print "expr =", expr
+				#print "expr =", expr
 				count = CFA.COUNT * 6
 				attribs = [CFA.ID]
 				entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
@@ -1057,25 +1055,25 @@ def localtest():
 		# "http://localhost/?id2=2014261844&id1=57898110",
 		
 		# From Id to Id
-		# "http://localhost/?id1=2169574628&id2=2104095591",
-		# "http://localhost/?id1=2129963373&id2=2104095591",
-		# "http://localhost/?id1=1935460876&id2=2104095591",
-		# "http://localhost/?id1=2090373321&id2=2169551590",
+		"http://localhost/?id1=2169574628&id2=2104095591",
+		"http://localhost/?id1=2129963373&id2=2104095591",
+		"http://localhost/?id1=1935460876&id2=2104095591",
+		"http://localhost/?id1=2090373321&id2=2169551590",
 
 		# From Id to AuId
-		# "http://localhost/?id1=2169574628&id2=2047672443",
-		# "http://localhost/?id1=2169574628&id2=1985324749",
-		# "http://localhost/?id1=2169574628&id2=2096139825",
-		# "http://localhost/?id1=2083117615&id2=2147380636",
-		# "http://localhost/?id1=2070068582&id2=2147380636",
+		"http://localhost/?id1=2169574628&id2=2047672443",
+		"http://localhost/?id1=2169574628&id2=1985324749",
+		"http://localhost/?id1=2169574628&id2=2096139825",
+		"http://localhost/?id1=2083117615&id2=2147380636",
+		"http://localhost/?id1=2070068582&id2=2147380636",
 
 		# From AuId to Id
-		# "http://localhost/?id1=2095616704&id2=2104095591",
-		# "http://localhost/?id1=2095616704&id2=2101309634",
-		# "http://localhost/?id1=2095616704&id2=2104095591",
-		# "http://localhost/?id1=2241113319&id2=2294662270",
-		# "http://localhost/?id2=2083117615&id1=2147380636",
-		# "http://localhost/?id2=2070068582&id1=2147380636",
+		"http://localhost/?id1=2095616704&id2=2104095591",
+		"http://localhost/?id1=2095616704&id2=2101309634",
+		"http://localhost/?id1=2095616704&id2=2104095591",
+		"http://localhost/?id1=2241113319&id2=2294662270",
+		"http://localhost/?id2=2083117615&id1=2147380636",
+		"http://localhost/?id2=2070068582&id1=2147380636",
 
 		# From AuId to AuId
 		"http://localhost/?id1=2095616704&id2=1985324749",
@@ -1085,6 +1083,7 @@ def localtest():
 		"http://localhost/?id1=2096377446&id2=1804221844",
 		"http://localhost/?id1=2103501775&id2=1804221844",
 	]
+	clock()
 	for url in urls:
 		query = url[url.rindex('/')+1:]
 		L = query.split('&')
@@ -1098,7 +1097,8 @@ def localtest():
 		ans = solution().solve(stId, edId)
 		print "ans =", ans
 		print 
-		
+	print "time usage: %s" % (clock())
+
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 

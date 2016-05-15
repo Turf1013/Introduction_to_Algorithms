@@ -8,6 +8,6 @@
 *.out
 *.o
 *.gcno
-*.pyc
+*.py[co]
 prep
 hop
