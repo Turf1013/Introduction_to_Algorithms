@@ -6,7 +6,7 @@ L = json.loads(data)
 
 with open("F:\\Qt_prj\\hdoj\\data.out", "w") as fout:
 	fout.write("[")
-	lines = ",\n".join(map(lambda l:str(l), L))
+	lines = ",\n".join(map(lambda l:"".join(str(l).split('L')), L))
 	fout.write(lines)
 	fout.write("]")
 	

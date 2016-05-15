@@ -654,7 +654,7 @@ class Evaluation:
 		for i in xrange(self.max_times):
 			self.conn.request("GET", CFA.url+"evaluate?%s" % (expr))
 			data = self.conn.getresponse().read()
-			#print "data =", data
+			# print "data =", data
 			try:
 				d = json.loads(data)
 				ret = d.get("entities")
@@ -761,7 +761,7 @@ def get_vId(id):
 	ret = vId_Dict.get(id)
 	if not ret:
 		expr = Util.expr_Id(id)
-		#print "expr =", expr
+		# print "expr =", expr
 		entList = eva.getEnt(CFE.get_params(expr, CFA.vId_attribs, count=1))
 		ret = vId(id, entList)
 		vId_Dict[id] =  ret
@@ -777,7 +777,7 @@ def get_vAuId(id):
 	if not ret:
 		expr = Util.expr_AuId(id)
 		count = CFA.COUNT * 3
-		#print "expr =", expr
+		# print "expr =", expr
 		entList = eva.getEnt(CFE.get_params(expr, CFA.vAuId_attribs, count))
 		ret = vAuId(id, entList)
 		vAuId_Dict[id] = ret
@@ -791,7 +791,7 @@ class solution_Id_Id:
 		
 		
 	def get_hop(self, stId, edId):
-		print "From Id to Id"
+		# print "From Id to Id"
 		ret1, ret2, ret3 = [],[],[]
 		
 		# step1
@@ -807,7 +807,7 @@ class solution_Id_Id:
 		if st_vId.mainSet:
 			mainItems = st_vId.get_mainItems()
 			expr = Util.expr_all_and_rid(mainItems, edId)
-			#print "expr =", expr
+			# print "expr =", expr
 			attribs = st_vId.mainAttribs + [CFA.ID]
 			count = CFA.COUNT * 5
 			entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
@@ -821,31 +821,34 @@ class solution_Id_Id:
 				
 		if st_vId.RIdSet:
 			RRId_rDict = defaultdict(set)
-			expr = Util.expr_ids(list(st_vId.RIdSet))
-			#print "expr =", expr
-			attribs = ed_vId.mainAttribs + [CFA.ID, CFA.RID]
-			count = len(st_vId.RIdSet)
-			entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
-			for attrDict in entList:
-				id = attrDict.get("Id")
-				if not id:
-					continue
-				tmpSet = CFA.get_mainId_Set(attrDict)
-				tmpSet &= ed_vId.mainSet
-				ret3 += map(lambda x:[id, x], tmpSet)
-				rids = CFA.get_RId(attrDict)
-				for rid in rids:
-					RRId_rDict[rid].add(id)
+			RId_List = list(st_vId.RIdSet)
+			RId_length = len(RId_List)
+			count = CFA.PACKET
+			for i in xrange(0, RId_length, CFA.PACKET):
+				expr = Util.expr_ids(RId_List[i:i+CFA.PACKET])
+				# print "expr =", expr
+				attribs = ed_vId.mainAttribs + [CFA.ID, CFA.RID]
+				entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
+				for attrDict in entList:
+					id = attrDict.get("Id")
+					if not id:
+						continue
+					tmpSet = CFA.get_mainId_Set(attrDict)
+					tmpSet &= ed_vId.mainSet
+					ret3 += map(lambda x:[id, x], tmpSet)
+					rids = CFA.get_RId(attrDict)
+					for rid in rids:
+						RRId_rDict[rid].add(id)
 					
 			ret2 += list(RRId_rDict[edId])
 			
 			RRId_List = RRId_rDict.keys()
 			RRId_length = len(RRId_List)
+			count = CFA.PACKET
 			for i in xrange(0, RRId_length, CFA.PACKET):
 				expr = Util.expr_ids_and_rid(RRId_List[i:i+CFA.PACKET], edId)
-				#print "expr =", expr
+				# print "expr =", expr
 				attribs = [CFA.ID]
-				count = CFA.PACKET
 				entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
 				for attrDict in entList:
 					id = attrDict.get("Id")
@@ -864,7 +867,7 @@ class solution_Id_AuId:
 	
 	
 	def get_hop(self, stId, edId):
-		print "From Id to AuId"
+		# print "From Id to AuId"
 		ret1, ret2, ret3 = [],[],[]
 		
 		st_vId = get_vId(stId)
@@ -884,7 +887,7 @@ class solution_Id_AuId:
 		if st_vId.AuIdSet and ed_vAuId.AfIdSet:
 			'!!!!!! here may be wrong.'
 			expr = Util.expr_auids_and_afids(list(st_vId.AuIdSet), list(ed_vAuId.AfIdSet))
-			#print "expr =", expr
+			# print "expr =", expr
 			count = CFA.COUNT * 6
 			attribs = [CFA.AAAUID, CFA.AAAFID]
 			entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
@@ -896,23 +899,26 @@ class solution_Id_AuId:
 			
 		if st_vId.RIdSet and ed_vAuId.IdSet:
 			st_RId_List = list(st_vId.RIdSet)
+			st_RId_length = len(st_RId_List)
 			ed_Id_List = list(ed_vAuId.IdSet)
 			ed_Id_length = len(ed_Id_List)
-			for i in xrange(0, ed_Id_length, CFA.PACKET):
-				rids = ed_Id_List[i:i+CFA.PACKET]
-				expr = Util.expr_ids_and_rids(st_RId_List, rids)
-				#print "expr =", expr
-				attribs = [CFA.ID, CFA.RID]
-				count = CFA.COUNT * 5
-				entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
-				rids_Set = set(rids)
-				for attrDict in entList:
-					id = attrDict.get("Id")
-					if not id:
-						continue
-					tmpSet = set(CFA.get_RId(attrDict))
-					tmpSet &= rids_Set
-					ret3 += map(lambda x:[id, x], tmpSet)
+			count = CFA.COUNT * 5
+			for j in xrange(0, st_RId_length, CFA.PACKET):
+				st_RIds = st_RId_List[j:j+CFA.PACKET]
+				for i in xrange(0, ed_Id_length, CFA.PACKET):
+					rids = ed_Id_List[i:i+CFA.PACKET]
+					expr = Util.expr_ids_and_rids(st_RIds, rids)
+					# print "expr =", expr
+					attribs = [CFA.ID, CFA.RID]
+					entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
+					rids_Set = set(rids)
+					for attrDict in entList:
+						id = attrDict.get("Id")
+						if not id:
+							continue
+						tmpSet = set(CFA.get_RId(attrDict))
+						tmpSet &= rids_Set
+						ret3 += map(lambda x:[id, x], tmpSet)
 				
 			
 		return ret1 + Util.to_hop2(ret2, stId, edId) + Util.to_hop3(ret3, stId, edId)
@@ -924,7 +930,7 @@ class solution_AuId_Id:
 		self.eva = Evaluation()
 
 	def get_hop(self, stId, edId):
-		print "From AuId to Id"
+		# print "From AuId to Id"
 		ret1, ret2, ret3 = [],[],[]
 		
 		st_vAuId = get_vAuId(stId)
@@ -943,7 +949,7 @@ class solution_AuId_Id:
 		if st_vAuId.AfIdSet and ed_vId.AuIdSet:
 			'!!!!!! here may be wrong.'
 			expr = Util.expr_auids_and_afids(list(ed_vId.AuIdSet), list(st_vAuId.AfIdSet))	
-			#print "expr =", expr
+			# print "expr =", expr
 			count = CFA.COUNT * 6
 			attribs = [CFA.AAAUID, CFA.AAAFID]
 			entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
@@ -960,7 +966,7 @@ class solution_AuId_Id:
 			for i in xrange(0, st_RId_length, CFA.PACKET):
 				rids = st_RId_List[i:i+CFA.PACKET]
 				expr = Util.expr_ids_and_rid(rids, edId)
-				#print "expr =", expr
+				# print "expr =", expr
 				count = CFA.COUNT * 6
 				attribs = [CFA.ID]
 				entList = self.eva.getEnt(CFE.get_params(expr, attribs, count))
@@ -981,7 +987,7 @@ class solution_AuId_AuId:
 
 		
 	def get_hop(self, stId, edId):
-		print "From AuId to AuId"
+		# print "From AuId to AuId"
 		ret1, ret2, ret3 = [],[],[]
 		
 		st_vAuId = get_vAuId(stId)
@@ -1036,8 +1042,8 @@ class solution:
 
 		
 	def solve(self, stId, edId):
-		print "stId =", stId
-		print "edId =", edId
+		# print "stId =", stId
+		# print "edId =", edId
 		ret = self.get_hop(stId, edId)
 		return json.dumps(ret)
 
@@ -1076,7 +1082,6 @@ def localtest():
 
 		# From AuId to AuId
 		"http://localhost/?id1=2095616704&id2=1985324749",
-		"http://localhost/?id1=2145586907&id2=2141729011",
 		"http://localhost/?id1=2145586907&id2=2141729011",
 		"http://localhost/?id1=2103501775&id2=2121612746",
 		"http://localhost/?id1=2096377446&id2=1804221844",
@@ -1138,7 +1143,7 @@ def remoteTest():
 	
 
 if __name__ == "__main__":
-	# remoteTest()
-	localtest()
+	remoteTest()
+	# localtest()
 	# app = web.application(urls, globals())
 	# app.run()

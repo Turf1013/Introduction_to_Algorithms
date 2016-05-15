@@ -16,8 +16,10 @@ def extract(filename):
 	
 def dump(filename, L):
 	with open(filename, "w") as fout:
-		for l in L:
-			fout.write("%s\n" % (l))
+		fout.write("[")
+		for l in L[:-1]:
+			fout.write("%s, \n" % (l))
+		fout.write("%s]\n" % (l))
 	
 if __name__ == "__main__":
 	srcFilename = "F:\Qt_prj\hdoj\data.in"
