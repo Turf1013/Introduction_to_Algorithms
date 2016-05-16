@@ -1044,7 +1044,11 @@ class solution:
 	def solve(self, stId, edId):
 		# print "stId =", stId
 		# print "edId =", edId
-		ret = self.get_hop(stId, edId)
+		ret = []
+		try:
+			ret = self.get_hop(stId, edId)
+		except:
+			pass
 		return json.dumps(ret)
 
 		
@@ -1125,9 +1129,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.flush()
 			
 		except:
-			# print "unkown request"
-			# print e
-			pass
+			print "unkown request"
 		
 	def do_POST(self):
 		self.do_GET()
@@ -1136,15 +1138,15 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 def remoteTest():
 	httpd = BaseHTTPServer.HTTPServer(('', 80), RequestHandler)
 	print "server starting..."
-	try:
-		httpd.serve_forever()
-	except KeyboardInterrupt:
-		print "server closing..."
-		httpd.server_close()
-	
+	# try:
+		# httpd.serve_forever()
+	# except KeyboardInterrupt:
+		# print "server closing..."
+		# httpd.server_close()
+	httpd.serve_forever()
 
 if __name__ == "__main__":
-	# remoteTest()
-	localtest()
+	remoteTest()
+	# localtest()
 	# app = web.application(urls, globals())
 	# app.run()
