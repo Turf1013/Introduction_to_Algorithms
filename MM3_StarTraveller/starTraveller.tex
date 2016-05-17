@@ -222,7 +222,131 @@
 		
 	\end{itemize}
 	
+\section{Symbol Description}
+\label{sec:symbol_descrip}
+
+	$Star_k$表示第$k$个结点的坐标，
+	$\proc{Length}$表示距离计算方法，
+	$\proc{Length}(a, b)$表示点\id{a}到点\id{b}的距离。
+	
+	$\proc{Phop}(a, b)$UFO的第2跳为\id{a}并且第3跳为\id{b}的概率。
+	
+	$P_r$表示每次遇到UFO的衰减率，这里$P_r \equiv 0.001$。
+	$\proc{Decay}(a, b)$表示从点\id{a}移动到\id{b}的衰减次数。
+	
+	$cost$表示路径花销，其实质为路径距离。
+	$cturn$表示调用\proc{makeMoves}的花销，其实质为调用次数。
+	
+    $P$表示所有结点的集合，
+	$U$表示已经访问结点的集合，
+	$\bar{U}$表示未访问结点的集合，
+	其本质是$\bar{U} = P \setminus U$。
+	
 \section{Thought}
 \label{sec:thought}
+
+\subsection{从局部最优出发}
+\label{subsec:local_optimum}
+
+\subsubsection{基本思路}
+
+	我认为这又是一道设计概率的问题，显然当UFO存在的时候，选择与UFO相同的路径可以一定程度上减少花销。
+	当然，这仅仅是个概率上的减少。题目中的距离采用的欧式距离，因此，这里一定存在一个这样的基本定理：
+	\begin{mthm}
+	\label{mthm:triangle}
+		\[
+            \proc{Length}(a, c) \ge \proc{Length}(a, b) + \proc{Length}(b, c)
+        \]
+	\end{mthm}
+	这其实就是三角形定理，在不考虑与UFO路径重合的时候，这一定是正确的。
+	
+	如果存在UFO，UFO的移动趋势仅仅包含两跳的。因此，可以利用这个特性规划局部最优解。
+	显然每次ship的选择共有如下几种情况：
+	\begin{enumerate}[(1)]
+		
+		\item 原地不动
+		
+		\[
+			cost_1 = 0
+		\]
+		
+		\item 移动到未访问结点
+		
+		\[
+			cost_1 = \proc{Length}(u, v), v \in Unvisited
+		\]
+		
+		\item 访问到已访问结点，目的是为了更快的访问未访问结点（2跳）
+		
+		根据定理~\ref{mthm:triangle}，显然由当前结点访问到下一结点，直到访问到未访问结点间，
+		必然存在着一条路径与至少一个UFO重合。
+		\[
+			cost_1 = \proc{Length}(u, v) * P_r^k
+		\]
+	
+	\end{enumerate}
+	上面的等式仅仅考虑的是一跳的情况，这里存在着一个问题，显然这三种情况并不一定都会访问到未访问结点。
+	所以，我认为应当以此为前提比较几种方案的优劣。显然，这个优劣是局部性的优劣，后续应当加入惩罚函数，
+	以防止爬山。故，我们换一个思路讨论\Emph{cost}函数，这里\Emph{cost}应当表示为从当前结点访问到未访问结点
+	的路径花销。不妨设当前结点为$u$，目标结点为$v$，故可分以下几种讨论
+	\begin{enumerate}[(1)]
+	
+		\item 若$u = v$
+		\begin{align*}
+			cost	&=	0	\\
+			cturn	&=	1
+		\end{align*}
+		
+		\item 若仅仅通过一跳即可访问到$v$
+		\begin{align*}
+			cost	&= 	\proc{Length}(u, v) * P_r^{\proc{Decay}(u, v)}	\\
+			cturn	&=	1
+		\end{align*}
+		
+		\item 若通过两跳才能访问到$v$，并假定路径为$u \rightarrow a \rightarrow v$
+		\begin{align*}
+			cost	&=	\proc{Length}(u, a) * P_r^{\proc{Decay}(u, a)} + \proc{Length}(a, v) * P_r^{\proc{Decay}(a, v)}	\\
+			cturn	&=	2
+		\end{align*}
+		
+	\end{enumerate}
+	显然，上述公式都是可计算的，因为每次给出UFO的接连两条的移动趋势。但是，一定存在着这样的可能，
+	就是$v$到其他任何结点非常远，然而，经过连续若干次的拖延，直到第k次保证路径与UFO重合，显然
+	这种情况存在并且可以使总花销更小。而这恰恰是个概率问题。
+	又因为$|UFO| = |Star|/100$，显然两者的差异很大。故，我们不妨以一定概率计算到三跳甚至四跳的可能。
+	不选择更多的跳数是因为受到总的跳数一定少于$|Star| \times 4$的限制。因此我们额外增加一种情况
+	\begin{enumerate}[(1)]
+	\setcounter{enumi}{2}
+		
+		\item 通过三跳访问到$v$，并假定路径为$u \rightarrow a \rightarrow b \rightarrow v$
+		\begin{align*}
+			cost	&= \proc{Length}(u, a) * P_r^{\proc{Decay}(u, a)} + \proc{Length}(a, b) * P_r^{\proc{Decay}(a, b)} + \proc{Length}(b, v) * P_r / \proc{Phop}(b, v)	\\
+			cturn	&= 3
+		\end{align*}
+		
+	\end{enumerate}
+	
+	显然将原问题转化为根据上述方案如何选择局部最优路径。
+	
+\subsubsection{存在的问题}
+
+	仅从局部最优解出发，选择方案构建全局最优解，存在如下几个问题：
+	\begin{enumerate}[(1)]
+		
+		\item 静态选择方案存在着不合理
+		
+		由于跳数不同，这也导致在每跳时，$\proc{Decay}$其实是不同的，这就引发了一个问题，决策时动态进行的还是静态执行的。
+		静态执行显然一定可以得到解，但是解难免不如动态决策。而动态决策存在的主要问题是，前面进行的决策是否荒废了，
+		是否可以保证一定能在限定的\Emph{turn}次数内得到解。
+		
+		\item $cost$函数计算的不科学
+		
+		显然每当结点$u$移动到结点$v$了，那么可能由某点距离其他结点都很远，仅仅距离结点\id{u}很近。按照点访问的顺序，
+		可能先访问那个较远点更合理，诸如此类的情况如何选择惩罚项进行处理。
+		
+		此外，$cost$函数选择唯一点执行决策还是多个点并行进行，如果每次都选择唯一点进行，显然存在着饥饿的情况。
+		那么，能不能保证在\Emph{turn}次数内得到解成为关键。
+		
+	\end{enumerate}
 	
 \end{document}
