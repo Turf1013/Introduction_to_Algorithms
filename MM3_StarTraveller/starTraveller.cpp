@@ -23,6 +23,7 @@ using namespace std;
 #define SZ(x)           ((int)(x).size())
 
 #define DEBUG
+#define LOCAL_DEBUG
 
 FILE *logout;
 
@@ -61,19 +62,24 @@ struct Node_t {
         path.clr();
     }
 
+    size_t size() {
+    	return SZ(path);
+    }
+
     void push_back(int x) {
         path.pb(x);
     }
 
     void print() const {
-        fprintf(logout, "st = %d: ", st);
-        rep(i, 0, SZ(path)) {
+    	int sz = SZ(path);
+        fprintf(logout, "Nhops = %d: ", sz-1);
+        rep(i, 0, sz) {
             if (i == 0)
                 fprintf(logout, "%d", path[i]);
             else
                 fprintf(logout, "->%d", path[i]);
         }
-        fprintf(lgout, "\n");
+        fprintf(logout, "\n");
         fflush(logout);
     }
 
@@ -88,18 +94,18 @@ struct Node_t {
 
 const double POS_INF = 1e16;
 const int maxn = 2005;
-const char *LOG_FILENAME = "starlog.out"
+const char *LOG_FILENAME = "starlog.out";
 int NStars, NShips, NUfos;
-double M[maxn][maxn], base[25];
+double M[maxn][maxn], Base[25];
 bool visit[maxn];
 Star_t stars[maxn];
-Ufo_t ufos[maxn/100];
+Ufo_t ufos[maxn/100+5];
 int ships[15];
 vi paths[15];
 vpii E1[maxn], E1_[maxn];
 vpii E2[maxn], E2_[maxn];
 map<pii, int> decay1, decay2;
-map<int> ust, _ust;
+set<int> ust, _ust;
 
 inline void init_log() {
     logout = fopen(LOG_FILENAME, "w");
@@ -110,7 +116,7 @@ inline void close_log() {
 }
 
 double Length(const Star_t& sa, const Star_t& sb) {
-    return sqrt((sa[i].x-sb[i].x)*(sa[i].x-sb[i].x) + (sa[i].y-sb[i].y)*(sa[i].y-sb[i].y));
+    return sqrt((sa.x-sb.x)*(sa.x-sb.x) + (sa.y-sb.y)*(sa.y-sb.y));
 }
 
 double Length(const int a, const int b) {
@@ -135,8 +141,8 @@ public:
             rep(j, 0, i)
                 M[i][j] = M[j][i] = Length(i, j);
         }
-        base[0] = 1;
-        rep(i, 1, 11) base[i] = base[i-1] * 0.001;
+        Base[0] = 1;
+        rep(i, 1, 11) Base[i] = Base[i-1] * 0.001;
     }
 
     /**
@@ -148,7 +154,7 @@ public:
         NStars = sz >> 1;
 
         memset(visit, false, sizeof(visit));
-        
+
         rep(i, 0, NStars) {
             stars[i].x = vstar[i<<1];
             stars[i].y = vstar[(i<<1)|1];
@@ -170,26 +176,28 @@ public:
         decay2.clr();
 
         for (int i=0,j=0; i<NUfos; ++i,j+=3) {
-            ufos[i].idx[0] = vfuo[j];
-            ufos[i].idx[1] = vfuo[j+1];
-            ufos[i].idx[2] = vfuo[j+2];
+            ufos[i].idx[0] = vufo[j];
+            ufos[i].idx[1] = vufo[j+1];
+            ufos[i].idx[2] = vufo[j+2];
             ufos[i].dump(decay1, decay2);
         }
 
         rep(i, 0, NStars) {
-            E[i].clr();
-            E_[i].clr();
+            E1[i].clr();
+            E1_[i].clr();
+            E2[i].clr();
+            E2_[i].clr();
         }
 
         map<pii,int>::iterator iter;
         for (iter=decay1.begin(); iter!=decay1.end(); ++iter) {
-            E1[iter->fir->fir].pb(mp(iter->fir->sec, iter->sec));
-            E1_[iter->fir->sec].pb(mp(iter->fir->fir, iter->sec));
+            E1[iter->fir.fir].pb(mp(iter->fir.sec, iter->sec));
+            E1_[iter->fir.sec].pb(mp(iter->fir.fir, iter->sec));
         }
 
         for (iter=decay2.begin(); iter!=decay2.end(); ++iter) {
-            E2[iter->fir->fir].pb(mp(iter->fir->sec, iter->sec));
-            E2_[iter->fir->sec].pb(mp(iter->fir->fir, iter->sec));
+            E2[iter->fir.fir].pb(mp(iter->fir.sec, iter->sec));
+            E2_[iter->fir.sec].pb(mp(iter->fir.fir, iter->sec));
         }
     }
 
@@ -222,7 +230,7 @@ public:
                 ust.insert(v);
                 _ust.erase(v);
             }
-            if (!paths[i].emtpy())
+            if (!paths[i].empty())
                 paths[i].pop_back();
         }
         ++NTurns;
@@ -300,7 +308,7 @@ public:
         \brief calculate the possibility of exists b -> v in next turn
     */
     double PnxtHop(const int a, const int b) {
-        int c = 0, sz = E2_[a];
+        int c = 0, sz = SZ(E2_[a]);
         double ret = 1.0;
 
         rep(i, 0, sz) c += E2_[a][i].sec;
@@ -322,7 +330,7 @@ public:
         const int sz1 = SZ(e1);
         double cost = POS_INF, tmp;
         int ansa = -1, ansb = -1;
-        int c1, c2, c3;
+        int c1, c2;
 
         rep(i, 0, sz1) {
             const int a = e1[i].fir;
@@ -354,6 +362,13 @@ public:
     }
 
     /**
+        \brief calculate the cost of hop4, too least possibility to consider that.
+    */
+    void costHop4(const int u, const int v, Node_t& nd) {
+    	nd.clr();
+    }
+
+    /**
         \brief  make a valid hop according current layout
         \return vector<int> present the next move of ships
     */
@@ -369,7 +384,7 @@ public:
             \step 1: using current position of ships to initialize `ret`
         */
         rep(i, 0, NShips) {
-            if (paths[u].empty())
+            if (paths[i].empty())
                 ret[i] = ships[i];
             else
                 ret[i] = *paths[i].rbegin();
@@ -392,13 +407,13 @@ public:
                 const int v = unvisit[i];
                 /**
                     \case 1: one hop
-                */ 
+                */
                 costHop1(u, v, nd);
                 if (!nd.empty())
                     vc.pb(nd);
 
                 /**
-                    \case 2: two hop 
+                    \case 2: two hop
                 */
                 costHop2(u, v, nd);
                 if (!nd.empty())
@@ -452,13 +467,208 @@ public:
 };
 // -------8<------- end of solution submitted to the website -------8<-------
 
-template <typename T> 
+template <typename T>
 void getVector(vector<T>& v) {
     for (int i = 0; i < v.size(); ++i)
         cin >> v[i];
 }
 
-int main() {
+struct Pnt {
+	int x, y;
+	bool visited;
+	Pnt() {}
+	Pnt(int x, int y) {
+		this->x = x;
+		this->y = y;
+		visited = false;
+	}
+
+	bool operator== (const Pnt& o) const {
+		return x==o.x && y==o.y;
+	}
+};
+
+class StarTravellerVis {
+public:
+	const int mod = 1024;
+	int NStar, NShip, NUfo, NG;
+	vector<Pnt> star;
+	vi ship;
+	vi ufoParm;
+	vector<int> starParm;
+	int *ufoRange;
+
+	void generate(int seed) {
+		srand(seed);
+
+		if (seed == 1) {
+			NStar = 20;
+			NShip = 1;
+			NUfo = 4;
+			NG = 3;
+		} else {
+			NStar = 100 + rand()%1901;
+			NShip = 1 + rand()%10;
+			NUfo = rand()%(NStar/100);
+			NG = 1 + rand()%16;
+		}
+
+		star.clr();
+		ship.clr();
+		ufoParm.clr();
+		starParm.clr();
+
+		ufoParm.resize(3*NUfo);
+
+		printf("NStar = %d, NShip = %d, NUfo = %d\n", NStar, NShip, NUfo);
+
+		// Generate stars
+		// Generate galaxy center positions
+		Pnt *galaxy = new Pnt[NG];
+		rep(i, 0, NG) {
+			galaxy[i].x = rand()%mod;
+			galaxy[i].y = rand()%mod;
+		}
+
+		// Generate star locations
+		rep(i, 0, NStar) {
+			int x = 0, y = 0;
+			int g = rand() % NG;
+			do {
+				x = rand()%100 + galaxy[g].x;
+				y = rand()%100 + galaxy[g].y;
+			} while (x<0 || y<0 || x>=mod || y>=mod);
+			star.pb( Pnt(x, y) );
+		}
+
+		// Assign initial space ship locations
+		rep(i, 0, NShip) {
+			ship.pb( rand() % NStar );
+		}
+
+		// Generate UFO
+		ufoRange = new int[NUfo];
+		rep(i, 0, NUfo) {
+			ufoRange[i] = 10 + rand() % (NStar / 10);
+			ufoParm[i*3] = rand() % NStar;
+		}
+		calculateNextStar(1);
+		calculateNextStar(2);
+
+		// convert to parameter array
+		rep(i, 0, NStar) {
+			starParm.pb( star[i].x );
+			starParm.pb( star[i].y );
+		}
+	}
+
+	void calculateNextStar(int idx) {
+		rep(i, 0, NUfo) {
+			int from = ufoParm[i*3 + idx - 1];
+			int bdst = 1<<30;
+			int bj = rand() % NStar;
+			// Pick [range] random stars and select the nearest one to travel to.
+			rep(j, 0, ufoRange[i]) {
+				int p = rand() % NStar;
+				int dst = (star[p].x-star[from].x)*(star[p].x-star[from].x) + (star[p].y-star[from].y)*(star[p].y-star[from].y);
+				if (dst<bdst && dst>0) {
+					bdst = dst;
+					bj = p;
+				}
+			}
+			ufoParm[i*3+idx] = bj;
+		}
+	}
+
+	double runTest(const int seed) {
+		StarTraveller ST;
+		generate(seed);
+		int turns = 0;
+		int visited = 0;
+		double energy = 0.;
+
+		ST.init(starParm);
+
+		// Perform moves until all stars visited or number of maximum turns reached.
+		while (turns<NStar*4 && visited<NStar) {
+			vi ret;
+			try {
+				ret = ST.makeMoves(ufoParm, ship);
+			} catch (...) {
+				fprintf(stderr, "Move #%d: Failed to get result from makeMoves.", turns);
+				return -1.0;
+			}
+			if (SZ(ret) != NShip) {
+				fprintf(stderr, "Move #%d: Return should have one move for each ship. "
+					"Length is %d and should be %d.", turns, SZ(ret), NShip);
+				return -1.0;
+			}
+
+			// move ship
+			rep(i, 0, NShip) {
+				if (ret[i]<0 || ret[i]>=NStar) {
+					fprintf(stderr, "Move #%d: Return values should in the range of [0,%d]. "
+									"Your value was %d.", turns, NStar-1, ret[i]);
+					return -1.0;
+				}
+
+				if (star[ship[i]].x!=star[ret[i]].x || star[ship[i]].y!=star[ret[i]].y) {
+					double dst = sqrt(
+						(star[ship[i]].x-star[ret[i]].x)*(star[ship[i]].x-star[ret[i]].x) +
+						(star[ship[i]].y-star[ret[i]].y)*(star[ship[i]].y-star[ret[i]].y)
+					);
+					for (int j=0; j<NUfo; ++j) {
+						if (ufoParm[j*3]==ship[i] && ufoParm[j*3+1]==ret[i]) {
+							dst *= 0.001;
+						}
+					}
+					energy += dst;
+				}
+
+				ship[i] = ret[i];
+				if (!star[ship[i]].visited) {
+					star[ship[i]].visited = true;
+					visited++;
+				}
+			}
+
+			// move UFO
+			for (int i=0; i<NUfo*3; i+=3) {
+				ufoParm[i] = ufoParm[i+1];
+				ufoParm[i+1] = ufoParm[i+2];
+			}
+			calculateNextStar(2);
+
+			++turns;
+		}
+
+		if (visited != NStar) {
+			fprintf(stderr, "All stars not visited after %d turns.", NStar*4);
+			return -1.0;
+		}
+
+		printf("turns = %d\n", turns);
+		return energy;
+	}
+
+};
+
+void debug(const int seed) {
+	StarTravellerVis stv;
+
+	double energy = stv.runTest(seed);
+	printf("energy = %.6lf\n", energy);
+}
+
+int main(int argc, char **argv) {
+	#ifdef LOCAL_DEBUG
+		int seed = 1;
+		if (argc > 1)
+			sscanf(argv[1], "%d", &seed);
+		debug(seed);
+		return 0;
+	#endif
+
     #ifdef DEBUG
         init_log();
     #endif
