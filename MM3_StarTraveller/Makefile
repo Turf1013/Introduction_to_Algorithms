@@ -8,8 +8,8 @@ CFLAGS = --std=c++0x -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 
 TARGET = ./all
 
 all: star
-star: star.cpp
-	$(CXX) $(CFLAGS) -o dna dna.cpp $(LIBS)
+star: starTraveller.cpp
+	$(CXX) $(CFLAGS) -o star starTraveller.cpp $(LIBS)
 
 	
 

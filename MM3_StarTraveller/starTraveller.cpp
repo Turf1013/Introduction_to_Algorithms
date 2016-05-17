@@ -53,7 +53,7 @@ struct Node_t {
     double cost;
     vi path;
 
-    bool isEmpty() {
+    bool empty() {
         return SZ(path) == 0;
     }
 
@@ -80,6 +80,10 @@ struct Node_t {
     bool operator< (const Node_t& o) const {
         return cost < o.cost;
     }
+
+    int operator[] (const int idx) const {
+        return path[idx];
+    }
 };
 
 const double POS_INF = 1e16;
@@ -91,6 +95,7 @@ bool visit[maxn];
 Star_t stars[maxn];
 Ufo_t ufos[maxn/100];
 int ships[15];
+vi paths[15];
 vpii E1[maxn], E1_[maxn];
 vpii E2[maxn], E2_[maxn];
 map<pii, int> decay1, decay2;
@@ -114,12 +119,14 @@ double Length(const int a, const int b) {
 
 class StarTraveller {
 public:
-    int curTurn;
+    int NTurns;
     int topk;
+    int mark[maxn];
     vi visited;
 
     void Init() {
-        curTurn = 0;
+        memset(mark, -1, sizeof(mark));
+        NTurns = 0;
         ust.clr();
         _ust.clr();
         rep(i, 0, NStars) {
@@ -208,14 +215,17 @@ public:
         #endif
 
         rep(i, 0, sz) {
-            const int& v = sz[i];
+            const int& v = vc[i];
             if (!visit[v]) {
                 visit[v] = true;
                 visited.pb(v);
                 ust.insert(v);
                 _ust.erase(v);
             }
+            if (!paths[i].emtpy())
+                paths[i].pop_back();
         }
+        ++NTurns;
     }
 
     /**
@@ -348,7 +358,7 @@ public:
         \return vector<int> present the next move of ships
     */
     vi Hop() {
-        if (curTurn == 0)
+        if (NTurns == 0)
             topk = NShips;
         else
             topk = 1;
@@ -358,7 +368,12 @@ public:
         /**
             \step 1: using current position of ships to initialize `ret`
         */
-        rep(i, 0, NShips) ret[i] = ships[i];
+        rep(i, 0, NShips) {
+            if (paths[u].empty())
+                ret[i] = ships[i];
+            else
+                ret[i] = *paths[i].rbegin();
+        }
 
         vi unvisit;
         for (sti::iterator iter=_ust.begin(); iter!=_ust.end(); ++iter) {
@@ -371,38 +386,52 @@ public:
 
         rep(j, 0, sz_) {
             const int u = visited[j];
+            if (!paths[u].empty())
+                continue;
             rep(i, 0, sz) {
                 const int v = unvisit[i];
-                {
-                    /**
-                        \case 1: one hop
-                    */ 
-                    costHop1(u, v, nd);
-                    if (!nd.isEmpty())
-                        vc.pb(nd);
+                /**
+                    \case 1: one hop
+                */ 
+                costHop1(u, v, nd);
+                if (!nd.empty())
+                    vc.pb(nd);
 
-                    /**
-                        \case 2: two hop 
-                    */
-                    costHop2(u, v, nd);
-                    if (!nd.isEmpty())
-                        vc.pb(nd);
+                /**
+                    \case 2: two hop 
+                */
+                costHop2(u, v, nd);
+                if (!nd.empty())
+                    vc.pb(nd);
 
-                    /**
-                        \case 3: three hop
-                    */
-                    costHop3(u, v, nd);
-                    if (!nd.isEmpty())
-                        vc.pb(nd);
+                /**
+                    \case 3: three hop
+                */
+                costHop3(u, v, nd);
+                if (!nd.empty())
+                    vc.pb(nd);
 
-                    /**
-                        \case 4: four hop
-                    */
-                    costHop4(u, v, nd);
-                    if (!nd.isEmpty())
-                        vc.pb(nd);
-                }
+                /**
+                    \case 4: four hop
+                */
+                costHop4(u, v, nd);
+                if (!nd.empty())
+                    vc.pb(nd);
             }
+        }
+
+        sort(all(vc));
+        int sz_vc =  SZ(vc);
+        rep(i, 0, sz_vc) {
+            const int u = vc[i][0];
+            if (mark[u] == NTurns) continue;
+            mark[u] = NTurns;
+            per(j, 1, SZ(vc[i])) {
+                paths[u].pb(vc[i][j]);
+            }
+            ret[u] = *paths[u].rbegin();
+            if (--topk == 0)
+                break;
         }
 
         return ret;
