@@ -22,8 +22,8 @@ using namespace std;
 #define all(x)          (x).begin(),(x).end()
 #define SZ(x)           ((int)(x).size())
 
-#define DEBUG
-#define LOCAL_DEBUG
+// #define DEBUG
+// #define LOCAL_DEBUG
 
 FILE *logout;
 
@@ -703,8 +703,8 @@ int main(int argc, char **argv) {
 		int seed = 1;
 		if (argc > 1)
 			sscanf(argv[1], "%d", &seed);
-		// debug(seed);
-		debugAll();
+		debug(seed);
+		//debugAll();
 		return 0;
 	#endif
 

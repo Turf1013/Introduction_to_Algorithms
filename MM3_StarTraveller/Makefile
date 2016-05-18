@@ -11,13 +11,15 @@ all: star
 star: starTraveller.cpp
 	$(CXX) $(CFLAGS) -o star starTraveller.cpp $(LIBS)
 
-	
+base: starTraveller_v0a.cpp
+	$(CXX) $(CFLAGS) -o base starTraveller_v0a.cpp $(LIBS)
+
 
 .PHONY: clean test
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm star star.g* 2> /dev/null || true	
-		# -@rm  2> /dev/null || true	
+		-@rm base 2> /dev/null || true	
 
 test: build
 		java -jar tester.jar -exec ./star -seed 1 -vis -delay 1000

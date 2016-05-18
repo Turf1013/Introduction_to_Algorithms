@@ -22,8 +22,8 @@ using namespace std;
 #define all(x)          (x).begin(),(x).end()
 #define SZ(x)           ((int)(x).size())
 
-#define DEBUG
-#define LOCAL_DEBUG
+// #define DEBUG
+// #define LOCAL_DEBUG
 
 FILE *logout;
 
