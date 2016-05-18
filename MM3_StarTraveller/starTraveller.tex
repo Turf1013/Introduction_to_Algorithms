@@ -237,6 +237,8 @@
 	$cost$表示路径花销，其实质为路径距离。
 	$cturn$表示调用\proc{makeMoves}的花销，其实质为调用次数。
 	
+	$gain$表示路径花销的增益，即利用UFO相遇的情况，在同等条件经过相同路径可以减少的路径花销。
+	
     $P$表示所有结点的集合，
 	$U$表示已经访问结点的集合，
 	$\bar{U}$表示未访问结点的集合，
@@ -355,6 +357,45 @@
 		
 		同样的，访问越多的未访问点意味着减少其他结点访问该结点的机会。
 		这在一定程度上会影响全局最优性。
+		
+	\end{enumerate}
+	
+\subsubsection{改进}
+
+	这个\Emph{Base}算法需要改进的关键点在于\Emph{cost}的计算公式，
+	显然，仅仅考虑花销而不考虑增益是不科学的。这导致了几种决策其实并不处在
+	同等地位进行比较。
+	
+	改进后的计算公式为
+	\begin{enumerate}[(1)]
+		
+		\item 1-hop
+		
+		\begin{align}
+			cost &= \proc{Length}(u, v) * P_r^{\proc{Decay}(u, v)}	\\
+			gain &= cost - \min_{u \in ships} {\proc{Length}(u, v)}
+		\end{align}
+		
+		\item 2-hop
+		
+		\begin{align}
+			cost &= \proc{Length}(u, a) * P_r^{\proc{Decay}(u, a)} + \proc{Length}(a, v) * P_r^{\proc{Decay}(a, v)}	\\
+			gain &= cost - \begin{cases}
+				\min_{u \in ships} {\proc{Length}(u, a) + \proc{Length}(a, v)} & \text{if } a \in \bar{U};	\\
+				\min_{u \in ships} {\proc{Length}(u, v)} & \text{else}.	
+			\end{cases}
+		\end{align}
+		
+		\item 3-hop
+		\begin{align}
+			cost &= \proc{Length}(u, a) * P_r^{\proc{Decay}(u, a)} + \proc{Length}(a, b) * P_r^{\proc{Decay}(a, b)} + \proc{Length}(b, v) * P_r / \proc{Phop}(b, v)	\\
+			gain &= cost - \begin{cases}
+				\min_{u \in ships} {\proc{Length}(u, a) + \proc{Length}(a, b) + \proc{Length}(b, v)} & \text{if } a \in \bar{U} \kw{ and } b \in \bar{U};	\\
+				\min_{u \in ships} {\proc{Length}(u, a) + \proc{Length}(a, v)} & \text{if } a \in \bar{U} \kw{ and } b \notin \bar{U};	\\
+				\min_{u \in ships} {\proc{Length}(u, b) + \proc{Length}(b, v)} & \text{if } a \notin \bar{U} \kw{ and } b \in \bar{U};	\\
+				\min_{u \in ships} {\proc{Length}(u, v)} & \text{else}.
+			\end{cases}
+		\end{align}
 		
 	\end{enumerate}
 	

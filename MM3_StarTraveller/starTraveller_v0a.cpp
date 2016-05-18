@@ -29,12 +29,12 @@ FILE *logout;
 
 struct Star_t {
     int x, y;
-
+	
 	bool operator< (const Star_t& o) const {
 		if (x != o.x) return x < o.x;
 		return y < o.y;
 	}
-
+	
 	bool operator== (const Star_t& o) const {
 		return x==o.x && y==o.y;
 	}
@@ -61,7 +61,7 @@ struct Ufo_t {
 
 struct Node_t {
 	int idx;
-    double gain;
+    double cost;
     vi path;
 
     bool empty() {
@@ -94,7 +94,7 @@ struct Node_t {
     }
 
     bool operator< (const Node_t& o) const {
-        return gain < o.gain;
+        return cost < o.cost;
     }
 
     int operator[] (const int idx) const {
@@ -103,7 +103,6 @@ struct Node_t {
 };
 
 const double POS_INF = 1e16;
-const double NEG_INF = -POS_INF;
 const int maxn = 2005;
 const char *LOG_FILENAME = "starlog.out";
 int NStars, NShips, NUfos;
@@ -170,7 +169,7 @@ public:
             stars[i].x = vstar[i<<1];
             stars[i].y = vstar[(i<<1)|1];
         }
-
+		
         Init();
 
         return 0;
@@ -183,7 +182,7 @@ public:
         const int sz = SZ(vufo);
         NUfos = sz / 3;
         map<pii,int>::iterator iter;
-
+		
 		for (iter=decay1.begin(); iter!=decay1.end(); ++iter) {
             E1[iter->fir.fir].clr();
             E1_[iter->fir.sec].clr();
@@ -261,92 +260,62 @@ public:
         }
     }
 
-	/**
-		\brief calculate the gain of hop 1
-	*/
-	void gainHop1(const int u, const int v, Node_t& nd) {
-		nd.clr();
-		nd.pb(u);
-		nd.pb(v);
-		double tmp = POS_INF;
-		int dec = Decay(u, v, 1);
-
-		rep(k, 0, NShips)
-			if(paths[k].empty())
-				tmp = min(tmp, Length(ships[k], v));
-
-		nd.gain = Length(u, v) * Base[dec] - tmp;
-	}
+    /**
+        \brief calculate the cost of hop 1
+    */
+    void costHop1(const int u, const int v, Node_t& nd) {
+        nd.clr();
+        nd.pb(u);
+        nd.pb(v);
+        int dec = Decay(u, v, 1);
+        nd.cost = Length(u, v) * Base[dec];
+    }
 
     /**
-       \brief calculate the gain of hop2
+        \brief calculate the cost of hop 2, there must meet UFO between medium node and end-points
+        \prob  what if `medium node` is also unvisited, then may be we should add some `bonus`.
     */
-	void gainHop2(const int u, const int v, Node_t& nd) {
-		const vpii& e1 = E1[u];
-		const int sz1 = SZ(e1);
-		const vpii& e2 = E2_[v];
-		const int sz2 = SZ(e2);
-		double gain = POS_INF, cost, tmp;
-		int ansa = -1;
-		int c1, c2;
+    void costHop2(const int u, const int v, Node_t& nd) {
+        const vpii& e1 = E1[u];
+        const int sz1 = SZ(e1);
+        const vpii& e2 = E2_[v];
+        const int sz2 = SZ(e2);
+        double cost = POS_INF, tmp;
+        int ansa = -1;
+        int c1, c2;
 
-		rep(i, 0, sz1) {
-			const int a = e1[i].fir;
-			// We had already visited v, why not visit again?
-			if (a == v)	continue;
-			c1 = e1[i].sec;
-			c2 = decay2[mp(a, v)];
-			tmp = POS_INF;
-			if (visit[a]) {
-				rep(k, 0, NShips)
-					if(paths[k].empty())
-						tmp = min(tmp, Length(ships[k], v));
-			} else {
-				rep(k, 0, NShips)
-					if(paths[k].empty())
-						tmp = min(tmp, Length(ships[k], a));
-				tmp += Length(a, v);
-			}
-			cost = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
-			tmp = cost - tmp;
-			if (tmp < gain) {
-				gain = tmp;
-				ansa = a;
-			}
-		}
-
-		rep(i, 0, sz2) {
-            const int a = e2[i].fir;
-            if (a == v) continue;
-            c2 = e2[i].sec;
-            c1 = decay1[mp(u, a)];
-			tmp = POS_INF;
-			if (visit[a]) {
-				rep(k, 0, NShips)
-					if(paths[k].empty())
-						tmp = min(tmp, Length(ships[k], v));
-			} else {
-				rep(k, 0, NShips)
-					if(paths[k].empty())
-						tmp = min(tmp, Length(ships[k], a));
-				tmp += Length(a, v);
-			}
-			cost = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
-			tmp = cost - tmp;
-			if (tmp < gain) {
-				gain = tmp;
-				ansa = a;
-			}
+        rep(i, 0, sz1) {
+            const int a = e1[i].fir;
+            // if (a==v || a==u) continue;
+            c1 = e1[i].sec;
+            c2 = decay2[mp(a, v)];
+            tmp = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
+            if (tmp < cost) {
+                ansa = a;
+                cost = tmp;
+            }
         }
 
-		nd.clr();
-		if (ansa >= 0) {
-			nd.pb(u);
-			nd.pb(ansa);
-			nd.pb(v);
-			nd.gain = gain;
-		}
-	}
+        rep(i, 0, sz2) {
+            const int a = e2[i].fir;
+            // if (a==u || a==v) continue;
+            c2 = e2[i].sec;
+            c1 = decay1[mp(u, a)];
+            tmp = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
+            if (tmp < cost) {
+                ansa = a;
+                cost = tmp;
+            }
+        }
+
+        nd.clr();
+        if (ansa >= 0) {
+            nd.pb(u);
+            nd.pb(ansa);
+            nd.pb(v);
+            nd.cost = cost;
+        }
+    }
 
     /**
         \brief calculate the possibility of exists b -> v in next turn
@@ -366,13 +335,13 @@ public:
     }
 
     /**
-        \brief calculate the gain of hop3, there must meet UFO between medium node and end-points
+        \brief calculate the cost of hop3, there must meet UFO between medium node and end-points
             `u -> a -> b -> v`
     */
-    void gainHop3(const int u, const int v, Node_t& nd) {
+    void costHop3(const int u, const int v, Node_t& nd) {
         const vpii& e1 = E1[u];
         const int sz1 = SZ(e1);
-        double gain = POS_INF, cost, tmp;
+        double cost = POS_INF, tmp;
         int ansa = -1, ansb = -1;
         int c1, c2;
 
@@ -381,41 +350,16 @@ public:
             const vpii& e2 = E2[a];
             const int sz2 = SZ(e2);
             c1 = e1[i].sec;
-            if (a == v)	continue;
+            // if (a==v || a==u) continue;
             rep(j, 0, sz2) {
                 const int b = e2[j].fir;
-				if (b == v) continue;
+                // if (b==a || b==u || b==v) continue;
                 c2 = e2[j].sec;
-				if (visit[a] && visit[b]) {
-					tmp = POS_INF;
-					rep(k, 0, NShips)
-						if(paths[k].empty())
-							tmp = min(tmp, Length(ships[k], a));
-					tmp += Length(a, b) + Length(b, v);
-				} else if (visit[a] && !visit[b]) {
-					tmp = POS_INF;
-					rep(k, 0, NShips)
-						if(paths[k].empty())
-							tmp = min(tmp, Length(ships[k], a));
-					tmp += Length(a, v);
-				} else if (!visit[a] && visit[b]) {
-					tmp = POS_INF;
-					rep(k, 0, NShips)
-						if(paths[k].empty())
-							tmp = min(tmp, Length(ships[k], b));
-					tmp += Length(b, v);
-				} else {
-					tmp = POS_INF;
-					rep(k, 0, NShips)
-						if(paths[k].empty())
-							tmp = min(tmp, Length(ships[k], v));
-				}
-                cost = Length(u, a) * Base[c1] + Length(a, b) * Base[c2] + Length(b, v) * PnxtHop(b, v);
-				tmp = cost - tmp;
-                if (tmp < gain) {
-					gain = tmp;
+                tmp = Length(u, a) * Base[c1] + Length(a, b) * Base[c2] + Length(b, v) * PnxtHop(b, v);
+                if (tmp < cost) {
                     ansa = a;
                     ansb = b;
+                    cost = tmp;
                 }
             }
         }
@@ -426,8 +370,15 @@ public:
             nd.pb(ansa);
             nd.pb(ansb);
             nd.pb(v);
-            nd.gain = gain;
+            nd.cost = cost;
         }
+    }
+
+    /**
+        \brief calculate the cost of hop4, too least possibility to consider that.
+    */
+    void costHop4(const int u, const int v, Node_t& nd) {
+    	nd.clr();
     }
 
     /**
@@ -471,21 +422,28 @@ public:
                 /**
                     \case 1: one hop
                 */
-                gainHop1(u, v, nd);
+                costHop1(u, v, nd);
                 if (!nd.empty())
                     vc.pb(nd);
 
                 /**
                     \case 2: two hop
                 */
-                gainHop2(u, v, nd);
+                costHop2(u, v, nd);
                 if (!nd.empty())
                     vc.pb(nd);
 
                 /**
                     \case 3: three hop
                 */
-                gainHop3(u, v, nd);
+                costHop3(u, v, nd);
+                if (!nd.empty())
+                    vc.pb(nd);
+
+                /**
+                    \case 4: four hop
+                */
+                costHop4(u, v, nd);
                 if (!nd.empty())
                     vc.pb(nd);
             }
@@ -663,9 +621,9 @@ public:
 					"Length is %d and should be %d.", turns, SZ(ret), NShip);
 				return -1.0;
 			}
-
+			
 			int delta = 0;
-
+			
 			// move ship
 			rep(i, 0, NShip) {
 				if (ret[i]<0 || ret[i]>=NStar) {
@@ -686,8 +644,8 @@ public:
 					}
 					energy += dst;
 				}
-
-
+				
+				
 				ship[i] = ret[i];
 				if (!star[ship[i]].visited) {
 					star[ship[i]].visited = true;
@@ -695,7 +653,7 @@ public:
 					++delta;
 				}
 			}
-
+			
 			printf("Move #%d: visit %d more stars, energy = %.6lf.\n", turns, delta, energy);
 
 			// move UFO
@@ -723,7 +681,7 @@ const int StarTravellerVis::mod = 1024;
 
 void debug(const int seed) {
 	StarTravellerVis stv;
-
+	
 	double energy = stv.runTest(seed);
 	printf("energy = %.6lf\n", energy);
 }
@@ -731,7 +689,7 @@ void debug(const int seed) {
 void debugAll() {
 	rep(seed, 1, 11) {
 		StarTravellerVis stv;
-
+	
 		double energy = stv.runTest(seed);
 		printf("energy = %.6lf\n\n", energy);
 	}
@@ -745,8 +703,8 @@ int main(int argc, char **argv) {
 		int seed = 1;
 		if (argc > 1)
 			sscanf(argv[1], "%d", &seed);
-		debug(seed);
-		//debugAll();
+		// debug(seed);
+		debugAll();
 		return 0;
 	#endif
 
@@ -786,7 +744,7 @@ int main(int argc, char **argv) {
     #ifdef DEBUG
         close_log();
     #endif
-
+	
 	#ifndef ONLINE_JUDGE
 		printf("time = %ldms.\n", clock());
 	#endif
