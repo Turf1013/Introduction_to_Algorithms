@@ -398,10 +398,14 @@
 		\end{align}
 		
 	\end{enumerate}
+	
 	关键的问题来了，对公式改进后，并没有得到更好的得分，反而更差。
 	至于原因，暂时还没有想清楚，这导致了一个很关键的问题，就是使用\Emph{GA}是否同样会得到更差的性能，
 	我深表怀疑。
-	
+	上述模型最重要的确定仅仅考虑两者的\Emph{Gap}，而忽略了一件很重要的事情，即\Emph{cost}的总和是衡量
+	\Emph{score}的唯一标准。因此，应该加强cost本身对参数的影响，通过简单的将减法替换为除法便很明显的提升了性能。
+	其次，这其实仍然是局部优化函数，显然$\min$函数讨论的都是当前\Emph{ship}可达点，那么其实可以采用“曲线救国”。
+	即先访问其他若干点，再访问目标点，可以减少全局花销。这导致这个公式是伪的，即错误的。才会影响最终的性能。
 	
 \subsubsection{总结}
 
@@ -432,7 +436,7 @@
 	还有个可能的问题是，$Star$的坐标可能重合，预处理时应该注意。
 	
 \subsection{遗传算法GA}
-\label{sec:sa}
+\label{sec:GA}
 
 \subsubsection{Introduction}
 
@@ -443,8 +447,68 @@
 		
 		\item 遗传的交叉、变异的策略很复杂，并没有完全掌握
 		
-		\item 感觉
+		\item 希望可以实现全局优化
 		
 	\end{itemize}
+	
+	我对遗传算法的浅薄理解是这其实是一个算法框架，即通过初始化一个群体并选择适应度较高的基因。
+	通过选择、交叉、变异等过程，将这些基因传递给下一代。通过若干次迭代，逼近于近似最优解。
+	从理论上讲，初始解的选择不应该影响近似解的性能。通过足够的迭代次数，一定可以逼近某个性能还不错的最优解。
+	
+	你很难从算法正确性上解释为什么遗传、进化等算法是靠谱的，但是“进化论”告诉我们这东西是正确的。
+	一定程度上这是一个概率模型，合适的控制选择、交叉、变异等算子及相应的概率尤为关键。因此，
+	训练好的遗传算法是难点之一。那么，针对需要解决的问题，如何采用遗传算法的基本框架。
+	
+	
+\subsubsection{基本思路}
+	
+	\Emph{v0a}算法跑了$423210.46$应该说超过我的想象，但是反向思考第一名近乎是我的2倍。这说明目前的贪心的解
+	的的确确是一个局部最优解。那么，我们应该抛弃局部花销。从全局上思考问题。
+	
+	如何定义全局的花销？
+	由定理~\ref{mthm:triangle}可以得到如下推论：
+	\begin{cor}
+		若最优解中存在路径$u \rightarrow a_1 \cdots \rightarrow a_k \rightarrow v$，
+		其中$v \in \bar{U}, a_i \in U$，那么路径$u \rightarrow a_1 \cdots \rightarrow a_k \rightarrow v$
+		必然存在于UFO同向的边。
+	\end{cor}
+	\begin{proof}
+		采用反证法，不妨假定每条边都与UFO不同向。又因为$\proc{Length}(u, a) + \proc{Length}(a, v) \ge \proc{Length}(u, v)$
+		一定有
+		\[
+			\proc{Length}(u, a_1) + \cdots + \proc{Length}(a_{k-1}, a_k) \ge \proc{Length}(u, a_k)
+		\]
+		则有
+		\[
+			\proc{Length}(u, a_1) + \cdots + \proc{Length}(a_{k-1}, a_k) + \proc{Length}(a_k, v) 
+			\ge \proc{Length}(u, v)
+		\]
+		显然这一定不是最优解，或至少有其它解与之等价。与已知矛盾，则证明假设不成立
+	\end{proof}
+	
+	这是一个很好的结论，通过预先给定的UFO的两跳的情况，可以预处理所有ship到其它结点的最短的边。
+	因此，每次调用\proc{makeMoves}时，我们都可以得到所有可能的边的最优长度。缩去已经访问的点，并重新定义边的权重。
+	我们可以通过路径表示一个全局的解。
+	
+	不妨假设已经走过的路径总和为\id{pcost}，每条边表示为$(v, w)$，第$i$条船的未来路径表示为$path_i$，这里有
+	\begin{align}
+		path_i &= (u, 0) \rightarrow (v_1, w_1) \rightarrow (v_2, w_2) \rightarrow (v_k, w_k), v_j \in \bar{U}	\\
+		cost_i &= \sum_{j=1}^{k} w_j
+	\end{align}
+	从而可以得到全局最优解
+	\begin{align}
+		cost &= pcost + \sum_{i=1}^{|Ship|} cost_i
+	\end{align}
+	这个函数显然是非线性的，可能有多个峰值。这显然是个NP问题。使用遗传算法可解得近似最优解。
+	
+	\Emph{选择算子}选择最优保存策略，这样可以保证优秀基因一定遗传给后代。
+	\Emph{交叉算子}选择单点交叉，这样可以保留子路径。
+	\Emph{变异算子}由于路径一定覆盖所有所有结点，因此可以将倒位算子作为候选。
+	
+\subsubsection{存在的问题}
+
+\subsubsection{改进}
+
+\subsubsection{总结}
 	
 \end{document}
