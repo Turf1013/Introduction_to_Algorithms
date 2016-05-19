@@ -61,7 +61,6 @@ struct Ufo_t {
 
 struct Node_t {
 	int idx;
-    double gain;
     vi path;
 
     bool empty() {
@@ -82,7 +81,7 @@ struct Node_t {
 
     void print(FILE *out=stdout) const {
     	int sz = SZ(path);
-        fprintf(out, "No. = %d, Nhops = %d: ", idx, sz-1);
+		fprintf(out, "%d: ", idx);
         rep(i, 0, sz) {
             if (i == 0)
                 fprintf(out, "%d", path[i]);
@@ -93,15 +92,49 @@ struct Node_t {
         fflush(out);
     }
 
-    bool operator< (const Node_t& o) const {
-        return gain < o.gain;
-    }
-
     int operator[] (const int idx) const {
         return path[idx];
     }
 };
 
+struct Chromosome_t {
+	double cost;
+	vector<Node_t> vnode;
+	
+	void resize(const int n) {
+		vnode.resize(n);
+	}
+	
+	void clear() {
+		vnode.clr();
+	}
+	
+	size_t size() const {
+		return SZ(vnode);
+	}
+	
+	void push_back(const Node_t& nd) {
+		vnode.pb(nd);
+	}
+	
+	Node_t operator[] (const int idx) const {
+		return vnode[idx];
+	}
+	
+	bool operator< (const Path_t& o) const {
+		return cost < o.cost;
+	}
+	
+	void print(FILE *out=stdout) const {
+		const int sz = SZ(vnode);
+		fprintf(out, "cost = %.6lf\n", cost);
+		rep(i, 0, sz)
+			vnode[i].print(out);
+		fflush(out);
+	}
+};
+
+const double eps = 5e-5;
 const double POS_INF = 1e16;
 const double NEG_INF = -POS_INF;
 const int maxn = 2005;
@@ -117,6 +150,7 @@ vpii E1[maxn], E1_[maxn];
 vpii E2[maxn], E2_[maxn];
 map<pii, int> decay1, decay2;
 set<int> ust, _ust;
+vi visited;
 
 inline void init_log() {
     logout = fopen(LOG_FILENAME, "w");
@@ -134,12 +168,142 @@ double Length(const int a, const int b) {
     return M[a][b];
 }
 
+struct GA {
+	const int POP_SIZE;
+	const int MAX_ITERATION;
+	int bidx;
+	vector<Chromosome_t> vchrom;
+	int taken[maxn];
+	
+	GA(int pop_size, int max_iter):POP_SIZE(pop_size), MAX_ITERATION(max_iter) {}
+	
+	/**
+		\brief	generate the initial population
+	*/
+	void GenInitPopulation {
+		bool mark[15];
+		vi shipHead[15];
+		
+		vi unvisit;
+		for (sti::iterator iter=_ust.begin(); iter!=_ust.end(); ++iter) {
+			unvisit.pb(*iter);
+		}
+		
+		rep(j, 0, NShips) {
+			const int u = ships[j];
+			int sz;
+			sz = SZ(E1[u]);
+			rep(i, 0, sz) {
+				const int& v = E1[u][i].fir;
+				if (!visit[v])
+					shipHead[j].pb(v);
+			}
+			sz = SZ(E2[u])
+			rep(i, 0, sz) {
+				const int& v = E2[u][i].fir;
+				if (!visit[v])
+					shipHead[j].pb(v);
+			}
+			if (!visit[u])
+				shipHead[j].pb(u);
+			
+			#ifdef DEBUG
+			sz = SZ(shipHead[j]);
+			rep(i, 0, sz)
+				assert(shipHead[j][i]>=0 && shipHead[j][i]<NStars && !visit[v]);
+			#endif
+		}
+		
+		memset(taken, -1, sizeof(taken));
+		const int n_unvisit = SZ(unvisit);
+		
+		rep(ii, 0, POP_SIZE) {
+			Chromosome_t chr;
+			
+			chr.resize(ships);
+			memset(mark, false, sizeof(mark));
+			int n_taken = n_unvisit;
+			per(nship, 1, NShips+1) {
+				int skip = rand() % nship;
+				int cnt = (n_taken==0||nship==1) ? n_taken : rand()%(n_taken+1);
+				int idx = -1;
+				n_taken -= cnt;
+				
+				rep(i, 0, NShipss) {
+					if (mark[i]) continue;
+					if (skip-- == 0) {
+						idx = i;
+						break;
+					}
+				}
+				
+				#ifdef DEBUG
+				assert(idx>=0 && idx<NShips);
+				#endif
+				mark[idx] = true;
+				
+				// add path meet UFO priority
+				Node_t& nd = chr[idx];
+				nd.idx = idx;
+				nd.pb(ships[idx]);
+				if (cnt == 0) continue;
+				
+				int nxt = shipHead[idx][rand() % SZ(shipHead[idx])];
+				taken[nxt] = ii;
+			}
+		}
+	}
+	
+	void GenNextPopulation() {
+		
+	}
+	
+	void EvaluatePopulation() {
+		
+	}
+	
+	void DecodeChromosome() {
+		
+	}
+	
+	void EncodeChromosome() {
+		
+	}
+	
+	void CalcFitness() {
+		
+	}
+	
+	void FindBestIndividual() {
+		
+	}
+	
+	void PerformEvolution() {
+		
+	}
+	
+	void SelectionOperator() {
+		
+	}
+	
+	void CrossoverOperator() {
+		
+	}
+	
+	void MutationOperator() {
+		
+	}
+	
+	void print(FILE* out=stdout) const {
+		
+	}
+};
+
 class StarTraveller {
 public:
     int NTurns;
     int topk;
     int mark[maxn];
-    vi visited;
 
     void Init() {
         memset(mark, -1, sizeof(mark));
@@ -275,7 +439,7 @@ public:
 			if(paths[k].empty())
 				tmp = min(tmp, Length(ships[k], v));
 
-		nd.gain = Length(u, v) * Base[dec] - tmp;
+		nd.gain = Length(u, v) * Base[dec] / (tmp + eps);
 	}
 
     /**
@@ -308,7 +472,7 @@ public:
 				tmp += Length(a, v);
 			}
 			cost = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
-			tmp = cost - tmp;
+			tmp = cost / (tmp + eps);
 			if (tmp < gain) {
 				gain = tmp;
 				ansa = a;
@@ -332,7 +496,7 @@ public:
 				tmp += Length(a, v);
 			}
 			cost = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
-			tmp = cost - tmp;
+			tmp = cost / (tmp + eps);
 			if (tmp < gain) {
 				gain = tmp;
 				ansa = a;
@@ -411,7 +575,7 @@ public:
 							tmp = min(tmp, Length(ships[k], v));
 				}
                 cost = Length(u, a) * Base[c1] + Length(a, b) * Base[c2] + Length(b, v) * PnxtHop(b, v);
-				tmp = cost - tmp;
+				tmp = cost / (tmp + eps);
                 if (tmp < gain) {
 					gain = tmp;
                     ansa = a;
