@@ -1,7 +1,7 @@
 /**
     \author Trasier
     \source TopCoder-MM-StarTraverller
-    \data   2016-05-17
+    \data   2016-05-20
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -92,7 +92,7 @@ struct Node_t {
         fflush(out);
     }
 
-    int operator[] (const int idx) const {
+    int& operator[] (const int idx) {
         return path[idx];
     }
 };
@@ -100,6 +100,23 @@ struct Node_t {
 struct Chromosome_t {
 	double cost;
 	vector<Node_t> vnode;
+	
+	Node_t& find(int idx) {
+		int id = -1;
+		
+		rep(i, 0, SZ(vnode)) {
+			if (vnode[i].idx == idx) {
+				id = i;
+				break;
+			}
+		}
+		
+		#ifdef DEBUG
+		assert(id >= 0);
+		#endif
+		
+		return vnode[id];
+	}
 	
 	void resize(const int n) {
 		vnode.resize(n);
@@ -117,7 +134,7 @@ struct Chromosome_t {
 		vnode.pb(nd);
 	}
 	
-	Node_t operator[] (const int idx) const {
+	Node_t& operator[] (const int idx) const {
 		return vnode[idx];
 	}
 	
@@ -169,19 +186,44 @@ double Length(const int a, const int b) {
 }
 
 struct GA {
+	const int P_Crossover = 400;
+	const int P_Mutation = 50;
 	const int POP_SIZE;
 	const int MAX_ITERATION;
 	int bidx;
 	typedef vector<Chromosome_t> vChromosome;
 	vChromosome vchroms[2];
-	int taken[maxn];
+	vi vIdx;
+	vector<double> vfitness;
+	int bst, wst;
+	int taken[maxn], replace[maxn];
 	
 	GA(int pop_size, int max_iter):POP_SIZE(pop_size), MAX_ITERATION(max_iter) {}
 	
 	/**
+		\brief	organize the framework
+	*/
+	vChromosome solve() {
+		int p = 0, q = 1;
+		
+		GenInitPopulation();
+		EvaluatePopulation(p);
+		rep(i, 0, MAX_ITERATION) {
+			GenNextPopulation(q);
+			EvaluatePopulation(q);
+			PerformEvolution(q);
+			PrintReport(q);
+			p ^= 0;
+			q ^= 1;
+		}
+		
+		return vchroms[p];
+	}
+	
+	/**
 		\brief	generate the initial population
 	*/
-	void GenInitPopulation {
+	void GenInitPopulation() {
 		vChromosome& vchrom = vchroms[0];
 		bool mark[15];
 		vi shipHead[15];
@@ -308,15 +350,19 @@ struct GA {
 	/**
 		\brief	generate next population
 	*/
-	void GenNextPopulation() {
-		
+	void GenNextPopulation(const int q) {
+		SelectionOperator(q);
+		CrossoverOperator(q);
+		MutationOperator(q);
 	}
 	
 	/**
 		\brief evaluate current population 
 	*/
-	void EvaluatePopulation() {
-		
+	void EvaluatePopulation(const int q) {
+		CalcCost(q);
+		CalcFitness(q);
+		FindExtremeIndividual(q);
 	}
 	
 	/**
@@ -522,27 +568,213 @@ struct GA {
 	/**
 		\brief calculate the fitness of current population
 	*/
-	void CalcFitness() {
-		
+	void CalcFitness(const int p) {
+		CalcFitness(vchromos[p]);
 	}
 	
-	void FindBestIndividual() {
+	void CalcFitness(const vChromosome& vchro) {
+		const int sz = SZ(vchro);
 		
+		vfitness.clr();
+		double sum = 0., tmp;
+		
+		rep(i, 0, sz) sum += vchro[i].cost;
+		
+		rep(i, 0, sz) {
+			tmp = 1.0 - vchro[i].cost / (sum + eps);
+			vfitness.pb(tmp);
+		}
 	}
 	
-	void PerformEvolution() {
+	void FindExtremeIndividual() {
+		const int sz = SZ(vfitness);
 		
+		bst = wst = 0;
+		rep(i, 1, sz) {
+			if (vfitness[i] < vfitness[wst]) wst = i;
+			if (vfitness[i] > vfitness[bst]) bst = i;
+		}
 	}
 	
-	void SelectionOperator() {
-		
+	void PerformEvolution(const int p) {
+		PerformEvolution(vchromos[p]);
 	}
 	
-	void CrossoverOperator() {
-		
+	void PerformEvolution(vChromosome& vchro) {
+		vchro[wst] = vchro[bst];
 	}
 	
-	void MutationOperator() {
+	/**
+		\brief	selection chromosome
+	*/
+	void SelectionOperator(const int p) {
+		SelectionOperator(vchroms[p]);
+	}
+	
+	void SelectionOperator(const vChromosome& src) {
+		#ifdef DEBUG
+		assert(SZ(vfitness) = SZ(src));
+		#endif
+		
+		const int sz = SZ(fitnesss);
+		int cfit[POP_SIZE];
+		
+		vIdx.clr();
+		cfit[0] = 0;
+		rep(i, 0, sz) cfit[i+1] = cfit[i] + vfitness[i] * 1000;
+		cfit[sz] = 1000;
+		
+		rep(i, 0, POP_SIZE) {
+			int x = rand() % 1000;
+			int k = upper_bound(cfit, cfit+sz, x) - cfit;
+			vIdx.pb(k - 1);
+		}
+	}
+	
+	/**
+		\brief	Crossover the chromosome by replace the subsequence
+	*/
+	void CrossoverOperator(const int q) {
+		CrossoverOperator(vchroms[q^1], vchroms[q]);
+	}
+	
+	void Crossover(vChromosome& des, const int id1, const int id2) {
+		const int aidx = vIdx[id1];
+		const int bidx = vIdx[id2];
+		int sid = rand() % NShips;
+		const Node_t& nda = src[aidx].find(sid);
+		const Node_t& ndb = src[bidx].find(sid);
+		const int sza = SZ(nda);
+		const int szb = SZ(ndb);
+		const int mn = min(sza, szb);
+		Chromosome_t chr;
+		
+		if (mn <= 1) {
+			des.pb(src[aidx]);
+			des.pb(src[bidx]);
+			return ;
+		}
+		
+		int b = rand() % (mn - 1) + 1;
+		int e = rand() % (mn - 1) + 1;
+		if (b > e) swap(b, e);
+		
+		// handle id1
+		chr = src[aidx];
+		rep(j, b, e+1) {
+			replace[ndb[j]] = nda[j];
+			taken[ndb[j]] = id1;
+		}
+		rep(i, 0, NShips) {
+			Node_t& nd = chr[i];
+			if (nd.idx == sid) {
+				rep(j, b, e+1) {
+					nd[j] = ndb[j];
+				}
+			} else {
+				int sz = SZ(nd);
+				rep(j, 0, sz) {
+					if (taken[nd[j]] == id1)
+						taken[nd[j]] = replace[nd[j]];
+				}
+			}
+		}
+		des.pb(chr);
+		
+		// handle id2
+		chr = src[bidx];
+		rep(j, b, e+1) {
+			replace[nda[j]] = ndb[j];
+			taken[nda[j]] = id2;
+		}
+		rep(i, 0, NShips) {
+			Node_t& nd = chr[i];
+			if (nd.idx == sid) {
+				rep(j, b, e+1) {
+					nd[j] = nda[j];
+				}
+			} else {
+				int sz = SZ(nd);
+				rep(j, 0, sz) {
+					if (taken[nd[j]] == id2)
+						taken[nd[j]] = replace[nd[j]];
+				}
+			}
+		}
+		des.pb(chr);
+	}
+	
+	void CrossoverOperator(const vChromosome& src, vChromosome& des) {
+		const int sz = SZ(vIdx);
+		
+		memset(taken, -1, sizeof(taken));
+		des.clr();
+		for (int i=0; i<POP_SIZE; i+=2) {
+			int x = rand() % 1000;
+			if (x < P_Crossover) {
+				Crossover(des, i, i+1);
+			} else {
+				des.pb(src[vIdx[i]]);
+				des.pb(src[vIdx[i+1]]);
+			}
+		}
+		
+		#ifdef DEBUG
+		check_after_Crossover(des);
+		#endif
+	}
+	
+	void check_after_Crossover(const vChromosome& des) {
+		const int sz = SZ(des);
+		
+		memset(taken, -1, sizeof(taken));
+		rep(i, 0, sz) {
+			const Chromosome_t chr = des[i];
+			assert(SZ(chr) == NShips);
+			rep(j, 0, NShips) {
+				assert(chr[j][0] == ships[chr[j].idx]);
+				rep(k, 1, SZ(chr[j])) {
+					assert(taken[chr[j][k]] != i);
+					taken[chr[j][k]] = i;
+				}
+			}
+			
+			rep(j, 0, NStars) {
+				assert(visit[j] || taken[j]==i);
+			}
+		}
+	}
+	
+	/**
+		\brief	mutation the chromosome by reverse some subsequence
+	*/
+	void MutationOperator(const int q) {
+		MutationOperator(vchroms[q]);
+	}
+	
+	void MutationOperator(vChromosome& vchro) {
+		const int sz = SZ(vchro);
+		
+		rep(i, 0, sz) {
+			int x = rand() % 1000;
+			if (x > P_Mutation) continue;
+			
+			int sid = rand() % NShips;
+			Chromosome_t& chr = vcrho[i];
+			Node_t& nd = chr[sid];
+			int len = SZ(nd);
+			if (len <= 1) continue;
+			
+			int b = rand() % (len-1) + 1;
+			int e = rand() % (len-1) + 1;
+			if (b > e) swap(b, e);
+			for (int j=b,k=e; j<k; ++j,--k) {
+				swap(nd[j], nd[k]);
+			}
+		}
+	}
+	
+	void PrintReport(FILE *out=stdout) {
 		
 	}
 	
