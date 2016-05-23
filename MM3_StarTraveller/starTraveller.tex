@@ -507,6 +507,16 @@
 	
 \subsubsection{存在的问题}
 
+	\begin{enumerate}[(1)]
+		
+		\item 局部最优解的比重太小
+		
+		遗传的根本思想是解决全局的最优化问题，然而因为仅仅知道2跳的UFO的情况。
+		因此，当前几条的权重较弱时，虽然可以得到当前最优的全局解，但是往往没有利用UFO进行消减。
+		造成了最终的解很大，远远超过贪心的解。
+		
+	\end{enumerate}
+
 \subsubsection{改进}
 
 \subsubsection{总结}

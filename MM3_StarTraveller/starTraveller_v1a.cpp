@@ -1300,9 +1300,6 @@ public:
             ufos[i].idx[1] = vufo[j+1];
             ufos[i].idx[2] = vufo[j+2];
             ufos[i].dump(decay1, decay2);
-			#ifdef DEBUG
-			printf("[UFO-%d] %d->%d->%d\n", i+1, vufo[j], vufo[j+1], vufo[j+2]);
-			#endif
         }
 
         for (iter=decay1.begin(); iter!=decay1.end(); ++iter) {

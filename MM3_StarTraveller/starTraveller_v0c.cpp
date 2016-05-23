@@ -29,12 +29,12 @@ FILE *logout;
 
 struct Star_t {
     int x, y;
-
+	
 	bool operator< (const Star_t& o) const {
 		if (x != o.x) return x < o.x;
 		return y < o.y;
 	}
-
+	
 	bool operator== (const Star_t& o) const {
 		return x==o.x && y==o.y;
 	}
@@ -61,7 +61,7 @@ struct Ufo_t {
 
 struct Node_t {
 	int idx;
-    double gain, cost;
+    double cost;
     vi path;
 
     bool empty() {
@@ -75,6 +75,10 @@ struct Node_t {
     size_t size() const {
     	return SZ(path);
     }
+	
+	int back() const {
+		return *path.rbegin();
+	}
 
     void push_back(int x) {
         path.pb(x);
@@ -82,7 +86,7 @@ struct Node_t {
 
     void print(FILE *out=stdout) const {
     	int sz = SZ(path);
-        fprintf(out, "No. = %d, cost = %.6lf, gain = %.6lf, Nhops = %d: ", idx, cost, gain, sz-1);
+        fprintf(out, "No. = %d, cost = %.6lf, Nhops = %d: ", idx, cost, sz-1);
         rep(i, 0, sz) {
             if (i == 0)
                 fprintf(out, "%d", path[i]);
@@ -94,10 +98,7 @@ struct Node_t {
     }
 
     bool operator< (const Node_t& o) const {
-		if (cost != o.cost)
-			return cost < o.cost;
-		else
-			return gain > o.gain;
+        return cost < o.cost;
     }
 
     int operator[] (const int idx) const {
@@ -105,57 +106,7 @@ struct Node_t {
     }
 };
 
-struct path_t {
-	double cost, gain;
-	vi path;
-
-	size_t size() const {
-		return SZ(path);
-	}
-
-	bool empty() {
-		return path.empty();
-	}
-
-	bool empty() const {
-		return path.empty();
-	}
-
-	void pop_back() {
-		path.pop_back();
-	}
-
-	void push_back(const int idx) {
-		path.pb(idx);
-	}
-
-	void clear() {
-		path.clr();
-	}
-
-	void resize(const int n) {
-		path.resize(n);
-	}
-
-	vi::reverse_iterator rbegin() {
-		return path.rbegin();
-	}
-
-	vi::const_reverse_iterator rbegin() const {
-		return path.rbegin();
-	}
-
-	int& operator[](const int idx) {
-		return path[idx];
-	}
-
-	const int& operator[](const int idx) const {
-		return path[idx];
-	}
-};
-
 const double POS_INF = 1e16;
-const double NEG_INF = -POS_INF;
 const int maxn = 2005;
 const char *LOG_FILENAME = "starlog.out";
 int NStars, NShips, NUfos;
@@ -164,7 +115,7 @@ bool visit[maxn];
 Star_t stars[maxn];
 Ufo_t ufos[maxn/100+5];
 int ships[15];
-path_t paths[15];
+vi paths[15];
 vpii E1[maxn], E1_[maxn];
 vpii E2[maxn], E2_[maxn];
 map<pii, int> decay1, decay2;
@@ -186,18 +137,15 @@ double Length(const int a, const int b) {
     return M[a][b];
 }
 
-const double tolLength = 100.0;
-const double gainRate = 0.15;
-const double eps = 1e-6;
+
+const double BstLength = 8.0;
 class StarTraveller {
 public:
     int NTurns;
-    int topk, still;
+    int topk;
     int mark[maxn];
-    vi visited;
-	bool more[15];
 	bool taken[maxn];
-	double gainRate;
+    vi visited;
 
     void Init() {
         memset(mark, -1, sizeof(mark));
@@ -212,8 +160,6 @@ public:
         }
         Base[0] = 1;
         rep(i, 1, 11) Base[i] = Base[i-1] * 0.001;
-		memset(more, false, sizeof(more));
-		still = 0;
     }
 
     /**
@@ -230,7 +176,7 @@ public:
             stars[i].x = vstar[i<<1];
             stars[i].y = vstar[(i<<1)|1];
         }
-
+		
         Init();
 
         return 0;
@@ -243,7 +189,7 @@ public:
         const int sz = SZ(vufo);
         NUfos = sz / 3;
         map<pii,int>::iterator iter;
-
+		
 		for (iter=decay1.begin(); iter!=decay1.end(); ++iter) {
             E1[iter->fir.fir].clr();
             E1_[iter->fir.sec].clr();
@@ -262,9 +208,6 @@ public:
             ufos[i].idx[1] = vufo[j+1];
             ufos[i].idx[2] = vufo[j+2];
             ufos[i].dump(decay1, decay2);
-			#ifdef DEBUG
-			printf("[UFO-%d] %d->%d->%d\n", i+1, vufo[j], vufo[j+1], vufo[j+2]);
-			#endif
         }
 
         for (iter=decay1.begin(); iter!=decay1.end(); ++iter) {
@@ -306,112 +249,96 @@ public:
                 visited.pb(v);
                 ust.insert(v);
                 _ust.erase(v);
-				if (paths[i].cost>=tolLength || paths[i].gain<tolLength)
-					more[i] = true;
             }
             if (!paths[i].empty())
                 paths[i].pop_back();
         }
         ++NTurns;
     }
-
-	/**
-		\brief calculate the gain of hop 1
-	*/
-	void gainHop1(const int u, const int v, Node_t& nd) {
-		nd.clr();
-		nd.pb(u);
-		nd.pb(v);
-		int c = decay1[mp(u, v)];
-
-		// nd.gain = Length(u, v) * Base[c] - Length(u, v);
-		nd.cost = Length(u, v) * Base[c];
-		nd.gain = Length(u, v) - nd.cost;
-	}
+	
+    /**
+        \brief calculate the cost of hop 1
+    */
+    void costHop1(const int u, const int v, Node_t& nd) {
+        nd.clr();
+        nd.pb(u);
+        nd.pb(v);
+        int c = decay1[mp(u, v)];
+        nd.cost = Length(u, v) * Base[c];
+    }
 
     /**
-       \brief calculate the gain of hop2
+        \brief calculate the cost of hop 2, there must meet UFO between medium node and end-points
+        \prob  what if `medium node` is also unvisited, then may be we should add some `bonus`.
     */
-	void gainHop2(const int u, const int v, Node_t& nd) {
-		const vpii& e1 = E1[u];
-		const int sz1 = SZ(e1);
-		const vpii& e2 = E2_[v];
-		const int sz2 = SZ(e2);
-		double gain = NEG_INF, cost = POS_INF, tmp, sum;
-		int ansa = -1;
-		int c1, c2;
+    void costHop2(const int u, const int v, Node_t& nd) {
+        const vpii& e1 = E1[u];
+        const int sz1 = SZ(e1);
+        const vpii& e2 = E2_[v];
+        const int sz2 = SZ(e2);
+        double cost = POS_INF, tmp;
+        int ansa = -1;
+        int c1, c2, unv = 0;
 
-		rep(i, 0, sz1) {
-			const int a = e1[i].fir;
-			// We had already visited v, why not visit again?
-			if (a == v)	continue;
-			c1 = e1[i].sec;
-			c2 = decay2[mp(a, v)];
-			if (visit[a])
-				tmp = Length(u, v);
-			else
-				tmp = Length(u, a) + Length(a, v);
-			sum = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
-			tmp -= sum;
-			if (sum<cost || (sum==cost && tmp>gain)) {
-				gain = tmp;
-				cost = sum;
-				ansa = a;
-			}
-		}
-
-		// other option is stay at u
+        rep(i, 0, sz1) {
+            const int a = e1[i].fir;
+            if (a == v) continue;
+            c1 = e1[i].sec;
+            c2 = decay2[mp(a, v)];
+            tmp = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
+			unv = 1;
+			if (!visit[a]) unv++;
+			tmp /= sqrt(unv);
+            if (tmp < cost) {
+                ansa = a;
+                cost = tmp;
+            }
+        }
+		// another option is stay at u, and then wait for UFO
 		{
 			const int a = u;
 			if (a != v) {
 				c1 = decay1[mp(u, a)];
 				c2 = decay2[mp(a, v)];
-				tmp = Length(u, v);
-				sum = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
-				tmp -= sum;
-				if (sum<cost || (sum==cost && tmp>gain)) {
-					gain = tmp;
-					cost = sum;
+				tmp = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
+				unv = 1;
+				if (!visit[a]) unv++;
+				tmp /= sqrt(unv);
+				if (tmp < cost) {
 					ansa = a;
+					cost = tmp;
 				}
 			}
 		}
 
-		rep(i, 0, sz2) {
+        rep(i, 0, sz2) {
             const int a = e2[i].fir;
             if (a == v) continue;
             c2 = e2[i].sec;
             c1 = decay1[mp(u, a)];
-			tmp = POS_INF;
-			if (visit[a])
-				tmp = Length(u, v);
-			else
-				tmp = Length(u, a) + Length(a, v);
-			sum = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
-			tmp -= sum;
-			if (sum<cost || (sum==cost && tmp>gain)) {
-				gain = tmp;
-				cost = sum;
-				ansa = a;
-			}
+            tmp = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
+			unv = 1;
+			if (!visit[a]) unv++;
+			tmp /= sqrt(unv);
+            if (tmp < cost) {
+                ansa = a;
+                cost = tmp;
+            }
         }
 
-		nd.clr();
-		if (ansa >= 0) {
-			nd.pb(u);
-			nd.pb(ansa);
-			nd.pb(v);
-			nd.gain = gain;
-			nd.cost = cost;
-		}
-	}
+        nd.clr();
+        if (ansa >= 0) {
+            nd.pb(u);
+            nd.pb(ansa);
+            nd.pb(v);
+            nd.cost = cost;
+        }
+    }
 
     /**
         \brief calculate the possibility of exists b -> v in next turn
     */
     double PnxtHop(const int a, const int b) {
-		return 1.0;
-
         int c = 0, sz = SZ(E2_[a]);
         double ret = 1.0;
 
@@ -426,73 +353,59 @@ public:
     }
 
     /**
-        \brief calculate the gain of hop3, there must meet UFO between medium node and end-points
+        \brief calculate the cost of hop3, there must meet UFO between medium node and end-points
             `u -> a -> b -> v`
     */
-    void gainHop3(const int u, const int v, Node_t& nd) {
+    void costHop3(const int u, const int v, Node_t& nd) {
         const vpii& e1 = E1[u];
         const int sz1 = SZ(e1);
-        double gain = NEG_INF, cost = POS_INF, tmp, sum;
+        double cost = POS_INF, tmp;
         int ansa = -1, ansb = -1;
-        int c1, c2;
+        int c1, c2, unv;
 
         rep(i, 0, sz1) {
             const int a = e1[i].fir;
+			if (a == v) continue;
             const vpii& e2 = E2[a];
             const int sz2 = SZ(e2);
             c1 = e1[i].sec;
-            if (a == v)	continue;
             rep(j, 0, sz2) {
                 const int b = e2[j].fir;
 				if (b == v) continue;
                 c2 = e2[j].sec;
-				if (visit[a] && visit[b]) {
-					tmp = Length(u, v);
-				} else if (visit[a] && !visit[b]) {
-					tmp = Length(u, a) + Length(a, v);
-				} else if (!visit[a] && visit[b]) {
-					tmp = Length(u, b) + Length(b, v);
-				} else {
-					tmp = Length(u, a) + Length(a, b) + Length(b, v);
-				}
-                sum = Length(u, a) * Base[c1] + Length(a, b) * Base[c2] + Length(b, v) * PnxtHop(b, v);
-				tmp -= sum;
-				if (sum<cost || (sum==cost && tmp>gain)) {
-					gain = tmp;
-					cost = sum;
-					ansa = a;
-					ansb = b;
-				}
+                tmp = Length(u, a) * Base[c1] + Length(a, b) * Base[c2] + Length(b, v) * PnxtHop(b, v);
+				unv = 1;
+				if (!visit[a]) unv++;
+				if (!visit[b]) unv++;
+				tmp /= sqrt(unv);
+                if (tmp < cost) {
+                    ansa = a;
+                    ansb = b;
+                    cost = tmp;
+                }
             }
         }
-
-		// other option is stay at u first
+		
+		// another option is stay at u first, and wait for UFO next
 		{
 			const int a = u;
+			const vpii& e2 = E2[a];
+            const int sz2 = SZ(e2);
+            c1 = decay1[mp(u, a)];
 			if (a != v) {
-				c1 = decay1[mp(u, a)];
-				const vpii& e2 = E2[a];
-				const int sz2 = SZ(e2);
 				rep(j, 0, sz2) {
-					const int b = e2[j].fir;
+					const int b = e2[j].fir; 
 					if (b == v) continue;
 					c2 = e2[j].sec;
-					if (visit[a] && visit[b]) {
-						tmp = Length(u, v);
-					} else if (visit[a] && !visit[b]) {
-						tmp = Length(u, a) + Length(a, v);
-					} else if (!visit[a] && visit[b]) {
-						tmp = Length(u, b) + Length(b, v);
-					} else {
-						tmp = Length(u, a) + Length(a, b) + Length(b, v);
-					}
-					sum = Length(u, a) * Base[c1] + Length(a, b) * Base[c2] + Length(b, v) * PnxtHop(b, v);
-					tmp -= sum;
-					if (sum<cost || (sum==cost && tmp>gain)) {
-						gain = tmp;
-						cost = sum;
+					tmp = Length(u, a) * Base[c1] + Length(a, b) * Base[c2] + Length(b, v) * PnxtHop(b, v);
+					unv = 1;
+					if (!visit[a]) unv++;
+					if (!visit[b]) unv++;
+					tmp /= sqrt(unv);
+					if (tmp < cost) {
 						ansa = a;
 						ansb = b;
+						cost = tmp;
 					}
 				}
 			}
@@ -504,35 +417,35 @@ public:
             nd.pb(ansa);
             nd.pb(ansb);
             nd.pb(v);
-            nd.gain = gain;
-			nd.cost = cost;
+            nd.cost = cost;
         }
     }
 
     /**
-     *	\brief judge current path is redundancy
-     */
-    bool judge(const Node_t& nd) {
-		const int sz = SZ(nd);
-		int c = 0;
-		
-		rep(i, 1, sz) {
-			const int v = nd[i];
-			if (!visit[v] && !taken[v])
-				++c;
-		}
-		
-		return c > 0;
+        \brief calculate the cost of hop4, too least possibility to consider that.
+    */
+    void costHop4(const int u, const int v, Node_t& nd) {
+    	nd.clr();
     }
 	
-	bool updateTaken(const Node_t& nd) {
+	/**
+		\brief	judge whether current path is valid
+	*/
+	bool judge(const Node_t& nd) {
 		const int sz = SZ(nd);
 		int c = 0;
 		
-		rep(i, 1, sz) {
-			const int v = nd[i];
-			taken[v] = true;
+		rep(i, 0, SZ(nd)) {
+			if (!taken[nd[i]])
+				++c;
 		}
+		if (c == 0) return false;
+		if (c && nd.cost<BstLength) return true;
+		return false;
+		
+		c = 0;
+		if (sz >= 2) c += decay1[mp(nd[0], nd[1])];
+		if (sz >= 3) c += decay2[mp(nd[1], nd[2])];
 		
 		return c > 0;
 	}
@@ -545,7 +458,7 @@ public:
         if (NTurns == 0)
             topk = NShips;
         else
-            topk = NShips / 2;
+            topk = NShips / 3;
 
         vi ret(NShips, 0);
 
@@ -564,14 +477,13 @@ public:
             unvisit.pb(*iter);
         }
 
-		const int sz_unvisit = SZ(unvisit);
         int sz = SZ(unvisit), sz_ = SZ(visited);
         vector<Node_t> vc;
         Node_t nd;
 
         rep(j, 0, NShips) {
 			const int u = ships[j];
-            if (!paths[j].empty() && !more[j])
+            if (!paths[j].empty())
                 continue;
 			nd.idx = j;
             rep(i, 0, sz) {
@@ -579,21 +491,28 @@ public:
                 /**
                     \case 1: one hop
                 */
-                gainHop1(u, v, nd);
+                costHop1(u, v, nd);
                 if (!nd.empty())
                     vc.pb(nd);
 
                 /**
                     \case 2: two hop
                 */
-                gainHop2(u, v, nd);
+                costHop2(u, v, nd);
                 if (!nd.empty())
                     vc.pb(nd);
 
                 /**
                     \case 3: three hop
                 */
-                gainHop3(u, v, nd);
+                costHop3(u, v, nd);
+                if (!nd.empty())
+                    vc.pb(nd);
+
+                /**
+                    \case 4: four hop
+                */
+                costHop4(u, v, nd);
                 if (!nd.empty())
                     vc.pb(nd);
             }
@@ -601,55 +520,25 @@ public:
 
         sort(all(vc));
         int sz_vc =  SZ(vc);
-		bool flag = false;
 		memset(taken, false, sizeof(taken));
 		
         rep(i, 0, sz_vc) {
             const int idx = vc[i].idx;
             if (mark[idx] == NTurns) continue;
-			if (!judge(vc[i])) continue;
-			#ifdef DEBUG
-			vc[i].print();
-			#endif
-			if (vc[i].cost>tolLength && vc[i].gain<50.0 && (vc[i].gain+eps)<gainRate*(vc[i].cost+eps) && (NStars*4-NTurns)*topk>sz_unvisit*3)
-				continue;
-			more[idx] = false;
-			paths[idx].clr();
-			updateTaken(vc[i]);
-			flag = true;
+			if (i && !judge(vc[i])) continue;
             mark[idx] = NTurns;
-			paths[idx].cost = vc[i].cost;
-			paths[idx].gain = vc[i].gain;
 			#ifdef LOCAL_DEBUG
+			vc[i].print();
 			assert(paths[idx].empty());
 			#endif
             per(j, 1, SZ(vc[i])) {
                 paths[idx].pb(vc[i][j]);
+				taken[vc[i][j]] = true;
             }
             ret[idx] = *paths[idx].rbegin();
             if (--topk == 0)
                 break;
         }
-
-		if (!flag) {
-			#ifdef LOCAL_DEBUG
-			printf("NTurns = %d, still = %d\n", NTurns, still);
-			#endif
-			++still;
-			this->gainRate *= 0.8;
-			// if (this->gainRate < eps)
-				// this->gainRate = -1.0;
-		} else {
-			still = 0;
-			this->gainRate = ::gainRate;
-		}
-		
-		rep(i, 0, NShips) {
-			if (more[i] && ret[i]!=ships[i] && taken[ret[i]]) {
-				ret[i] = ships[i];
-				paths[i].clr();
-			}
-		}
 
         return ret;
     }
@@ -805,9 +694,9 @@ public:
 					"Length is %d and should be %d.", turns, SZ(ret), NShip);
 				return -1.0;
 			}
-
+			
 			int delta = 0;
-
+			
 			// move ship
 			rep(i, 0, NShip) {
 				if (ret[i]<0 || ret[i]>=NStar) {
@@ -828,8 +717,8 @@ public:
 					}
 					energy += dst;
 				}
-
-
+				
+				
 				ship[i] = ret[i];
 				if (!star[ship[i]].visited) {
 					star[ship[i]].visited = true;
@@ -837,7 +726,7 @@ public:
 					++delta;
 				}
 			}
-
+			
 			printf("Move #%d: visit %d more stars, energy = %.6lf.\n", turns, delta, energy);
 
 			// move UFO
@@ -865,7 +754,7 @@ const int StarTravellerVis::mod = 1024;
 
 void debug(const int seed) {
 	StarTravellerVis stv;
-
+	
 	double energy = stv.runTest(seed);
 	printf("energy = %.6lf\n", energy);
 }
@@ -873,7 +762,7 @@ void debug(const int seed) {
 void debugAll() {
 	rep(seed, 1, 11) {
 		StarTravellerVis stv;
-
+	
 		double energy = stv.runTest(seed);
 		printf("energy = %.6lf\n\n", energy);
 	}
@@ -884,7 +773,7 @@ int main(int argc, char **argv) {
 		freopen("data.in", "r", stdin);
 		freopen("data.out", "w", stdout);
 		// freopen("data.out", "w", stdout);
-		int seed = 1;
+		int seed = 3;
 		if (argc > 1)
 			sscanf(argv[1], "%d", &seed);
 		#ifdef DEBUG
@@ -892,7 +781,7 @@ int main(int argc, char **argv) {
 		#else
 		debugAll();
 		#endif
-
+		
 		printf("time = %ldms.\n", clock());
 		return 0;
 	#endif
@@ -933,8 +822,8 @@ int main(int argc, char **argv) {
     #ifdef DEBUG
         close_log();
     #endif
-
-	#ifdef DEBUG
+	
+	#ifdef LOCAL_DEBUG
 		printf("time = %ldms.\n", clock());
 	#endif
 
