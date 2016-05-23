@@ -22,8 +22,8 @@ using namespace std;
 #define all(x)          (x).begin(),(x).end()
 #define SZ(x)           ((int)(x).size())
 
-#define DEBUG
-#define LOCAL_DEBUG
+// #define DEBUG
+// #define LOCAL_DEBUG
 
 FILE *logout;
 
@@ -105,7 +105,7 @@ struct Chromosome_t {
 	double cost;
 	vector<Node_t> vnode;
 
-	Node_t& find(int idx) {
+	Node_t& find(const int idx) {
 		int id = -1;
 
 		rep(i, 0, SZ(vnode)) {
@@ -122,7 +122,7 @@ struct Chromosome_t {
 		return vnode[id];
 	}
 
-	const Node_t& find(int idx) const {
+	const Node_t& find(const int idx) const {
 		int id = -1;
 
 		rep(i, 0, SZ(vnode)) {
@@ -215,7 +215,6 @@ struct GA {
 	const int MAX_ITERATION;
 	const int P_Crossover = 400;
 	const int P_Mutation = 50;
-	int bidx;
 	typedef vector<Chromosome_t> vChromosome;
 	vChromosome vchroms[2];
 	vi vIdx;
@@ -244,27 +243,31 @@ struct GA {
 			GenNextPopulation(q);
 			EvaluatePopulation(q);
 			PerformEvolution(q);
-			PrintReport(q);
+			// PrintReport(q);
 			p ^= 0;
 			q ^= 1;
 		}
 
 		finalIdx = p;
 		dumpToPath();
+		#ifdef DEBUG
+		PrintBest();
+		updatePcost();
+		#endif
 	}
 
 	/**
 		\brief	dump the final population to path
 	*/
 	void dumpToPath() {
-		const vChromosome vchro = vchroms[finalIdx];
+		const vChromosome& vchro = vchroms[finalIdx];
 		const Chromosome_t& chr = vchro[bst];
 		const int sz = SZ(chr);
 
 		rep(i, 0, sz) {
 			const Node_t& nd = chr[i];
 			const int shipIdx = nd.idx;
-			findBstPath(nd.path, paths[shipIdx]);
+			findBstPath(nd, paths[shipIdx]);
 		}
 	}
 
@@ -272,7 +275,7 @@ struct GA {
 		\brief	find the best path of current ship
 		\note	best path means using least cost with least turns
 	*/
-	void findBstPath(const vi& src, vi& des) {
+	void findBstPath(const Node_t& src, vi& des) {
 		/**
 			if $vIdx \in src \gt 2$, we only append it to des,
 			which means only top-2 vnode may encounter with `UFO`.
@@ -288,7 +291,8 @@ struct GA {
 		} else if (sz == 2) {
 			findBstPath(src[0], src[1], des);
 		} else {
-			des.pb(src[0]);
+			/* sz <= 1, stay */
+			des.pb(ships[src.idx]);
 		}
 	}
 
@@ -411,21 +415,23 @@ struct GA {
 		*/
 		rep(j, 0, NShips) {
 			const int u = ships[j];
+			vi& vhead = shipHead[j];
+
 			int sz;
 			sz = SZ(E1[u]);
 			rep(i, 0, sz) {
 				const int& v = E1[u][i].fir;
 				if (!visit[v])
-					shipHead[j].pb(v);
+					vhead.pb(v);
 			}
 			sz = SZ(E2[u]);
 			rep(i, 0, sz) {
 				const int& v = E2[u][i].fir;
 				if (!visit[v])
-					shipHead[j].pb(v);
+					vhead.pb(v);
 			}
 			if (!visit[u])
-				shipHead[j].pb(u);
+				vhead.pb(u);
 
 			#ifdef DEBUG
 			sz = SZ(shipHead[j]);
@@ -472,7 +478,10 @@ struct GA {
 				nd.pb(ships[idx]);
 				if (cnt == 0) continue;
 
-				if (SZ(shipHead[idx])) {
+				/**
+					1/3 rate using the priority head node
+				*/
+				if (SZ(shipHead[idx]) && rand()%3==0) {
 					rep(j, 0, 3) {
 						int nxt = shipHead[idx][rand() % SZ(shipHead[idx])];
 						if (taken[nxt] != ii) {
@@ -485,9 +494,14 @@ struct GA {
 				}
 
 				// add all not taken node randomly
+				int pump = cnt/2;
 				while (cnt) {
 					int idx = rand() % n_unvisit;
-					if (taken[unvisit[idx]] == ii) break;
+					if (taken[unvisit[idx]] == ii) {
+						if (pump-- == 0)
+							break;
+						continue;
+					}
 					taken[unvisit[idx]] = ii;
 					nd.pb(unvisit[idx]);
 					--cnt;
@@ -514,6 +528,9 @@ struct GA {
 			#endif
 
 			vchrom.pb(chr);
+			#ifdef DEBUG
+			// chr.print();
+			#endif
 		}
 	}
 
@@ -521,7 +538,7 @@ struct GA {
 		\brief	generate next population
 	*/
 	void GenNextPopulation(const int q) {
-		SelectionOperator(q);
+		SelectionOperator(q ^ 1);
 		CrossoverOperator(q);
 		MutationOperator(q);
 	}
@@ -696,7 +713,7 @@ struct GA {
 			a = e2[i].fir;
 			c = e2[i].sec;
 			if (visit[a]) {
-				tmp = Length(u, a) + Base[c] + Length(a, v);
+				tmp = Length(u, a) * Base[c] + Length(a, v);
 				ret = min(ret, tmp);
 			}
 		}
@@ -732,7 +749,7 @@ struct GA {
 			a = e2[i].fir;
 			c = e2[i].sec;
 			if (visit[a]) {
-				tmp = Length(u, a) + Base[c] + Length(a, v);
+				tmp = Length(u, a) * Base[c] + Length(a, v);
 				if (tmp < ret) {
 					ret = tmp;
 					ansa = a;
@@ -749,8 +766,6 @@ struct GA {
 	double minCost3(const int u, const int v) {
 		const vpii& e1 = E1[u];
 		const int sz1 = SZ(e1);
-		const vpii& e2 = E2_[v];
-		const int sz2 = SZ(e2);
 		double ret = POS_INF, tmp;
 		int x, y, c1, c2;
 
@@ -758,10 +773,12 @@ struct GA {
 			x = e1[i].fir;
 			if (!visit[x]) continue;
 			c1 = e1[i].sec;
+			const vpii& e2 = E2[x];
+			const int sz2 = SZ(e2);
 			rep(j, 0, sz2) {
 				y = e2[j].fir;
 				if (!visit[y]) continue;
-				c2 = decay2[mp(x, y)];
+				c2 = e2[j].sec;
 				tmp = Length(u, x) * Base[c1] + Length(x, y) * Base[c2] + Length(y, v);
 				ret = min(ret, tmp);
 			}
@@ -776,8 +793,6 @@ struct GA {
 	double minCost3(const int u, const int v, int& ansx, int& ansy) {
 		const vpii& e1 = E1[u];
 		const int sz1 = SZ(e1);
-		const vpii& e2 = E2_[v];
-		const int sz2 = SZ(e2);
 		double ret = POS_INF, tmp;
 		int x, y, c1, c2;
 
@@ -785,10 +800,12 @@ struct GA {
 			x = e1[i].fir;
 			if (!visit[x]) continue;
 			c1 = e1[i].sec;
+			const vpii& e2 = E2[x];
+			const int sz2 = SZ(e2);
 			rep(j, 0, sz2) {
 				y = e2[j].fir;
 				if (!visit[y]) continue;
-				c2 = decay2[mp(x, y)];
+				c2 = e2[j].sec;
 				tmp = Length(u, x) * Base[c1] + Length(x, y) * Base[c2] + Length(y, v);
 				if (tmp < ret) {
 					ret = tmp;
@@ -906,7 +923,7 @@ struct GA {
 		vIdx.clr();
 		cfit[0] = 0;
 		rep(i, 0, sz) cfit[i+1] = cfit[i] + vfitness[i] * 1000;
-		cfit[sz] = 1000;
+		cfit[sz] = 2000;
 
 		rep(i, 0, POP_SIZE) {
 			int x = rand() % 1000;
@@ -922,6 +939,39 @@ struct GA {
 		CrossoverOperator(vchroms[q^1], vchroms[q]);
 	}
 
+	/**
+		\brief	self-bred crossover we cause we want path unique
+	*/
+	void Crossover(const vChromosome& src, const int id, vChromosome& des) {
+		const int idx = vIdx[id];
+		const int sid1 = rand() % NShips;
+		const int sid2 = rand() % NShips;
+		const int sza = src[idx].find(sid1).size();
+		const int szb = src[idx].find(sid2).size();
+		const int mn = min(sza, szb);
+		Chromosome_t chr;
+
+		if (mn<=1 || sid1==sid2) {
+			des.pb(src[idx]);
+			return ;
+		}
+
+		int b = rand() % (mn - 1) + 1;
+		int e = rand() % (mn - 1) + 1;
+		if (b > e) swap(b, e);
+
+		chr = src[idx];
+		Node_t& nda = chr.find(sid1);
+		Node_t& ndb = chr.find(sid2);
+		rep(j, b, e+1)
+			swap(nda[j], ndb[j]);
+		des.pb(chr);
+	}
+
+	/**
+		\brief serious error with following function.
+			No better Crossover operator
+	*/
 	void Crossover(const vChromosome& src, const int id1, const int id2, vChromosome& des) {
 		const int aidx = vIdx[id1];
 		const int bidx = vIdx[id2];
@@ -956,7 +1006,7 @@ struct GA {
 					nd[j] = ndb[j];
 				}
 			} else {
-				int sz = SZ(nd);
+				const int sz = SZ(nd);
 				rep(j, 0, sz) {
 					if (taken[nd[j]] == id1)
 						taken[nd[j]] = replace[nd[j]];
@@ -964,6 +1014,11 @@ struct GA {
 			}
 		}
 		des.pb(chr);
+		#ifdef DEBUG
+		// fprintf(stdout, "[Crossover] A: b = %d, e = %d\n", b, e);
+		// src[aidx].print();
+		// des.rbegin()->print();
+		#endif
 
 		// handle id2
 		chr = src[bidx];
@@ -978,7 +1033,7 @@ struct GA {
 					nd[j] = nda[j];
 				}
 			} else {
-				int sz = SZ(nd);
+				const int sz = SZ(nd);
 				rep(j, 0, sz) {
 					if (taken[nd[j]] == id2)
 						taken[nd[j]] = replace[nd[j]];
@@ -986,6 +1041,10 @@ struct GA {
 			}
 		}
 		des.pb(chr);
+		#ifdef DEBUG
+		// fprintf(stdout, "[Crossover] B:\n");
+		// des.rbegin()->print();
+		#endif
 	}
 
 	void CrossoverOperator(const vChromosome& src, vChromosome& des) {
@@ -996,7 +1055,9 @@ struct GA {
 		for (int i=0; i<sz; i+=2) {
 			int x = rand() % 1000;
 			if (x < P_Crossover) {
-				Crossover(src, i, i+1, des);
+				// Crossover(src, i, i+1, des);
+				Crossover(src, i, des);
+				Crossover(src, i+1, des);
 			} else {
 				des.pb(src[vIdx[i]]);
 				des.pb(src[vIdx[i+1]]);
@@ -1013,10 +1074,13 @@ struct GA {
 
 		memset(taken, -1, sizeof(taken));
 		rep(i, 0, sz) {
-			const Chromosome_t chr = des[i];
+			const Chromosome_t& chr = des[i];
+			#ifdef DEBUG
+			// chr.print();
+			#endif
 			assert(SZ(chr) == NShips);
 			rep(j, 0, NShips) {
-				assert(chr[j][0] == ships[chr[j].idx]);
+				assert(SZ(chr[j])>=0 && chr[j][0]==ships[chr[j].idx]);
 				rep(k, 1, SZ(chr[j])) {
 					assert(taken[chr[j][k]] != i);
 					taken[chr[j][k]] = i;
@@ -1058,9 +1122,39 @@ struct GA {
 		}
 	}
 
-	void PrintReport(const int p) {
+	void PrintReport(const int p, FILE* out=stdout) {
+		const vChromosome& vchro = vchroms[p];
+		const int sz = SZ(vchro);
 
+		fprintf(out, "BstIdx = %d\n", bst);
+		rep(i, 0, sz) {
+			fprintf(out, "(%d): \n", i);
+			vchro[i].print(out);
+			fprintf(out, "n");
+		}
+		fflush(out);
 	}
+	
+	void PrintBest(FILE* out=stdout) {
+		const vChromosome& vchro = vchroms[finalIdx];
+		
+		fprintf(out, "BstIdx = %d\n", bst);
+		vchro[bst].print(out);
+		fprintf(out, "\n");
+		fflush(out);
+	}
+
+	#ifdef DEBUG
+	void updatePcost() {
+		double tmp = 0;
+
+		rep(i, 0, NShips) {
+			tmp += Hop1(ships[i], *paths[i].rbegin());
+		}
+
+		pcost += tmp;
+	}
+	#endif
 
 	void print(FILE* out=stdout) const {
 
@@ -1073,9 +1167,10 @@ public:
     int topk;
     int mark[maxn];
 	GA *ga;
+	bool more;
 
     void Init() {
-    	ga = new GA(500, 500);
+    	ga = new GA(300, 300);
         memset(mark, -1, sizeof(mark));
         NTurns = 0;
         ust.clr();
@@ -1169,11 +1264,13 @@ public:
         assert(sz == NShips);
         rep(i, 0, sz) assert (vc[i]>=0 && vc[i]<NStars);
         #endif
-
+		more = false;
+		
         rep(i, 0, sz) {
             const int& v = vc[i];
             if (!visit[v]) {
                 visit[v] = true;
+				more = true;
                 visited.pb(v);
                 ust.insert(v);
                 _ust.erase(v);
@@ -1199,8 +1296,14 @@ public:
         /**
             \step 1: using current position of ships to initialize `ret`
         */
-		ga->solve();
-
+		if (more) {
+		/**
+			\If we have already visit some unvisit node then, we call GA to reEvaluate.
+				\Else we wait until visit some unvisit node.
+		*/
+			ga->solve();
+		}
+		
         rep(i, 0, NShips) {
             if (paths[i].empty())
                 ret[i] = ships[i];
@@ -1395,7 +1498,7 @@ public:
 				}
 			}
 
-			printf("Move #%d: visit %d more stars, energy = %.6lf.\n", turns, delta, energy);
+			printf("Move #%d: visit %d more stars, energy = %.06lf.\n", turns, delta, energy);
 
 			// move UFO
 			for (int i=0; i<NUfo*3; i+=3) {
@@ -1444,8 +1547,8 @@ int main(int argc, char **argv) {
 		int seed = 1;
 		if (argc > 1)
 			sscanf(argv[1], "%d", &seed);
-		debug(seed);
-		//debugAll();
+		// debug(seed);
+		debugAll();
 		return 0;
 	#endif
 
