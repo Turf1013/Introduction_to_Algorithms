@@ -1,7 +1,7 @@
 /**
     \author Trasier
     \source TopCoder-MM-StarTraverller
-    \data   2016-05-17
+    \data   2016-05-24
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -28,7 +28,7 @@ using namespace std;
 FILE *logout;
 
 struct Star_t {
-    int x, y;
+    double x, y;
 	
 	bool operator< (const Star_t& o) const {
 		if (x != o.x) return x < o.x;
@@ -40,7 +40,7 @@ struct Star_t {
 	}
 
     void print(FILE *out=stdout) const {
-        fprintf(out, "x = %d, y = %d\n", x, y);
+        fprintf(out, "x = %.0lf, y = %.0lf\n", x, y);
         fflush(out);
     }
 };
@@ -102,6 +102,7 @@ struct Node_t {
     }
 };
 
+const double tolLength = 10.0;
 const double POS_INF = 1e16;
 const int maxn = 2005;
 const char *LOG_FILENAME = "starlog.out";
@@ -138,6 +139,7 @@ public:
     int NTurns;
     int topk;
     int mark[maxn];
+	bool taken[maxn];
     vi visited;
 
     void Init() {
@@ -248,17 +250,16 @@ public:
         }
         ++NTurns;
     }
-
-    /**
-        \brief calculate the decay num of move idx
-    */
-    int Decay(const int u, const int v, const int idx) {
-        if (idx == 1) {
-            return decay1[mp(u, v)];
-        } else {
-            return decay2[mp(u, v)];
-        }
-    }
+	
+	double Hop1(const int u, const int v) {
+		int c = decay1[mp(u, v)];
+        return Length(u, v) * Base[c];
+	}
+	
+	double Hop2(const int u, const int vv, const int v) {
+		int c1 = decay1[mp(u, vv)], c2 = decay2[mp(vv, v)];
+        return Length(u, vv) * Base[c1] + Length(vv, v) * Base[c2];
+	}
 
     /**
         \brief calculate the cost of hop 1
@@ -267,7 +268,7 @@ public:
         nd.clr();
         nd.pb(u);
         nd.pb(v);
-        int dec = Decay(u, v, 1);
+        int dec = decay1[mp(u, v)];
         nd.cost = Length(u, v) * Base[dec];
     }
 
@@ -286,7 +287,7 @@ public:
 
         rep(i, 0, sz1) {
             const int a = e1[i].fir;
-            // if (a==v || a==u) continue;
+            if (a == v) continue;
             c1 = e1[i].sec;
             c2 = decay2[mp(a, v)];
             tmp = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
@@ -298,7 +299,7 @@ public:
 
         rep(i, 0, sz2) {
             const int a = e2[i].fir;
-            // if (a==u || a==v) continue;
+            if (a == v) continue;
             c2 = e2[i].sec;
             c1 = decay1[mp(u, a)];
             tmp = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
@@ -350,10 +351,10 @@ public:
             const vpii& e2 = E2[a];
             const int sz2 = SZ(e2);
             c1 = e1[i].sec;
-            // if (a==v || a==u) continue;
+            if (a == v) continue;
             rep(j, 0, sz2) {
                 const int b = e2[j].fir;
-                // if (b==a || b==u || b==v) continue;
+                if (b == v) continue;
                 c2 = e2[j].sec;
                 tmp = Length(u, a) * Base[c1] + Length(a, b) * Base[c2] + Length(b, v) * PnxtHop(b, v);
                 if (tmp < cost) {
@@ -404,9 +405,14 @@ public:
         }
 
         vi unvisit;
-        for (sti::iterator iter=_ust.begin(); iter!=_ust.end(); ++iter) {
-            unvisit.pb(*iter);
-        }
+		memcpy(taken, visit, sizeof(taken));
+		rep(i, 0, NShips) {
+			rep(j, 0, SZ(paths[i]))
+				taken[paths[i][j]] = true;
+		}
+		rep(i, 0, NStars)
+			if (!taken[i])
+				unvisit.pb(i);
 
         int sz = SZ(unvisit), sz_ = SZ(visited);
         vector<Node_t> vc;
@@ -466,6 +472,87 @@ public:
             if (--topk == 0)
                 break;
         }
+		
+		rep(i, 0, NShips) {
+			if (mark[i]==NTurns || !paths[i].empty()) continue;
+			if (rand()%3==0 || SZ(E2[ships[i]])) {
+				ret[i] = ships[i];
+				continue;
+			}
+			
+			{
+				const int u = ships[i];
+				const vpii& e = E1[u];
+				int mx = -1, mxv = -1;
+				const int sz = SZ(e);
+				rep(j, 0, sz) {
+					const int& v = e[j].fir;
+					if (!visit[v]) {
+						mxv = v;
+						break;
+					}
+					if (e[j].sec > mx) {
+						mx = e[j].sec;
+						mxv = e[j].fir;
+					}
+				}
+				if (mxv != -1) {
+					paths[i].pb(mxv);
+					ret[i] = *paths[i].rbegin();
+					continue;
+				}
+			}
+			
+			{
+				const int u = ships[i];
+				const vpii& e = E2[u];
+				int mx = -1, mxv = -1;
+				const int sz = SZ(e);
+				rep(j, 0, sz) {
+					const int& v = e[j].fir;
+					if (!visit[v]) {
+						mxv = v;
+						break;
+					}
+					if (e[j].sec > mx) {
+						mx = e[j].sec;
+						mxv = e[j].fir;
+					}
+				}
+				if (mxv != -1) {
+					paths[i].pb(mxv);
+					paths[i].pb(u);
+					ret[i] = *paths[i].rbegin();
+					continue;
+				}
+			}
+			
+			{
+				vi vtmp;
+				double tmp;
+				
+				rep(j, 0, NUfos) {
+					if (!vtmp.empty()) break;
+					tmp = Hop1(ships[i], ufos[j].idx[1]);
+					if (tmp < tolLength) {
+						vtmp.pb(ufos[j].idx[1]);
+						break;
+					}
+					
+					tmp = Hop2(ships[i], ships[i], ufos[j].idx[2]);
+					if (tmp < tolLength) {
+						vtmp.pb(ships[i]);
+						vtmp.pb(ufos[j].idx[2]);
+						break;
+					}
+				}
+				
+				if (!vtmp.empty()) {
+					per(j, 0, SZ(vtmp)) paths[i].pb(vtmp[j]);
+					ret[i] = *paths[i].rbegin();
+				}
+			}
+		}
 
         return ret;
     }
@@ -520,14 +607,14 @@ public:
 		srand(seed);
 
 		if (seed == 1) {
-			NStar = 20;
-			NShip = 1;
-			NUfo = 4;
+			NStar = 145;
+			NShip = 5;
+			NUfo = 0;
 			NG = 3;
 		} else {
 			NStar = 100 + rand()%1901;
 			NShip = 1 + rand()%10;
-			NUfo = rand()%(NStar/100);
+			NUfo = max(4, rand()%(NStar/100));
 			NG = 1 + rand()%16;
 		}
 
@@ -621,9 +708,9 @@ public:
 					"Length is %d and should be %d.", turns, SZ(ret), NShip);
 				return -1.0;
 			}
-			
+
 			int delta = 0;
-			
+
 			// move ship
 			rep(i, 0, NShip) {
 				if (ret[i]<0 || ret[i]>=NStar) {
@@ -644,8 +731,8 @@ public:
 					}
 					energy += dst;
 				}
-				
-				
+
+
 				ship[i] = ret[i];
 				if (!star[ship[i]].visited) {
 					star[ship[i]].visited = true;
@@ -653,7 +740,7 @@ public:
 					++delta;
 				}
 			}
-			
+
 			printf("Move #%d: visit %d more stars, energy = %.6lf.\n", turns, delta, energy);
 
 			// move UFO
@@ -681,7 +768,7 @@ const int StarTravellerVis::mod = 1024;
 
 void debug(const int seed) {
 	StarTravellerVis stv;
-	
+
 	double energy = stv.runTest(seed);
 	printf("energy = %.6lf\n", energy);
 }
@@ -689,7 +776,7 @@ void debug(const int seed) {
 void debugAll() {
 	rep(seed, 1, 11) {
 		StarTravellerVis stv;
-	
+
 		double energy = stv.runTest(seed);
 		printf("energy = %.6lf\n\n", energy);
 	}
@@ -699,12 +786,17 @@ int main(int argc, char **argv) {
 	#ifdef LOCAL_DEBUG
 		freopen("data.in", "r", stdin);
 		freopen("data.out", "w", stdout);
-		// freopen("data.out", "w", stdout);
 		int seed = 1;
 		if (argc > 1)
 			sscanf(argv[1], "%d", &seed);
+		#ifdef DEBUG
 		debug(seed);
-		//debugAll();
+		// debugAll();
+		#else
+		debugAll();
+		#endif
+
+		printf("time = %ldms.\n", clock());
 		return 0;
 	#endif
 
@@ -744,8 +836,8 @@ int main(int argc, char **argv) {
     #ifdef DEBUG
         close_log();
     #endif
-	
-	#ifndef ONLINE_JUDGE
+
+	#ifdef DEBUG
 		printf("time = %ldms.\n", clock());
 	#endif
 

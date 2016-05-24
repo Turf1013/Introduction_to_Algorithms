@@ -23,8 +23,8 @@ using namespace std;
 #define all(x)          (x).begin(),(x).end()
 #define SZ(x)           ((int)(x).size())
 
-#define DEBUG
-#define LOCAL_DEBUG
+// #define DEBUG
+// #define LOCAL_DEBUG
 
 FILE *logout;
 
@@ -198,15 +198,15 @@ inline void close_log() {
 }
 
 double Length(const Star_t& sa, const Star_t& sb) {
-    return sqrt((sa.x-sb.x)*(sa.x-sb.x) + (sa.y-sb.y)*(sa.y-sb.y));
+    return sqrt(1.0*(sa.x-sb.x)*(sa.x-sb.x) + 1.0*(sa.y-sb.y)*(sa.y-sb.y));
 }
 
 double Length(const int a, const int b) {
     return M[a][b];
 }
 
-const double tolLength = 20.0;
-int stillBound = 20;
+const double tolLength = 50.0;
+int stillBound = 10;
 const double eps = 1e-6;
 class StarTraveller {
 public:
@@ -251,6 +251,9 @@ public:
         rep(i, 0, NStars) {
             stars[i].x = vstar[i<<1];
             stars[i].y = vstar[(i<<1)|1];
+			// #ifdef DEBUG
+			// printf("%d: (%d, %d)\n", i, stars[i].x, stars[i].y);
+			// #endif
         }
 
         Init();
@@ -342,11 +345,14 @@ public:
 	}
 
 	double Hop1(const int u, const int v) {
-		return Length(u, v) * decay1[mp(u, v)];
+		const int c = decay1[mp(u, v)];
+		return Length(u, v) * Base[c];
 	}
 
 	double Hop2(const int u, const int vv, const int v) {
-		return Length(u, vv) * decay1[mp(u, vv)] + Length(vv, v) * decay2[mp(vv, v)];
+		const int c1 = decay1[mp(u, v)];
+		const int c2 = decay2[mp(u, vv)];
+		return Length(u, vv) * Base[c1] + Length(vv, v) * Base[c2];
 	}
 
 	/**
@@ -385,6 +391,7 @@ public:
 		rep(i, 0, sz1) {
 			const int a = e1[i].fir;
 			// We had already visited v, why not visit again?
+			if (a == v) continue;
 			c1 = e1[i].sec;
 			c2 = decay2[mp(a, v)];
 			if (visit[a])
@@ -404,26 +411,29 @@ public:
 		// other option is stay at u
 		{
 			const int a = u;
-			c1 = decay1[mp(u, a)];
-			c2 = decay2[mp(a, v)];
-			if (visit[a])
-				tmp = Length(u, v);
-			else
-				tmp = Length(u, a) + Length(a, v);
-			cost = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
-			gain = tmp - cost;
-			cufo = calcCufo(c1+c2, SZ(E2_[v]));
-			nd.clr();
-			nd.pb(u);
-			nd.pb(a);
-			nd.pb(v);
-			vnode.pb(nd);
+			if (a != v) {
+				c1 = decay1[mp(u, a)];
+				c2 = decay2[mp(a, v)];
+				if (visit[a])
+					tmp = Length(u, v);
+				else
+					tmp = Length(u, a) + Length(a, v);
+				cost = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
+				gain = tmp - cost;
+				cufo = calcCufo(c1+c2, SZ(E2_[v]));
+				nd.clr();
+				nd.pb(u);
+				nd.pb(a);
+				nd.pb(v);
+				vnode.pb(nd);
+			}
 		}
 
-		const vpii& e2 = E1_[v];
+		const vpii& e2 = E2_[v];
 		const int sz2 = SZ(e2);
 		rep(i, 0, sz2) {
             const int a = e2[i].fir;
+			if (a == v) continue;
             c2 = e2[i].sec;
             c1 = decay1[mp(u, a)];
 			if (visit[a])
@@ -476,10 +486,12 @@ public:
         rep(i, 0, sz1) {
             const int a = e1[i].fir;
             c1 = e1[i].sec;
+			if (a == v) continue;
             const vpii& e2 = E2[a];
             const int sz2 = SZ(e2);
             rep(j, 0, sz2) {
                 const int b = e2[j].fir;
+				if (b == v) continue;
                 c2 = e2[j].sec;
 				if (visit[a] && visit[b]) {
 					tmp = Length(u, v);
@@ -509,7 +521,7 @@ public:
 			const int sz2 = SZ(e2);
 			rep(j, 0, sz2) {
 				const int b = e2[j].fir;
-				if (b == v) continue;
+				if (a==v || b==v) continue;
 				c2 = e2[j].sec;
 				if (visit[a] && visit[b]) {
 					tmp = Length(u, v);
@@ -568,9 +580,9 @@ public:
 			}
 		}
 
-		// `u -> a ~> vv -> v`
+		// `u -> vv ~> a -> v`
 		{
-			const vpii& e2 = E2_[u];
+			const vpii& e2 = E2[vv];
 			const int sz2 = SZ(e2);
 
 			rep(i, 0, sz2) {
@@ -587,8 +599,8 @@ public:
 				cufo = calcCufo(c1+c2);
 				nd.clr();
 				nd.pb(u);
-				nd.pb(a);
 				nd.pb(vv);
+				nd.pb(a);
 				nd.pb(v);
 			}
 		}
@@ -599,7 +611,7 @@ public:
 	*/
 	bool judgeBusy(const int idx) {
 		if (paths[idx].empty()) return false;
-		// if (!more[idx]) return true;
+		if (!more[idx]) return true;
 
 		const int u = ships[idx];
 		const int v = *paths[idx].rbegin();
@@ -769,15 +781,15 @@ public:
 		if (SZ(ust) <= NStars*0.2)
 			return nd.cost<10 || nd.cufo>=3 || nd.gain>=nd.cost*0.7;
 		if (SZ(ust) <= NStars*0.5)
-			return nd.cost<50 || nd.cufo>=2 || nd.gain>=nd.cost*0.5;
+			return nd.cost<30 || nd.cufo>=2 || nd.gain>=nd.cost*0.5;
 		if (SZ(ust) <= NStars*0.8)
-			return nd.cost<150 || nd.cufo>=1 || nd.gain>=nd.cost*0.3;
+			return nd.cost<50 || nd.cufo>=1 || nd.gain>=nd.cost*0.3;
 		if (SZ(ust) <= NStars*0.9)
-			return nd.cost<300 || nd.cufo>=1 || nd.gain>=nd.cost*0.1;
+			return nd.cost<70 || nd.cufo>=1 || nd.gain>=nd.cost*0.1;
 		return false;
 	}
 
-	bool comp(const Node_t& a, const Node_t& b) {
+	static bool comp(const Node_t& a, const Node_t& b) {
 		const int sza = SZ(a) - 1;
 		const int szb = SZ(b) - 1;
 		const int va = *a.rbegin();
@@ -811,32 +823,51 @@ public:
 	}
 
 	void ChooseNextTurn() {
-		int topk = NShips;
+		int topk = 1;//max(1, NShips / 3);
 
 		vector<Node_t> bvc;
 		const int sz_vnode = SZ(vnode);
-
+		
+		#ifdef DEBUG
+		puts("vnode:");
+		#endif
 		rep(i, 0, sz_vnode) {
-			if (BestNode(vnode[i]))
+			// #ifdef DEBUG
+			// vnode[i].print();
+			// #endif
+			if (BestNode(vnode[i])) {
+				#ifdef DEBUG
+				vnode[i].print();
+				#endif
 				bvc.pb(vnode[i]);
+			}
 		}
+		#ifdef DEBUG
+		puts("\n");
+		#endif
+		
 		const int sz_bvc = SZ(bvc);
-		sort(all(bvc));
+		sort(all(bvc), comp);
 		sort(all(vnode));
 
-		#ifdef DEBUG
+		#ifdef LOCAL_DEBUG
 		printf("SZ(Best-vnode) = %d, SZ(vnode) = %d\n", SZ(bvc), SZ(vnode));
 		#endif
 
 		memset(taken, false, sizeof(taken));
-
+		
+		#ifdef DEBUG
+		puts("\nBestNode:");
+		#endif
 		rep(i, 0, sz_bvc) {
 			const int idx = bvc[i].idx;
 			if (mark[idx] == NTurns) continue;
 			if (!judge(bvc[i])) continue;
-			#ifdef DEBUG
+			#ifdef LOCAL_DEBUG
 			bvc[i].print();
 			#endif
+			updateTaken(bvc[i]);
+			still[idx] = 0;
 			mark[idx] = NTurns;
 			busy[idx] = true;
 			more[idx] = false;
@@ -857,19 +888,30 @@ public:
 		if (NUfos>0 && (NStars*4-NTurns)>SZ(_ust)*3)  {
 			rep(i, 0, NShips) {
 				if (busy[i] || !paths[i].empty()) continue;
-
+				
 				double mn = POS_INF, tmp;
+				
+				#ifdef DEBUG
+				printf("ship[%d] is free, still = %d, ret = %d\n", i, still[i], nxtHop[i]);
+				#endif
 
 				rep(j, 0, NUfos) {
 					tmp = Hop1(ships[i], ufos[j].idx[1]);
+					#ifdef DEBUG
+					printf("(%d -- %d) = %.6lf\n", ships[i], ufos[j].idx[1], tmp);
+					#endif
 					if (tmp < tolLength) {
 						paths[i].cost = tmp;
 						paths[i].gain = -10000;
 						paths[i].pb(ufos[j].idx[1]);
-						nxtHop[i] = ufos[j].idx[1];
 						#ifdef DBEUG
 						paths[i].print();
 						#endif
+						nxtHop[i] = *paths[i].rbegin();
+						still[i] = 0;
+						mark[i] = NTurns;
+						busy[i] = true;
+						more[i] = false;
 						break;
 					}
 					mn = min(tmp, mn);
@@ -886,7 +928,11 @@ public:
 						#ifdef DBEUG
 						paths[i].print();
 						#endif
-						nxtHop[i] = ships[i];
+						nxtHop[i] = *paths[i].rbegin();
+						still[i] = 0;
+						mark[i] = NTurns;
+						busy[i] = true;
+						more[i] = false;
 						break;
 					}
 					mn = min(tmp, mn);
@@ -899,30 +945,39 @@ public:
 						#ifdef DBEUG
 						paths[i].print();
 						#endif
-						nxtHop[i] = ufos[j].idx[2];
+						nxtHop[i] = *paths[i].rbegin();
+						still[i] = 0;
+						mark[i] = NTurns;
+						busy[i] = true;
+						more[i] = false;
 						break;
 					}
 					mn = min(tmp, mn);
 				}
 
 				if (!paths[i].empty()) continue;
+				
 				nxtHop[i] = ships[i];
 				#ifdef DEBUG
 				printf("still[%d] = %d\n", i, still[i]);
 				#endif
-				if (++still[i] == stillBound) {
+				if (++still[i] >= stillBound) {
 					still[i] = 0;
-					mn += eps;
+					mn += eps * 10;
 					rep(j, 0, NUfos) {
 						tmp = Hop1(ships[i], ufos[j].idx[1]);
 						if (tmp < mn) {
 							paths[i].cost = tmp;
 							paths[i].gain = -10000;
 							paths[i].pb(ufos[j].idx[1]);
-							nxtHop[i] = ufos[j].idx[1];
 							#ifdef DBEUG
 							paths[i].print();
 							#endif
+							nxtHop[i] = *paths[i].rbegin();
+							still[i] = 0;
+							mark[i] = NTurns;
+							busy[i] = true;
+							more[i] = false;
 							break;
 						}
 					}
@@ -937,7 +992,11 @@ public:
 								#ifdef DBEUG
 								paths[i].print();
 								#endif
-								nxtHop[i] = ships[i];
+								nxtHop[i] = *paths[i].rbegin();
+								still[i] = 0;
+								mark[i] = NTurns;
+								busy[i] = true;
+								more[i] = false;
 								break;
 							}
 							tmp = Hop2(ships[i], ufos[j].idx[2], ufos[j].idx[2]);
@@ -949,7 +1008,11 @@ public:
 								#ifdef DBEUG
 								paths[i].print();
 								#endif
-								nxtHop[i] = ufos[j].idx[2];
+								nxtHop[i] = *paths[i].rbegin();
+								still[i] = 0;
+								mark[i] = NTurns;
+								busy[i] = true;
+								more[i] = false;
 								break;
 							}
 						}
@@ -958,21 +1021,22 @@ public:
 			}
 
 		} else {
-			#ifdef DEBUG
+			#ifdef LOCAL_DEBUG
 			static bool flag = true;
 			if (flag)
 				printf("not enough turn\n");
-			flag = false;
+			flag = true;
 			#endif
 			
 			if (topk) {
 				rep(i, 0, sz_vnode) {
 					const int idx = vnode[i].idx;
-					if (mark[idx] == NTurns) continue;
-					if (!judge(vnode[i])) continue;
 					#ifdef DEBUG
 					vnode[i].print();
 					#endif
+					if (mark[idx] == NTurns) continue;
+					if (!judge(vnode[i])) continue;
+					updateTaken(vnode[i]);
 					mark[idx] = NTurns;
 					busy[idx] = true;
 					more[idx] = false;
@@ -1020,7 +1084,7 @@ public:
 
 		#ifdef DEBUG
 		rep(i, 0, NShips)
-			printf("%d-nxtHop: %d - > %d\n", i, ships[i], nxtHop[i]);
+			printf("%d-nxtHop: %d -> %d\n", i, ships[i], nxtHop[i]);
 		#endif
 
         return nxtHop;
@@ -1076,14 +1140,14 @@ public:
 		srand(seed);
 
 		if (seed == 1) {
-			NStar = 20;
-			NShip = 1;
-			NUfo = 2;
+			NStar = 145;
+			NShip = 5;
+			NUfo = 0;
 			NG = 3;
 		} else {
 			NStar = 100 + rand()%1901;
 			NShip = 1 + rand()%10;
-			NUfo = rand()%(NStar/100);
+			NUfo = max(4, rand()%(NStar/100));
 			NG = 1 + rand()%16;
 		}
 
@@ -1260,6 +1324,7 @@ int main(int argc, char **argv) {
 			sscanf(argv[1], "%d", &seed);
 		#ifdef DEBUG
 		debug(seed);
+		// debugAll();
 		#else
 		debugAll();
 		#endif
