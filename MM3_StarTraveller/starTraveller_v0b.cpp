@@ -480,9 +480,9 @@ public:
 					if (visit[a] && visit[b]) {
 						tmp = Length(u, v);
 					} else if (visit[a] && !visit[b]) {
-						tmp = Length(u, a) + Length(a, v);
-					} else if (!visit[a] && visit[b]) {
 						tmp = Length(u, b) + Length(b, v);
+					} else if (!visit[a] && visit[b]) {
+						tmp = Length(u, a) + Length(a, v);
 					} else {
 						tmp = Length(u, a) + Length(a, b) + Length(b, v);
 					}
