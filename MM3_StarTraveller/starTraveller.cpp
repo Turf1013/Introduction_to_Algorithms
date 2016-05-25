@@ -172,10 +172,9 @@ Star_t stars[maxn];
 Ufo_t ufos[maxn/100+5];
 int ships[12];
 path_t paths[12];
-vpii E1[maxn], E1_[maxn];
+vpii E1[maxn];//, E1_[maxn];
 vpii E2[maxn], E2_[maxn];
 map<pii, int> decay1, decay2;
-set<int> ust, _ust;
 
 inline void init_log() {
     logout = fopen(LOG_FILENAME, "w");
@@ -199,23 +198,22 @@ public:
     int mark[maxn];
 	int still[15];
 	bool taken[maxn];
-    vi visited;
+    int visited, unvisited;
 	vi nxtHop;
 	vector<Node_t> vnode;
-	
+
     void Init() {
         memset(mark, -1, sizeof(mark));
         NTurns = 0;
-        ust.clr();
-        _ust.clr();
+        visited = 0;
+        unvisited = NStars;
         rep(i, 0, NStars) {
-            _ust.insert(i);
             M[i][i] = 0.;
             rep(j, 0, i)
                 M[i][j] = M[j][i] = Length(stars[i], stars[j]);
         }
         Base[0] = 1;
-        rep(i, 1, 11) Base[i] = Base[i-1] * 0.001;
+        rep(i, 1, 12) Base[i] = Base[i-1] * 0.001;
 		memset(visit, false, sizeof(visit));
 		memset(taken, false, sizeof(taken));
 		memset(still, 0, sizeof(still));
@@ -250,7 +248,7 @@ public:
 		
 		for (iter=decay1.begin(); iter!=decay1.end(); ++iter) {
             E1[iter->fir.fir].clr();
-            E1_[iter->fir.sec].clr();
+           // E1_[iter->fir.sec].clr();
         }
 
         for (iter=decay2.begin(); iter!=decay2.end(); ++iter) {
@@ -270,7 +268,7 @@ public:
 
         for (iter=decay1.begin(); iter!=decay1.end(); ++iter) {
             E1[iter->fir.fir].pb(mp(iter->fir.sec, iter->sec));
-            E1_[iter->fir.sec].pb(mp(iter->fir.fir, iter->sec));
+            //E1_[iter->fir.sec].pb(mp(iter->fir.fir, iter->sec));
         }
 
         for (iter=decay2.begin(); iter!=decay2.end(); ++iter) {
@@ -293,8 +291,6 @@ public:
         \brief  update the visit set according current turn
     */
     void Update() {
-		const vi& vc = nxtHop;
-        const int sz = SZ(vc);
 		#ifdef DEBUG
 		double cost = 0;
 		#endif
@@ -304,16 +300,15 @@ public:
         rep(i, 0, sz) assert (vc[i]>=0 && vc[i]<NStars);
         #endif
 
-        rep(i, 0, sz) {
-            const int& v = vc[i];
+        rep(i, 0, NShips) {
+            const int& v = nxtHop[i];
             if (!visit[v]) {
                 visit[v] = true;
-                visited.pb(v);
-                ust.insert(v);
-                _ust.erase(v);
+                ++visited;
+                --unvisited;
             }
 			#ifdef DEBUG
-			cost += Hop1(ships[i], vc[i]);
+			cost += Hop1(ships[i], v);
 			#endif
             if (!paths[i].empty())
                 paths[i].pop_back();
@@ -327,19 +322,20 @@ public:
         ++NTurns;
     }
 	
-	inline double Hop1(const int u, const int v) {
+	double Hop1(const int u, const int v) {
 		int c = decay1[mp(u, v)];
         return Length(u, v) * Base[c];
 	}
 	
-	inline double Hop2(const int u, const int vv, const int v) {
+	double Hop2(const int u, const int vv, const int v) {
 		int c1 = decay1[mp(u, vv)], c2 = decay2[mp(vv, v)];
         return Length(u, vv) * Base[c1] + Length(vv, v) * Base[c2];
 	}
 
-    inline double getBoundLength() {
+    double getBoundLength() {
+    	static double bound = tolLength * 4.0;
         if (NUfos>0 && isEasyPeriod())
-            return tolLength * 4.0;
+            return bound;
         return POS_INF;
     }
 
@@ -454,27 +450,27 @@ public:
 		\brief	calculate the tolerance length according current turn
 	*/
 	double getTolLength() {
-		if (SZ(_ust)>NStars*0.8 && NTurns<NStars*2)
+		if (unvisited>NStars*0.8 && NTurns<NStars*2)
 			return tolLength;
-		if (SZ(_ust)>NStars*0.6 && NTurns<NStars*2)
+		if (unvisited>NStars*0.6 && NTurns<NStars*2)
 			return tolLength * 1.2;
 		return tolLength * 1.5;
 	}
 	
 	double getUfoTolLength() {
 		if (NUfos >= NShips) {
-			if (SZ(_ust)>NStars*0.8 && NTurns<NStars*2)
+			if (unvisited>NStars*0.8 && NTurns<NStars*2)
 				return tolLength;
-			if (SZ(_ust)>NStars*0.6 && NTurns<NStars*2)
+			if (unvisited>NStars*0.6 && NTurns<NStars*2)
 				return tolLength * 1.2;
 			if (NTurns < NStars*2)
 				return tolLength * 1.5;
 			else
 				return tolLength * 2;
 		} else {
-			if (SZ(_ust)>NStars*0.9 && NTurns<NStars*2)
+			if (unvisited>NStars*0.9 && NTurns<NStars*2)
 				return tolLength;
-			if (SZ(_ust)>NStars*0.7 && NTurns<NStars*2)
+			if (unvisited>NStars*0.7 && NTurns<NStars*2)
 				return tolLength * 1.2;
 			if (NTurns < NStars*2)
 				return tolLength * 1.5;
@@ -537,28 +533,28 @@ public:
 	/**
 		\brief	Generate next hop
 	*/
-	void GenNextHop(int sz) {
+	void GenNextHop(const int sz_unvisit) {
 		vnode.clr();
-		
-		rep(j, 0, NShips) {
-            if (!paths[j].empty())
+
+		rep(i, 0, NShips) {
+            if (!paths[i].empty())
                 continue;
-            rep(i, 0, sz) {
-                const int v = unvisit[i];
+            rep(j, 0, sz_unvisit) {
+                const int v = unvisit[j];
                 /**
                     \case 1: one hop
                 */
-                costHop1(j, v);
+                costHop1(i, v);
 
                 /**
                     \case 2: two hop
                 */
-                costHop2(j, v);
+                costHop2(i, v);
 
                 /**
                     \case 3: three hop
                 */
-                costHop3(j, v);
+                costHop3(i, v);
             }
         }
 	}
@@ -566,10 +562,10 @@ public:
 	/**
 		\brief	check current turn in `EesyPeriod`
 	*/
-	bool isEasyPeriod() {
+	inline bool isEasyPeriod() {
 		const double step = 2.3;
 		const double weight = 0.2;
-		return (NStars*4-NTurns)>SZ(_ust)*step && SZ(_ust)>NStars*weight;
+		return (NStars*4-NTurns)>unvisited*step && unvisited>NStars*weight;
 	}
 	
 	/**
@@ -597,27 +593,70 @@ public:
         else
             topk = 1;
 		
-		sort(all(vnode));
-		const int sz = SZ(vnode);
+		// sort(all(vnode));
+		// const int sz = SZ(vnode);
 		
-		rep(i, 0, sz) {
-			const int idx = vnode[i].idx;
-			if (mark[idx] == NTurns) continue;
-			if (isEasyPeriod() && !judge(vnode[i])) {
-				continue;
+		// rep(i, 0, sz) {
+		// 	const int idx = vnode[i].idx;
+		// 	if (mark[idx] == NTurns) continue;
+		// 	if (isEasyPeriod() && !judge(vnode[i])) {
+		// 		continue;
+		// 	}
+		// 	mark[idx] = NTurns;
+		// 	#ifdef LOCAL_DEBUG
+		// 	// vnode[i].print();
+		// 	assert(paths[idx].empty());
+		// 	#endif
+		// 	per(j, 1, SZ(vnode[i])) {
+		// 		paths[idx].pb(vnode[i][j]);
+		// 	}
+		// 	nxtHop[idx] = *paths[idx].rbegin();
+		// 	if (--topk == 0)
+		// 		break;
+		// }
+
+		const int sz = SZ(vnode);
+        if (isEasyPeriod()) {
+			sort(all(vnode));
+			
+			rep(i, 0, sz) {
+				const int idx = vnode[i].idx;
+				if (mark[idx] == NTurns) continue;
+				if (!judge(vnode[i])) continue;
+				mark[idx] = NTurns;
+				#ifdef LOCAL_DEBUG
+				// vnode[i].print();
+				assert(paths[idx].empty());
+				#endif
+				per(j, 1, SZ(vnode[i])) {
+					paths[idx].pb(vnode[i][j]);
+				}
+				nxtHop[idx] = *paths[idx].rbegin();
+				if (--topk == 0)
+					break;
 			}
-			mark[idx] = NTurns;
-			#ifdef LOCAL_DEBUG
-			// vnode[i].print();
-			assert(paths[idx].empty());
-			#endif
-			per(j, 1, SZ(vnode[i])) {
-				paths[idx].pb(vnode[i][j]);
+
+		} else {
+			double mn = POS_INF, v = -1;
+
+			rep(i, 0, sz) {
+				if (vnode[i].cost < mn) {
+					mn = vnode[i].cost;
+					v = i;
+				}
 			}
-			nxtHop[idx] = *paths[idx].rbegin();
-			if (--topk == 0)
-				break;
+
+			if (v >= 0) {
+				const int idx = vnode[v].idx;
+				mark[idx] = NTurns;
+				per(j, 1, SZ(vnode[v])) {
+					paths[idx].pb(vnode[v][j]);
+				}
+				nxtHop[idx] = *paths[idx].rbegin();
+				--topk;
+			}
 		}
+		
 		
 		// fprintf(stderr, "topk = %d: ", topk);
 		// rep(i, 0, min(5, sz)) {
@@ -647,7 +686,9 @@ public:
 				const int sz = SZ(e);
 				rep(j, 0, sz) {
 					const int& v = e[j].fir;
+					#ifdef DEBUG
 					assert(e[j].sec > 0);
+					#endif
 					if (e[j].sec > mx) {
 						mx = e[j].sec;
 						mxv = v;
@@ -668,7 +709,9 @@ public:
 				const int sz = SZ(e);
 				rep(j, 0, sz) {
 					const int& v = e[j].fir;
+					#ifdef DEBUG
 					assert(e[j].sec > 0);
+					#endif
 					if (e[j].sec > mx) {
 						mx = e[j].sec;
 						mxv = v;
@@ -689,7 +732,6 @@ public:
 				double tmp;
 				
 				rep(j, 0, NUfos) {
-					if (!vtmp.empty()) break;
 					tmp = Hop1(u, ufos[j].idx[1]);
 					if (tmp < tolLength) {
 						vtmp.pb(ufos[j].idx[1]);
@@ -757,7 +799,10 @@ public:
 			}
 			
 			if (mn <= getUfoTolLength()) {
+				#ifdef DEBUG
 				assert(mnv>=0 && mnv<NShips);
+				#endif
+
 				rep(i, 0, sz_vIdx)
 					still[vIdx[i]] >>= 1;
 					
