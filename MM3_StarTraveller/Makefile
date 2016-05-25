@@ -11,8 +11,8 @@ all: star
 star: starTraveller.cpp
 	$(CXX) $(CFLAGS) -o star starTraveller.cpp $(LIBS)
 
-base: starTraveller_v0a.cpp
-	$(CXX) $(CFLAGS) -o base starTraveller_v0a.cpp $(LIBS)
+base: starTraveller_v0.cpp
+	$(CXX) $(CFLAGS) -o base starTraveller_v0.cpp $(LIBS)
 
 
 .PHONY: clean test
