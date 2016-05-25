@@ -1,7 +1,7 @@
 /**
     \author Trasier
     \source TopCoder-MM-StarTraverller
-    \data   2016-05-24
+    \data   2016-05-25
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -71,8 +71,16 @@ struct Node_t {
     void clear() {
         path.clr();
     }
-
-    size_t size() {
+	
+	vi::reverse_iterator rbegin() {
+		return path.rbegin();
+	}
+	
+	vi::const_reverse_iterator rbegin() const {
+		return path.rbegin();
+	}
+	
+    size_t size() const {
     	return SZ(path);
     }
 
@@ -231,7 +239,8 @@ public:
     */
     void Update(const vi& vc) {
         const int sz = SZ(vc);
-
+		double cost = 0;
+		
         #ifdef DEBUG
         assert(sz == NShips);
         rep(i, 0, sz) assert (vc[i]>=0 && vc[i]<NStars);
@@ -245,9 +254,12 @@ public:
                 ust.insert(v);
                 _ust.erase(v);
             }
+			cost += Hop1(ships[i], vc[i]);
             if (!paths[i].empty())
                 paths[i].pop_back();
         }
+		// fprintf(stderr, "Move #%d: cost = %.6lf\n", NTurns, cost);
+		// fflush(stderr);
         ++NTurns;
     }
 	
@@ -322,6 +334,8 @@ public:
         \brief calculate the possibility of exists b -> v in next turn
     */
     double PnxtHop(const int a, const int b) {
+		return 1.0;
+		
         int c = 0, sz = SZ(E2_[a]);
         double ret = 1.0;
 
@@ -381,6 +395,21 @@ public:
     void costHop4(const int u, const int v, Node_t& nd) {
     	nd.clr();
     }
+	
+	bool judge(const Node_t& nd) {
+		if (NUfos == 0) return true;
+		if (SZ(_ust)>NStars*0.5 && NTurns<NStars*2) {
+			if (nd.cost < 10) return true;
+		} else {
+			if (nd.cost < 15) return true;
+		}
+		if (nd.cost > 20) return false;
+		const int sz = SZ(nd) - 1;
+		const int v = *nd.rbegin();
+		if (sz==1 && SZ(E2[v])) return true;
+		if (sz==2 && SZ(E2_[v])) return true;
+		return false;
+	}
 
     /**
         \brief  make a valid hop according current layout
@@ -460,6 +489,9 @@ public:
         rep(i, 0, sz_vc) {
             const int idx = vc[i].idx;
             if (mark[idx] == NTurns) continue;
+			if ((NStars*4-NTurns)>SZ(_ust)*2.3 && SZ(_ust)>NStars*0.2) {
+				if (!judge(vc[i])) continue;
+			}
             mark[idx] = NTurns;
 			#ifdef LOCAL_DEBUG
 			// vc[i].print();
@@ -475,25 +507,28 @@ public:
 		
 		rep(i, 0, NShips) {
 			if (mark[i]==NTurns || !paths[i].empty()) continue;
-			if (rand()%3==0 || SZ(E2[ships[i]])) {
+			if (NUfos == 0) {
 				ret[i] = ships[i];
 				continue;
 			}
-			
+			#ifdef DEBUG
+			assert(paths[i].empty());
+			#endif
 			{
 				const int u = ships[i];
 				const vpii& e = E1[u];
-				int mx = -1, mxv = -1;
+				int mx = 0, mxv = -1;
 				const int sz = SZ(e);
 				rep(j, 0, sz) {
 					const int& v = e[j].fir;
-					if (!visit[v]) {
-						mxv = v;
-						break;
-					}
+					assert(e[j].sec > 0);
+					// if (!visit[v]) {
+						// mxv = v;
+						// break;
+					// }
 					if (e[j].sec > mx) {
 						mx = e[j].sec;
-						mxv = e[j].fir;
+						mxv = v;
 					}
 				}
 				if (mxv != -1) {
@@ -502,21 +537,24 @@ public:
 					continue;
 				}
 			}
-			
+			#ifdef DEBUG
+			assert(paths[i].empty());
+			#endif
 			{
 				const int u = ships[i];
 				const vpii& e = E2[u];
-				int mx = -1, mxv = -1;
+				int mx = 0, mxv = -1;
 				const int sz = SZ(e);
 				rep(j, 0, sz) {
 					const int& v = e[j].fir;
-					if (!visit[v]) {
-						mxv = v;
-						break;
-					}
+					assert(e[j].sec > 0);
+					// if (!visit[v]) {
+						// mxv = v;
+						// break;
+					// }
 					if (e[j].sec > mx) {
 						mx = e[j].sec;
-						mxv = e[j].fir;
+						mxv = v;
 					}
 				}
 				if (mxv != -1) {
@@ -526,22 +564,25 @@ public:
 					continue;
 				}
 			}
-			
+			#ifdef DEBUG
+			assert(paths[i].empty());
+			#endif
 			{
+				const int u = ships[i];
 				vi vtmp;
 				double tmp;
 				
 				rep(j, 0, NUfos) {
 					if (!vtmp.empty()) break;
-					tmp = Hop1(ships[i], ufos[j].idx[1]);
+					tmp = Hop1(u, ufos[j].idx[1]);
 					if (tmp < tolLength) {
 						vtmp.pb(ufos[j].idx[1]);
 						break;
 					}
 					
-					tmp = Hop2(ships[i], ships[i], ufos[j].idx[2]);
+					tmp = Hop2(u, u, ufos[j].idx[2]);
 					if (tmp < tolLength) {
-						vtmp.pb(ships[i]);
+						vtmp.pb(u);
 						vtmp.pb(ufos[j].idx[2]);
 						break;
 					}
