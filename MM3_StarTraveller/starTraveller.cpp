@@ -1,7 +1,7 @@
 /**
     \author Trasier
     \source TopCoder-MM-StarTraverller
-    \data   2016-05-20
+    \data   2016-05-25
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -23,24 +23,24 @@ using namespace std;
 #define SZ(x)           ((int)(x).size())
 
 // #define DEBUG
-#define LOCAL_DEBUG
+// #define LOCAL_DEBUG
 
 FILE *logout;
 
 struct Star_t {
-    int x, y;
-
+    double x, y;
+	
 	bool operator< (const Star_t& o) const {
 		if (x != o.x) return x < o.x;
 		return y < o.y;
 	}
-
+	
 	bool operator== (const Star_t& o) const {
 		return x==o.x && y==o.y;
 	}
 
     void print(FILE *out=stdout) const {
-        fprintf(out, "x = %d, y = %d\n", x, y);
+        fprintf(out, "x = %.0lf, y = %.0lf\n", x, y);
         fflush(out);
     }
 };
@@ -61,7 +61,10 @@ struct Ufo_t {
 
 struct Node_t {
 	int idx;
+    double cost;
     vi path;
+	
+	Node_t(int idx=0):idx(idx) {}
 
     bool empty() {
         return SZ(path) == 0;
@@ -70,7 +73,15 @@ struct Node_t {
     void clear() {
         path.clr();
     }
-
+	
+	vi::reverse_iterator rbegin() {
+		return path.rbegin();
+	}
+	
+	vi::const_reverse_iterator rbegin() const {
+		return path.rbegin();
+	}
+	
     size_t size() const {
     	return SZ(path);
     }
@@ -81,7 +92,7 @@ struct Node_t {
 
     void print(FILE *out=stdout) const {
     	int sz = SZ(path);
-		fprintf(out, "%d: ", idx);
+        fprintf(out, "No. = %d, Nhops = %d: ", idx, sz-1);
         rep(i, 0, sz) {
             if (i == 0)
                 fprintf(out, "%d", path[i]);
@@ -92,96 +103,22 @@ struct Node_t {
         fflush(out);
     }
 
-    int& operator[] (const int idx) {
+    bool operator< (const Node_t& o) const {
+        return cost < o.cost;
+    }
+
+    int operator[] (const int idx) const {
         return path[idx];
     }
-
-    const int& operator[] (const int idx) const {
-    	return path[idx];
-    }
 };
 
-struct Chromosome_t {
-	double cost;
-	vector<Node_t> vnode;
-
-	Node_t& find(const int idx) {
-		int id = -1;
-
-		rep(i, 0, SZ(vnode)) {
-			if (vnode[i].idx == idx) {
-				id = i;
-				break;
-			}
-		}
-
-		#ifdef DEBUG
-		assert(id >= 0);
-		#endif
-
-		return vnode[id];
-	}
-
-	const Node_t& find(const int idx) const {
-		int id = -1;
-
-		rep(i, 0, SZ(vnode)) {
-			if (vnode[i].idx == idx) {
-				id = i;
-				break;
-			}
-		}
-
-		#ifdef DEBUG
-		assert(id >= 0);
-		#endif
-
-		return vnode[id];
-	}
-
-	void resize(const int n) {
-		vnode.resize(n);
-	}
-
-	void clear() {
-		vnode.clr();
-	}
-
-	size_t size() const {
-		return SZ(vnode);
-	}
-
-	void push_back(const Node_t& nd) {
-		vnode.pb(nd);
-	}
-
-	const Node_t& operator[] (const int idx) const {
-		return vnode[idx];
-	}
-
-	Node_t& operator[] (const int idx) {
-		return vnode[idx];
-	}
-
-	bool operator< (const Chromosome_t& o) const {
-		return cost < o.cost;
-	}
-
-	void print(FILE *out=stdout) const {
-		const int sz = SZ(vnode);
-		fprintf(out, "cost = %.6lf\n", cost);
-		rep(i, 0, sz)
-			vnode[i].print(out);
-		fflush(out);
-	}
-};
-
-const double eps = 5e-5;
+const double tolLength = 10.0;
+const int stillBound = 30;
 const double POS_INF = 1e16;
-const double NEG_INF = -POS_INF;
 const int maxn = 2005;
 const char *LOG_FILENAME = "starlog.out";
 int NStars, NShips, NUfos;
+int unvisit[maxn];
 double M[maxn][maxn], Base[25];
 bool visit[maxn];
 Star_t stars[maxn];
@@ -192,7 +129,6 @@ vpii E1[maxn], E1_[maxn];
 vpii E2[maxn], E2_[maxn];
 map<pii, int> decay1, decay2;
 set<int> ust, _ust;
-vi visited;
 
 inline void init_log() {
     logout = fopen(LOG_FILENAME, "w");
@@ -202,1046 +138,27 @@ inline void close_log() {
     fclose(logout);
 }
 
-double Length(const Star_t& sa, const Star_t& sb) {
+inline double Length(const Star_t& sa, const Star_t& sb) {
     return sqrt((sa.x-sb.x)*(sa.x-sb.x) + (sa.y-sb.y)*(sa.y-sb.y));
 }
 
-double Length(const int a, const int b) {
+inline double Length(const int a, const int b) {
     return M[a][b];
 }
-
-struct GA {
-	const int POP_SIZE;
-	const int MAX_ITERATION;
-	const int P_Crossover = 100;
-	const int P_Mutation = 5;
-	typedef vector<Chromosome_t> vChromosome;
-	vChromosome vchroms[2];
-	vi vIdx;
-	vector<double> vfitness;
-	int bst, wst, finalIdx = 0;
-	int taken[maxn], replace[maxn];
-	#ifdef DEBUG
-	double pcost;
-	#endif
-
-	#ifdef DEBUG
-	GA(int pop_size, int max_iter):POP_SIZE(pop_size), MAX_ITERATION(max_iter) {pcost=0.;}
-	#else
-	GA(int pop_size, int max_iter):POP_SIZE(pop_size), MAX_ITERATION(max_iter) {}
-	#endif
-
-	/**
-		\brief	organize the framework
-	*/
-	#ifdef DEBUG
-	void solve(double pcost=0.0) 
-	#else
-	void solve() 
-	#endif
-	{	
-		#ifdef DEBUG
-		this->pcost = pcost;
-		#endif
-		int p = finalIdx^1, q = finalIdx;
-
-		GenInitPopulation();
-		EvaluatePopulation(p);
-		rep(i, 0, MAX_ITERATION) {
-			GenNextPopulation(q);
-			EvaluatePopulation(q);
-			#ifdef DEBUG
-			if (i == MAX_ITERATION-1)
-				PrintExtreme(q);
-			#endif
-			PerformEvolution(q);
-			// PrintReport(q);
-			p ^= 0;
-			q ^= 1;
-		}
-
-		finalIdx = p;
-		dumpToPath();
-		#ifdef DEBUG
-		PrintBest();
-		// updatePcost();
-		#endif
-	}
-
-	/**
-		\brief	dump the final population to path
-	*/
-	void dumpToPath() {
-		const vChromosome& vchro = vchroms[finalIdx];
-		const Chromosome_t& chr = vchro[bst];
-		const int sz = SZ(chr);
-
-		rep(i, 0, sz) {
-			const Node_t& nd = chr[i];
-			const int shipIdx = nd.idx;
-			findBstPath(nd, paths[shipIdx]);
-		}
-	}
-
-	/**
-		\brief	find the best path of current ship
-		\note	best path means using least cost with least turns
-	*/
-	void findBstPath(const Node_t& src, vi& des) {
-		/**
-			if $vIdx \in src \gt 2$, we only append it to des,
-			which means only top-2 vnode may encounter with `UFO`.
-			Of course, we reverse-insert the vIdx
-		*/
-		const int sz = SZ(src);
-
-		des.clr();
-		per(i, 3, sz) des.pb(src[i]);
-
-		if (sz >= 3) {
-			findBstPath(src[0], src[1], src[2], des);
-		} else if (sz == 2) {
-			findBstPath(src[0], src[1], des);
-		} else {
-			/* sz <= 1, stay */
-			des.pb(ships[src.idx]);
-		}
-	}
-
-	/**
-		\brief find the best path of prefix hop3
-	*/
-	void findBstPath(const int u, const int a, const int v, vi& des) {
-		double mn = POS_INF, tmp;
-		int x;
-		vi vtmp;
-
-		/**
-			\case 1: `u ~> a ~> v`
-		*/
-		tmp = Hop(u, a, v);
-		if (tmp < mn) {
-			mn = tmp;
-			vtmp.clr();
-			vtmp.pb(u);
-			vtmp.pb(a);
-			vtmp.pb(v);
-		}
-
-		/**
-			\case 2: `u ~> x ~> a -> v`
-		*/
-		tmp = minCost1(u, a, x) + Length(a, v);
-		if (tmp < mn) {
-			mn = tmp;
-			vtmp.clr();
-			vtmp.pb(u);
-			vtmp.pb(x);
-			vtmp.pb(a);
-			vtmp.pb(v);
-		}
-
-		/**
-			\case 3: `u ~> a ~> x -> v`
-		*/
-		tmp = Hop1(u, a) + minCost2(a, v, x);
-		if (tmp < mn) {
-			mn = tmp;
-			vtmp.clr();
-			vtmp.pb(u);
-			vtmp.pb(a);
-			vtmp.pb(x);
-			vtmp.pb(v);
-		}
-
-		const int sz = SZ(vtmp);
-		per(i, 0, sz) des.pb(vtmp[i]);
-	}
-
-	/**
-		\brief	find the best path of prefix hop2
-	*/
-	void findBstPath(const int u, const int v, vi& des) {
-		double mn = POS_INF, tmp;
-		int x, y;
-		vi vtmp;
-
-		/**
-			\case 1: `u ~> v`
-		*/
-		tmp = Hop1(u, v);
-		if (tmp < mn) {
-			mn = tmp;
-			vtmp.clr();
-			vtmp.pb(u);
-			vtmp.pb(v);
-		}
-
-		/**
-			\case 2: `u ~> x ~> v`
-		*/
-		tmp = minCost1(u, v, x);
-		if (tmp < mn) {
-			mn = tmp;
-			vtmp.clr();
-			vtmp.pb(u);
-			vtmp.pb(x);
-			vtmp.pb(v);
-		}
-
-		/**
-			\case 3: `u ~> x ~> y -> v`
-		*/
-		tmp = minCost3(u, v, x, y);
-		if (tmp < mn) {
-			mn = tmp;
-			vtmp.clr();
-			vtmp.pb(u);
-			vtmp.pb(x);
-			vtmp.pb(y);
-			vtmp.pb(v);
-		}
-
-		const int sz = SZ(vtmp);
-		per(i, 0, sz) des.pb(vtmp[i]);
-	}
-
-	/**
-		\brief	generate the initial population
-	*/
-	void GenInitPopulation() {
-		const int p = finalIdx, q = p ^ 1;
-		vChromosome& vlast = vchroms[p];
-		vChromosome& vchrom = vchroms[q];
-		bool mark[15];
-		vi shipHead[15];
-
-		/**
-			\step 1: collect all unvisit node
-		*/
-		vi unvisit;
-		for (sti::iterator iter=_ust.begin(); iter!=_ust.end(); ++iter) {
-			unvisit.pb(*iter);
-		}
-
-		/**
-			\step 2: initial the priori head of path
-		*/
-		rep(j, 0, NShips) {
-			const int u = ships[j];
-			vi& vhead = shipHead[j];
-
-			int sz;
-			sz = SZ(E1[u]);
-			rep(i, 0, sz) {
-				const int& v = E1[u][i].fir;
-				if (!visit[v])
-					vhead.pb(v);
-			}
-			sz = SZ(E2[u]);
-			rep(i, 0, sz) {
-				const int& v = E2[u][i].fir;
-				if (!visit[v])
-					vhead.pb(v);
-			}
-			if (!visit[u])
-				vhead.pb(u);
-
-			#ifdef DEBUG
-			sz = SZ(shipHead[j]);
-			rep(i, 0, sz)
-				assert(shipHead[j][i]>=0 && shipHead[j][i]<NStars && !visit[shipHead[j][i]]);
-			#endif
-		}
-
-		memset(taken, -1, sizeof(taken));
-		const int n_unvisit = SZ(unvisit);
-		
-		/**
-			\step 5: use last iteration best solution, use 1/3
-		*/
-		vchrom.clr();
-		const int sz_last = SZ(vlast);
-		if (sz_last) {
-			vlast[0] = vlast[bst];
-			const int n_use = (sz_last+2)/3;
-			rep(i, 0, n_use) {
-				const Chromosome_t& vchr = vlast[i];
-				const int sz_chr = SZ(vchr);
-				Chromosome_t chr;
-				
-				chr.resize(NShips);
-				rep(j, 0, sz_chr) {
-					const Node_t& src = vchr[j];
-					Node_t& des = chr[j];
-					
-					des.idx = src.idx;
-					// first put into `u`, then put the unvisit path
-					des.pb(ships[des.idx]);
-					rep(k, 1, SZ(src)) {
-						if (visit[src[k]]) continue;
-						des.pb(src[k]);
-					}
-				}
-				
-				vchrom.pb(chr);
-			}
-		}
-
-		/**
-			\step 4: initial POP_SIZE population
-		*/
-		const int bound = POP_SIZE - (sz_last+2)/3;
-		rep(ii, 0, bound) {
-			Chromosome_t chr;
-
-			chr.resize(NShips);
-			memset(mark, false, sizeof(mark));
-			int n_taken = n_unvisit;
-			per(nship, 1, NShips+1) {
-				int skip = rand() % nship;
-				int cnt = (n_taken==0||nship==1) ? n_taken : rand()%(n_taken+1);
-				int idx = -1;
-				n_taken -= cnt;
-
-				rep(i, 0, NShips) {
-					if (mark[i]) continue;
-					if (skip-- == 0) {
-						idx = i;
-						break;
-					}
-				}
-
-				#ifdef DEBUG
-				assert(idx>=0 && idx<NShips);
-				#endif
-				mark[idx] = true;
-
-				// add path meet UFO first
-				Node_t& nd = chr[idx];
-				nd.idx = idx;
-				nd.pb(ships[idx]);
-				if (cnt == 0) continue;
-
-				/**
-					1/3 rate using the priority head node
-				*/
-				if (SZ(shipHead[idx]) && rand()%3==0) {
-					rep(j, 0, 3) {
-						int nxt = shipHead[idx][rand() % SZ(shipHead[idx])];
-						if (taken[nxt] != ii) {
-							taken[nxt] = ii;
-							nd.pb(nxt);
-							--cnt;
-							break;
-						}
-					}
-				}
-
-				// add all not taken node randomly
-				int pump = cnt/2;
-				while (cnt) {
-					int idx = rand() % n_unvisit;
-					if (taken[unvisit[idx]] == ii) {
-						if (pump-- == 0)
-							break;
-						continue;
-					}
-					taken[unvisit[idx]] = ii;
-					nd.pb(unvisit[idx]);
-					--cnt;
-				}
-
-				// add not taken node from beginning
-				if (cnt) {
-					rep(j, 0, n_unvisit) {
-						if (taken[unvisit[j]] == ii) continue;
-						taken[unvisit[j]] = ii;
-						nd.pb(unvisit[j]);
-						if (--cnt == 0) break;
-					}
-				}
-
-				#ifdef DEBUG
-				assert(cnt == 0);
-				#endif
-			}
-
-			#ifdef DEBUG
-			rep(j, 0, n_unvisit)
-				assert(taken[unvisit[j]] == ii);
-			#endif
-
-			vchrom.pb(chr);
-			#ifdef DEBUG
-			// chr.print();
-			#endif
-		}
-	}
-
-	/**
-		\brief	generate next population
-	*/
-	void GenNextPopulation(const int q) {
-		SelectionOperator(q ^ 1);
-		CrossoverOperator(q);
-		MutationOperator(q);
-	}
-
-	/**
-		\brief evaluate current population
-	*/
-	void EvaluatePopulation(const int q) {
-		CalcCost(q);
-		CalcFitness(q);
-		FindExtremeIndividual();
-	}
-
-	/**
-		\brief calculate the cost of current population
-	*/
-	void CalcCost(const int id) {
-		CalcCost(vchroms[id]);
-	}
-
-	void CalcCost(vChromosome& vchrom) {
-		const int sz = SZ(vchrom);
-
-		rep(i, 0, sz) {
-			Chromosome_t& chr = vchrom[i];
-			const int sz_chr = SZ(chr);
-			#ifndef DEBUG
-			chr.cost = 0;
-			#else
-			chr.cost = pcost;
-			// chr.cost = 0;
-			#endif
-			rep(j, 0, sz_chr) {
-				chr.cost += CalcCost(chr[j]);
-			}
-		}
-	}
-
-	/**
-		\brief calculate the cost of current node
-		\return cost
-	*/
-	double CalcCost(const Node_t& nd) {
-		double ret = 0.0;
-		const int sz = SZ(nd);
-
-		if (sz >= 3) {
-			ret = CalcHop2(nd[0], nd[1], nd[2]);
-			rep(i, 3, sz) {
-				ret += Length(nd[i-1], nd[i]);
-			}
-		} else if (sz == 2) {
-			ret = CalcHop1(nd[0], nd[1]);
-		}
-		
-		return ret;
-	}
-
-	double Hop(const int u, const int a, const int v) {
-		int c1 = decay1[mp(u, a)], c2 = decay2[mp(a, v)];
-		return Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
-	}
-
-	double Hop1(const int u, const int v) {
-		int c = decay1[mp(u, v)];
-		return Length(u, v) * Base[c];
-	}
-
-	double Hop2(const int u, const int v) {
-		int c = decay2[mp(u, v)];
-		return Length(u, v) * Base[c];
-	}
-
-	/**
-		\brief	calculate minimum cost at 1-st turn from u to v
-	*/
-	double minCost1(const int u, const int v) {
-		double ret = POS_INF, tmp;
-		int a, c1, c2;
-
-		// handle outgoing edge from u
-		const vpii& e1 = E1[u];
-		const int sz1 = SZ(e1);
-
-		rep(i, 0, sz1) {
-			a = e1[i].fir;
-			c1 = e1[i].sec;
-			if (visit[a]) {
-				c2 = decay2[mp(a, v)];
-				tmp = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
-				ret = min(ret, tmp);
-			}
-		}
-
-		// handle incident edge from v
-		const vpii& e2 = E1_[v];
-		const int sz2 = SZ(e2);
-
-		rep(i, 0, sz2) {
-			a = e2[i].fir;
-			c2 = e2[i].sec;
-			if (visit[a]) {
-				c1 = decay1[mp(u, a)];
-				tmp = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
-				ret = min(ret, tmp);
-			}
-		}
-
-		return ret;
-	}
-
-	double minCost1(const int u, const int v, int& ansa) {
-		double ret = POS_INF, tmp;
-		int a, c1, c2;
-
-		// handle outgoing edge from u
-		const vpii& e1 = E1[u];
-		const int sz1 = SZ(e1);
-
-		rep(i, 0, sz1) {
-			a = e1[i].fir;
-			c1 = e1[i].sec;
-			if (visit[a]) {
-				c2 = decay2[mp(a, v)];
-				tmp = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
-				if (tmp < ret) {
-					ret = tmp;
-					ansa = a;
-				}
-			}
-		}
-
-		// handle incident edge from v
-		const vpii& e2 = E1_[v];
-		const int sz2 = SZ(e2);
-
-		rep(i, 0, sz2) {
-			a = e2[i].fir;
-			c2 = e2[i].sec;
-			if (visit[a]) {
-				c1 = decay1[mp(u, a)];
-				tmp = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
-				if (tmp < ret) {
-					ret = tmp;
-					ansa = a;
-				}
-			}
-		}
-
-		return ret;
-	}
-	/**
-		\brief	calculate minimum cost at 2-nd turn from u to v
-	*/
-	double minCost2(const int u, const int v) {
-		double ret = POS_INF, tmp;
-		int a, c;
-
-		// handle outgoing edge from u
-		const vpii& e1 = E2[u];
-		const int sz1 = SZ(e1);
-
-		rep(i, 0, sz1) {
-			a = e1[i].fir;
-			c = e1[i].sec;
-			if (visit[a]) {
-				tmp = Length(u, a) * Base[c] + Length(a, v);
-				ret = min(ret, tmp);
-			}
-		}
-
-		// handle incident edge from v
-		const vpii& e2 = E2_[v];
-		const int sz2 = SZ(e2);
-
-		rep(i, 0, sz2) {
-			a = e2[i].fir;
-			c = e2[i].sec;
-			if (visit[a]) {
-				tmp = Length(u, a) * Base[c] + Length(a, v);
-				ret = min(ret, tmp);
-			}
-		}
-
-		return ret;
-	}
-
-	double minCost2(const int u, const int v, int& ansa) {
-		double ret = POS_INF, tmp;
-		int a, c;
-
-		// handle outgoing edge from u
-		const vpii& e1 = E2[u];
-		const int sz1 = SZ(e1);
-
-		rep(i, 0, sz1) {
-			a = e1[i].fir;
-			c = e1[i].sec;
-			if (visit[a]) {
-				tmp = Length(u, a) * Base[c] + Length(a, v);
-				if (tmp < ret) {
-					ret = tmp;
-					ansa = a;
-				}
-			}
-		}
-
-		// handle incident edge from v
-		const vpii& e2 = E2_[v];
-		const int sz2 = SZ(e2);
-
-		rep(i, 0, sz2) {
-			a = e2[i].fir;
-			c = e2[i].sec;
-			if (visit[a]) {
-				tmp = Length(u, a) * Base[c] + Length(a, v);
-				if (tmp < ret) {
-					ret = tmp;
-					ansa = a;
-				}
-			}
-		}
-
-		return ret;
-	}
-
-	/**
-		\brief	calculate the minimum cost of `u ~> x ~> y -> v`
-	*/
-	double minCost3(const int u, const int v) {
-		const vpii& e1 = E1[u];
-		const int sz1 = SZ(e1);
-		double ret = POS_INF, tmp;
-		int x, y, c1, c2;
-
-		rep(i, 0, sz1) {
-			x = e1[i].fir;
-			if (!visit[x]) continue;
-			c1 = e1[i].sec;
-			const vpii& e2 = E2[x];
-			const int sz2 = SZ(e2);
-			rep(j, 0, sz2) {
-				y = e2[j].fir;
-				if (!visit[y]) continue;
-				c2 = e2[j].sec;
-				tmp = Length(u, x) * Base[c1] + Length(x, y) * Base[c2] + Length(y, v);
-				ret = min(ret, tmp);
-			}
-		}
-
-		return ret;
-	}
-
-	/**
-		\brief	calculate the minimum cost of `u ~> x ~> y -> v`
-	*/
-	double minCost3(const int u, const int v, int& ansx, int& ansy) {
-		const vpii& e1 = E1[u];
-		const int sz1 = SZ(e1);
-		double ret = POS_INF, tmp;
-		int x, y, c1, c2;
-
-		rep(i, 0, sz1) {
-			x = e1[i].fir;
-			if (!visit[x]) continue;
-			c1 = e1[i].sec;
-			const vpii& e2 = E2[x];
-			const int sz2 = SZ(e2);
-			rep(j, 0, sz2) {
-				y = e2[j].fir;
-				if (!visit[y]) continue;
-				c2 = e2[j].sec;
-				tmp = Length(u, x) * Base[c1] + Length(x, y) * Base[c2] + Length(y, v);
-				if (tmp < ret) {
-					ret = tmp;
-					ansx = x;
-					ansy = y;
-				}
-			}
-		}
-
-		return ret;
-	}
-
-	/**
-		\brief	calculate the minimum cost of 2-hop using UFO
-	*/
-	double CalcHop2(const int u, const int a, const int v) {
-		double ret = POS_INF;
-
-		/**
-			\case 1: `u ~> a ~> v`
-		*/
-		ret = min(ret, Hop(u, a, v));
-
-		/**
-			\case 2: `u ~> x ~> a -> v`
-		*/
-		ret = min(ret, minCost1(u, a) + Length(a, v));
-
-		/**
-			\case 3: `u ~> a ~> x -> v`
-		*/
-		ret = min(ret, Hop1(u, a) + minCost2(a, v));
-
-		return ret;
-	}
-
-	/**
-		\brief	calculate the minimum cost of 1-hop using UFO
-	*/
-	double CalcHop1(const int u, const int v) {
-		double ret = POS_INF;
-
-		/**
-			\case 1: `u ~> v`
-		*/
-		ret = min(ret, Hop1(u, v));
-
-		/**
-			\case 2: `u ~> x ~> v`
-		*/
-		ret = min(ret, minCost1(u, v));
-
-		/**
-			\case 3: `u ~> x ~> y -> v`
-		*/
-		ret = min(ret, minCost3(u, v));
-
-		return ret;
-	}
-
-	/**
-		\brief calculate the fitness of current population
-	*/
-	void CalcFitness(const int p) {
-		CalcFitness(vchroms[p]);
-	}
-
-	void CalcFitness(const vChromosome& vchro) {
-		const int sz = SZ(vchro);
-
-		vfitness.clr();
-		double sum = 0., tmp;
-
-		rep(i, 0, sz) sum += vchro[i].cost;
-
-		rep(i, 0, sz) {
-			tmp = 1.0 - vchro[i].cost / (sum + eps);
-			vfitness.pb(tmp);
-		}
-	}
-
-	void FindExtremeIndividual() {
-		const int sz = SZ(vfitness);
-
-		bst = wst = 0;
-		rep(i, 1, sz) {
-			if (vfitness[i] < vfitness[wst]) wst = i;
-			if (vfitness[i] > vfitness[bst]) bst = i;
-		}
-	}
-
-	void PerformEvolution(const int p) {
-		PerformEvolution(vchroms[p]);
-	}
-
-	void PerformEvolution(vChromosome& vchro) {
-		vchro[wst] = vchro[bst];
-	}
-
-	/**
-		\brief	selection chromosome
-	*/
-	void SelectionOperator(const int p) {
-		SelectionOperator(vchroms[p]);
-	}
-
-	void SelectionOperator(const vChromosome& src) {
-		#ifdef DEBUG
-		assert(SZ(vfitness) == SZ(src));
-		#endif
-
-		const int sz = SZ(vfitness);
-		int cfit[POP_SIZE];
-
-		vIdx.clr();
-		cfit[0] = 0;
-		rep(i, 0, sz) cfit[i+1] = cfit[i] + vfitness[i] * 100;
-		const int mod = cfit[sz];
-
-		rep(i, 0, POP_SIZE) {
-			int x = rand() % mod;
-			int k = upper_bound(cfit, cfit+sz, x) - cfit;
-			vIdx.pb(k - 1);
-		}
-	}
-
-	/**
-		\brief	Crossover the chromosome by replace the subsequence
-	*/
-	void CrossoverOperator(const int q) {
-		CrossoverOperator(vchroms[q^1], vchroms[q]);
-	}
-
-	/**
-		\brief	self-bred crossover we cause we want path unique
-	*/
-	void Crossover(const vChromosome& src, const int id, vChromosome& des) {
-		const int idx = vIdx[id];
-		const int sid1 = rand() % NShips;
-		const int sid2 = rand() % NShips;
-		const int sza = src[idx].find(sid1).size();
-		const int szb = src[idx].find(sid2).size();
-		const int mn = min(sza, szb);
-		Chromosome_t chr;
-
-		if (mn<=1 || sid1==sid2) {
-			des.pb(src[idx]);
-			return ;
-		}
-
-		int b = rand() % (mn - 1) + 1;
-		int e = rand() % (mn - 1) + 1;
-		if (b > e) swap(b, e);
-
-		chr = src[idx];
-		Node_t& nda = chr.find(sid1);
-		Node_t& ndb = chr.find(sid2);
-		rep(j, b, e+1)
-			swap(nda[j], ndb[j]);
-		des.pb(chr);
-	}
-
-	/**
-		\brief serious error with following function.
-			No better Crossover operator
-	*/
-	void Crossover(const vChromosome& src, const int id1, const int id2, vChromosome& des) {
-		const int aidx = vIdx[id1];
-		const int bidx = vIdx[id2];
-		int sid = rand() % NShips;
-		const Node_t& nda = src[aidx].find(sid);
-		const Node_t& ndb = src[bidx].find(sid);
-		const int sza = SZ(nda);
-		const int szb = SZ(ndb);
-		const int mn = min(sza, szb);
-		Chromosome_t chr;
-
-		if (mn <= 1) {
-			des.pb(src[aidx]);
-			des.pb(src[bidx]);
-			return ;
-		}
-
-		int b = rand() % (mn - 1) + 1;
-		int e = rand() % (mn - 1) + 1;
-		if (b > e) swap(b, e);
-
-		// handle id1
-		chr = src[aidx];
-		rep(j, b, e+1) {
-			replace[ndb[j]] = nda[j];
-			taken[ndb[j]] = id1;
-		}
-		rep(i, 0, NShips) {
-			Node_t& nd = chr[i];
-			if (nd.idx == sid) {
-				rep(j, b, e+1) {
-					nd[j] = ndb[j];
-				}
-			} else {
-				const int sz = SZ(nd);
-				rep(j, 0, sz) {
-					if (taken[nd[j]] == id1)
-						taken[nd[j]] = replace[nd[j]];
-				}
-			}
-		}
-		des.pb(chr);
-		#ifdef DEBUG
-		// fprintf(stdout, "[Crossover] A: b = %d, e = %d\n", b, e);
-		// src[aidx].print();
-		// des.rbegin()->print();
-		#endif
-
-		// handle id2
-		chr = src[bidx];
-		rep(j, b, e+1) {
-			replace[nda[j]] = ndb[j];
-			taken[nda[j]] = id2;
-		}
-		rep(i, 0, NShips) {
-			Node_t& nd = chr[i];
-			if (nd.idx == sid) {
-				rep(j, b, e+1) {
-					nd[j] = nda[j];
-				}
-			} else {
-				const int sz = SZ(nd);
-				rep(j, 0, sz) {
-					if (taken[nd[j]] == id2)
-						taken[nd[j]] = replace[nd[j]];
-				}
-			}
-		}
-		des.pb(chr);
-		#ifdef DEBUG
-		// fprintf(stdout, "[Crossover] B:\n");
-		// des.rbegin()->print();
-		#endif
-	}
-
-	void CrossoverOperator(const vChromosome& src, vChromosome& des) {
-		const int sz = SZ(vIdx);
-
-		memset(taken, -1, sizeof(taken));
-		des.clr();
-		for (int i=0; i<sz; i+=2) {
-			int x = rand() % 1000;
-			if (x < P_Crossover) {
-				// Crossover(src, i, i+1, des);
-				Crossover(src, i, des);
-				Crossover(src, i+1, des);
-			} else {
-				des.pb(src[vIdx[i]]);
-				des.pb(src[vIdx[i+1]]);
-			}
-		}
-
-		#ifdef DEBUG
-		check_after_Crossover(des);
-		#endif
-	}
-
-	void check_after_Crossover(const vChromosome& des) {
-		const int sz = SZ(des);
-
-		memset(taken, -1, sizeof(taken));
-		rep(i, 0, sz) {
-			const Chromosome_t& chr = des[i];
-			#ifdef DEBUG
-			// chr.print();
-			#endif
-			assert(SZ(chr) == NShips);
-			rep(j, 0, NShips) {
-				assert(SZ(chr[j])>=0 && chr[j][0]==ships[chr[j].idx]);
-				rep(k, 1, SZ(chr[j])) {
-					assert(taken[chr[j][k]] != i);
-					taken[chr[j][k]] = i;
-				}
-			}
-
-			rep(j, 0, NStars) {
-				assert(visit[j] || taken[j]==i);
-			}
-		}
-	}
-
-	/**
-		\brief	mutation the chromosome by reverse some subsequence
-	*/
-	void MutationOperator(const int q) {
-		MutationOperator(vchroms[q]);
-	}
-
-	void MutationOperator(vChromosome& vchro) {
-		const int sz = SZ(vchro);
-
-		rep(i, 0, sz) {
-			int x = rand() % 1000;
-			if (x > P_Mutation) continue;
-
-			int sid = rand() % NShips;
-			Chromosome_t& chr = vchro[i];
-			Node_t& nd = chr[sid];
-			int len = SZ(nd);
-			if (len <= 1) continue;
-
-			int b = rand() % (len-1) + 1;
-			int e = rand() % (len-1) + 1;
-			if (b > e) swap(b, e);
-			for (int j=b,k=e; j<k; ++j,--k) {
-				swap(nd[j], nd[k]);
-			}
-		}
-	}
-	
-	void PrintExtreme(const int p, FILE* out=stdout) {
-		const vChromosome& vchro = vchroms[p];
-		
-		fprintf(out, "BestIdx = %d\n", bst);
-		vchro[bst].print(out);
-		fprintf(out, "\n");
-		
-		fprintf(out, "WorstIdx = %d\n", wst);
-		vchro[wst].print(out);
-		fprintf(out, "\n");
-	}
-
-	void PrintReport(const int p, FILE* out=stdout) {
-		const vChromosome& vchro = vchroms[p];
-		const int sz = SZ(vchro);
-
-		fprintf(out, "BstIdx = %d\n", bst);
-		rep(i, 0, sz) {
-			fprintf(out, "(%d): \n", i);
-			vchro[i].print(out);
-			fprintf(out, "\n");
-		}
-		fflush(out);
-	}
-
-	void PrintBest(FILE* out=stdout) {
-		const vChromosome& vchro = vchroms[finalIdx];
-
-		fprintf(out, "BstIdx = %d\n", bst);
-		vchro[bst].print(out);
-		fprintf(out, "\n");
-		fflush(out);
-	}
-
-	#ifdef DEBUG
-	void updatePcost() {
-		double tmp = 0;
-
-		rep(i, 0, NShips) {
-			tmp += Hop1(ships[i], *paths[i].rbegin());
-		}
-
-		pcost += tmp;
-		// printf("pcost = %.6lf\n", pcost);
-	}
-	#endif
-
-	void print(FILE* out=stdout) const {
-
-	}
-};
 
 class StarTraveller {
 public:
     int NTurns;
-    int topk;
     int mark[maxn];
-	GA *ga;
-	bool more;
-	#ifdef DEBUG
-	double cost;
-	#endif
-
+	int still[15];
+	bool taken[maxn];
+    vi visited;
+	vi nxtHop;
+	vector<Node_t> vnode;
+	
     void Init() {
-    	ga = new GA(max(200,NStars/4), max(300,NStars/4));
         memset(mark, -1, sizeof(mark));
         NTurns = 0;
-		#ifdef DEBUG
-		cost = 0.0;
-		#endif
         ust.clr();
         _ust.clr();
         rep(i, 0, NStars) {
@@ -1252,6 +169,10 @@ public:
         }
         Base[0] = 1;
         rep(i, 1, 11) Base[i] = Base[i-1] * 0.001;
+		memset(visit, false, sizeof(visit));
+		memset(taken, false, sizeof(taken));
+		memset(still, 0, sizeof(still));
+		nxtHop.clr();
     }
 
     /**
@@ -1262,13 +183,11 @@ public:
         const int sz = SZ(vstar);
         NStars = sz >> 1;
 
-        memset(visit, false, sizeof(visit));
-
         rep(i, 0, NStars) {
             stars[i].x = vstar[i<<1];
             stars[i].y = vstar[(i<<1)|1];
         }
-
+		
         Init();
 
         return 0;
@@ -1281,7 +200,7 @@ public:
         const int sz = SZ(vufo);
         NUfos = sz / 3;
         map<pii,int>::iterator iter;
-
+		
 		for (iter=decay1.begin(); iter!=decay1.end(); ++iter) {
             E1[iter->fir.fir].clr();
             E1_[iter->fir.sec].clr();
@@ -1300,9 +219,6 @@ public:
             ufos[i].idx[1] = vufo[j+1];
             ufos[i].idx[2] = vufo[j+2];
             ufos[i].dump(decay1, decay2);
-			#ifdef DEBUG
-			printf("[UFO-%d] %d->%d->%d\n", i+1, vufo[j], vufo[j+1], vufo[j+2]);
-			#endif
         }
 
         for (iter=decay1.begin(); iter!=decay1.end(); ++iter) {
@@ -1325,32 +241,26 @@ public:
 
         rep(i, 0, sz) ships[i] = vship[i];
     }
-	
-	/**
-        \brief calculate the cost of hop 1
-    */
-    double Hop1(const int u, const int v) {
-        int dec = decay1[mp(u, v)];
-        return Length(u, v) * Base[dec];
-    }
 
     /**
         \brief  update the visit set according current turn
     */
-    void Update(const vi& vc) {
+    void Update() {
+		const vi& vc = nxtHop;
         const int sz = SZ(vc);
-
+		#ifdef DEBUG
+		double cost = 0;
+		#endif
+		
         #ifdef DEBUG
         assert(sz == NShips);
         rep(i, 0, sz) assert (vc[i]>=0 && vc[i]<NStars);
         #endif
-		more = false;
 
         rep(i, 0, sz) {
             const int& v = vc[i];
             if (!visit[v]) {
                 visit[v] = true;
-				more = true;
                 visited.pb(v);
                 ust.insert(v);
                 _ust.erase(v);
@@ -1361,44 +271,506 @@ public:
             if (!paths[i].empty())
                 paths[i].pop_back();
         }
+		// fprintf(stderr, "Move #%d: cost = %.6lf\n", NTurns, cost);
+		// fflush(stderr);
+		// if (NTurns%100 == 0) {
+			// fprintf(stderr, "time = %ldms.\n", clock());
+			// fflush(stderr);
+		// }
         ++NTurns;
+    }
+	
+	double Hop1(const int u, const int v) {
+		int c = decay1[mp(u, v)];
+        return Length(u, v) * Base[c];
+	}
+	
+	double Hop2(const int u, const int vv, const int v) {
+		int c1 = decay1[mp(u, vv)], c2 = decay2[mp(vv, v)];
+        return Length(u, vv) * Base[c1] + Length(vv, v) * Base[c2];
+	}
+
+    /**
+        \brief calculate the cost of hop 1
+    */
+	void costHop1(const int idx, const int v) {
+		const int u = ships[idx];
+		const int c = decay1[mp(u, v)];
+		
+		Node_t nd(idx);
+		nd.pb(u);
+		nd.pb(v);
+		nd.cost = Length(u, v) * Base[c];
+		vnode.pb(nd);
+	}
+
+    /**
+        \brief calculate the cost of hop 2, there must meet UFO between medium node and end-points
+        \prob  what if `medium node` is also unvisited, then may be we should add some `bonus`.
+    */
+    void costHop2(const int idx, const int v) {
+		const int u = ships[idx];
+        const vpii& e1 = E1[u];
+        const int sz1 = SZ(e1);
+        const vpii& e2 = E2_[v];
+        const int sz2 = SZ(e2);
+        double cost = POS_INF, tmp;
+        int ansa = -1;
+        int c1, c2;
+
+        rep(i, 0, sz1) {
+            const int a = e1[i].fir;
+            if (a == v) continue;
+            c1 = e1[i].sec;
+            c2 = decay2[mp(a, v)];
+            tmp = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
+            if (tmp < cost) {
+                ansa = a;
+                cost = tmp;
+            }
+        }
+
+        rep(i, 0, sz2) {
+            const int a = e2[i].fir;
+            if (a == v) continue;
+            c2 = e2[i].sec;
+            c1 = decay1[mp(u, a)];
+            tmp = Length(u, a) * Base[c1] + Length(a, v) * Base[c2];
+            if (tmp < cost) {
+                ansa = a;
+                cost = tmp;
+            }
+        }
+		
+        if (ansa >= 0) {
+			Node_t nd(idx);
+            nd.pb(u);
+            nd.pb(ansa);
+            nd.pb(v);
+            nd.cost = cost;
+			vnode.pb(nd);
+        }
     }
 
     /**
-        \brief  make a valid hop according current layout
-        \return vector<int> present the next move of ships
+        \brief calculate the cost of hop3, there must meet UFO between medium node and end-points
+            `u -> a -> b -> v`
     */
-    vi Hop() {
-        if (NTurns == 0)
-            topk = NShips;
-        else
-            topk = 1;
+    void costHop3(const int idx, const int v) {
+		const int u = ships[idx];
+        const vpii& e1 = E1[u];
+        const int sz1 = SZ(e1);
+        double cost = POS_INF, tmp;
+        int ansa = -1, ansb = -1;
+        int c1, c2;
 
-        vi ret(NShips, 0);
+        rep(i, 0, sz1) {
+            const int a = e1[i].fir;
+            const vpii& e2 = E2[a];
+            const int sz2 = SZ(e2);
+            c1 = e1[i].sec;
+            if (a == v) continue;
+            rep(j, 0, sz2) {
+                const int b = e2[j].fir;
+                if (b == v) continue;
+                c2 = e2[j].sec;
+                tmp = Length(u, a) * Base[c1] + Length(a, b) * Base[c2] + Length(b, v);
+                if (tmp < cost) {
+                    ansa = a;
+                    ansb = b;
+                    cost = tmp;
+                }
+            }
+        }
 
-        /**
-            \step 1: using current position of ships to initialize `ret`
-        */
-		if (more) {
-		/**
-			\If we have already visit some unvisit node then, we call GA to reEvaluate.
-				\Else we wait until visit some unvisit node.
-		*/
-			#ifdef DEBUG
-			ga->solve(cost);
-			#else
-			ga->solve();
-			#endif
+        if (ansa >= 0) {
+			Node_t nd(idx);
+            nd.pb(u);
+            nd.pb(ansa);
+            nd.pb(ansb);
+            nd.pb(v);
+            nd.cost = cost;
+			vnode.pb(nd);
+        }
+    }
+	
+	/**
+		\brief	calculate the tolerance length according current turn
+	*/
+	double getTolLength() {
+		if (SZ(_ust)>NStars*0.8 && NTurns<NStars*2)
+			return tolLength;
+		if (SZ(_ust)>NStars*0.6 && NTurns<NStars*2)
+			return tolLength * 1.2;
+		return tolLength * 1.5;
+	}
+	
+	double getUfoTolLength() {
+		if (NUfos >= NShips) {
+			if (SZ(_ust)>NStars*0.8 && NTurns<NStars*2)
+				return tolLength;
+			if (SZ(_ust)>NStars*0.6 && NTurns<NStars*2)
+				return tolLength * 1.2;
+			if (NTurns < NStars*2)
+				return tolLength * 1.5;
+			else
+				return tolLength * 2;
+		} else {
+			if (SZ(_ust)>NStars*0.9 && NTurns<NStars*2)
+				return tolLength;
+			if (SZ(_ust)>NStars*0.7 && NTurns<NStars*2)
+				return tolLength * 1.2;
+			if (NTurns < NStars*2)
+				return tolLength * 1.5;
+			else
+				return tolLength * 2;
 		}
-
+	}
+	
+	bool judge(const Node_t& nd) {
+		if (NUfos == 0) return true;
+		// if (SZ(_ust)>NStars*0.5 && NTurns<NStars*2) {
+			// if (nd.cost < 10) return true;
+		// } else {
+			// if (nd.cost < 15) return true;
+		// }
+		if (nd.cost < getTolLength()) return true;
+		if (nd.cost > getTolLength()*1.5) return false;
+		const int sz = SZ(nd) - 1;
+		const int v = *nd.rbegin();
+		if (sz==1 && SZ(E2[v])) return true;
+		if (sz==2 && SZ(E2_[v])) return true;
+		return false;
+	}
+	
+	/**
+		\brief	Init next turn's position
+	*/
+	void InitNextTurn() {
+		vi& ret = nxtHop;
+		if (NTurns == 0)
+			ret.resize(NShips, 0);
+		
         rep(i, 0, NShips) {
             if (paths[i].empty())
                 ret[i] = ships[i];
             else
                 ret[i] = *paths[i].rbegin();
         }
+	}
+	
+	/**
+		\brief	Generate unvisit stars
+	*/
+	int GenUnvisitStar() {
+		int c = 0;
+		
+		rep(i, 0, NShips) {
+			rep(j, 0, SZ(paths[i]))
+				taken[paths[i][j]] = true;
+		}
+		rep(i, 0, NStars) {
+			if (!taken[i])
+				unvisit[c++] = i;
+		}
+		
+		return c;
+	}
+	
+	
+	/**
+		\brief	Generate next hop
+	*/
+	void GenNextHop(int sz) {
+		vnode.clr();
+		
+		rep(j, 0, NShips) {
+            if (!paths[j].empty())
+                continue;
+            rep(i, 0, sz) {
+                const int v = unvisit[i];
+                /**
+                    \case 1: one hop
+                */
+                costHop1(j, v);
 
-        return ret;
+                /**
+                    \case 2: two hop
+                */
+                costHop2(j, v);
+
+                /**
+                    \case 3: three hop
+                */
+                costHop3(j, v);
+            }
+        }
+	}
+	
+	/**
+		\brief	check current turn in `EesyPeriod`
+	*/
+	bool isEasyPeriod() {
+		const double step = 2.3;
+		const double weight = 0.2;
+		return (NStars*4-NTurns)>SZ(_ust)*step && SZ(_ust)>NStars*weight;
+	}
+	
+	/**
+		\brief	update the taken node
+	*/
+	void UpdateTaken() {
+		rep(i, 0, NShips) {
+			if (paths[i].empty()) {
+				taken[nxtHop[i]] = true;
+			} else {
+				const int sz = SZ(paths[i]);
+				rep(j, 0, sz) taken[paths[i][j]] = true;
+			}
+		}
+	}
+	
+	/**
+		\brief	choose next turn 
+	*/
+	void ChooseNextTurn() {	
+		int topk;
+		
+        if (NTurns == 0)
+            topk = NShips;
+        else
+            topk = 1;
+		
+		sort(all(vnode));
+		const int sz = SZ(vnode);
+		
+		rep(i, 0, sz) {
+			const int idx = vnode[i].idx;
+			if (mark[idx] == NTurns) continue;
+			if (isEasyPeriod() && !judge(vnode[i])) {
+				continue;
+			}
+			mark[idx] = NTurns;
+			#ifdef LOCAL_DEBUG
+			// vnode[i].print();
+			assert(paths[idx].empty());
+			#endif
+			per(j, 1, SZ(vnode[i])) {
+				paths[idx].pb(vnode[i][j]);
+			}
+			nxtHop[idx] = *paths[idx].rbegin();
+			if (--topk == 0)
+				break;
+		}
+		
+		// fprintf(stderr, "topk = %d: ", topk);
+		// rep(i, 0, min(5, sz)) {
+			// fprintf(stderr, " %.03lf", vnode[i].cost);
+		// }
+		// fprintf(stderr, "\n");
+		// fflush(stderr);
+	}
+	
+	/**
+		\brief	move still ship
+	*/
+	void MoveStillShip() {
+		rep(i, 0, NShips) {
+			if (mark[i]==NTurns || !paths[i].empty()) continue;
+			if (NUfos == 0) {
+				nxtHop[i] = ships[i];
+				continue;
+			}
+			#ifdef DEBUG
+			assert(paths[i].empty());
+			#endif
+			const int u = ships[i];
+			{
+				const vpii& e = E1[u];
+				int mx = 0, mxv = -1;
+				const int sz = SZ(e);
+				rep(j, 0, sz) {
+					const int& v = e[j].fir;
+					assert(e[j].sec > 0);
+					if (e[j].sec > mx) {
+						mx = e[j].sec;
+						mxv = v;
+					}
+				}
+				if (mxv != -1) {
+					paths[i].pb(mxv);
+					nxtHop[i] = *paths[i].rbegin();
+					continue;
+				}
+			}
+			#ifdef DEBUG
+			assert(paths[i].empty());
+			#endif
+			{
+				const vpii& e = E2[u];
+				int mx = 0, mxv = -1;
+				const int sz = SZ(e);
+				rep(j, 0, sz) {
+					const int& v = e[j].fir;
+					assert(e[j].sec > 0);
+					if (e[j].sec > mx) {
+						mx = e[j].sec;
+						mxv = v;
+					}
+				}
+				if (mxv != -1) {
+					paths[i].pb(mxv);
+					paths[i].pb(u);
+					nxtHop[i] = *paths[i].rbegin();
+					continue;
+				}
+			}
+			#ifdef DEBUG
+			assert(paths[i].empty());
+			#endif
+			{
+				vi vtmp;
+				double tmp;
+				
+				rep(j, 0, NUfos) {
+					if (!vtmp.empty()) break;
+					tmp = Hop1(u, ufos[j].idx[1]);
+					if (tmp < tolLength) {
+						vtmp.pb(ufos[j].idx[1]);
+						break;
+					}
+					
+					tmp = Hop2(u, u, ufos[j].idx[2]);
+					if (tmp < tolLength) {
+						vtmp.pb(u);
+						vtmp.pb(ufos[j].idx[2]);
+						break;
+					}
+				}
+				
+				if (!vtmp.empty()) {
+					per(j, 0, SZ(vtmp)) paths[i].pb(vtmp[j]);
+					nxtHop[i] = *paths[i].rbegin();
+				}
+			}
+		}
+		
+		if (NUfos == 0) return ;
+		
+		vi vIdx;
+		
+		rep(i, 0, NShips) {
+			if (!paths[i].empty()) {
+				still[i] = 0;
+				continue;
+			}
+			if (++still[i] >= stillBound) {
+				vIdx.pb(i);
+			}
+		}
+		
+		const int sz_vIdx = SZ(vIdx);
+		const double weight = NShips<5 ? 1.0 : 0.7;
+		
+		if (sz_vIdx >= NShips*weight) {
+			// we force one of the ships closet to some UFO and then move.
+			double mn = POS_INF, tmp;
+			int mnv = -1;
+			vi vtmp;
+			
+			rep(i, 0, sz_vIdx) {
+				const int u = ships[vIdx[i]];
+				rep(j, 0, NUfos) {
+					tmp = Hop1(u, ufos[j].idx[1]);
+					if (tmp < mn) {
+						mn = tmp;
+						mnv = vIdx[i];
+						vtmp.clr();
+						vtmp.pb(ufos[j].idx[1]);
+					}
+					
+					tmp = Hop2(u, u, ufos[j].idx[2]);
+					if (tmp < mn) {
+						mn = tmp;
+						mnv = vIdx[i];
+						vtmp.clr();
+						vtmp.pb(u);
+						vtmp.pb(ufos[j].idx[2]);
+					}
+				}
+			}
+			
+			if (mn <= getUfoTolLength()) {
+				assert(mnv>=0 && mnv<NShips);
+				rep(i, 0, sz_vIdx)
+					still[vIdx[i]] >>= 1;
+					
+				still[mnv] = 0;
+				per(i, 0, SZ(vtmp)) paths[mnv].pb(vtmp[i]);
+				nxtHop[mnv] = *paths[mnv].rbegin();
+			}
+		}
+	}
+	
+	/**
+		\brief print path
+	*/
+	void printPath() {
+		rep(i, 0, NShips) {
+			printf("%d", ships[i]);
+			if (paths[i].empty()) {
+				printf("->%d", nxtHop[i]);
+			} else {
+				per(j, 0, SZ(paths[i]))
+					printf("->%d", paths[i][j]);
+			}
+			putchar('\n');
+		}
+	}
+	
+    /**
+        \brief  make a valid hop according current layout
+        \return vector<int> present the next move of ships
+    */
+    void Hop() {
+        /**
+            \step 1: using current position of ships to initialize `ret`
+        */
+		InitNextTurn();
+		
+		
+		/**
+			\step 2: Generate candidate star
+		*/
+		int sz_unvisit = GenUnvisitStar();
+		
+		
+		/**
+			\step 3: Generate next hop path
+		*/
+		GenNextHop(sz_unvisit);
+		
+        /**
+			\step 4: Choose next turn
+		*/
+		ChooseNextTurn();
+
+        /**
+			\step 5: Move still ship along with UFO
+		*/
+		MoveStillShip();
+		
+		/**
+			\step 6: update taken node
+		*/
+		UpdateTaken();
+		
+		/**
+			\step 7: print path
+		*/
+		#ifdef DEBUG
+		printPath();
+		#endif
     }
 
     /**
@@ -1408,10 +780,10 @@ public:
     vector<int> makeMoves(vector<int> ufos, vector<int> ships) {
         init_ufos(ufos);
         init_ships(ships);
-        vi ret = Hop();
-        Update(ret);
+        Hop();
+        Update();
 
-        return ret;
+        return nxtHop;
     }
 };
 // -------8<------- end of solution submitted to the website -------8<-------
@@ -1451,14 +823,14 @@ public:
 		srand(seed);
 
 		if (seed == 1) {
-			NStar = 20;
-			NShip = 1;
-			NUfo = 4;
+			NStar = 145;
+			NShip = 5;
+			NUfo = 0;
 			NG = 3;
 		} else {
 			NStar = 100 + rand()%1901;
 			NShip = 1 + rand()%10;
-			NUfo = rand()%(NStar/100);
+			NUfo = max(4, rand()%(NStar/100));
 			NG = 1 + rand()%16;
 		}
 
@@ -1585,8 +957,9 @@ public:
 				}
 			}
 
-			printf("Move #%d: visit %d more stars, energy = %.06lf.\n", turns, delta, energy);
-
+			printf("Move #%d: visit %d more stars, energy = %.6lf.\n", turns, delta, energy);
+			fflush(stdout);
+			
 			// move UFO
 			for (int i=0; i<NUfo*3; i+=3) {
 				ufoParm[i] = ufoParm[i+1];
@@ -1630,18 +1003,17 @@ int main(int argc, char **argv) {
 	#ifdef LOCAL_DEBUG
 		freopen("data.in", "r", stdin);
 		freopen("data.out", "w", stdout);
-		// freopen("data.out", "w", stdout);
 		int seed = 1;
 		if (argc > 1)
 			sscanf(argv[1], "%d", &seed);
 		#ifdef DEBUG
-		debug(seed);
+		// debug(seed);
+		debugAll();
 		#else
 		debugAll();
 		#endif
 
 		printf("time = %ldms.\n", clock());
-	
 		return 0;
 	#endif
 
@@ -1682,7 +1054,7 @@ int main(int argc, char **argv) {
         close_log();
     #endif
 
-	#ifdef LOCAL_DEBUG
+	#ifdef DEBUG
 		printf("time = %ldms.\n", clock());
 	#endif
 
