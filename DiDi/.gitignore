@@ -1,0 +1,12 @@
+*~
+*.exe
+*.pdf
+*.png
+*.htm
+*.log
+*.in
+*.out
+*.o
+*.gcno
+*.py[co]
+
