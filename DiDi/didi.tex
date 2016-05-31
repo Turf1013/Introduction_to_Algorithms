@@ -31,7 +31,7 @@
     bookmarksopen=false,
     % pdfpagemode=FullScreen,
     pdfstartview=fit,
-    pdftitle={DNA-Align},
+    pdftitle={DiDi},
     pdfauthor={Trasier}
 }
 
@@ -241,7 +241,7 @@
 	
 	POI信息表主要表征区域的地域属性，由其中所含的不同类别设施的数量表示，
 如2\#1:22表示在此区域中含有类别为2\#1的设施22个，2\#1表示一级类别为2，二级类别为1，例如
-休闲娱乐\#剧院，购物\#家电数码，运动健身\#其他等等。不同类别及其数量以\\t分割。
+休闲娱乐\#剧院，购物\#家电数码，运动健身\#其他等等。不同类别及其数量以$\verb|\|$t分割。
 	
 	\begin{table}[H]
     \centering
@@ -278,15 +278,112 @@
 	天气信息表主要表示整个城市的每天间隔10分钟段的天气情况。其中的weather字段表示天气的实时描述信息，
 而温度以摄氏温度表示，PM2.5为实时空气污染指数。
 
+	
+\subsection{数据集}	
+\label{sec:data_set}
+
+\subsubsection{order\_data}
+
+	\Emph{order}表是整个数据的核心，其中存在如下问题和思考：
+	\begin{enumerate}[(1)]
+		
+		\item 数据中的问题是同一个乘客连续发单，但是均未得到响应，那么gap应该算是1还是N？
+		
+		
+		\item 区域的趋势
+		
+		区域中每个时间片的需求情况，区域中周末和工作日的需求情况；	\\
+		区域中每个时间片的供求情况，区域中周日和工作日的供求情况。
+		
+		\item 乘客的趋势
+		
+		乘客每天的需求情况：哪个区域、哪个时间段需要打的
+		
+		\item 司机的趋势
+		
+		司机的等活策略：哪个区域、哪个时间段等活
+		
+	\end{enumerate}
+	
+\subsubsection{cluster\_map}
+
+	区域哈希值到Id值得映射。
+
+\subsubsection{poi\_data}
+
+	Naive算法不使用任何地理数据。
+	\Emph{POI}数据中的entry特别多，需要处理（仅仅使用大类等方式）。按照一般性认识，基础设施不同的区域供求量应该是不同的。有待验证。
+
+\subsubsection{traffic\_data}
+
+	拥堵信息仅仅包含4中不同拥堵程度，可能与供求有关。
+
+\subsubsection{weather\_data}
+
+	Naive算法不使用任何天气数据。
+	\begin{enumerate}[(1)]
+		
+		\item 天气差可能会导致订单的增加
+		
+		\item 节假日会导致订单的增加
+		
+	\end{enumerate}
+	
 
 \section{现有算法}
 \label{sec:current_algo}
 
 
 
-\section{基本思路}
+\section{我的算法}
 \label{sec:basic_thought}
+
+\subsection{v0}
+
+	Naive算法仅从订单信息表、区域定义表的数据出发，去推导供需关系。
+	即Naive算法从区域的角度思考问题，我们假定每个区域每个时间周期的趋势应当是相似的。即存在一条曲线可以拟合这个趋势，
+	那么对于给定的测试集，带入到曲线中求解，即为所求。
 	
+\subsubsection{基本思路}
+
+	\begin{thm}
+	\label{thm:v0_district_trend}
+	每个区域每周的需求量趋势应当相似，每个区域对应每天的需求量趋势应当相似。
+	\end{thm}
+	
+	定理~\ref{mthm:v0_district_trend}主要描述的从每个区域每天的供求量应当是类似的，更细粒度的说。每个区域每个工作日的变化
+	趋势是类似的，周末的变化趋势是类似的。主定理是否正确可以由数据导出图证明。
+	可能影响主定理正确性的原因：
+	\begin{enumerate}[(1)]
+	
+		\item 天气的影响
+		
+	\end{enumerate}
+
+	\begin{prop}
+	\label{prop:v0_time_slice_trend}
+	每个区域每个时间片的需求量趋势是否相似？
+	\end{prop}
+	
+	命题~\ref{prop:v0_time_slice_trend}的主要依据是显然上班和下班时间打的的人群应当是有规律的。那么，其他时间片的供求量是否
+	也呈一定的规律？
+	
+	\begin{mthm}
+	\label{mthm:v0_basis}
+	Naive算法的主要依据是每个区域的供求关系具有一定规律。
+	\end{mthm}
+	
+\subsubsection{我的疑问}
+
+	\begin{enumerate}[(1)]
+		
+		\item 数据中显然存在$r_{ij} >= a_{ij}$的情况，那么是否存在$r_{ij} < a_{ij}$的情况？
+		
+		即多个司机响应了同一张订单。
+		
+		\item 假定同一个乘客连续发送请求均得不到相应，那么这样一个gap只计算一次还是多次？
+		
+	\end{enumerate}
 	
 	
 \end{document}
