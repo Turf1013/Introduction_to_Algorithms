@@ -351,7 +351,7 @@
 	每个区域每周的需求量趋势应当相似，每个区域对应每天的需求量趋势应当相似。
 	\end{thm}
 	
-	定理~\ref{mthm:v0_district_trend}主要描述的从每个区域每天的供求量应当是类似的，更细粒度的说。每个区域每个工作日的变化
+	定理~\ref{thm:v0_district_trend}主要描述的从每个区域每天的供求量应当是类似的，更细粒度的说。每个区域每个工作日的变化
 	趋势是类似的，周末的变化趋势是类似的。主定理是否正确可以由数据导出图证明。
 	可能影响主定理正确性的原因：
 	\begin{enumerate}[(1)]
@@ -370,8 +370,22 @@
 	
 	\begin{mthm}
 	\label{mthm:v0_basis}
-	Naive算法的主要依据是每个区域的供求关系具有一定规律。
+	Naive算法的主要依据是每个区域的供求关系具有一定规律。即每个slice的供给趋势与需求趋势类似。
 	\end{mthm}
+	
+	由~\ref{mthm:v0_basis}可知假定我们已经获得了供给和需求其中之一的数学模型，那么我们一定可以得到另外一个的数学模型。
+	而二者之差恰恰为\Emph{gap}所以问题转化为对于给定的区域。而每周内的需求曲线是类似的。
+	因此，我们可以分别对于每个区域计算属于该区域的模型。
+	
+	即对于所有区域选择如下feature计算回归模型：
+	\begin{itemize}
+		\item slice\_id
+		\item day\_id
+		\item request
+		\item answer
+	\end{itemize}
+	
+	先预估测试集的request数量，再带入answer模型求出测试集的answer数量，两者相减计算出gap。
 	
 \subsubsection{我的疑问}
 
