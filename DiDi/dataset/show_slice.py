@@ -31,6 +31,8 @@ def getRA(filename, sliceList):
 			continue
 		if not reqDict.has_key(districtId):
 			reqDict[districtId] = [0] * nslice
+		if not ansDict.has_key(districtId):
+			ansDict[districtId] = [0] * nslice
 		idx = sliceDict[sliceId]
 		if L[1]=="NULL":
 			reqDict[districtId][idx] += 1
@@ -48,33 +50,39 @@ def getAllRA(datapath, sliceList):
 	reqDict = defaultdict(list)
 	ansDict = defaultdict(list)
 	nameList.sort(cmp = lambda x, y: int(x.split('-')[-1]) - int(y.split('-')[-1]) )
-	for i in xrange(1, n+1):
-		reqDict[i] = [0] * nslice
-		ansDict[i] = [0] * nslice
+	# for i in xrange(1, n+1):
+		# reqDict[i] = [0] * nslice
+		# ansDict[i] = [0] * nslice
 	for name in nameList:
 		reqTmpDict, ansTmpDict = getRA(os.path.join(orderPath, name), sliceList)
 		dateId = int(name.split('-')[-1])
 		print name
 		for districtId in range(1, n+1):
 			if districtId in reqTmpDict:
-				for j in xrange(nslice):
-					reqDict[districtId][j] += reqTmpDict[districtId][j]
+				reqDict[districtId].append( reqTmpDict[districtId] )
+			else:
+				reqDict[districtId].append( [0] * nslice )
 			if districtId in ansTmpDict:
-				for j in xrange(nslice):
-					ansDict[districtId][j] += ansTmpDict[districtId][j]
+				ansDict[districtId].append( ansTmpDict[districtId] )
+			else:
+				ansDict[districtId].append( [0] * nslice )
 	return reqDict, ansDict
 	
 	
 def	genGapDict(reqDict, ansDict):
+	nslice = len(reqDict['1'][0])
 	gapDict = defaultdict(list)
 	for districtId in reqDict.iterkeys():
 		rList = reqDict[districtId]
 		aList = ansDict[districtId]
 		assert len(rList) == len(aList)
-		gList = [0] * len(rList)
-		for i in xrange(len(gList)):
-			gList[i] = rList[i] - aList[i]
-		gapDict[districtId] = gList
+		ndays = len(rList)
+		for i in xrange(ndays):
+			gList = [0] * nslice
+			assert len(rList[i])==nslice and len(aList[i])==nslice
+			for j in xrange(nslice):
+				gList[j] = rList[i][j] - aList[i][j]
+			gapDict[districtId].append( gList )
 	return gapDict
 	
 	
@@ -95,11 +103,11 @@ def getAllRA_fast():
 	return reqDict, ansDict
 	
 	
-def show_districtBySlice(datapath):
+def show_districtBySlice(datapath, desPath):
 	sliceList = [46, 58, 70, 82, 94, 106, 118, 130, 142]
-	reqDict, ansDict = getAllRA(datapath, sliceList)
-	dumpToFile(reqDict, "req")
-	dumpToFile(ansDict, "ans")
+	# reqDict, ansDict = getAllRA(datapath, sliceList)
+	# dumpToFile(reqDict, "req")
+	# dumpToFile(ansDict, "ans")
 	reqDict, ansDict = getAllRA_fast()
 	gapDict = genGapDict(reqDict, ansDict)
 	styles = [
@@ -108,6 +116,7 @@ def show_districtBySlice(datapath):
 		'y*-',
 	]
 	
+	xList = range(len(sliceList) * 7)
 	for districtId in reqDict.iterkeys():
 		reqList = reqDict[districtId]
 		ansList = ansDict[districtId]
@@ -121,7 +130,8 @@ def show_districtBySlice(datapath):
 		plt.ylabel('num')
 		for i in xrange(0, ndays, 7):
 			style = styles[i/7]
-			plt.plot(range(0, 7), reqList[i:i+7], style)
+			yList = reduce(lambda x,y:x+y, reqList[i:i+7])
+			plt.plot(xList, yList, style)
 			
 		plt.subplot(3, 1, 2)
 		plt.title('answer of %s' % (districtId))
@@ -129,7 +139,8 @@ def show_districtBySlice(datapath):
 		plt.ylabel('num')
 		for i in xrange(0, ndays, 7):
 			style = styles[i/7]
-			plt.plot(range(0, 7), ansList[i:i+7], style)
+			yList = reduce(lambda x,y:x+y, ansList[i:i+7])
+			plt.plot(xList, yList, style)
 			
 		plt.subplot(3, 1, 3)
 		plt.title('gap of %s' % (districtId))
@@ -137,15 +148,19 @@ def show_districtBySlice(datapath):
 		plt.ylabel('num')
 		for i in xrange(0, ndays, 7):
 			style = styles[i/7]
-			plt.plot(range(0, 7), gapList[i:i+7], style)
+			yList = reduce(lambda x,y:x+y, gapList[i:i+7])
+			plt.plot(xList, yList, style)
 		
 		# plt.show()
-		plt.savefig('slice_%s.png' % (districtId))
+		plt.savefig(os.path.join(desPath, 'slice_%s.png' % (districtId)), dpi=160)
 		plt.close()
 	
 	
 if __name__ == "__main__":
-	show_districtBySlice("I:/DiDi/data/train")
+	desPath = "F:\Introduction_to_Algorithms\DiDi\dataset\slice"
+	if not os.path.isdir(desPath):
+		os.mkdir(desPath)
+	show_districtBySlice("I:/DiDi/data/train", desPath)
 	
 	
 	
