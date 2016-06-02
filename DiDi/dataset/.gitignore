@@ -2,4 +2,6 @@
 *.jpg
 *.png
 *.json
-week/
+week/*
+all/*
+slice/*

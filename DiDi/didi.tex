@@ -148,7 +148,7 @@
 	对$n$个区域和$q$个时间片，区域$d_i$在时间片$t_j$的供需缺口为$gap_{ij}$，选手预测值为$s_{ij}$，
 以\id{MAPE}作为最终的评价指标：
 \[
-	\id{MAPE} = \frac{1}{n} \sum_{i=1}^{n}{\Bigg( \frac{1}{q}\sum_{j=1}^{144}\bigg| \frac{gap_{ij} - s_{ij}}{gap_{ij}} \bigg| \Bigg)}
+	\id{MAPE} = \frac{1}{n} \sum_{i=1}^{n}{\Bigg( \frac{1}{q}\sum_{j=1}^{144}\bigg| \frac{gap_{ij} - s_{ij}}{gap_{ij}} \bigg| \Bigg)},\quad \forall gap_{ij} > 0
 \]
 \id{MAPE}越小越好。
 
@@ -339,6 +339,7 @@
 \label{sec:basic_thought}
 
 \subsection{v0}
+\label{subsec:algo_v0}
 
 	Naive算法仅从订单信息表、区域定义表的数据出发，去推导供需关系。
 	即Naive算法从区域的角度思考问题，我们假定每个区域每个时间周期的趋势应当是相似的。即存在一条曲线可以拟合这个趋势，
@@ -398,6 +399,16 @@
 		\item 假定同一个乘客连续发送请求均得不到相应，那么这样一个gap只计算一次还是多次？
 		
 	\end{enumerate}
+	
+\subsection{v1}
+
+	~\ref{subsec:algo_v0}章节中算法的主要问题是如果将每个district单独做数学模型，然后考虑问题。
+	那么，数据量打少了。并且数据不均衡。同时，历史数据的趋势很类似。这也导致其实我们可以由训练集的
+	数据变化趋势估计测试集的数值。使用这种方法处理request和answer值，二者相减即可求gap值。
+	通过测试集的MAPE可以估算得分。
+	
+\subsubsection{基本思路}
+
 	
 	
 \end{document}

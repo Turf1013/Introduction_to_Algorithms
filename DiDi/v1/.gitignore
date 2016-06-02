@@ -9,5 +9,7 @@
 *.o
 *.gcno
 *.py[co]
-*.xlsx
-data/*
+*.csv
+test_feature/*
+train_feature/*
+tmp*

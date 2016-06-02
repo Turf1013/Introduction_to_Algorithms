@@ -9,7 +9,7 @@ import os
 import csv
 import logging
 
-global ndstrict, nslice, nday, Qslice, Qdata, QDict
+global ndstrict, nslice, nday, Qslice
 ndistrict = 66
 nslice = 144
 nday = 22
@@ -44,7 +44,7 @@ def getQuery(filename):
 				
 				
 def getTrainData(districtId):
-	dataPath = "./train_feature/feat_%s" % (districtId)
+	dataPath = "../v0/train_feature/feat_%s" % (districtId)
 	ret = []
 	with open(dataPath, 'rb') as fin:
 		reader = csv.reader(fin, delimiter=',')
@@ -54,7 +54,7 @@ def getTrainData(districtId):
 	
 	
 def getTestData(districtId):
-	dataPath = "./test_feature/feat_%s" % (districtId)
+	dataPath = "../v0/test_feature/feat_%s" % (districtId)
 	ret = []
 	with open(dataPath, 'rb') as fin:
 		reader = csv.reader(fin, delimiter=',')
@@ -62,6 +62,10 @@ def getTestData(districtId):
 			ret.append(data)
 	return np.array(ret, float)
 	
+	
+def calcDayId(dateId):
+	dayId = (dateId + 3) % 7
+	return 0 if dayId<5 else 1
 				
 							
 def solve(districtId = 1):
@@ -70,9 +74,10 @@ def solve(districtId = 1):
 	ansDict = defaultdict(dict)
 	for trainRow in trainData:
 		dateId, sliceId, reqNum, ansNum = trainRow
-		dayId = dateId % 7
-		# if not sliceId in Qslice:
-			# continue
+		# skip 1.1 - 1.3 
+		if dateId <= 3:
+			continue
+		dayId = calcDayId(dateId)
 		if not sliceId in reqDict[dayId]:
 			reqDict[dayId][sliceId] = []
 		if not sliceId in ansDict[dayId]:
@@ -82,25 +87,28 @@ def solve(districtId = 1):
 	
 	ret = []	
 	for dateId, slices in QDict.iteritems():
-		dayId = dateId % 7
+		dayId = calcDayId(dateId)
 		for sliceId in slices:
-			if sliceId in reqDict[dayId]:
-				reqNumList = np.array( reqDict[dayId][sliceId] ) 
-			else:
-				reqNumList = np.array([0.0])
-			if sliceId in ansDict[dayId]:
-				ansNumList = np.array( ansDict[dayId][sliceId] ) 
-			else:
-				ansNumList = np.array([0.0])
+			reqNumList = np.array( reqDict[dayId][sliceId] ) 
+			ansNumList = np.array( ansDict[dayId][sliceId] ) 
 			reqNum = reqNumList.mean()
 			ansNum = ansNumList.mean()
 			gapNum = reqNum - ansNum
-			# if districtId == 1:
-				# print reqNumList, ansNumList
-				# print reqNum, ansNum, gapNum
-			# gapNum = max(0, reqNum - ansNum)
 			ret.append([districtId, dateId, sliceId, gapNum])
 	return ret	
+	
+	
+def solveAll():
+	ans = []
+	for districtId in xrange(1, ndistrict+1):
+		ans += solve(districtId)
+	return ans
+	
+
+def saveAns(ans, filename = "gap.csv"):
+	ans = map(lambda item: "%s,2016-01-%s-%s,%s" % (item[0], item[1], item[2], item[3]), ans)
+	with open(filename, "w") as fout:
+		fout.write("\n".join(ans) + "\n")	
 	
 	
 def loadAns(filename):	
@@ -118,21 +126,8 @@ def loadAns(filename):
 			dateId, sliceId = map(int, L[1].split('-')[-2:])
 			ret.append( [districtId, dateId, sliceId, gapNum] )
 	return ret
-	
-	
-def solveAll():
-	ans = []
-	for districtId in xrange(1, ndistrict+1):
-		ans += solve(districtId)
-	return ans
-	
 
-def saveAns(ans, filename = "gap.csv"):
-	ans = map(lambda item: "%s,2016-01-%s-%s,%s" % (item[0], item[1], item[2], item[3]), ans)
-	with open(filename, "w") as fout:
-		fout.write("\n".join(ans) + "\n")
 	
-
 def calcDiff(cur, pre):
 	assert len(cur) == len(pre)
 	cur = np.array(cur)
@@ -146,8 +141,8 @@ def calcDiff(cur, pre):
 	print "score = ", score
 	plt.figure()
 	ax = plt.subplot(2, 1, 1)
-	ax.plot(X, Y1, "b-", label="cur result")
-	ax.plot(X, Y2, "r-", label="pre result")
+	ax.plot(X, Y1, "b-", label="pred result")
+	ax.plot(X, Y2, "r-", label="ground truth")
 	plt.ylabel('gap')
 	plt.xlabel('item')
 	plt.legend()
@@ -158,7 +153,6 @@ def calcDiff(cur, pre):
 	plt.xlabel('item')
 	
 	plt.show()
-	
 	
 def getLocalQuery(filename):
 	tmpDict = getQuery(filename)
@@ -183,7 +177,6 @@ def getLocalAns():
 			for sliceId in Qslices:
 				ret.append( [districtId, dateId, sliceId, gapDict[dateId][sliceId]] )
 	return ret		
-	
 	
 def getLocalAns_fast(filename):	
 	if not os.path.isfile(filename):
@@ -222,11 +215,12 @@ def local_test():
 	
 	calcDiff(ans, localAns)
 	
+
 if __name__ == "__main__":
 	getQuery("F:\Qt_prj\hdoj\data.in")
 	ans = solveAll()
 	saveAns(ans)
-	ans_ = loadAns("gap.out")
+	ans_ = loadAns("../v0/gap.csv")
 	print len(ans), len(ans_)
 	calcDiff(ans, ans_)
 	
@@ -235,3 +229,4 @@ if __name__ == "__main__":
 	# saveAns(ans, "local_gap.csv")
 	
 	# local_test()
+	
