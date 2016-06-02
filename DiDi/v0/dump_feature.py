@@ -54,17 +54,17 @@ def extractFeature(dataPath):
 	ansDict = defaultdict(dict)
 	for name in nameList:
 		filename = os.path.join(orderPath, name)
-		dayId = (int(name.split('-')[-1]) - 1) % 7
+		dateId = int(name.split('-')[-1])
 		reqTmpDict, ansTmpDict = dumpFeature(filename)
 		for districtId in range(1, ndistrict+1):
 			if districtId in reqTmpDict:
 				assert districtId in ansTmpDict
-				reqDict[districtId][dayId] = reqTmpDict[districtId]
-				ansDict[districtId][dayId] = ansTmpDict[districtId]
+				reqDict[districtId][dateId] = reqTmpDict[districtId]
+				ansDict[districtId][dateId] = ansTmpDict[districtId]
 			else:
 				assert not districtId in ansTmpDict
-				reqDict[districtId][dayId] = [0] * nslice
-				ansDict[districtId][dayId] = [0] * nslice
+				reqDict[districtId][dateId] = [0] * nslice
+				ansDict[districtId][dateId] = [0] * nslice
 	return reqDict, ansDict		
 	
 	
@@ -91,6 +91,6 @@ def dump(srcPath, desPath):
 	
 				
 if __name__ == "__main__":
-	# dump("../data/train", "./train_feature")
+	dump("../data/train", "./train_feature")
 	dump("../data/test", "./test_feature")
 	

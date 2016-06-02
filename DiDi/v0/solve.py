@@ -3,7 +3,8 @@ from collections import defaultdict
 from operator import itemgetter
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn import svm
+from sklearn.svm import SVR
+from sklearn.preprocessing import StandardScaler
 import os
 import csv
 import logging
@@ -30,7 +31,7 @@ def getTrain(districtId = 1):
 		reader = csv.reader(fin, delimiter=',')
 		for data in reader:
 			ret.append(data)
-	return np.array(ret, int)
+	return np.array(ret, float)
 	
 	
 def getTest(districtId = 1):
@@ -42,7 +43,7 @@ def getTest(districtId = 1):
 			# req not NULL then have that slice info
 			if int(data[2]):	
 				ret.append( data )
-	return np.array(ret, int)
+	return np.array(ret, float)
 	
 
 class BaseSolver(object):
@@ -63,7 +64,7 @@ class BaseSolver(object):
 class svmSolver(BaseSolver):
 	
 	def __init__(self):
-		clf = svm.SVR(kernel='rbf', C=1.0, gamma=0.5, shrinking=False)
+		clf = SVR(kernel='rbf', C=1e3, gamma=0.5, shrinking=False)
 		BaseSolver.__init__(self, clf)
 		
 		
@@ -74,13 +75,24 @@ class svmSolver(BaseSolver):
 		
 		
 	def solve(self, trainData, testData):
+		scalerX = StandardScaler()
+		scalerY = StandardScaler()
 		trainX = trainData[:,:-1]
+		for data in trainX:
+			print data
 		trainY = trainData[:,-1]
 		testX = testData[:,:-1]
 		testY = testData[:,-1]
+		trainX = scalerX.fit_transform(trainX)
+		trainY = scalerY.fit_transform(trainY)
+		print trainX
+		print trainY
+		testX = scalerX.transform(testX)
 		self.train(trainX, trainY)
 		predY = self.clf.predict(testX)
-		print trainY
+		score = self.clf.score(testX, scalerY.transform(testY))
+		print "score =", score
+		predY = predY * scalerY.std_ + scalerY.mean_
 		print predY
 		print testY
 		score = svmSolver.calcScore(testY, predY)
@@ -101,10 +113,28 @@ def solve(districtId):
 	
 	
 def solveAll():
-	for i in xrange(1, 2):
-		solve(i)
-		
-		
-if __name__ == "__main__":
-	solveAll()
+	# for i in xrange(1, 2):
+		# solve(i)
+	solve(62)
 	
+def showData(districtId):
+	trainData = getTrain(districtId)
+	trainReqData = trainData[:,:-1]
+	trainX = trainReqData[:,:-1]
+	trainY = trainReqData[:,-1]
+	X = [0] * trainY.shape[0]
+	for i,dataX in enumerate(trainX):
+		X[i] = dataX[0] * 1440 + (dataX[1]-1) * 10
+	for i,x in enumerate(X):
+		print x, trainY[i]
+	plt.figure()
+	plt.scatter(X, trainY, c='k', label='training samples')
+	plt.xlabel('time')
+	plt.ylabel('request')
+	plt.title('Show training data')
+	plt.show()
+	
+	
+if __name__ == "__main__":
+	# solveAll()
+	showData(62)
