@@ -3,16 +3,19 @@ from collections import defaultdict
 from operator import itemgetter
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import AdaBoostRegressor
 from sklearn.svm import SVR
 from sklearn.preprocessing import StandardScaler
 import os
 import csv
 import logging
 
-global ndstrict, nslice, nday, Qslice
+
+global ndstrict, nslice, nday, Qslice, QDict
 ndistrict = 66
 nslice = 144
-nday = 22
+ndays = 21
 Qslice = [46, 58, 70, 82, 94, 106, 118, 130, 142]
 Qdata = [22, 24, 26, 28, 30]
 QDict = dict()
@@ -50,7 +53,7 @@ def getTrainData(districtId):
 		reader = csv.reader(fin, delimiter=',')
 		for data in reader:
 			ret.append(data)
-	return np.array(ret, float)
+	return np.array(ret, int)
 	
 	
 def getTestData(districtId):
@@ -60,40 +63,143 @@ def getTestData(districtId):
 		reader = csv.reader(fin, delimiter=',')
 		for data in reader:
 			ret.append(data)
-	return np.array(ret, float)
+	return np.array(ret, int)
 	
 	
 def calcDayId(dateId):
 	dayId = (dateId + 3) % 7
 	return 0 if dayId<5 else 1
 				
-							
-def solve(districtId = 1):
+				
+def getTrainData_ByDistrict(districtId):
 	trainData = getTrainData(districtId)
+	reqDict = dict()
+	ansDict = dict()
+	for i in xrange(1, nslice+1):
+		reqDict[i] = [0] * ndays
+		ansDict[i] = [0] * ndays
+	for trainRow in trainData:
+		dateId, sliceId, reqNum, ansNum = trainRow
+		reqDict[sliceId][dateId-1] = reqNum
+		ansDict[sliceId][dateId-1] = ansNum
+	return reqDict, ansDict
+	
+	
+def getTestData_ByDistrict(districtId, period):
+	trainData = getTestData(districtId)
 	reqDict = defaultdict(dict)
 	ansDict = defaultdict(dict)
 	for trainRow in trainData:
 		dateId, sliceId, reqNum, ansNum = trainRow
-		# skip 1.1 - 1.3 
-		if dateId <= 3:
-			continue
-		dayId = calcDayId(dateId)
-		if not sliceId in reqDict[dayId]:
-			reqDict[dayId][sliceId] = []
-		if not sliceId in ansDict[dayId]:
-			ansDict[dayId][sliceId] = []
-		reqDict[dayId][sliceId].append(reqNum)
-		ansDict[dayId][sliceId].append(ansNum)
+		perId = (sliceId - 1) / period
+		if perId not in reqDict[dateId]:
+			reqDict[dateId][perId] = 0
+		if perId not in ansDict[dateId]:
+			ansDict[dateId][perId] = 0
+		reqDict[dateId][perId] += reqNum
+		ansDict[dateId][perId] += ansNum
+	return reqDict, ansDict
+	
+	
+def transfer(reqDict, ansDict, period):
+	reqTmpDict = dict()
+	ansTmpDict = dict()
+	for i in xrange(0, ndays):
+		dayId = calcDayId(i+1)
+		reqTmpDict[dayId] = defaultdict(list)
+		ansTmpDict[dayId] = defaultdict(list)
+	for bSlice in xrange(0, nslice, period):
+		perId = bSlice / period
+		for j in xrange(0, period):
+			sliceId = bSlice + j + 1
+			reqList = reqDict[sliceId]
+			ansList = ansDict[sliceId]
+			# skip 1.1~1.3
+			for i in xrange(3, ndays):
+				dayId = calcDayId(i+1)
+				reqTmpDict[dayId][perId].append( reqList[i] )
+				ansTmpDict[dayId][perId].append( ansList[i] )
+		
+	reqDict.clear()
+	reqDict.update(reqTmpDict)
+	ansDict.clear()
+	ansDict.update(ansTmpDict)
+	
+	
+def train(data):
+	data = np.array(data, float)
+	X = data[:,:-1]
+	Y = data[:,-1]
+	regr = AdaBoostRegressor(DecisionTreeRegressor(max_depth=6), n_estimators=300)
+	regr.fit(X, Y)
+	return regr
+	
+
+def show():
+	plt.subplot(1, 1, 1)
+	plt.scatter(X, Y, c="k", label="training samples")
+	# plt.scatter(X_, Y_, c='b', linewidth=2.5, label="n_estimators=300")
+	plt.plot(X_, Y_, c='r', linestyle="-", linewidth=2.5, label="n_estimators=300")
+	plt.xlabel("data")
+	plt.ylabel("target")
+	plt.title("Boosted Decision Tree Regression")
+	plt.legend()
+	plt.show()
+	
+			
+def trainAll(dataDict, segList):
+	retDict = dict()
+	for dayId, perDict in dataDict.iteritems():
+		retDict[dayId] = []
+		for i in xrange(1, len(segList)):
+			trainData = []
+			for perId in xrange(segList[i-1], segList[i]):
+				trainData += map(lambda c: [perId, c], perDict[perId])
+			regr = train(trainData)
+			retDict[dayId].append( regr )
+	return retDict		
+	
+	
+def getSegId(segList, perId):
+	for i in xrange(1, len(segList)):
+		if perId < segList[i]:
+			return i - 1
+	return -1
+				
+				
+def solve(districtId = 14, period = 6):
+	segList = [0, 5, 11, 16, 19, 20, 24]
+	reqTrainDict, ansTrainDict = getTrainData_ByDistrict(districtId)
+	transfer(reqTrainDict, ansTrainDict, period)
+	reqRegrDict = trainAll(reqTrainDict, segList)
+	ansRegrDict = trainAll(ansTrainDict, segList)
+	
+	reqTestDict, ansTestDict = getTestData_ByDistrict(districtId, period)
 	
 	ret = []	
 	for dateId, slices in QDict.iteritems():
 		dayId = calcDayId(dateId)
 		for sliceId in slices:
-			reqNumList = np.array( reqDict[dayId][sliceId] ) 
-			ansNumList = np.array( ansDict[dayId][sliceId] ) 
-			reqNum = reqNumList.mean()
-			ansNum = ansNumList.mean()
+			print "sliceId =", sliceId
+			perId = (sliceId - 1) / period
+			segId = getSegId(segList, perId)
+			# print "perId = %s, seg = %s" % (perId, segId)
+			# print len(reqRegrDict[dayId]), len(ansRegrDict[dayId])
+			
+			reqRegr = reqRegrDict[dayId][segId]
+			tmpNum = reqRegr.predict([[perId]])[0]
+			curNum = reqTestDict[dateId][perId]
+			reqNum = tmpNum - curNum
+			print "tmpNum = %s, curNum = %s, reqNum = %s" % (tmpNum, curNum, reqNum)
+			
+			ansRegr = ansRegrDict[dayId][segId]
+			tmpNum = ansRegr.predict([[perId]])[0]
+			curNum = ansTestDict[dateId][perId]
+			ansNum = tmpNum - curNum
+			print "tmpNum = %s, curNum = %s, ansNum = %s" % (tmpNum, curNum, ansNum)
+			
 			gapNum = reqNum - ansNum
+			
 			ret.append([districtId, dateId, sliceId, gapNum])
 	return ret	
 	
@@ -105,128 +211,8 @@ def solveAll():
 	return ans
 	
 
-def saveAns(ans, filename = "gap.csv"):
-	ans = map(lambda item: "%s,2016-01-%s-%s,%s" % (item[0], item[1], item[2], item[3]), ans)
-	with open(filename, "w") as fout:
-		fout.write("\n".join(ans) + "\n")	
-	
-	
-def loadAns(filename):	
-	if not os.path.isfile(filename):
-		raise ValueError, "%s is unvalid filename" % (filename)
-	ret = []
-	with open(filename, "r") as fin:
-		for line in fin:
-			line = line.strip()
-			if not line:
-				continue
-			L = line.split(',')
-			districtId = int(L[0])
-			gapNum = float(L[-1])
-			dateId, sliceId = map(int, L[1].split('-')[-2:])
-			ret.append( [districtId, dateId, sliceId, gapNum] )
-	return ret
-
-	
-def calcDiff(cur, pre):
-	assert len(cur) == len(pre)
-	cur = np.array(cur)
-	pre = np.array(pre)
-	n = cur.shape[0]
-	X = range(n)
-	Y2 = pre[:,-1]
-	Y1 = cur[:,-1]
-	Y3 = Y1 - Y2
-	score = sum(abs(Y3))
-	print "score = ", score
-	plt.figure()
-	ax = plt.subplot(2, 1, 1)
-	ax.plot(X, Y1, "b-", label="pred result")
-	ax.plot(X, Y2, "r-", label="ground truth")
-	plt.ylabel('gap')
-	plt.xlabel('item')
-	plt.legend()
-	
-	ax = plt.subplot(2, 1, 2)
-	ax.plot(X, Y3, "r-")
-	plt.ylabel('diff')
-	plt.xlabel('item')
-	
-	plt.show()
-	
-def getLocalQuery(filename):
-	tmpDict = getQuery(filename)
-	QDict.clear()
-	for dateId, slices in tmpDict.iteritems():
-		tmpList = reduce(lambda x,y:x+y, map(lambda x:[x-1,x-2,x-3], slices))
-		tmpList.sort()
-		QDict[dateId] = tmpList
-	
-	
-def getLocalAns():	
-	ret = []
-	slices = reduce(lambda x,y:x+y, map(lambda x:[x-1,x-2,x-3], Qslice))
-	slices.sort()
-	for districtId in xrange(1, ndistrict+1):
-		testData = getTestData(districtId)
-		gapDict = defaultdict(dict)
-		for testRow in testData:
-			dateId, sliceId, reqNum, ansNum = testRow
-			gapDict[dateId][sliceId] = reqNum - ansNum
-		for dateId, Qslices in QDict.iteritems():
-			for sliceId in Qslices:
-				ret.append( [districtId, dateId, sliceId, gapDict[dateId][sliceId]] )
-	return ret		
-	
-def getLocalAns_fast(filename):	
-	if not os.path.isfile(filename):
-		raise ValueError, "%s is unvalid filename" % (filename)
-	ret = []
-	with open(filename, "rb") as fin:
-		reader = csv.reader(fin, delimiter=',')
-		for data in reader:
-			districtId, dateLine, gapNum = data
-			dateId, sliceId = dateLine.split('-')[-2:]
-			ret.append([int(districtId), int(dateId), int(sliceId), float(gapNum)])
-	return ret
-	
-
-def local_test():
-	getLocalQuery("../query.in")
-	localAns = getLocalAns_fast("local_gap.csv")
-	ans = solveAll()
-	saveAns(ans, "gap_.csv")
-	assert len(ans) == len(localAns)
-	assert len(ans) % ndistrict == 0
-	sliceLen = len(ans) / ndistrict
-	tot = 0.0
-	for i in xrange(0, len(ans), sliceLen):
-		subAns = ans[i:i+sliceLen]
-		subAns_ = localAns[i:i+sliceLen]
-		assert len(subAns) == len(subAns_)
-		assert len(subAns) == sliceLen
-		for j in xrange(sliceLen):
-			if subAns_[j][-1] == 0:
-				continue
-			assert subAns[j][:-1] == subAns_[j][:-1]
-			tot += abs((subAns[j][-1] - subAns_[j][-1]) / subAns_[j][-1])
-	score = tot / len(ans)
-	print "score = ", score
-	
-	calcDiff(ans, localAns)
-	
 
 if __name__ == "__main__":
-	# getQuery("../query.in")
-	# ans = solveAll()
-	# saveAns(ans)
-	# ans_ = loadAns("../v0/gap.csv")
-	# print len(ans), len(ans_)
-	# calcDiff(ans, ans_)
-	
-	# getLocalQuery("../query.in")
-	# ans = getLocalAns()
-	# saveAns(ans, "local_gap.csv")
-	
-	local_test()
+	getQuery("../query.in")
+	solve()
 	
