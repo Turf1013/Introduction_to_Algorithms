@@ -192,7 +192,7 @@ def getLocalAns_fast(filename):
 	
 
 def local_test():
-	getLocalQuery("F:\Qt_prj\hdoj\data.in")
+	getLocalQuery("../query.in")
 	localAns = getLocalAns_fast("local_gap.csv")
 	ans = solveAll()
 	saveAns(ans, "gap_.csv")
@@ -217,16 +217,16 @@ def local_test():
 	
 
 if __name__ == "__main__":
-	getQuery("F:\Qt_prj\hdoj\data.in")
-	ans = solveAll()
-	saveAns(ans)
-	ans_ = loadAns("../v0/gap.csv")
-	print len(ans), len(ans_)
-	calcDiff(ans, ans_)
+	# getQuery("../query.in")
+	# ans = solveAll()
+	# saveAns(ans)
+	# ans_ = loadAns("../v0/gap.csv")
+	# print len(ans), len(ans_)
+	# calcDiff(ans, ans_)
 	
-	# getLocalQuery("F:\Qt_prj\hdoj\data.in")
+	# getLocalQuery("../query.in")
 	# ans = getLocalAns()
 	# saveAns(ans, "local_gap.csv")
 	
-	# local_test()
+	local_test()
 	
