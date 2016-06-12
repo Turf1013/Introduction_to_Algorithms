@@ -200,6 +200,7 @@ def local_test():
 	assert len(ans) % ndistrict == 0
 	sliceLen = len(ans) / ndistrict
 	tot = 0.0
+	totList = []
 	for i in xrange(0, len(ans), sliceLen):
 		subAns = ans[i:i+sliceLen]
 		subAns_ = localAns[i:i+sliceLen]
@@ -209,11 +210,16 @@ def local_test():
 			if subAns_[j][-1] == 0:
 				continue
 			assert subAns[j][:-1] == subAns_[j][:-1]
-			tot += abs((subAns[j][-1] - subAns_[j][-1]) / subAns_[j][-1])
+			tmp = abs((subAns[j][-1] - subAns_[j][-1]) / subAns_[j][-1])
+			tot += tmp
+			totList.append(tmp)
 	score = tot / len(ans)
 	print "score = ", score
 	
 	calcDiff(ans, localAns)
+	
+	with open("tot.out", "w") as fout:
+		fout.write(" ".join(map(str, totList)))
 	
 
 if __name__ == "__main__":

@@ -10,4 +10,5 @@
 *.gcno
 *.py[co]
 *.xlsx
+*.csv
 data/*
