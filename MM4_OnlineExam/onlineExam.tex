@@ -1,0 +1,257 @@
+%-*- coding:UTF-8 -*-
+% onlineExam.tex
+\documentclass[hyperref,UTF8]{ctexart}
+\usepackage{geometry}
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{dsfont}
+\usepackage{amsthm}
+\usepackage{listings} %插入代码
+\usepackage{xcolor} %代码高亮
+\usepackage{blkarray}
+\usepackage{diagbox}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{color}
+\usepackage{multirow}
+\usepackage[all,pdf]{xy}
+\usepackage{verbatim}   %comment
+\usepackage{cases}
+\usepackage{clrscode3e}	% need clrscode3e package which is not included in CTex.
+\usepackage{hyperref}
+
+\geometry{screen}
+\hypersetup{
+    colorlinks=true,
+    bookmarks=true,
+    bookmarksopen=false,
+    % pdfpagemode=FullScreen,
+    pdfstartview=fit,
+    pdftitle={Online-Exam},
+    pdfauthor={Trasier}
+}
+
+% THEOREM Environments --------------------------------------------------------
+\newtheorem{thm}{Theorem}[subsection]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{prob}[thm]{Problem}
+\newtheorem{mthm}[thm]{Main Theorem}
+\theoremstyle{definition}
+\newtheorem{defn}[thm]{Definition}
+\theoremstyle{remark}
+\newtheorem{rem}[thm]{Remark}
+\numberwithin{equation}{subsection}
+% MATH ------------------------------------------------------------------------
+\DeclareMathOperator{\RE}{Re}
+\DeclareMathOperator{\IM}{Im}
+\DeclareMathOperator{\ess}{ess}
+\newcommand{\eps}{\varepsilon}
+%\newcommand{\To}{\longrightarrow}  conflict with \package{clrscode3e}p
+\newcommand{\h}{\mathcal{H}}
+\newcommand{\s}{\mathcal{S}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\J}{\mathcal{J}}
+\newcommand{\M}{\mathcal{M}}
+\newcommand{\W}{\mathcal{W}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\BOP}{\mathbf{B}}
+\newcommand{\BH}{\mathbf{B}(\mathcal{H})}
+\newcommand{\KH}{\mathcal{K}(\mathcal{H})}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Complex}{\mathbb{C}}
+\newcommand{\Field}{\mathbb{F}}
+\newcommand{\RPlus}{\Real^{+}}
+\newcommand{\Polar}{\mathcal{P}_{\s}}
+\newcommand{\Poly}{\mathcal{P}(E)}
+\newcommand{\EssD}{\mathcal{D}}
+\newcommand{\Lom}{\mathcal{L}}
+\newcommand{\States}{\mathcal{T}}
+\newcommand{\abs}[1]{\left\vert#1\right\vert}
+\newcommand{\set}[1]{\left\{#1\right\}}
+\newcommand{\seq}[1]{\left<#1\right>}
+\newcommand{\norm}[1]{\left\Vert#1\right\Vert}
+\newcommand{\essnorm}[1]{\norm{#1}_{\ess}}
+
+
+% Some setup
+\pagestyle{plain}
+\geometry{a4paper, top=2cm, bottom=2cm, left=2cm, right=2cm}
+\CTEXsetup[format={\raggedright\bfseries\Large}]{section}
+\lstset{numbers=left, %设置行号位置
+        numberstyle=\small, %设置行号大小
+        keywordstyle=\color{blue}, %设置关键字颜色
+        commentstyle=\color{purple}, %设置注释颜色
+        %frame=single, %设置边框格式
+        escapeinside=``, %逃逸字符(1左面的键)，用于显示中文
+        breaklines, %自动折行
+        extendedchars=false, %解决代码跨页时，章节标题，页眉等汉字不显示的问题
+        %xleftmargin=2em,xrightmargin=2em, aboveskip=1em, %设置边距
+        tabsize=4, %设置tab空格数
+        showspaces=false %不显示空格
+       }
+
+% About math
+\newcommand{\rmnum}[1]{\romannumeral #1}
+\newcommand{\Emph}{\textbf}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\newcommand{\resetcounter}{\setcounter{equation}{0}}
+\newcommand{\equsuf}[1][x]{\equiv_{\textit{Suff(#1)}}}	
+\newcommand{\Suff}{\textit{Suff}}
+\newcommand{\len}[1][x]{\textit{length}_{#1}}
+
+% section deeep to 3 1.1.1
+\setcounter{secnumdepth}{3}
+
+\begin{document}
+
+\title{\Huge OnlineExam}
+\vspace{2cm}
+\author{\Large Trasier}
+\date{\today}
+\maketitle
+
+\section{Problem Statement}
+\label{sec:problem_statement}
+	
+	There is an exam consists of $n = 5000$ questions each of which has only two possible answers: \Emph{yes} and \Emph{no}.
+	You can attempt to pass the exam at most $x = 100$ times.
+	The questions, their order and right answers don't change from one attempt to another.
+	You can try to pass the exam in the following way:
+	
+	First, You fixes the answers for all questions.
+	The result is a string of \id{n} bits: answers for the first, second, ..., \id{n}-th questions.
+	In this string, \Emph{0} means that the answer is \Emph{no} and \Emph{1} is \Emph{yes}.
+	Then he answers the questions according this string, spending one attempt.
+	After that, you can fix another string of \id{n} bits and make another attempt, and so on until there are no more attempts.
+	
+	In the online system for exam, the following optimization is implemented:
+	if at some moment of time, the examinee already got $k = 2000$ answers wrong, the attempt is immediately terminated with the corresponding message.
+	Which means the remaining bits in the string are ignored.
+	If there were strictly less than \id{k} wrong answers for all \id{n}, the exam is considered passed.
+	
+	The result of an attempt is a number from \id{k} to \id{n} inclusive: the number of questions after which the attempt was terminated.
+	If the exam is passed, this number is considered to be $n + 1$.
+	The exam result is the highest result among all attempts.
+	If there were no attempts, the exam result is zero.
+	
+	You task is to write a program which will determine the bit strings.
+	After each attempt, your program will get its result immediately.
+	Try to get the highest exam result you can!
+	
+
+\section{Interaction Protocal}
+	
+	Your solution can make from $0$ to \id{x} attempts inclusive.
+	To make an attempt, print a string to the standard output.
+	The string must consist of exactly n binary digits without spaces and end with a newline character.
+	
+	To prevent output buffering, after printing a string, insert a command to flush the buffer:
+	for example, it can be \Emph{fflush(stdout)} in C or C++, \Emph{System.out.flush()} in Java, \Emph{flush(output)} in Pascal or \Emph{sys.stdout.flush()} in Python.
+	
+	After each attempt you make, you can immediately read its result from the standard input.
+	The result is an integer from \id{k} to $n+1$ inclusive, followed by a newline character.
+	
+\section{Scoring}	
+
+	A test is defined by a string of \id{n} binart digits: the right answers to \id{n} questions.
+	This string is kept secret from solution. Each test is evaluated separately.	\\
+	
+	If a solution followed the interaction protocol and terminated correctly on a test,
+	it gets a score of $\max (0, S-4000)$ where \id{S} is the exam result.
+	Otherwise, the solution gets zero score for the test.
+	
+\section{Testing}
+	
+	Your solution will be checked on sets of tests generated in advance.
+	Each test is created using a pseudo-random number generator.
+	You can consider the answers are uniformly distributed and mutually independent.
+	A solution gets the score which is the sum of its score on all the tests.	\\
+	
+	During the main phase of the contest, there are two ways to send a solution for checking.
+	\begin{itemize}
+		
+		\item The first one is the check on examples. There are $10$ example tests which are alson
+		available for local testing. As soon as the solution is checked, you can sse reports for all
+		examples by clicking on the submission result.
+		
+		\item The second way is to check on preliminary tests. There are $100$ preliminary tests which
+		are generated in advance but kept secret. The score for prelimiary tests(but not for example tests)
+		is used in the preliminary scoreboard. This scores does not affect the final results, but
+		nevertheless allows to roughly compare a solution with others.
+		
+	\end{itemize}
+	
+	After the main phase ends, for each participant, the system chooses the final solution:
+	\begin{itemize}
+		
+		\item consider all solutions sent for \Emph{preliminary testing}
+		
+		\item choose the ones which got a total score strictly greater than zero
+		
+		\item define the final solution as the one of chosen solutions which has \Emph{the latest} submission time
+		
+	\end{itemize}
+	
+	Note that the solutions sent only to be checked on examples are not considered when choosing the final solution.
+	
+	During the final testing, all final solutions will be checked on the same large set of a large
+	number ($\approx 1000$) of final tests. The score for final tests determines the final scoreboard.
+	The winner is the contestant whose solution gets the highest total score.
+	In case two or more participants have equal total score, the contestants with such score tie for the same place.
+	A package for local development is available on GitHub at the following address:
+	\href{https://github.com/GassaFM/online-exam}{https://github.com/GassaFM/online-exam}.
+	You can download sources or the latest release: \href{https://github.com/GassaFM/online-exam/releases}{https://github.com/GassaFM/online-exam/releases}.
+	
+\section{Notes}	
+
+	\begin{itemize}
+	
+		\item The time limit is \Emph{5 seconds} per test case.
+		
+		\item The memory limit is \Emph{512 MB}.
+		
+		\item There are \Emph{10} example test cases, \Emph{100} preliminary test cases and \Emph{1000} final tests.
+
+		\item The match is \Emph{unrated}.
+		
+	\end{itemize}
+
+	
+\section{Algorithm v0}
+\label{sec:algo_v0}
+
+\section{Basic Thoughts}
+
+	\begin{mthm}
+	假设$Ans_0 = S_1 \cdot S_2 \cdots S_k$，并且结果为$K_0$
+	那么$Ans_1 = \hat{S_1} \cdot S_2 \cdots S_k$，并且结果为$K_1$。
+	若$|S_1|$为奇数，那么$K_0 \neq K_1$。那么，选择最好的决策一定可以使得正确率在50\%以上。
+	\end{mthm}
+	
+	这道理是显然的，因此关键问题是如何选择合适的SLICE进行切片。并且考虑到$|Ans| = 5000$，那么估计范围一定小于$[20, 50]$。
+	通过测试可知较好的参数为41，此时的$K$的均值为$643.798$。这意味着此时的正确率可以达到
+	$1.0 - 2000 \/ (4000 +  643.798) = 0.569244$。
+
+\section{Existing Problem}
+	
+	\begin{enumerate}[(1)]
+	
+		\item 初始的切片长度是固定的，后面衰减，这导致了长度到达一定规模后。由于前面的错误答案已经很多，
+		长度很难进一步增长。
+		
+		\item 采用上述贪心算法的问题在于所有的区间一定为一个固定值，缺少噪声。这导致最终的解得性能一定不够好。
+		因为概率上是均匀分布的。
+		
+	\end{enumerate}
+	
+\section{Optimization Strategy}
+
+
+
+\end{document}
