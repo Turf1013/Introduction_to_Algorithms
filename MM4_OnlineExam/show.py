@@ -24,7 +24,7 @@ def getVid(s):
 		
 def show(vid, ncase=99):
 	if isinstance(vid, int):
-		filename = "result_v%d.res" % (vid)
+		filename = "result_v%d.out" % (vid)
 	else:
 		filename = vid
 	resList = map(int, extract(filename))
@@ -35,7 +35,7 @@ def show(vid, ncase=99):
 		
 	
 def showAll(filepath="./"):
-	nameList = filter(lambda s:s.endswith(".res"), os.listdir())
+	nameList = filter(lambda s:s.endswith(".out"), os.listdir())
 	for name in nameList:
 		filename = os.path.join(filepath, name)
 		show(name)
