@@ -1,0 +1,220 @@
+%-*- coding:UTF-8 -*-
+% TerrainCrossing.tex
+\documentclass[hyperref,UTF8]{ctexart}
+\usepackage{geometry}
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{dsfont}
+\usepackage{amsthm}
+\usepackage{listings} %插入代码
+\usepackage{xcolor} %代码高亮
+\usepackage{blkarray}
+\usepackage{diagbox}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{color}
+\usepackage{multirow}
+\usepackage[all,pdf]{xy}
+\usepackage{verbatim}   %comment
+\usepackage{cases}
+\usepackage{clrscode3e}	% need clrscode3e package which is not included in CTex.
+\usepackage{hyperref}
+
+\geometry{screen}
+\hypersetup{
+    colorlinks=true,
+    bookmarks=true,
+    bookmarksopen=false,
+    % pdfpagemode=FullScreen,
+    pdfstartview=fit,
+    pdftitle={TerrainCrossing},
+    pdfauthor={Trasier}
+}
+
+% THEOREM Environments --------------------------------------------------------
+\newtheorem{thm}{Theorem}[subsection]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{prob}[thm]{Problem}
+\newtheorem{mthm}[thm]{Main Theorem}
+\theoremstyle{definition}
+\newtheorem{defn}[thm]{Definition}
+\theoremstyle{remark}
+\newtheorem{rem}[thm]{Remark}
+\numberwithin{equation}{subsection}
+% MATH ------------------------------------------------------------------------
+\DeclareMathOperator{\RE}{Re}
+\DeclareMathOperator{\IM}{Im}
+\DeclareMathOperator{\ess}{ess}
+\newcommand{\eps}{\varepsilon}
+%\newcommand{\To}{\longrightarrow}  conflict with \package{clrscode3e}p
+\newcommand{\h}{\mathcal{H}}
+\newcommand{\s}{\mathcal{S}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\J}{\mathcal{J}}
+\newcommand{\M}{\mathcal{M}}
+\newcommand{\W}{\mathcal{W}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\BOP}{\mathbf{B}}
+\newcommand{\BH}{\mathbf{B}(\mathcal{H})}
+\newcommand{\KH}{\mathcal{K}(\mathcal{H})}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Complex}{\mathbb{C}}
+\newcommand{\Field}{\mathbb{F}}
+\newcommand{\RPlus}{\Real^{+}}
+\newcommand{\Polar}{\mathcal{P}_{\s}}
+\newcommand{\Poly}{\mathcal{P}(E)}
+\newcommand{\EssD}{\mathcal{D}}
+\newcommand{\Lom}{\mathcal{L}}
+\newcommand{\States}{\mathcal{T}}
+\newcommand{\abs}[1]{\left\vert#1\right\vert}
+\newcommand{\set}[1]{\left\{#1\right\}}
+\newcommand{\seq}[1]{\left<#1\right>}
+\newcommand{\norm}[1]{\left\Vert#1\right\Vert}
+\newcommand{\essnorm}[1]{\norm{#1}_{\ess}}
+
+
+% Some setup
+\pagestyle{plain}
+\geometry{a4paper, top=2cm, bottom=2cm, left=2cm, right=2cm}
+\CTEXsetup[format={\raggedright\bfseries\Large}]{section}
+\lstset{numbers=left, %设置行号位置
+        numberstyle=\small, %设置行号大小
+        keywordstyle=\color{blue}, %设置关键字颜色
+        commentstyle=\color{purple}, %设置注释颜色
+        %frame=single, %设置边框格式
+        escapeinside=``, %逃逸字符(1左面的键)，用于显示中文
+        breaklines, %自动折行
+        extendedchars=false, %解决代码跨页时，章节标题，页眉等汉字不显示的问题
+        %xleftmargin=2em,xrightmargin=2em, aboveskip=1em, %设置边距
+        tabsize=4, %设置tab空格数
+        showspaces=false %不显示空格
+       }
+
+% About math
+\newcommand{\rmnum}[1]{\romannumeral #1}
+\newcommand{\Emph}{\textbf}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\newcommand{\resetcounter}{\setcounter{equation}{0}}
+\newcommand{\equsuf}[1][x]{\equiv_{\textit{Suff(#1)}}}	
+\newcommand{\Suff}{\textit{Suff}}
+\newcommand{\len}[1][x]{\textit{length}_{#1}}
+
+% section deeep to 3 1.1.1
+\setcounter{secnumdepth}{3}
+
+\begin{document}
+
+\title{\Huge TerrainCrossing}
+\vspace{2cm}
+\author{\Large Trasier}
+\date{\today}
+\maketitle
+
+\section{Problem Statement}
+\label{sec:prob_statement}
+
+	You are given a square map of $S \times S$ cells. Each cell is a square area of certain terrain type, with side of length 1.
+	Terrain types are denoted with digits from 0 to 9, which describe the cost of passing through this terrain, per uni:
+	0 is the easiest to cross, and 9 is the hardest. The cost of passing through the square is calculated by multiplying the
+	\Emph{Euclidean} distance travelled with the terrain type. When you cross a border between two terrain types, you incur additional
+	cost of (ddifference of types)\^2.
+	
+	
+	There are \id{N} items located on the map, and \id{N} target locations to which these items have to be delivered.
+	Items are identical, so each item can be delivered to any location, but each location must have exactly one item delivered to it.
+	You can carry at most \id{capacity} items at once. You automatically pick up an item if you stop winth in $10^{-3}$ from it and
+	still have capacity to carry it, and you automatically drop off an item at a target location if you stop within $10^{-3}$ from it while
+	carrying at least one item and no item has been delivered to this location yet.
+	
+	
+	You task is to enter the map at any place along its border, pick up all items and deliver them to target locations, and exit the map
+	at any place along its border.
+
+\section{Implementation}	
+\label{sec:Implementation}
+
+	You code must implement one method \proc{getPath}(vector$\langle$string$\rangle$ \Emph{terrain}, vector$\langle$double$\rangle$ \Emph{locations}, int \Emph{capacity}).
+	\begin{itemize}
+	
+		\item \id{terrain} gives the map of terrain types in the area. $terrain[i][j]$ describes the type of terrain in the square with
+		coordinates $[j, j+1] \times [i, i+1]$. Character $0 \ldots 9$ 表明类型 $0 \ldots 9$.
+		
+		\item \id{locations} gives the list of items and target locations for them. For \id{N} items and \id{N} target locations,
+		\id{locations} will contain $4 \ast N$ elements. First $2 \ast N$ elements will describe positions of items: \id{i}th item is located
+		at coordinates ($locations[2*i], locations[2*i+1]$). Next $2 \ast N$ elements will describe target locations: \id{j}th target location
+		has coordinates ($locations[2*N+2*j], locations[2*N+2*j+1]$).
+		
+		\item \id{capacity} gives the maximum number of items you can carry at once.
+		
+	\end{itemize}
+	
+	The return from this method will describe a path you want to take. The path is sequence of points within the map connected by segments;
+	\id{i}-th point of the path has coordinates ($return[2*i], return[2*i+1]$). The path must statisfy the following conditions:
+	\begin{itemize}
+		
+		\item The path must have between $2$ and $4 \ast S^2 \ast N$ points, inclusive.
+		
+		\item Each point of the path must be within the map, i.e. bot coordinates must be between $0$ and $S$.
+		
+		\item The first and the last points of the path must be within $10^{-3}$ from the outer border of the map.
+		
+		\item All points of the path must be at least $10^{-3}$ away from internal borders between the cells of the map (even if cells on both
+		sides of the border are of the same terrain type).
+		
+		\item Consecutive points of the path must be at least $10^{-3}$ away from each other. (\Emph{Euclidean} distance).
+		
+		\item Each segment of the path can cross at most one boundary between cells of the map, i.e. the Manhattan distance between cells to
+		which consecutive points of the path belong can be at most 1.
+		
+		\item After the path is walked, all items must be picked up and all target locations must have an item delivered to them.
+		
+	\end{itemize}
+	
+\section{Scoring}
+\label{sec:Scoring}
+
+	For each test case we will calculate your raw and normalized scores. If you solution returned invalid path (some points outside
+	the map or too close to the borders, not all items picked up and delivered etc.), raw score will be 0. Otherwise, raw score will be
+	the total cost of the path, calculated as sum of costs of passing through terrain done on each segment of the path (for each part
+	of the path which passes through terrain of the same type its cost is the length of the part, multipiled by cost of this terrain type)
+	and additional cost of changing terrain types. The normalized score for each test is $1,000,000.0 \ast BEST / YOUR$, where \Emph{BEST}
+	is the lowest raw score currently obtained on this test case(considering only the last submission from each competitor). Finally,
+	your total score is equal to the arithmetic average of normalized scores on all test cases.
+	
+\section{Notes}	
+
+	\begin{enumerate}[(1)]
+	
+		\item The time limit is \Emph{10} seconds per test case (this includes only the time spent in your code). The memory limit is \Emph{1024} megabytes.
+		
+		\item There is no explicit code size limit. The implicit source code size is around \Emph{1MB}. Once your code is compiled,
+		the binary size should not exceed \Emph{1MB}.
+		
+		\item The compilation time limit is \Emph{30} seconds.
+		
+		\item There are \Emph{10} example test cases and \Emph{100} full submission (provisional) test cases.
+		
+	\end{enumerate}
+	
+	
+\section{Constraints}	
+	
+	\begin{enumerate}[(1)]
+	
+		\item The size of the map \id{S} will be between \Emph{10} and \Emph{50}, inclusive.
+		
+		\item The number of terrain types \id{T} will be between \Emph{2} and \Emph{10}, inclusive.
+		
+		\item The number of items \id{N} will be between \Emph{5} and $S \ast S / 10$, inclusive.
+		
+		\item The carrying \id{capacity} will be between \Emph{1} and \Emph{10}, inclusive.
+		
+	\end{enumerate}
+	
+\end{document}
