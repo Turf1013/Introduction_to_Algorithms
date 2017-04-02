@@ -1,3 +1,7 @@
+/**
+	\author: Trasier
+	\date: 2017.04.02
+*/
 #include <bits/stdc++.h>
 using namespace std;
 //#pragma comment(linker,"/STACK:102400000,1024000")

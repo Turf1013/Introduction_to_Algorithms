@@ -314,7 +314,7 @@ void addOneMatch(node_t& task, node_t& worker) {
 	++worker.flow;
 }
 
-void TGOA(int m, int n) {
+void TGOA_Filter(int m, int n) {
 	int k = (m + n) / 2;
 	vector<int> W_delta, T_delta;
 	node_t node;
@@ -333,11 +333,7 @@ void TGOA(int m, int n) {
 		}
 		
 		if (W_delta.size() + T_delta.size() < k) {
-			if (node.type == task) {
-				workerId = chosenNextWorker(workers, node);
-			} else {
-				taskId = chosenNextTask(tasks, node);
-			}
+			/* do nothing */
 			
 		} else {
 			hung.build(T_delta, W_delta, tasks, workers, node);
@@ -383,7 +379,7 @@ void solve() {
 	
 	init();
 	
-	TGOA(n, m);
+	TGOA_Filter(n, m);
 }
 
 int main() {
