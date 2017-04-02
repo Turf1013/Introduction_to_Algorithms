@@ -4,6 +4,10 @@ using namespace std;
 
 #define LOCAL_DEBUG
 
+enum rule_t {
+	worker, task
+};
+
 enum chosenStrategy_m {
 	first, random, largest
 };
@@ -18,7 +22,7 @@ union W_un {
 	
 struct node_t {
 	int id;				// id
-	int type;			// 0: task, 1: worker
+	rule_t type;			// 0: task, 1: worker
 	pair<double, double> loc;	// location
 	int	cap;			// capacity
 	int rad;			// radius	
@@ -42,7 +46,7 @@ bool hasNext(node_t& nd) {
 	if (scanf("%d", &timeId) == EOF) return false;
 	scanf("%s", stype);
 	
-	nd.type = stype[0]=='w';
+	nd.type = (stype[0]=='w') ? worker:task;
 	
 	if (stype[0] == 't') {
 		
@@ -182,7 +186,7 @@ void Extend_Greedy_RT() {
 	int taskId, workerId;
 	
 	while (hasNext(node)) {
-		if (node.type == 0) { // node is task
+		if (node.type == task) { // node is task
 			taskId = tasks.size();
 			tasks.push_back(node);
 			workerId = chosenNextWorker(workers, node, costBound);
