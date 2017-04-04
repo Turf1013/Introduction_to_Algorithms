@@ -12,12 +12,6 @@ enum rule_t {
 	worker, task
 };
 
-enum chosenStrategy_m {
-	first, random, largest
-};
-
-chosenStrategy_m chosenStrategy = first; 
-
 union W_un {
 	double cost;
 	double pay;
@@ -30,13 +24,27 @@ struct node_t {
 	pair<double, double> loc;	// location
 	int	cap;			// capacity
 	int flow;			// flow
-	int rad;			// radius	
+	double rad;			// radius	
 	W_un cost;			// cost
 	int begTime, endTime;	// time interval
+
+	void print() {
+		if (type == worker)
+		 	printf("id = %d, loc = (%.2lf, %.2lf), rad = %.2lf, cap = %d, time = (%d, %d)\n",
+		 			id, loc.first, loc.second, rad, cap, begTime, endTime);
+		else
+			printf("id = %d, loc = (%.2lf, %.2lf), time = (%d, %d)\n",
+		 			id, loc.first, loc.second, begTime, endTime);
+	}
 };
 
+vector<vector<double> > weightArr;
 inline double calcCost(const node_t& task, const node_t& worker) {
-	return task.cost.pay * worker.cost.rate;
+	#ifdef LOCAL_DEBUG
+	assert(worker.id>=0 && worker.id<weightArr.size());
+	assert(task.id>=0 && task.id<weightArr[worker.id].size());
+	#endif
+	return weightArr[worker.id][task.id];
 }
 
 inline double Length(pair<double,double> pa, pair<double,double> pb) {
@@ -118,7 +126,7 @@ struct Hungarian_t {
 		}
 		
 		if (node.type == task) {
-			const int j = vertexN - 1;
+			const int j = Tsz;
 			for (int i=0; i<Wsz; ++i) {
 				const int workerId = W_delta[i];
 				// double rad2 = workers[workerId].rad * workers[workerId].rad;
@@ -127,14 +135,30 @@ struct Hungarian_t {
 					g[i].push_back(vertex_t(j, cost));
 				}
 			}
+			#ifdef LOCAL_DEBUG
+			assert(Wsz == vertexN);
+			#endif
+			for (int i=0; i<Wsz; ++i) {
+				for (int j=Tsz+1; j<vertexN; ++j) {
+					g[i].push_back(vertex_t(j, 0.0));
+				}
+			}
 		} else {
-			const int i = vertexN - 1;
+			const int i = Wsz;
 			// double rad2 = node.rad * node.tad;
 			for (int j=0; j<Tsz; ++j) {
 				const int taskId = T_delta[j];
 				if (true/* Length2(node.loc, tasks[taskId].loc) <= rad2 */) {
 					double cost = calcCost(tasks[taskId], node);
 					g[i].push_back(vertex_t(j, cost));
+				}
+			}
+			#ifdef LOCAL_DEBUG
+			assert(Tsz == vertexN);
+			#endif
+			for (int i=Wsz+1; i<vertexN; ++i) {
+				for (int j=0; j<Tsz; ++j) {
+					g[i].push_back(vertex_t(j, 0.0));
 				}
 			}
 		}
@@ -233,27 +257,34 @@ int n, m, umax;
 double utility;
 Hungarian_t hung;
 
-void init() {
-	n = m = umax = 0;
+void init(int taskN, int workerN, int Umax) {
+	n = workerN;
+	m = taskN;
+	umax = Umax;
 	utility = 0;
 }
 
-bool hasNext(node_t& nd) {
+void nextSeq(ifstream& fin, node_t& nd) {
 	int timeId;
-	char stype[4];
-	
-	if (scanf("%d", &timeId) == EOF) return false;
-	scanf("%s", stype);
-	
-	nd.type = (stype[0]=='w') ? worker:task;
-	
-	if (stype[0] == 't') {
-		
+	string stype;
+
+	fin >> nd.begTime >> stype;
+	if (stype[0] == 'w') {
+		nd.type = worker;
+		fin >> nd.id >> nd.loc.first >> nd.loc.second >> nd.rad >> nd.cap >> nd.endTime >> nd.cost.rate;
+		nd.endTime += nd.begTime;
 	} else {
-		
+		nd.type = task;
+		fin >> nd.id >> nd.loc.first >> nd.loc.second >> nd.endTime >> nd.cost.pay;
+		nd.endTime += nd.begTime;
 	}
-	
-	return true;
+
+	nd.cap = 1;
+	nd.endTime = 1e8;
+
+	#ifdef LOCAL_DEBUG
+	nd.print();
+	#endif
 }
 
 bool satisfy(const node_t& worker, const node_t& task) {
@@ -314,16 +345,16 @@ void addOneMatch(node_t& task, node_t& worker) {
 	++worker.flow;
 }
 
-void TGOA(int m, int n) {
+void TGOA(ifstream& fin, int seqN) {
 	int k = (m + n) / 2;
 	vector<int> W_delta, T_delta;
 	node_t node;
 	vector<node_t> tasks, workers;
 	int taskId, workerId;
 	
-	while (hasNext(node)) {
+	while (seqN--) {
 		workerId = taskId = -1;
-		
+		nextSeq(fin, node);
 		if (node.type == task) { // node is task
 			taskId = tasks.size();
 			tasks.push_back(node);
@@ -342,19 +373,20 @@ void TGOA(int m, int n) {
 		} else {
 			hung.build(T_delta, W_delta, tasks, workers, node);
 			hung.match();
-			int vertexN = hung.n;
+			const int Tsz = T_delta.size();
+			const int Wsz = W_delta.size();
 			
 			if (node.type == task) {
-				if (hung.yx[vertexN-1] != -1) {
-					workerId = W_delta[hung.yx[vertexN-1]];
+				if (hung.yx[Tsz] != -1) {
+					workerId = W_delta[hung.yx[Tsz]];
 					if (!satisfy(node, workers[workerId])) {
 						workerId = -1;
 					}
 				}
 				
 			} else {
-				if (hung.xy[vertexN-1] != -1) {
-					taskId = T_delta[hung.xy[vertexN-1]];
+				if (hung.xy[Wsz] != -1) {
+					taskId = T_delta[hung.xy[Wsz]];
 					if (!satisfy(tasks[taskId], node)) {
 						taskId = -1;
 					}
@@ -377,28 +409,54 @@ void TGOA(int m, int n) {
 	}
 }
 
-void solve() {
-	int taskN, workerN;
-	int n = 0, m = 0;
-	
-	init();
-	
-	TGOA(n, m);
+void solve(string fileName) {
+	int taskN, workerN, Umax, seqN, sumC;
+	ifstream fin(fileName, ios::in);
+
+	if (!fin.is_open()) {
+		printf("Error openning FILE %s.\n", fileName.c_str());
+		exit(1);
+	}
+
+	fin >> taskN >> workerN >> Umax >> sumC;
+	seqN = taskN + workerN;
+	init(taskN, workerN, Umax);
+	TGOA(fin, seqN);
 }
 
-int main() {
+int main(int argc, char* argv[]) {
 	cin.tie(0);
 	ios::sync_with_stdio(false);
-	#ifndef ONLINE_JUDGE
-		freopen("data.in", "r", stdin);
-		freopen("data.out", "w", stdout);
+
+	string dataPath, fileName;
+	program_t begProg, endProg;
+
+	if (argc > 1) {
+		fileName = string(argv[1]);
+		for (int i=fileName.length()-1; i>=0; --i) {
+			if (fileName[i] == '/') {
+				dataPath = fileName.substr(0, i);
+				break;
+			}
+		}
+	} else {
+		dataPath = "/home/turf/Code/Data/9";
+		fileName = "/home/turf/Code/Data/9/order10.txt";
+	}
+
+	input_weight(dataPath, weightArr);
+
+	save_time(begProg);
+	solve(fileName);
+	save_time(endProg);
+
+	double usedTime = calc_time(begProg, endProg);
+	#ifdef WATCH_MEM
+	printf("TGOA_Greedy %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	#else
+	printf("TGOA_Greedy %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
 	#endif
-	
-	
-	
-	#ifndef ONLINE_JUDGE
-		printf("time = %ldms.\n", clock());
-	#endif
+	fflush(stdout);
 	
 	return 0;
 }

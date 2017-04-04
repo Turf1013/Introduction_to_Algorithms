@@ -15,3 +15,9 @@ Ext
 TGOA
 Filter
 Greedy
+test
+ExtMem
+TGOAMem
+FilterMem
+GreedyMem
+

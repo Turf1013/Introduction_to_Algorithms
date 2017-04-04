@@ -91,12 +91,12 @@ struct Greedy_t {
 			u(u), v(v), w(w) {}
 			
 		bool operator<(const vertex_t& o) const {
-			return w < o.w;
+			return w > o.w;
 		}
 	};
 	
 	const double INF = 1e18;
-	priority_queue<vertex_t> Q;
+	set<vertex_t> est;
 	vector<int> yx, xy;
 	int n;
 	
@@ -108,15 +108,13 @@ struct Greedy_t {
 		this->n = n;
 		yx.resize(n, -1);
 		xy.resize(n, -1);
-		while (!Q.empty())
-			Q.pop();
+		est.clear();
 	}
 	
 	void clear() {
 		yx.clear();
 		xy.clear();
-		while (!Q.empty())
-			Q.pop();
+		est.clear();
 	}
 	
 	void build(const vector<int>& T_delta, const vector<int>& W_delta, const vector<node_t>& tasks, 
@@ -133,10 +131,18 @@ struct Greedy_t {
 				const int taskId = T_delta[j];
 				if (true/* Length2(workers[workerId].loc, tasks[taskId].loc) <= rad2 */) {
 					double cost = calcCost(tasks[taskId], workers[workerId]);
-					Q.push(vertex_t(i, j, cost));
+					est.insert(vertex_t(i, j, cost));
 				}
 			}
 		}
+		
+		addEdge(T_delta, W_delta, tasks, workers, node);
+	}
+
+	void addEdge(const vector<int>& T_delta, const vector<int>& W_delta, const vector<node_t>& tasks, 
+				const vector<node_t>& workers, const node_t& node) {
+		const int Tsz = T_delta.size();
+		const int Wsz = W_delta.size();
 		
 		if (node.type == task) {
 			const int j = Tsz;
@@ -145,7 +151,7 @@ struct Greedy_t {
 				// double rad2 = workers[workerId].rad * workers[workerId].rad;
 				if (true/* Length2(workers[workerId].loc, node.loc) <= rad2 */) {
 					double cost = calcCost(node, workers[workerId]);
-					Q.push(vertex_t(i, j, cost));
+					est.insert(vertex_t(i, j, cost));
 				}
 			}
 		} else {
@@ -155,7 +161,7 @@ struct Greedy_t {
 				const int taskId = T_delta[j];
 				if (true/* Length2(node.loc, tasks[taskId].loc) <= rad2 */) {
 					double cost = calcCost(tasks[taskId], node);
-					Q.push(vertex_t(i, j, cost));
+					est.insert(vertex_t(i, j, cost));
 				}
 			}
 		}
@@ -168,9 +174,8 @@ struct Greedy_t {
 		vertex_t ver;
 		int taskId, workerId;
 		
-		while (!Q.empty()) {
-			ver = Q.top();
-			Q.pop();
+		for (set<vertex_t>::iterator iter = est.begin(); iter!=est.end(); ++iter) {
+			ver = *iter;
 			workerId = (ver.u==Wsz) ? -1:W_delta[ver.u];
 			taskId = (ver.v==Tsz) ? -1:T_delta[ver.v];
 			const node_t& workerNode = (workerId==-1) ? node:workers[workerId];
@@ -274,6 +279,7 @@ void TGOA_Greedy(ifstream& fin, int seqN) {
 	node_t node;
 	vector<node_t> tasks, workers;
 	int taskId, workerId;
+	bool buildGraph = false;
 	
 	while (seqN--) {
 		workerId = taskId = -1;
@@ -294,7 +300,12 @@ void TGOA_Greedy(ifstream& fin, int seqN) {
 			}
 			
 		} else {
-			greedy.build(T_delta, W_delta, tasks, workers, node);
+			if (!buildGraph) {
+				buildGraph = true;
+				greedy.build(T_delta, W_delta, tasks, workers, node);
+			} else {
+				greedy.addEdge(T_delta, W_delta, tasks, workers, node);
+			}
 			greedy.match(T_delta, W_delta, tasks, workers, node);
 			const int Tsz = T_delta.size();
 			const int Wsz = W_delta.size();

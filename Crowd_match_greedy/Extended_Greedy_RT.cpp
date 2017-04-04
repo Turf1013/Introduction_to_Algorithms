@@ -15,17 +15,6 @@ enum rule_t {
 	worker, task
 };
 
-enum chosenStrategy_m {
-	first, any, largest
-};
-
-enum weightStrategy_m {
-	warray, formula
-};
-
-const chosenStrategy_m chosenStrategy = largest; 
-const weightStrategy_m weightStrategy = warray;
-
 union W_un {
 	double cost;
 	double pay;
@@ -63,24 +52,6 @@ void init(int taskN, int workerN, int Umax) {
 	umax = Umax;
 	utility = 0;
 }
-
-// bool hasNext(ifstream& fin, node_t& nd) {
-// 	int timeId;
-// 	char stype[4];
-	
-// 	if (scanf("%d", &timeId) == EOF) return false;
-// 	scanf("%s", stype);
-	
-// 	nd.type = (stype[0]=='w') ? worker:task;
-	
-// 	if (stype[0] == 't') {
-		
-// 	} else {
-		
-// 	}
-	
-// 	return true;
-// }
 
 void nextSeq(ifstream& fin, node_t& nd) {
 	int timeId;

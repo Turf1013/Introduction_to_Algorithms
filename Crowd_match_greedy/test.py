@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import sys
 import os
 import commands
 
@@ -23,5 +24,15 @@ def dumpToFile(fileName, lines):
 
 
 if __name__ == "__main__":
-	lines = runExtGreedy("/home/turf/Code/Data/", "/home/turf/Code/Introduction_to_Algorithms/Crowd_match_greedy/Ext")
-	dumpToFile("Ext_clk.log", lines)
+	farFilePath = "/home/turf/Code/Data/"
+	execPath = "/home/turf/Code/Introduction_to_Algorithms/Crowd_match_greedy/Ext"
+	logFileName = "Ext_clk.log"
+	if len(sys.argv) >= 2:
+		farFilePath = sys.argv[1]
+	if len(sys.argv) >= 3:
+		execPath = sys.argv[2]
+	if len(sys.argv) >= 4:
+		logFileName = sys.argv[3]
+
+	lines = runExtGreedy(farFilePath, execPath, 2, 2)
+	dumpToFile(logFileName, lines)

@@ -7,7 +7,7 @@ LIBS = -lrt
 CFLAGS = --std=c++11 -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: Ext TGOA Filter Greedy testMem testClk
+all: Ext TGOA Filter Greedy ExtMem TGOAMem FilterMem GreedyMem
 Ext: monitor.h input.h Extended_Greedy_RT.cpp
 	$(CXX) $(CFLAGS) -o Ext Extended_Greedy_RT.cpp $(LIBS)
 
@@ -20,13 +20,17 @@ Filter: monitor.h input.h TGOA_Filter.cpp
 Greedy: monitor.h input.h TGOA_Greedy.cpp
 	$(CXX) $(CFLAGS) -o Greedy TGOA_Greedy.cpp $(LIBS)
 
-testMem: testMemory.cpp monitor.h input.h Extended_Greedy_RT.cpp 
-	$(CXX) $(CFLAGS) -o Ext Extended_Greedy_RT.cpp $(LIBS) -D WATCH_MEM
-	$(CXX) $(CFLAGS) -o testMem testMemory.cpp $(LIBS)
+ExtMem: monitor.h input.h Extended_Greedy_RT.cpp
+	$(CXX) $(CFLAGS) -o ExtMem Extended_Greedy_RT.cpp $(LIBS) -D WATCH_MEM
 
-testClk: testClock.cpp monitor.h input.h Extended_Greedy_RT.cpp
-	$(CXX) $(CFLAGS) -o Ext Extended_Greedy_RT.cpp $(LIBS)	
-	$(CXX) $(CFLAGS) -o testClk testClock.cpp $(LIBS)	
+TGOAMem: monitor.h input.h TGOA.cpp
+	$(CXX) $(CFLAGS) -o TGOAMem TGOA.cpp $(LIBS) -D WATCH_MEM
+
+FilterMem: monitor.h input.h TGOA_Filter.cpp
+	$(CXX) $(CFLAGS) -o FilterMem TGOA_Filter.cpp $(LIBS) -D WATCH_MEM
+
+GreedyMem: monitor.h input.h TGOA_Greedy.cpp
+	$(CXX) $(CFLAGS) -o GreedyMem TGOA_Greedy.cpp $(LIBS) -D WATCH_MEM
 
 .PHONY: clean 
 clean:
@@ -35,4 +39,7 @@ clean:
 		-@rm TGOA TGOA.g* 2> /dev/null || true	
 		-@rm Filter Filter.g* 2> /dev/null || true	
 		-@rm Greedy Greedy.g* 2> /dev/null || true	
-		-@rm testMem testClk* 2> /dev/null || true	
+		-@rm ExtMem ExtMem.g* 2> /dev/null || true	
+		-@rm TGOAMem TGOAMem.g* 2> /dev/null || true	
+		-@rm FilterMem FilterMem.g* 2> /dev/null || true	
+		-@rm GreedyMem GreedyMem.g* 2> /dev/null || true	
