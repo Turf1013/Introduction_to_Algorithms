@@ -9,8 +9,8 @@ def genDataSet(dataSetN, filePath):
 		dirName = os.path.join(filePath, str(i))
 		if not os.path.exists(dirName):
 			os.mkdir(dirName)
-		weightToFile(dirName)
-		orderToFile(dirName)
+		weightToFile(dirName, i/2)
+		orderToFile(dirName, i/2)
 
 if __name__ == "__main__":
-	genDataSet(10, "/home/turf/Code/Data2/")
+	genDataSet(8, "/home/turf/Code/Data2/")

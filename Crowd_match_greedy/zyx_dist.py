@@ -50,9 +50,13 @@ def logDist(tot, low, high, mu, sigma):
     return ret
 
 
-def sample(size, low, high):
-	# ret = normDist(size, low, high, 50,25)
-	# ret = expDist(size, low, high, 50)
-	# ret = uniDist(size, low, high)
-    ret = logDist(size, low, high, 50, 25)
+def sample(size, low, high, distId):
+    if distId == 0:
+	    ret = normDist(size, low, high, 50,25)
+    elif distId == 1:
+        ret = expDist(size, low, high, 50)
+    elif distId == 2:
+	    ret = uniDist(size, low, high)
+    else:
+        ret = logDist(size, low, high, 50, 25)
     return ret

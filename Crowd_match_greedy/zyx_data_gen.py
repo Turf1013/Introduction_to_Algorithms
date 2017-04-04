@@ -7,16 +7,16 @@ import numpy as np
 import bisect
 from zyx_dist import sample
 
-def sampleOne(low=1, high=100):
-	ret = sample(1, low, high)[0]
+def sampleOne(low=1, high=100, distId=0):
+	ret = sample(1, low, high, distId)[0]
 	return ret
 	
 
-def orderToFile(filePath, wn=1000, rn=1000, cap=1, umax=10):
+def orderToFile(filePath, distId=0, wn=1000, rn=1000, cap=1, umax=10):
 	deg=wn*cap+rn
 	timeList=[0] * (wn+rn)
 	for i in range(wn+rn):
-		timeList[i] = int(sampleOne())
+		timeList[i] = int(sampleOne(distId))
 	timeList.sort()
 	k=0
 	prev=0
@@ -29,8 +29,8 @@ def orderToFile(filePath, wn=1000, rn=1000, cap=1, umax=10):
 
 	obj=[]
 	for i in xrange(wn):
-		x=sampleOne()
-		y=sampleOne()
+		x=sampleOne(distId)
+		y=sampleOne(distId)
 		d=4
 		c=1#
 		r=20
@@ -39,8 +39,8 @@ def orderToFile(filePath, wn=1000, rn=1000, cap=1, umax=10):
 		obj.append(nob)
 
 	for i in xrange(rn):
-		x=sampleOne()
-		y=sampleOne()
+		x=sampleOne(distId)
+		y=sampleOne(distId)
 		d=4
 		c=1
 		r=20
