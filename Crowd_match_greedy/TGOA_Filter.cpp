@@ -201,7 +201,7 @@ struct Hungarian_t {
 		for (int i=0; i<n; ++i) {
 			if (S[i]) lx[i] -= mn;
 			if (T[i]) ly[i] += mn;
-			else	  slack[i] -= mn;
+			//else	  slack[i] -= mn;
 		}
 	}
 	

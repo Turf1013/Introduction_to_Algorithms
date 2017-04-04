@@ -210,7 +210,7 @@ struct Hungarian_t {
 	}
 	
 	void update() {
-		double mn = -INF;
+		double mn = INF;
 		
 		for (int i=0; i<n; ++i) {
 			if (!T[i]) {
@@ -221,6 +221,7 @@ struct Hungarian_t {
 		for (int i=0; i<n; ++i) {
 			if (S[i]) lx[i] -= mn;
 			if (T[i]) ly[i] += mn;
+			//else	  slack[i] -= mn;
 		}
 	}
 	
