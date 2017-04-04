@@ -196,7 +196,7 @@ struct Hungarian_t {
 			double tmp = lx[x] + ly[y] - g[x][i].w;
 			if (dcmp(tmp) == 0) {
 				T[y] = true;
-				if (yx[y]==-1 || dfs(yx[x])) {
+				if (yx[y]==-1 || dfs(yx[y])) {
 					yx[y] = x;
 					xy[x] = y;
 					return true;
