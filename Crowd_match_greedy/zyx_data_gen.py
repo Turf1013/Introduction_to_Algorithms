@@ -5,40 +5,10 @@ import sys
 import random
 import numpy as np
 import bisect
+from zyx_dist import sample
 
-def normDist(tot,n,mu,sigma):
-    i=0
-    while i<tot:
-        sample=np.random.normal(mu, sigma)
-        if sample>=0 and sample<n:
-            return sample
-            i+=1
-    return sample
-
-def expDist(tot,n,lambd):
-    i=0
-    while i<tot:
-        sample=np.random.exponential(lambd)
-        if sample>=0 and sample<n:
-            return sample
-            i+=1
-    return sample  
-
-
-def uniDist(low, high, n): 
-	ret = np.random.uniform(low, high, n)
-	for i in xrange(n):
-		if ret[i] < low:
-			ret[i] = low
-		elif ret[i] > high:
-			ret[i] = high
-    return ret
-
-
-def sampleOne():
-	# ret = normDist(1,100,50,25)
-	ret = expDist(1,100,50)
-	# ret = uniDist(1,100,1)[0]
+def sampleOne(low=1, high=100):
+	ret = sample(1, low, high)[0]
 	return ret
 	
 

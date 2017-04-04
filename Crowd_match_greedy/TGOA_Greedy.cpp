@@ -8,7 +8,7 @@ using namespace std;
 #include "input.h"
 #include "monitor.h"
 
-// #define LOCAL_DEBUG
+#define LOCAL_DEBUG
 
 enum rule_t {
 	worker, task
@@ -32,11 +32,11 @@ struct node_t {
 
 	void print() {
 		if (type == worker)
-		 	printf("id = %d, loc = (%.2lf, %.2lf), rad = %.2lf, cap = %d, time = (%d, %d)\n",
-		 			id, loc.first, loc.second, rad, cap, begTime, endTime);
+		 	printf("id = %d, loc = (%.2lf, %.2lf), rad = %.2lf, cap = %d, flow = %d, time = (%d, %d)\n",
+		 			id, loc.first, loc.second, rad, cap, flow, begTime, endTime);
 		else
-			printf("id = %d, loc = (%.2lf, %.2lf), time = (%d, %d)\n",
-		 			id, loc.first, loc.second, begTime, endTime);
+			printf("id = %d, loc = (%.2lf, %.2lf), flow = %d, time = (%d, %d)\n",
+		 			id, loc.first, loc.second, flow, begTime, endTime);
 	}
 };
 
@@ -340,11 +340,14 @@ void TGOA_Greedy(ifstream& fin, int seqN) {
 
 	#ifdef LOCAL_DEBUG
 	int freeTask = 0, freeWorker = 0;
-	for (int i=0; i<tasks.size(); ++i)
-		freeTask += tasks[i].cap;
-	for (int i=0; i<workers.size(); ++i)
-		freeWorker += workers[i].cap;
-
+	for (int i=0; i<tasks.size(); ++i) {
+		assert(tasks[i].cap >= tasks[i].flow);
+		freeTask += tasks[i].cap - tasks[i].flow;
+	}
+	for (int i=0; i<workers.size(); ++i) {
+		assert(workers[i].cap >= workers[i].flow);
+		freeWorker += workers[i].cap - workers[i].flow;
+	}
 	printf("taskN = %d, freeTask = %d, workerN = %d, freeWorker = %d\n", 
 		tasks.size(), freeTask, workers.size(), freeWorker);
 	#endif

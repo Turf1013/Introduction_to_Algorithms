@@ -13,4 +13,4 @@ def genDataSet(dataSetN, filePath):
 		orderToFile(dirName)
 
 if __name__ == "__main__":
-	genDataSet(10, "/home/turf/Code/Data")
+	genDataSet(10, "/home/turf/Code/Data2/")
