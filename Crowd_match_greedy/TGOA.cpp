@@ -5,6 +5,8 @@
 #include <bits/stdc++.h>
 using namespace std;
 //#pragma comment(linker,"/STACK:102400000,1024000")
+#include "input.h"
+#include "monitor.h"
 
 #define LOCAL_DEBUG
 
@@ -56,7 +58,7 @@ inline double Length2(pair<double,double> pa, pair<double,double> pb) {
 }
 
 const double eps = 1e-6;
-inline double dcmp(double a) {
+inline int dcmp(double a) {
 	if (fabs(a) < eps)
 		return 0;
 	return a>0 ? 1:-1;
@@ -71,7 +73,7 @@ struct Hungarian_t {
 			v(v), w(w) {}
 	};
 	
-	static const double INF = 1e18;
+	const double INF = 1e18;
 	vector<vector<vertex_t> > g;
 	vector<int> yx, xy;
 	vector<double> lx, ly;
@@ -84,6 +86,7 @@ struct Hungarian_t {
 	}
 	
 	void init(int n=0) {
+		clear();
 		this->n = n;
 		g.resize(n, vector<vertex_t>());
 		yx.resize(n, -1);
@@ -113,54 +116,32 @@ struct Hungarian_t {
 		int vertexN = max(Tsz+(node.type==task), Wsz+(node.type==worker));
 		
 		init(vertexN);
-		for (int i=0; i<Wsz; ++i) {
-			const int workerId = W_delta[i];
-			// double rad2 = workers[workerId].rad * workers[workerId].rad;
-			for (int j=0; j<Tsz; ++j) {
-				const int taskId = T_delta[j];
-				if (true/* Length2(workers[workerId].loc, tasks[taskId].loc) <= rad2 */) {
-					double cost = calcCost(tasks[taskId], workers[workerId]);
-					g[i].push_back(vertex_t(j, cost));
+		for (int i=0; i<vertexN; ++i) {
+			const int workerId = (i < Wsz) ? W_delta[i] : 
+								 (node.type==worker) ? -1 : -2;
+
+			for (int j=0; j<vertexN; ++j) {
+				const int taskId = (j < Tsz) ? T_delta[j]:
+								 (node.type==task) ? -1 : -2;
+
+				double cost;
+				if (workerId==-2 || taskId==-2) {
+					cost = 0.0;
+				} else if (workerId == -1) {
+					cost = calcCost(tasks[taskId], node);
+				} else if (taskId == -1) {
+					cost = calcCost(node, workers[workerId]);
+				} else {
+					cost = calcCost(tasks[taskId], workers[workerId]);
 				}
+
+				g[i].push_back(vertex_t(j, cost));
 			}
-		}
-		
-		if (node.type == task) {
-			const int j = Tsz;
-			for (int i=0; i<Wsz; ++i) {
-				const int workerId = W_delta[i];
-				// double rad2 = workers[workerId].rad * workers[workerId].rad;
-				if (true/* Length2(workers[workerId].loc, node.loc) <= rad2 */) {
-					double cost = calcCost(node, workers[workerId]);
-					g[i].push_back(vertex_t(j, cost));
-				}
-			}
-			#ifdef LOCAL_DEBUG
-			assert(Wsz == vertexN);
-			#endif
-			for (int i=0; i<Wsz; ++i) {
-				for (int j=Tsz+1; j<vertexN; ++j) {
-					g[i].push_back(vertex_t(j, 0.0));
-				}
-			}
-		} else {
-			const int i = Wsz;
-			// double rad2 = node.rad * node.tad;
-			for (int j=0; j<Tsz; ++j) {
-				const int taskId = T_delta[j];
-				if (true/* Length2(node.loc, tasks[taskId].loc) <= rad2 */) {
-					double cost = calcCost(tasks[taskId], node);
-					g[i].push_back(vertex_t(j, cost));
-				}
-			}
-			#ifdef LOCAL_DEBUG
-			assert(Tsz == vertexN);
-			#endif
-			for (int i=Wsz+1; i<vertexN; ++i) {
-				for (int j=0; j<Tsz; ++j) {
-					g[i].push_back(vertex_t(j, 0.0));
-				}
-			}
+
+			// #ifdef LOCAL_DEBUG
+			// printf("%d: sz = %d, vertexN = %d\n", i, (int)g[i].size(), vertexN);
+			// assert(g[i].size() == vertexN);
+			// #endif
 		}
 	}
 	
@@ -228,6 +209,10 @@ struct Hungarian_t {
 	void weightedMaximumMatch() {
 		int i, j, k;
 		
+		fill(lx.begin(), lx.end(), 0.0);
+		fill(ly.begin(), ly.end(), 0.0);
+		fill(xy.begin(), xy.end(), -1);
+		fill(yx.begin(), yx.end(), -1);
 		for (int x=0; x<n; ++x) {
 			int sz = g[x].size();
 			for (int i=0; i<sz; ++i) {
@@ -280,6 +265,7 @@ void nextSeq(ifstream& fin, node_t& nd) {
 		nd.endTime += nd.begTime;
 	}
 
+	nd.flow = 0;
 	nd.cap = 1;
 	nd.endTime = 1e8;
 
@@ -372,28 +358,50 @@ void TGOA(ifstream& fin, int seqN) {
 			}
 			
 		} else {
+			#ifdef LOCAL_DEBUG
+			puts("before build");
+			#endif
 			hung.build(T_delta, W_delta, tasks, workers, node);
+			#ifdef LOCAL_DEBUG
+			puts("after build");
+			#endif
+
+			#ifdef LOCAL_DEBUG
+			puts("before match");
+			#endif
 			hung.match();
+			#ifdef LOCAL_DEBUG
+			puts("after match");
+			fflush(stdout);
+			#endif
+			
 			const int Tsz = T_delta.size();
 			const int Wsz = W_delta.size();
 			
 			if (node.type == task) {
-				if (hung.yx[Tsz] != -1) {
+				if (hung.yx[Tsz]!=-1 && hung.yx[Tsz]<W_delta.size()) {
 					workerId = W_delta[hung.yx[Tsz]];
-					if (!satisfy(node, workers[workerId])) {
+					if (workerId>=0 && workerId<workers.size() && satisfy(node, workers[workerId])) {
+						/* valid, do nothing*/
+					} else {
 						workerId = -1;
 					}
 				}
 				
 			} else {
-				if (hung.xy[Wsz] != -1) {
+				if (hung.xy[Wsz]!=-1 && hung.xy[Wsz]<T_delta.size()) {
 					taskId = T_delta[hung.xy[Wsz]];
-					if (!satisfy(tasks[taskId], node)) {
+					if (taskId>=0 && taskId<tasks.size() && satisfy(tasks[taskId], node)) {
+						/* valid, do nothing*/
+					} else {
 						taskId = -1;
 					}
 				}
 			}
 			
+			#ifdef LOCAL_DEBUG
+			printf("workerId = %d, taskId = %d\n", workerId, taskId);
+			#endif
 		}
 		
 		if (workerId>=0 && taskId>=0) {
@@ -407,7 +415,22 @@ void TGOA(ifstream& fin, int seqN) {
 			for (int i=0; i<node.cap; ++i)
 				W_delta.push_back(workerId);
 		}
+		
+		#ifdef WATCH_MEM
+		watchSolutionOnce(getpid(), usedMemory);
+		#endif
 	}
+
+	#ifdef LOCAL_DEBUG
+	int freeTask = 0, freeWorker = 0;
+	for (int i=0; i<tasks.size(); ++i)
+		freeTask += tasks[i].cap;
+	for (int i=0; i<workers.size(); ++i)
+		freeWorker += workers[i].cap;
+
+	printf("taskN = %d, freeTask = %d, workerN = %d, freeWorker = %d\n", 
+		tasks.size(), freeTask, workers.size(), freeWorker);
+	#endif
 }
 
 void solve(string fileName) {
@@ -453,9 +476,9 @@ int main(int argc, char* argv[]) {
 
 	double usedTime = calc_time(begProg, endProg);
 	#ifdef WATCH_MEM
-	printf("TGOA_Greedy %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	printf("TGOA %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
 	#else
-	printf("TGOA_Greedy %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	printf("TGOA %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
 	#endif
 	fflush(stdout);
 	

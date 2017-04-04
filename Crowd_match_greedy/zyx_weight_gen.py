@@ -32,5 +32,5 @@ def weightToFile(filePath, n = 1000, m = 1000):
         for i in xrange(n):
             W = [0.0] * m
             for j in xrange(m):
-                W[j] = norm(1,10,5,2.5)
+                W[j] = norm(1, 10, 5, 2.5)
             fout.write(" ".join(map(str, W)) + "\n")

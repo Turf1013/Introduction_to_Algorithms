@@ -6,7 +6,7 @@ import random
 import numpy as np
 import bisect
 
-def norm(tot,n,mu,sigma):
+def normDist(tot,n,mu,sigma):
     i=0
     while i<tot:
         sample=np.random.normal(mu, sigma)
@@ -15,20 +15,38 @@ def norm(tot,n,mu,sigma):
             i+=1
     return sample
 
-def ex(tot,n,lambd):
+def expDist(tot,n,lambd):
     i=0
     while i<tot:
         sample=np.random.exponential(lambd)
         if sample>=0 and sample<n:
             return sample
             i+=1
-    return sample   
+    return sample  
+
+
+def uniDist(low, high, n): 
+	ret = np.random.uniform(low, high, n)
+	for i in xrange(n):
+		if ret[i] < low:
+			ret[i] = low
+		elif ret[i] > high:
+			ret[i] = high
+    return ret
+
+
+def sampleOne():
+	# ret = normDist(1,100,50,25)
+	ret = expDist(1,100,50)
+	# ret = uniDist(1,100,1)[0]
+	return ret
+	
 
 def orderToFile(filePath, wn=1000, rn=1000, cap=1, umax=10):
 	deg=wn*cap+rn
 	timeList=[0] * (wn+rn)
 	for i in range(wn+rn):
-		timeList[i] = int(norm(1,100,50,25))
+		timeList[i] = int(sampleOne())
 	timeList.sort()
 	k=0
 	prev=0
@@ -41,8 +59,8 @@ def orderToFile(filePath, wn=1000, rn=1000, cap=1, umax=10):
 
 	obj=[]
 	for i in xrange(wn):
-		x=norm(1,100,50,25)
-		y=norm(1,100,50,25)
+		x=sampleOne()
+		y=sampleOne()
 		d=4
 		c=1#
 		r=20
@@ -51,8 +69,8 @@ def orderToFile(filePath, wn=1000, rn=1000, cap=1, umax=10):
 		obj.append(nob)
 
 	for i in xrange(rn):
-		x=norm(1,100,50,25)
-		y=norm(1,100,50,25)
+		x=sampleOne()
+		y=sampleOne()
 		d=4
 		c=1
 		r=20

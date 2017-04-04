@@ -51,6 +51,7 @@ void init(int taskN, int workerN, int Umax) {
 	m = taskN;
 	umax = Umax;
 	utility = 0;
+	usedMemory = 0;
 }
 
 void nextSeq(ifstream& fin, node_t& nd) {
@@ -163,9 +164,6 @@ void Extend_Greedy_RT(ifstream& fin, int seqN) {
 	vector<node_t> tasks, workers;
 	int taskId, workerId;
 	
-	#ifdef WATCH_MEM
-		usedMemory = 0;
-	#endif
 	while (seqN--) {
 		nextSeq(fin, node);
 		if (node.type == task) { // node is task

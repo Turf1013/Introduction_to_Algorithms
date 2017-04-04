@@ -270,6 +270,7 @@ void nextSeq(ifstream& fin, node_t& nd) {
 		nd.endTime += nd.begTime;
 	}
 
+	nd.flow = 0;
 	nd.cap = 1;
 	nd.endTime = 1e8;
 
@@ -381,7 +382,7 @@ void TGOA_Filter(ifstream& fin, int seqN) {
 			if (node.type == task) {
 				if (hung.yx[Tsz]!=-1 && hung.yx[Tsz]<W_delta.size()) {
 					workerId = W_delta[hung.yx[Tsz]];
-					if (workerId>=0 && workerId<workers.size() && satisfy(node, workers[workerId])) {
+					if (satisfy(node, workers[workerId])) {
 						/* valid, do nothing*/
 					} else {
 						workerId = -1;
@@ -391,7 +392,7 @@ void TGOA_Filter(ifstream& fin, int seqN) {
 			} else {
 				if (hung.xy[Wsz]!=-1 && hung.xy[Wsz]<T_delta.size()) {
 					taskId = T_delta[hung.xy[Wsz]];
-					if (taskId>=0 && taskId<tasks.size() && satisfy(tasks[taskId], node)) {
+					if (satisfy(tasks[taskId], node)) {
 						/* valid, do nothing*/
 					} else {
 						taskId = -1;
@@ -415,7 +416,22 @@ void TGOA_Filter(ifstream& fin, int seqN) {
 			for (int i=0; i<node.cap; ++i)
 				W_delta.push_back(workerId);
 		}
+		
+		#ifdef WATCH_MEM
+		watchSolutionOnce(getpid(), usedMemory);
+		#endif
 	}
+
+	#ifdef LOCAL_DEBUG
+	int freeTask = 0, freeWorker = 0;
+	for (int i=0; i<tasks.size(); ++i)
+		freeTask += tasks[i].cap;
+	for (int i=0; i<workers.size(); ++i)
+		freeWorker += workers[i].cap;
+
+	printf("taskN = %d, freeTask = %d, workerN = %d, freeWorker = %d\n", 
+		tasks.size(), freeTask, workers.size(), freeWorker);
+	#endif
 }
 
 void solve(string fileName) {
@@ -461,9 +477,9 @@ int main(int argc, char* argv[]) {
 
 	double usedTime = calc_time(begProg, endProg);
 	#ifdef WATCH_MEM
-	printf("TGOA_Greedy %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	printf("TGOA_Filter %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
 	#else
-	printf("TGOA_Greedy %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	printf("TGOA_Filter %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
 	#endif
 	fflush(stdout);
 	

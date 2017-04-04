@@ -194,6 +194,7 @@ struct Greedy_t {
 typedef long long LL;
 int n, m, umax;
 double utility;
+int usedMemory;
 Greedy_t greedy;
 
 void init(int taskN, int workerN, int Umax) {
@@ -201,6 +202,7 @@ void init(int taskN, int workerN, int Umax) {
 	m = taskN;
 	umax = Umax;
 	utility = 0;
+	usedMemory = 0;
 }
 
 void nextSeq(ifstream& fin, node_t& nd) {
@@ -218,6 +220,7 @@ void nextSeq(ifstream& fin, node_t& nd) {
 		nd.endTime += nd.begTime;
 	}
 
+	nd.flow = 0;
 	nd.cap = 1;
 	nd.endTime = 1e8;
 
@@ -329,7 +332,22 @@ void TGOA_Greedy(ifstream& fin, int seqN) {
 			for (int i=0; i<node.cap; ++i)
 				W_delta.push_back(workerId);
 		}
+
+		#ifdef WATCH_MEM
+		watchSolutionOnce(getpid(), usedMemory);
+		#endif
 	}
+
+	#ifdef LOCAL_DEBUG
+	int freeTask = 0, freeWorker = 0;
+	for (int i=0; i<tasks.size(); ++i)
+		freeTask += tasks[i].cap;
+	for (int i=0; i<workers.size(); ++i)
+		freeWorker += workers[i].cap;
+
+	printf("taskN = %d, freeTask = %d, workerN = %d, freeWorker = %d\n", 
+		tasks.size(), freeTask, workers.size(), freeWorker);
+	#endif
 }
 
 void solve(string fileName) {
