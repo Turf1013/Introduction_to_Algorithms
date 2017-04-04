@@ -424,11 +424,14 @@ void TGOA_Filter(ifstream& fin, int seqN) {
 
 	#ifdef LOCAL_DEBUG
 	int freeTask = 0, freeWorker = 0;
-	for (int i=0; i<tasks.size(); ++i)
-		freeTask += tasks[i].cap;
-	for (int i=0; i<workers.size(); ++i)
-		freeWorker += workers[i].cap;
-
+	for (int i=0; i<tasks.size(); ++i) {
+		assert(tasks[i].cap >= tasks[i].flow);
+		freeTask += tasks[i].cap - tasks[i].flow;
+	}
+	for (int i=0; i<workers.size(); ++i) {
+		assert(workers[i].cap >= workers[i].flow);
+		freeWorker += workers[i].cap - workers[i].flow;
+	}
 	printf("taskN = %d, freeTask = %d, workerN = %d, freeWorker = %d\n", 
 		tasks.size(), freeTask, workers.size(), freeWorker);
 	#endif
