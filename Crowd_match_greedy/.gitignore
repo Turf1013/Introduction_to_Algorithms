@@ -1,0 +1,17 @@
+*~
+*.exe
+*.pdf
+*.png
+*.htm
+*.log
+*.in
+*.out
+*.o
+*.gcno
+*.log
+*.pyc
+Data/
+Ext
+TGOA
+Filter
+Greedy
