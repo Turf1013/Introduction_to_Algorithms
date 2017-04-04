@@ -21,6 +21,7 @@ void save_time(program_t& prog);
 double calc_time(const program_t& st, const program_t& ed);
 int get_proc_status(int pid, const char* mark);
 void watchSolution(pid_t pid, int& usedMemory, int& usedTime, int limitTime);
+void watchSolutionOnce(pid_t pid, int& usedMemory);
 
 void save_time(program_t& prog) {
 	clock_gettime(CLOCK_REALTIME, &prog.real);
@@ -93,6 +94,21 @@ void watchSolution(pid_t pid, int& usedMemory, int& usedTime, int limitTime) {
 
 	usedTime += (ruse.ru_utime.tv_sec + ruse.ru_utime.tv_usec / 1000000);
 	usedTime += (ruse.ru_stime.tv_sec + ruse.ru_stime.tv_usec / 1000000);
+}
+
+void watchSolutionOnce(pid_t pid, int& usedMemory) {
+	int tempMemory;
+	int status;
+	struct rusage ruse;
+
+	tempMemory = get_proc_status(pid, "VmRSS:");
+	if (tempMemory > usedMemory)
+		usedMemory = tempMemory;
+	
+	wait4(pid, &status, 0, &ruse);
+	tempMemory = get_proc_status(pid, "VmPeak:");
+	if (tempMemory > usedMemory)
+		usedMemory = tempMemory;
 }
 
 #endif

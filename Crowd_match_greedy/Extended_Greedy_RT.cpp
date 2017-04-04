@@ -9,6 +9,7 @@ using namespace std;
 #include "input.h"
 
 //#define LOCAL_DEBUG
+//#define WATCH_MEM
 
 enum rule_t {
 	worker, task
@@ -53,6 +54,7 @@ struct node_t {
 typedef long long LL;
 int n, m, umax;
 double utility;
+int usedMemory;
 vector<vector<double> > weightArr;
 
 void init(int taskN, int workerN, int Umax) {
@@ -190,6 +192,9 @@ void Extend_Greedy_RT(ifstream& fin, int seqN) {
 	vector<node_t> tasks, workers;
 	int taskId, workerId;
 	
+	#ifdef WATCH_MEM
+		usedMemory = 0;
+	#endif
 	while (seqN--) {
 		nextSeq(fin, node);
 		if (node.type == task) { // node is task
@@ -209,6 +214,10 @@ void Extend_Greedy_RT(ifstream& fin, int seqN) {
 			#endif
 			addOneMatch(tasks[taskId], workers[workerId]);
 		}
+
+		#ifdef WATCH_MEM
+		watchSolutionOnce(getpid(), usedMemory);
+		#endif
 	}
 
 	#ifdef LOCAL_DEBUG
@@ -247,7 +256,7 @@ int main(int argc, char* argv[]) {
 
 	if (argc > 1) {
 		fileName = string(argv[1]);
-		for (int i=dataPath.length()-1; i>=0; --i) {
+		for (int i=fileName.length()-1; i>=0; --i) {
 			if (fileName[i] == '/') {
 				dataPath = fileName.substr(0, i);
 				break;
@@ -258,6 +267,7 @@ int main(int argc, char* argv[]) {
 		fileName = "/home/turf/Code/Data/9/order10.txt";
 	}
 
+	//printf("[%d]: fileName = %s\n", getpid(), fileName.c_str());
 	input_weight(dataPath, weightArr);
 
 	save_time(begProg);
@@ -265,7 +275,12 @@ int main(int argc, char* argv[]) {
 	save_time(endProg);
 
 	double usedTime = calc_time(begProg, endProg);
-	printf("Extend_Greedy_RT %s %.6lf %.6lf\n", fileName.c_str(), utility, usedTime);
+	#ifdef WATCH_MEM
+	printf("Extend_Greedy_RT %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	#else
+	printf("Extend_Greedy_RT %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	#endif
+	fflush(stdout);
 	
 	return 0;
 }
