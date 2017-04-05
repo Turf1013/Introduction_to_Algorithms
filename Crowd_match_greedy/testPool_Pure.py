@@ -25,9 +25,11 @@ def testPool(distId):
         #"TGOA", 
 	    #"TGOAMem",
         #"OPT",
-        "OPTMem",
+        #"OPTMem",
+        #"Pure",
+        "PureMem",
     ]
-    orderN, caseN = 1, 5
+    orderN, caseN = 40, 5
     numRateList = [0.25, 0.5, 1.0]
     numCountList = [100, 200, 400]
     degRateList = [0.25, 0.5, 0.75, 1.0]
@@ -64,6 +66,6 @@ def testPool(distId):
 
 if __name__ == "__main__":
     distId = 0
-    if len(sys.argv) > 1:
+	if len(sys.argv) > 1:
         distId = int(sys.argv[1])
     testPool(distId)

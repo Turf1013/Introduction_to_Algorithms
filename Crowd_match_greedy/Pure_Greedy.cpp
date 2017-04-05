@@ -9,7 +9,7 @@ using namespace std;
 #include "input.h"
 
 //#define AT_THE_SERVER
-//#define LOCAL_DEBUG
+// #define LOCAL_DEBUG
 
 enum rule_t {
 	worker, task
@@ -124,40 +124,36 @@ bool satisfy(const node_t& worker, const node_t& task) {
 	return satisfyCap(worker, task) && satisfyLoc(worker, task);
 }
 
-int chosenNextTask(const vector<node_t>& tasks, node_t& worker, double costBound) {
+int chosenNextTask(const vector<node_t>& tasks, node_t& worker) {
 	int taskN = tasks.size();
 	double tmpCost;
 	double mxCost = -1e8;
-
 	int ret = -1;
+
 	//puts("chosenNextTask");
 	for (int i=0; i<taskN; ++i) {
 		tmpCost = calcCost(tasks[i], worker);
 		//printf("tmpCost = %.4lf, costBound = %.4lf, dis = %.4lf\n", tmpCost, costBound, Length(worker.loc, tasks[i].loc));
-		if (tmpCost>=costBound && satisfy(worker, tasks[i])) {
-			if (tmpCost > mxCost) {
-				mxCost = tmpCost;
-				ret = i;
-			}
+		if (satisfy(worker, tasks[i]) && tmpCost>mxCost) {
+			mxCost = tmpCost;
+			ret = i;
 		}
 	}
 	return ret;
 }
 
-int chosenNextWorker(const vector<node_t>& workers, node_t& task, double costBound) {
+int chosenNextWorker(const vector<node_t>& workers, node_t& task) {
 	int workerN = workers.size();
 	double tmpCost;
-
 	double mxCost = -1e8;
 	int ret = -1;
+
 	for (int i=0; i<workerN; ++i) {
 		tmpCost = calcCost(task, workers[i]);
 		//printf("tmpCost = %.4lf, costBound = %.4lf, dis = %.4lf\n", tmpCost, costBound, Length(workers[i].loc, task.loc));
-		if (tmpCost>=costBound && satisfy(workers[i], task)) {
-			if (tmpCost > mxCost) {
-				mxCost = tmpCost;
-				ret = i;
-			}
+		if (satisfy(workers[i], task) && tmpCost>mxCost) {
+			mxCost = tmpCost;
+			ret = i;
 		}
 	}
 	return ret;
@@ -178,10 +174,7 @@ void addOneMatch(node_t& task, node_t& worker) {
 	// printf("tmp = %.2lf\n", tmp);
 }
 
-void Extend_Greedy_RT(ifstream& fin, int seqN) {
-	int theta = ceil(log(umax + 1.0));
-	int k = rand() % theta;
-	double costBound = pow(exp(1.0), k);
+void Pure_Greedy(ifstream& fin, int seqN) {
 	node_t node;
 	vector<node_t> tasks, workers;
 	int taskId, workerId;
@@ -192,11 +185,11 @@ void Extend_Greedy_RT(ifstream& fin, int seqN) {
 		if (node.type == task) { // node is task
 			taskId = tasks.size();
 			tasks.push_back(node);
-			workerId = chosenNextWorker(workers, node, costBound);
+			workerId = chosenNextWorker(workers, node);
 		} else {
 			workerId = workers.size();
 			workers.push_back(node);
-			taskId = chosenNextTask(tasks, node, costBound);
+			taskId = chosenNextTask(tasks, node);
 		}
 		
 		if (workerId>=0 && taskId>=0) {
@@ -255,7 +248,7 @@ void solve(string fileName) {
 	fin >> workerN >> taskN >> Umax >> sumC;
 	seqN = taskN + workerN;
 	init(taskN, workerN, Umax);
-	Extend_Greedy_RT(fin, seqN);
+	Pure_Greedy(fin, seqN);
 
 	#ifdef LOCAL_DEBUG
 	assert(weightArr.size() == workerN);
@@ -301,9 +294,9 @@ int main(int argc, char* argv[]) {
 
 	double usedTime = calc_time(begProg, endProg);
 	#ifdef WATCH_MEM
-	printf("Extend_Greedy_RT %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	printf("Pure_Greedy %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
 	#else
-	printf("Extend_Greedy_RT %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	printf("Pure_Greedy %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
 	#endif
 	fflush(stdout);
 	

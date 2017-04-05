@@ -25,8 +25,8 @@ def dumpToFile(fileName, lines):
 
 if __name__ == "__main__":
 	farFilePath = "/home/turf/Code/Data/Data0/"
-	execPath = "/home/turf/Code/Introduction_to_Algorithms/Crowd_match_greedy/OPT"
-	logFileName = "OPT_clk.log"
+	execPath = "/home/turf/Code/Introduction_to_Algorithms/Crowd_match_greedy/Pure"
+	logFileName = "Pure_clk.log"
 	if len(sys.argv) >= 2:
 		farFilePath = sys.argv[1]
 	if len(sys.argv) >= 3:
