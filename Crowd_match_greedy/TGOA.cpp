@@ -119,11 +119,11 @@ struct Hungarian_t {
 		init(vertexN);
 		for (int i=0; i<vertexN; ++i) {
 			const int workerId = (i < Wsz) ? W_delta[i] : 
-								 (node.type==worker) ? -1 : -2;
+								 (i==Wsz && node.type==worker) ? -1 : -2;
 
 			for (int j=0; j<vertexN; ++j) {
 				const int taskId = (j < Tsz) ? T_delta[j]:
-								 (node.type==task) ? -1 : -2;
+								 (j==Tsz && node.type==task) ? -1 : -2;
 
 				double cost;
 				if (workerId==-2 || taskId==-2) {
@@ -272,25 +272,36 @@ void nextSeq(ifstream& fin, node_t& nd) {
 	nd.cap = 1;
 	nd.endTime = 1e8;
 
-	#ifdef LOCAL_DEBUG
-	nd.print();
-	#endif
+	// #ifdef LOCAL_DEBUG
+	// nd.print();
+	// #endif
 }
 
-bool satisfy(const node_t& worker, const node_t& task) {
-	// 2&3. capacity of worker & task
-	if (worker.cap<=worker.flow || task.cap<=task.flow)
-		return false;
-	
-	// 1. condition of deadline
-	if (!(worker.begTime<=task.endTime && task.begTime<=worker.endTime))
-		return false;
-	
+inline bool satisfyLoc(const node_t& worker, const node_t& task) {
 	// 4. condition of location
 	if (Length2(worker.loc, task.loc) > worker.rad * worker.rad)
 		return false;
 	
 	return true;
+}
+
+inline bool satisfyCap(const node_t& worker, const node_t& task) {
+	// 2&3. capacity of worker & task
+	if (worker.cap<=worker.flow || task.cap<=task.flow)
+		return false;
+	return true;
+}
+
+inline bool satisfyTime(const node_t& worker, const node_t& task) {
+	// 1. condition of deadline
+	if (!(worker.begTime<=task.endTime && task.begTime<=worker.endTime))
+		return false;
+	return true;
+}
+
+bool satisfy(const node_t& worker, const node_t& task) {
+	// return satisfyCap(worker, task) && satisfyTime(worker, task) && satisfyLoc(worker, task);
+	return satisfyCap(worker, task) && satisfyLoc(worker, task);
 }
 
 int chosenNextTask(const vector<node_t>& tasks, node_t& worker) {
@@ -361,30 +372,33 @@ void TGOA(ifstream& fin, int seqN) {
 			}
 			
 		} else {
-			#ifdef LOCAL_DEBUG
-			puts("before build");
-			#endif
+			// #ifdef LOCAL_DEBUG
+			// puts("before build");
+			// #endif
 			hung.build(T_delta, W_delta, tasks, workers, node);
-			#ifdef LOCAL_DEBUG
-			puts("after build");
-			#endif
+			// #ifdef LOCAL_DEBUG
+			// puts("after build");
+			// #endif
 
-			#ifdef LOCAL_DEBUG
-			puts("before match");
-			#endif
+			// #ifdef LOCAL_DEBUG
+			// puts("before match");
+			// #endif
 			hung.match();
-			#ifdef LOCAL_DEBUG
-			puts("after match");
-			fflush(stdout);
-			#endif
+			// #ifdef LOCAL_DEBUG
+			// puts("after match");
+			// fflush(stdout);
+			// #endif
 			
 			const int Tsz = T_delta.size();
 			const int Wsz = W_delta.size();
 			
 			if (node.type == task) {
-				if (hung.yx[Tsz]!=-1 && hung.yx[Tsz]<W_delta.size()) {
+				if (hung.yx[Tsz]>=0 && hung.yx[Tsz]<Wsz) {
 					workerId = W_delta[hung.yx[Tsz]];
-					if (workerId>=0 && workerId<workers.size() && satisfy(node, workers[workerId])) {
+					#ifdef LOCAL_DEBUG
+					assert(workerId < workers.size());
+					#endif
+					if (satisfy(node, workers[workerId])) {
 						/* valid, do nothing*/
 					} else {
 						workerId = -1;
@@ -392,9 +406,12 @@ void TGOA(ifstream& fin, int seqN) {
 				}
 				
 			} else {
-				if (hung.xy[Wsz]!=-1 && hung.xy[Wsz]<T_delta.size()) {
+				if (hung.xy[Wsz]>=0 && hung.xy[Wsz]<Tsz) {
 					taskId = T_delta[hung.xy[Wsz]];
-					if (taskId>=0 && taskId<tasks.size() && satisfy(tasks[taskId], node)) {
+					#ifdef LOCAL_DEBUG
+					assert(taskId < tasks.size());
+					#endif
+					if (satisfy(tasks[taskId], node)) {
 						/* valid, do nothing*/
 					} else {
 						taskId = -1;
@@ -402,9 +419,9 @@ void TGOA(ifstream& fin, int seqN) {
 				}
 			}
 			
-			#ifdef LOCAL_DEBUG
-			printf("workerId = %d, taskId = %d\n", workerId, taskId);
-			#endif
+			// #ifdef LOCAL_DEBUG
+			// printf("workerId = %d, taskId = %d\n", workerId, taskId);
+			// #endif
 		}
 		
 		if (workerId>=0 && taskId>=0) {
@@ -425,15 +442,19 @@ void TGOA(ifstream& fin, int seqN) {
 	}
 
 	#ifdef LOCAL_DEBUG
+	int taskFlow = 0, workerFlow = 0;
 	int freeTask = 0, freeWorker = 0;
 	for (int i=0; i<tasks.size(); ++i) {
 		assert(tasks[i].cap >= tasks[i].flow);
 		freeTask += tasks[i].cap - tasks[i].flow;
+		taskFlow += tasks[i].flow;
 	}
 	for (int i=0; i<workers.size(); ++i) {
 		assert(workers[i].cap >= workers[i].flow);
 		freeWorker += workers[i].cap - workers[i].flow;
+		workerFlow += workers[i].flow;
 	}
+	assert(taskFlow == workerFlow);
 	printf("taskN = %d, freeTask = %d, workerN = %d, freeWorker = %d\n", 
 		tasks.size(), freeTask, workers.size(), freeWorker);
 	#endif

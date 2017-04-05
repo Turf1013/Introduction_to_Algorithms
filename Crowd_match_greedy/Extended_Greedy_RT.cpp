@@ -120,7 +120,8 @@ inline bool satisfyTime(const node_t& worker, const node_t& task) {
 }
 
 bool satisfy(const node_t& worker, const node_t& task) {
-	return satisfyCap(worker, task) && satisfyTime(worker, task) && satisfyLoc(worker, task);
+	// return satisfyCap(worker, task) && satisfyTime(worker, task) && satisfyLoc(worker, task);
+	return satisfyCap(worker, task) && satisfyLoc(worker, task);
 }
 
 int chosenNextTask(const vector<node_t>& tasks, node_t& worker, double costBound) {
@@ -216,12 +217,19 @@ void Extend_Greedy_RT(ifstream& fin, int seqN) {
 	}
 
 	#ifdef LOCAL_DEBUG
+	int taskFlow = 0, workerFlow = 0;
 	int freeTask = 0, freeWorker = 0;
-	for (int i=0; i<tasks.size(); ++i)
-		freeTask += tasks[i].cap;
-	for (int i=0; i<workers.size(); ++i)
-		freeWorker += workers[i].cap;
-
+	for (int i=0; i<tasks.size(); ++i) {
+		assert(tasks[i].cap >= tasks[i].flow);
+		freeTask += tasks[i].cap - tasks[i].flow;
+		taskFlow += tasks[i].flow;
+	}
+	for (int i=0; i<workers.size(); ++i) {
+		assert(workers[i].cap >= workers[i].flow);
+		freeWorker += workers[i].cap - workers[i].flow;
+		workerFlow += workers[i].flow;
+	}
+	assert(taskFlow == workerFlow);
 	printf("taskN = %d, freeTask = %d, workerN = %d, freeWorker = %d\n", 
 		tasks.size(), freeTask, workers.size(), freeWorker);
 	#endif
@@ -271,8 +279,8 @@ int main(int argc, char* argv[]) {
 		dataPath = "/home/server/zyx/Data0/7";
 		fileName = "/home/server/zyx/Data0/7/order14.txt";
 		#else
-		dataPath = "/home/turf/Code/Data/Data0/1";
-		fileName = "/home/turf/Code/Data/Data0/1/order11.txt";
+		dataPath = "/home/turf/Code/Data/Data0/0";
+		fileName = "/home/turf/Code/Data/Data0/0/order14.txt";
 		#endif
 	}
 
