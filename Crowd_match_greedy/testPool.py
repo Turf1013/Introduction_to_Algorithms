@@ -8,20 +8,20 @@ import multiprocessing
 from test import runExtGreedy, dumpToFile
 
 def testFunc(farFilePath, execPath, dataSetN, orderN, logFileName):
-    print "begin testFunc"
+    # print "begin testFunc"
     lines = runExtGreedy(farFilePath, execPath, dataSetN, orderN)
     dumpToFile(logFileName, lines)
-    print "end testFunc"
+    # print "end testFunc"
 
 
 def testPool(distId):
     execNameList = [
         #"Ext", #"ExtMem",
-        "Greedy", #"GreedyMem",
+        #"Greedy", #"GreedyMem",
         #"Filter", #"FilterMem",
-        #"TGOA", #"TGOAMem"
+        "TGOA", #"TGOAMem"
     ]
-    orderN, caseN = 2, 5
+    orderN, caseN = 40, 5
     numRateList = [0.25, 0.5, 1.0]
     numCountList = [100, 200, 400]
     degRateList = [0.25, 0.5, 0.75, 1.0]

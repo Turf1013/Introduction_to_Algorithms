@@ -25,7 +25,7 @@ def genCaseFast(dirName, distId, workerN, taskN, degRate, umax, orderN):
 # distId:
 #	0: norm
 def genDataSetFast(distId, filePath):
-	orderN, caseN = 2, 5
+	orderN, caseN = 40, 5
 	numRateList = [0.25, 0.5, 1.0]
 	numCountList = [100, 200, 400]
 	degRateList = [0.25, 0.5, 0.75, 1.0]
