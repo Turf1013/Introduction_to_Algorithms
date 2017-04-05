@@ -8,7 +8,7 @@ using namespace std;
 #include "monitor.h"
 #include "input.h"
 
-//#define AT_THE_SERVER
+#define AT_THE_SERVER
 //#define LOCAL_DEBUG
 
 enum rule_t {
