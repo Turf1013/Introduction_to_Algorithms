@@ -7,7 +7,7 @@ LIBS = -lrt
 CFLAGS = --std=c++0x -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: Ext TGOA Filter Greedy ExtMem TGOAMem FilterMem GreedyMem
+all: Ext TGOA Filter Greedy ExtMem TGOAMem FilterMem GreedyMem OPT OPTMem
 Ext: monitor.h input.h Extended_Greedy_RT.cpp
 	$(CXX) $(CFLAGS) -o Ext Extended_Greedy_RT.cpp $(LIBS)
 
@@ -32,6 +32,12 @@ FilterMem: monitor.h input.h TGOA_Filter.cpp
 GreedyMem: monitor.h input.h TGOA_Greedy.cpp
 	$(CXX) $(CFLAGS) -o GreedyMem TGOA_Greedy.cpp $(LIBS) -D WATCH_MEM
 
+OPT: monitor.h input.h OPT.cpp
+	$(CXX) $(CFLAGS) -o OPT OPT.cpp $(LIBS)
+
+OPTMem: monitor.h input.h OPT.cpp
+	$(CXX) $(CFLAGS) -o OPTMem OPT.cpp $(LIBS) -D WATCH_MEM
+
 .PHONY: clean 
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
@@ -42,4 +48,5 @@ clean:
 		-@rm ExtMem ExtMem.g* 2> /dev/null || true	
 		-@rm TGOAMem TGOAMem.g* 2> /dev/null || true	
 		-@rm FilterMem FilterMem.g* 2> /dev/null || true	
-		-@rm GreedyMem GreedyMem.g* 2> /dev/null || true	
+		-@rm GreedyMem GreedyMem.g* 2> /dev/null || true
+		-@rm OPT OPTMem OPT.g* OPTMem.g* 2> /dev/null || true	
