@@ -8,7 +8,7 @@ using namespace std;
 #include "monitor.h"
 #include "input.h"
 
-#define AT_THE_SERVER
+//#define AT_THE_SERVER
 //#define LOCAL_DEBUG
 
 enum rule_t {
@@ -153,7 +153,7 @@ int chosenNextWorker(const vector<node_t>& workers, node_t& task, double costBou
 	for (int i=0; i<workerN; ++i) {
 		tmpCost = calcCost(task, workers[i]);
 		//printf("tmpCost = %.4lf, costBound = %.4lf, dis = %.4lf\n", tmpCost, costBound, Length(workers[i].loc, task.loc));
-		if (tmpCost>=costBound && satisfy(task, workers[i])) {
+		if (tmpCost>=costBound && satisfy(workers[i], task)) {
 			if (tmpCost > mxCost) {
 				mxCost = tmpCost;
 				ret = i;
@@ -164,7 +164,10 @@ int chosenNextWorker(const vector<node_t>& workers, node_t& task, double costBou
 }
 
 void addOneMatch(node_t& task, node_t& worker) {
+	#ifdef LOCAL_DEBUG
 	assert(satisfy(worker, task));
+	#endif
+
 	// add cost to utility
 	utility += calcCost(task, worker);
 	// update the capacity of task & worker
@@ -203,11 +206,19 @@ void Extend_Greedy_RT(ifstream& fin, int seqN) {
 			#ifdef LOCAL_DEBUG
 			assert(taskId>=0 && taskId<((int)tasks.size()));
 			assert(workerId>=0 && workerId<((int)workers.size()));
-			assert(satisfy(tasks[taskId], workers[workerId]));
+			if (!satisfy(workers[workerId], tasks[taskId])) {
+				putchar('\t');
+				tasks[taskId].print();
+				putchar('\t');
+				workers[workerId].print();
+			}
+			assert(satisfy(workers[workerId], tasks[taskId]));
 			#endif
+
 			addOneMatch(tasks[taskId], workers[workerId]);
+
 			#ifdef LOCAL_DEBUG
-			assert(!satisfy(tasks[taskId], workers[workerId]));
+			assert(!satisfy(workers[workerId], tasks[taskId]));
 			#endif
 		}
 
@@ -279,8 +290,8 @@ int main(int argc, char* argv[]) {
 		dataPath = "/home/server/zyx/Data0/7";
 		fileName = "/home/server/zyx/Data0/7/order14.txt";
 		#else
-		dataPath = "/home/turf/Code/Data/Data0/0";
-		fileName = "/home/turf/Code/Data/Data0/0/order14.txt";
+		dataPath = "/home/turf/tmp/data0/25_100_25_10/4";
+		fileName = "/home/turf/tmp/data0/25_100_25_10/4/order1.txt";
 		#endif
 	}
 
@@ -293,9 +304,9 @@ int main(int argc, char* argv[]) {
 
 	double usedTime = calc_time(begProg, endProg);
 	#ifdef WATCH_MEM
-	printf("Extend_Greedy_RT %s %.2lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	printf("Extend_Greedy_RT %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
 	#else
-	printf("Extend_Greedy_RT %s %.2lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	printf("Extend_Greedy_RT %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
 	#endif
 	fflush(stdout);
 	

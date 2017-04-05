@@ -41,7 +41,7 @@ struct node_t {
 	}
 };
 
-bool satisfyLoc(const node_t& task, const node_t& worker);
+bool satisfyLoc(const node_t& worker, const node_t& task);
 
 vector<vector<double> > weightArr;
 inline double calcCost(const node_t& task, const node_t& worker) {
@@ -50,7 +50,7 @@ inline double calcCost(const node_t& task, const node_t& worker) {
 	assert(task.id>=0 && task.id<weightArr[worker.id].size());
 	#endif
 	double ret = weightArr[worker.id][task.id];
-	if (!satisfyLoc(task, worker)) ret = 0.0;
+	if (!satisfyLoc(worker, task)) ret = 0.0;
 	return ret;
 }
 
@@ -333,7 +333,7 @@ int chosenNextWorker(const vector<node_t>& workers, node_t& task) {
 	
 	for (int i=0; i<workerN; ++i) {
 		tmpCost = calcCost(task, workers[i]);
-		if (satisfy(task, workers[i]) && tmpCost>mxCost) {
+		if (satisfy(workers[i], task) && tmpCost>mxCost) {
 			mxCost = tmpCost;
 			ret = i;
 		}
@@ -402,7 +402,7 @@ void TGOA(ifstream& fin, int seqN) {
 					#ifdef LOCAL_DEBUG
 					assert(workerId < workers.size());
 					#endif
-					if (satisfy(node, workers[workerId])) {
+					if (satisfy(workers[workerId], node)) {
 						/* valid, do nothing*/
 					} else {
 						workerId = -1;
@@ -415,7 +415,7 @@ void TGOA(ifstream& fin, int seqN) {
 					#ifdef LOCAL_DEBUG
 					assert(taskId < tasks.size());
 					#endif
-					if (satisfy(tasks[taskId], node)) {
+					if (satisfy(node, tasks[taskId])) {
 						/* valid, do nothing*/
 					} else {
 						taskId = -1;

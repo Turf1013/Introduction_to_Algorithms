@@ -8,55 +8,67 @@ import bisect
 
 # https://docs.scipy.org/doc/numpy/reference/routines.random.html
 
-def normDist(tot, low, high, mu,sigma):
-    ret = [0.0] * tot
-    i = 0
-    while i<tot:
-        sample=np.random.normal(mu, sigma)
-        if sample>=low and sample<=high:
-            ret[i] = sample
-            i+=1
-    return ret
-
-def expDist(tot, low, high, lambd):
-    ret = [0.0] * tot
-    i=0
-    while i<tot:
-        sample=np.random.exponential(lambd)
-        if sample>=low and sample<=high:
-            ret[i] = sample
-            i+=1
+def normDist(size, low, high):
+    mu = 0.5 + random.randint(0,99) / 100.0
+    signma = 0.5 + random.randint(0,99) / 1000.0
+    delta = high - low
+    ret = np.random.normal(mu, signma, size)
+    mx = max(ret)
+    for i in xrange(size):
+        ret[i] = ret[i] / mx
+        if ret[i] < 0:
+            ret[i] = low
+        elif ret[i] > 1.0:
+            ret[i] = high
+        else:
+            ret[i] = low + ret[i] * delta
     return ret
 
 
-def uniDist(tot, low, high): 
-	ret = np.random.uniform(low, high, tot)
-	for i in xrange(tot):
-		if ret[i] < low:
-			ret[i] = low
-		elif ret[i] > high:
-			ret[i] = high
+def expDist(size, low, high):
+    delta = high - low
+    ret = np.random.exponential(1.0, size)
+    mx = max(ret)
+    for i in xrange(size):
+        ret[i] = ret[i] / mx
+        if ret[i] < 0:
+            ret[i] = low
+        elif ret[i] > 1.0:
+            ret[i] = high
+        else:
+            ret[i] = low + ret[i] * delta
+    return ret
+
+
+def uniDist(size, low, high): 
+	ret = np.random.uniform(low, high, size)
 	return ret
 
 
-def logDist(tot, low, high, mu, sigma):
-    ret = [0.0] * tot
-    i=0
-    while i<tot:
-        sample=np.random.lognormal(mu, sigma)
-        if sample>=low and sample<=high:
-            ret[i] = sample
-            i+=1
+def logDist(size, low, high, mu, sigma):
+    mu = 0.5 + random.randint(0,99) / 100.0
+    signma = 0.5 + random.randint(0,99) / 1000.0
+    delta = high - low
+    ret = np.random.exponential(mu, sigma, size)
+    mx = max(ret)
+    for i in xrange(size):
+        ret[i] = ret[i] / mx
+        if ret[i] < 0:
+            ret[i] = low
+        elif ret[i] > 1.0:
+            ret[i] = high
+        else:
+            ret[i] = low + ret[i] * delta
     return ret
 
 
 def sample(size, low, high, distId):
     if distId == 0:
-	    ret = normDist(size, low, high, 50,25)
+	    ret = normDist(size, low, high)
     elif distId == 1:
-        ret = expDist(size, low, high, 50)
+        ret = expDist(size, low, high)
     elif distId == 2:
 	    ret = uniDist(size, low, high)
     else:
-        ret = logDist(size, low, high, 50, 25)
+        ret = logDist(size, low, high)
     return ret

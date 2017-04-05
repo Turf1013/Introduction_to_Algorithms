@@ -8,12 +8,12 @@ import bisect
 import math
 from zyx_dist import sample
 
-def sampleOne(low=1, high=100, distId=0):
+def sampleOne(distId=0, low=1, high=100):
 	ret = sample(1, low, high, distId)[0]
 	return ret
 	
 
-def orderToFile(filePath, distId=0, wn=1000, rn=1000, cap=1, umax=10):
+def orderToFile(filePath, distId=0, wn=1000, rn=1000, cap=1, umax=10, orderN=100):
 	deg=wn*cap+rn
 	timeList=[0] * (wn+rn)
 	for i in range(wn+rn):
@@ -30,8 +30,8 @@ def orderToFile(filePath, distId=0, wn=1000, rn=1000, cap=1, umax=10):
 
 	obj=[]
 	for i in xrange(wn):
-		x=sampleOne(distId)
-		y=sampleOne(distId)
+		x=sampleOne(distId, 1, 1000)
+		y=sampleOne(distId, 1, 1000)
 		d=4
 		c=1#
 		r=20
@@ -40,8 +40,8 @@ def orderToFile(filePath, distId=0, wn=1000, rn=1000, cap=1, umax=10):
 		obj.append(nob)
 
 	for i in xrange(rn):
-		x=sampleOne(distId)
-		y=sampleOne(distId)
+		x=sampleOne(distId, 1, 1000)
+		y=sampleOne(distId, 1, 1000)
 		d=4
 		c=1
 		r=20
@@ -81,16 +81,20 @@ def orderToFile2(filePath, distId=0, workerN=1000, taskN=1000, degRate=1.0, cap=
 		degRate = 1.0
 	degList = np.random.uniform(degRate-eps, degRate+eps, workerN)
 	
+	xList = sample(workerN, 1, 1000, distId)
+	yList = sample(workerN, 1, 1000, distId)
 	workerLocList = []
 	for i in xrange(workerN):
-		x=sampleOne(distId)
-		y=sampleOne(distId)
+		x = xList[i]
+		y = yList[i]
 		workerLocList.append([x, y])
 
+	xList = sample(taskN, 1, 1000, distId)
+	yList = sample(taskN, 1, 1000, distId)
 	taskLocList = []
 	for i in xrange(taskN):
-		x=sampleOne(distId)
-		y=sampleOne(distId)
+		x = xList[i]
+		y = yList[i]
 		taskLocList.append([x, y])
 
 	# print len(workerLocList), len(degList), len(taskLocList)
@@ -115,9 +119,7 @@ def orderToFile2(filePath, distId=0, workerN=1000, taskN=1000, degRate=1.0, cap=
 	# print degList
 
 	# handle time stamp
-	timeList=[0] * (workerN + taskN)
-	for i in xrange(workerN + taskN):
-		timeList[i] = int(sampleOne(distId))
+	timeList = sample(workerN+taskN, 1, 1000, distId)
 	timeList.sort()
 	k=0
 	prev=0
@@ -135,18 +137,18 @@ def orderToFile2(filePath, distId=0, workerN=1000, taskN=1000, degRate=1.0, cap=
 		r = workerRadList[workerId]
 		d = 4
 		ratio = 1
-		nob = ['w',i,x,y,r,cap,d,ratio]
+		nob = ['w',workerId,x,y,r,cap,d,ratio]
 		obj.append(nob)
 
 	for taskId in xrange(taskN):
 		x, y = taskLocList[taskId]
 		d = 4
 		pay = 1
-		nob = ['t',i,x,y,d,pay]
+		nob = ['t',taskId,x,y,d,pay]
 		obj.append(nob)
 
 	s="order"
-	for i in range(orderN):
+	for i in xrange(orderN):
 		fs=s+str(i)+".txt"
 		fileName = os.path.join(filePath, fs)
 		fp=open(fileName,'w')
