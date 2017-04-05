@@ -9,7 +9,7 @@ using namespace std;
 #include "monitor.h"
 
 //#define AT_THE_SERVER
-//#define LOCAL_DEBUG
+#define LOCAL_DEBUG
 
 enum rule_t {
 	worker, task
@@ -41,13 +41,17 @@ struct node_t {
 	}
 };
 
+bool satisfyLoc(const node_t& task, const node_t& worker);
+
 vector<vector<double> > weightArr;
 inline double calcCost(const node_t& task, const node_t& worker) {
 	#ifdef LOCAL_DEBUG
 	assert(worker.id>=0 && worker.id<weightArr.size());
 	assert(task.id>=0 && task.id<weightArr[worker.id].size());
 	#endif
-	return weightArr[worker.id][task.id];
+	double ret = weightArr[worker.id][task.id];
+	if (!satisfyLoc(task, worker)) ret = 0.0;
+	return ret;
 }
 
 inline double Length(pair<double,double> pa, pair<double,double> pb) {

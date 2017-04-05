@@ -9,7 +9,7 @@ using namespace std;
 #include "monitor.h"
 
 // #define AT_THE_SERVER
-#define LOCAL_DEBUG
+// #define LOCAL_DEBUG
 
 enum rule_t {
 	worker, task
