@@ -19,11 +19,11 @@ def testPool(distId):
         #"Ext", 
 	#"ExtMem",
         #"Greedy", 
-	"GreedyMem",
+	#"GreedyMem",
         #"Filter", 
 	#"FilterMem",
         #"TGOA", 
-	#"TGOAMem"
+	"TGOAMem"
     ]
     orderN, caseN = 40, 5
     numRateList = [0.25, 0.5, 1.0]

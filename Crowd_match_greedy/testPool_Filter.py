@@ -19,9 +19,9 @@ def testPool(distId):
         #"Ext", 
 	#"ExtMem",
         #"Greedy", 
-	"GreedyMem",
+	#"GreedyMem",
         #"Filter", 
-	#"FilterMem",
+	"FilterMem",
         #"TGOA", 
 	#"TGOAMem"
     ]

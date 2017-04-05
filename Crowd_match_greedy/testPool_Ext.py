@@ -17,9 +17,9 @@ def testFunc(farFilePath, execPath, dataSetN, orderN, logFileName):
 def testPool(distId):
     execNameList = [
         #"Ext", 
-	#"ExtMem",
+	"ExtMem",
         #"Greedy", 
-	"GreedyMem",
+	#"GreedyMem",
         #"Filter", 
 	#"FilterMem",
         #"TGOA", 
@@ -61,4 +61,7 @@ def testPool(distId):
     
 
 if __name__ == "__main__":
-    testPool(0)
+    distId = 0
+    if len(sys.argv) > 1:
+        distId = int(sys.argv[1])	
+    testPool(distId)

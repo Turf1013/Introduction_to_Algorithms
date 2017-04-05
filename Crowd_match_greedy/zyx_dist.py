@@ -45,11 +45,11 @@ def uniDist(size, low, high):
 	return ret
 
 
-def logDist(size, low, high, mu, sigma):
+def logDist(size, low, high):
     mu = 0.5 + random.randint(0,99) / 100.0
-    signma = 0.5 + random.randint(0,99) / 1000.0
+    sigma = 0.5 + random.randint(0,99) / 1000.0
     delta = high - low
-    ret = np.random.exponential(mu, sigma, size)
+    ret = np.random.lognormal(mu, sigma, size)
     mx = max(ret)
     for i in xrange(size):
         ret[i] = ret[i] / mx
@@ -63,6 +63,7 @@ def logDist(size, low, high, mu, sigma):
 
 
 def sample(size, low, high, distId):
+    print "distId =", distId
     if distId == 0:
 	    ret = normDist(size, low, high)
     elif distId == 1:

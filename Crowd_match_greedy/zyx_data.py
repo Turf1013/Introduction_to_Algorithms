@@ -52,4 +52,4 @@ def genDataSetFast(distId, filePath):
 
 
 if __name__ == "__main__":
-	genDataSetFast(0, "/home/turf/tmp/data0/")
+	genDataSetFast(3, "/home/turf/tmp/data3/")

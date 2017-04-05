@@ -163,7 +163,7 @@ def orderToFile2(filePath, distId=0, workerN=1000, taskN=1000, degRate=1.0, cap=
 		fp.close()
 
 if __name__ == "__main__":
-	orderToFile2("/home/turf/tmp/data0", distId=0, workerN=100, taskN=100, degRate=0.25, cap=1, umax=10)
-	orderToFile2("/home/turf/tmp/data1", distId=0, workerN=100, taskN=100, degRate=0.5, cap=1, umax=10)
-	orderToFile2("/home/turf/tmp/data2", distId=0, workerN=100, taskN=100, degRate=0.75, cap=1, umax=10)
-	orderToFile2("/home/turf/tmp/data3", distId=0, workerN=100, taskN=100, degRate=1.0, cap=1, umax=10)
+	orderToFile2("/home/turf/tmp/dataz", distId=3, workerN=100, taskN=100, degRate=0.25, cap=1, umax=10, orderN=10)
+	# orderToFile2("/home/turf/tmp/data1", distId=0, workerN=100, taskN=100, degRate=0.5, cap=1, umax=10)
+	# orderToFile2("/home/turf/tmp/data2", distId=0, workerN=100, taskN=100, degRate=0.75, cap=1, umax=10)
+	# orderToFile2("/home/turf/tmp/data3", distId=0, workerN=100, taskN=100, degRate=1.0, cap=1, umax=10)

@@ -61,4 +61,7 @@ def testPool(distId):
     
 
 if __name__ == "__main__":
-    testPool(0)
+    distId = 0
+    if len(sys.argv) > 1:
+        distId = int(sys.argv[1])
+    testPool(distId)
