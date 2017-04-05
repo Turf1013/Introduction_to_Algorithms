@@ -13,7 +13,7 @@ def runExtGreedy(farFilePath, execName = ".Ext", dataSetN=10, orderN=10):
 			cmdLine = "%s %s" % (execName, fileName)
 			# print cmdLine
 			line = commands.getoutput(cmdLine)
-			# print line
+			print line
 			lines.append(line)
 	return lines
 
@@ -24,8 +24,8 @@ def dumpToFile(fileName, lines):
 
 
 if __name__ == "__main__":
-	farFilePath = "/home/turf/Code/Data/"
-	execPath = "/home/turf/Code/Introduction_to_Algorithms/Crowd_match_greedy/Ext"
+	farFilePath = "/home/turf/Code/Data/Data0/"
+	execPath = "/home/turf/Code/Introduction_to_Algorithms/Crowd_match_greedy/Filter"
 	logFileName = "Ext_clk.log"
 	if len(sys.argv) >= 2:
 		farFilePath = sys.argv[1]
@@ -34,5 +34,5 @@ if __name__ == "__main__":
 	if len(sys.argv) >= 4:
 		logFileName = sys.argv[3]
 
-	lines = runExtGreedy(farFilePath, execPath, 2, 2)
+	lines = runExtGreedy(farFilePath, execPath, 4, 6)
 	dumpToFile(logFileName, lines)

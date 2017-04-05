@@ -19,7 +19,7 @@ void input_basic(const string& fileName, int& taskN, int& workerN, int& Umax, in
 		exit(1);
 	}
 
-	fin >> taskN >> workerN >> Umax >> sumC;
+	fin >> workerN >> taskN >> Umax >> sumC;
 	seqN = workerN + taskN;
 
 	fin.close();
@@ -43,6 +43,7 @@ void input_weight(const string& path, vector<vector<double> >& weightArr) {
 		exit(1);
 	}
 
+	weightArr.clear();
 	for (int i=0; i<workerN; ++i) {
 		for (int j=0; j<taskN; ++j) {
 			fin >> weightRow[j];

@@ -9,7 +9,8 @@ using namespace std;
 #include "input.h"
 #include "monitor.h"
 
-// #define LOCAL_DEBUG
+//#define AT_THE_SERVER
+//#define LOCAL_DEBUG
 
 enum rule_t {
 	worker, task
@@ -247,12 +248,14 @@ typedef long long LL;
 int n, m, umax;
 double utility;
 Hungarian_t hung;
+int usedMemory;
 
 void init(int taskN, int workerN, int Umax) {
 	n = workerN;
 	m = taskN;
 	umax = Umax;
 	utility = 0;
+	usedMemory = 0;
 }
 
 void nextSeq(ifstream& fin, node_t& nd) {
@@ -446,7 +449,7 @@ void solve(string fileName) {
 		exit(1);
 	}
 
-	fin >> taskN >> workerN >> Umax >> sumC;
+	fin >> workerN >> taskN >> Umax >> sumC;
 	seqN = taskN + workerN;
 	init(taskN, workerN, Umax);
 	TGOA_Filter(fin, seqN);
@@ -468,8 +471,14 @@ int main(int argc, char* argv[]) {
 			}
 		}
 	} else {
-		dataPath = "/home/turf/Code/Data/9";
-		fileName = "/home/turf/Code/Data/9/order10.txt";
+		#ifdef AT_THE_SERVER
+		dataPath = "/home/server/zyx/Data0/7";
+		fileName = "/home/server/zyx/Data0/7/order14.txt";
+		#else
+		dataPath = "/home/turf/Code/Data/Data0/0";
+		fileName = "/home/turf/Code/Data/Data0/0/order14.txt";
+		#endif
+
 	}
 
 	input_weight(dataPath, weightArr);

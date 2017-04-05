@@ -8,8 +8,8 @@ using namespace std;
 #include "monitor.h"
 #include "input.h"
 
+//#define AT_THE_SERVER
 //#define LOCAL_DEBUG
-//#define WATCH_MEM
 
 enum rule_t {
 	worker, task
@@ -23,20 +23,21 @@ union W_un {
 	
 struct node_t {
 	int id;				// id
-	rule_t type;			// 0: task, 1: worker
+	rule_t type;		// 0: task, 1: worker
 	pair<double, double> loc;	// location
 	int	cap;			// capacity
+	int flow;			// flow
 	double rad;			// radius	
 	W_un cost;			// cost
 	int begTime, endTime;	// time interval
 
 	void print() {
 		if (type == worker)
-		 	printf("id = %d, loc = (%.2lf, %.2lf), rad = %.2lf, cap = %d, time = (%d, %d)\n",
-		 			id, loc.first, loc.second, rad, cap, begTime, endTime);
+		 	printf("id = %d, loc = (%.2lf, %.2lf), rad = %.2lf, cap = %d, flow = %d, time = (%d, %d)\n",
+		 			id, loc.first, loc.second, rad, cap, flow, begTime, endTime);
 		else
-			printf("id = %d, loc = (%.2lf, %.2lf), time = (%d, %d)\n",
-		 			id, loc.first, loc.second, begTime, endTime);
+			printf("id = %d, loc = (%.2lf, %.2lf), flow = %d, time = (%d, %d)\n",
+		 			id, loc.first, loc.second, flow, begTime, endTime);
 	}
 };
 
@@ -69,6 +70,7 @@ void nextSeq(ifstream& fin, node_t& nd) {
 		nd.endTime += nd.begTime;
 	}
 
+	nd.flow = 0;
 	nd.cap = 1;
 	nd.endTime = 1e8;
 
@@ -79,6 +81,7 @@ void nextSeq(ifstream& fin, node_t& nd) {
 
 inline double calcCost(const node_t& task, const node_t& worker) {
 	#ifdef LOCAL_DEBUG
+	//printf("task.id = %d, worker.id = %d\n", task.id, worker.id);
 	assert(worker.id>=0 && worker.id<weightArr.size());
 	assert(task.id>=0 && task.id<weightArr[worker.id].size());
 	#endif
@@ -93,20 +96,31 @@ inline double Length2(pair<double,double> pa, pair<double,double> pb) {
 	return (pa.first-pb.first)*(pa.first-pb.first) + (pa.second-pb.second)*(pa.second-pb.second);
 }
 
-bool satisfy(const node_t& worker, const node_t& task) {
-	// 2&3. capacity of worker & task
-	if (worker.cap<=0 || task.cap<=0)
-		return false;
-	
-	// 1. condition of deadline
-	if (!(worker.begTime<=task.endTime && task.begTime<=worker.endTime))
-		return false;
-	
+
+inline bool satisfyLoc(const node_t& worker, const node_t& task) {
 	// 4. condition of location
 	if (Length2(worker.loc, task.loc) > worker.rad * worker.rad)
 		return false;
 	
 	return true;
+}
+
+inline bool satisfyCap(const node_t& worker, const node_t& task) {
+	// 2&3. capacity of worker & task
+	if (worker.cap<=worker.flow || task.cap<=task.flow)
+		return false;
+	return true;
+}
+
+inline bool satisfyTime(const node_t& worker, const node_t& task) {
+	// 1. condition of deadline
+	if (!(worker.begTime<=task.endTime && task.begTime<=worker.endTime))
+		return false;
+	return true;
+}
+
+bool satisfy(const node_t& worker, const node_t& task) {
+	return satisfyCap(worker, task) && satisfyTime(worker, task) && satisfyLoc(worker, task);
 }
 
 int chosenNextTask(const vector<node_t>& tasks, node_t& worker, double costBound) {
@@ -149,11 +163,15 @@ int chosenNextWorker(const vector<node_t>& workers, node_t& task, double costBou
 }
 
 void addOneMatch(node_t& task, node_t& worker) {
+	assert(satisfy(worker, task));
 	// add cost to utility
 	utility += calcCost(task, worker);
 	// update the capacity of task & worker
-	--task.cap;
-	--worker.cap;
+	++task.flow;
+	++worker.flow;
+
+	// double tmp = calcCost(task, worker);
+	// printf("tmp = %.2lf\n", tmp);
 }
 
 void Extend_Greedy_RT(ifstream& fin, int seqN) {
@@ -166,6 +184,10 @@ void Extend_Greedy_RT(ifstream& fin, int seqN) {
 	
 	while (seqN--) {
 		nextSeq(fin, node);
+		#ifdef LOCAL_DEBUG
+		node.print();
+		#endif
+
 		if (node.type == task) { // node is task
 			taskId = tasks.size();
 			tasks.push_back(node);
@@ -180,8 +202,12 @@ void Extend_Greedy_RT(ifstream& fin, int seqN) {
 			#ifdef LOCAL_DEBUG
 			assert(taskId>=0 && taskId<((int)tasks.size()));
 			assert(workerId>=0 && workerId<((int)workers.size()));
+			assert(satisfy(tasks[taskId], workers[workerId]));
 			#endif
 			addOneMatch(tasks[taskId], workers[workerId]);
+			#ifdef LOCAL_DEBUG
+			assert(!satisfy(tasks[taskId], workers[workerId]));
+			#endif
 		}
 
 		#ifdef WATCH_MEM
@@ -210,10 +236,19 @@ void solve(string fileName) {
 		exit(1);
 	}
 
-	fin >> taskN >> workerN >> Umax >> sumC;
+	fin >> workerN >> taskN >> Umax >> sumC;
 	seqN = taskN + workerN;
 	init(taskN, workerN, Umax);
 	Extend_Greedy_RT(fin, seqN);
+
+	#ifdef LOCAL_DEBUG
+	assert(weightArr.size() == workerN);
+	for (int i=0; i<weightArr.size(); ++i) {
+		assert(weightArr[i].size() == taskN);
+		for (int j=0; j<weightArr[i].size(); ++j)
+			assert(weightArr[i][j] < Umax+0.1);
+	}
+	#endif
 }
 
 int main(int argc, char* argv[]) {
@@ -232,8 +267,13 @@ int main(int argc, char* argv[]) {
 			}
 		}
 	} else {
-		dataPath = "/home/turf/Code/Data/9";
-		fileName = "/home/turf/Code/Data/9/order10.txt";
+		#ifdef AT_THE_SERVER
+		dataPath = "/home/server/zyx/Data0/7";
+		fileName = "/home/server/zyx/Data0/7/order14.txt";
+		#else
+		dataPath = "/home/turf/Code/Data/Data0/1";
+		fileName = "/home/turf/Code/Data/Data0/1/order11.txt";
+		#endif
 	}
 
 	//printf("[%d]: fileName = %s\n", getpid(), fileName.c_str());
@@ -245,9 +285,9 @@ int main(int argc, char* argv[]) {
 
 	double usedTime = calc_time(begProg, endProg);
 	#ifdef WATCH_MEM
-	printf("Extend_Greedy_RT %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	printf("Extend_Greedy_RT %s %.2lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
 	#else
-	printf("Extend_Greedy_RT %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	printf("Extend_Greedy_RT %s %.2lf %.6lfs\n", fileName.c_str(), utility, usedTime);
 	#endif
 	fflush(stdout);
 	

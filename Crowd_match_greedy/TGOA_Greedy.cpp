@@ -8,6 +8,7 @@ using namespace std;
 #include "input.h"
 #include "monitor.h"
 
+// #define AT_THE_SERVER
 // #define LOCAL_DEBUG
 
 enum rule_t {
@@ -40,13 +41,17 @@ struct node_t {
 	}
 };
 
+bool satisfyLoc(const node_t& task, const node_t& worker);
+
 vector<vector<double> > weightArr;
 inline double calcCost(const node_t& task, const node_t& worker) {
 	#ifdef LOCAL_DEBUG
 	assert(worker.id>=0 && worker.id<weightArr.size());
 	assert(task.id>=0 && task.id<weightArr[worker.id].size());
 	#endif
-	return weightArr[worker.id][task.id];
+	double ret = weightArr[worker.id][task.id];
+	if (!satisfyLoc(task, worker)) ret = 0.0;
+	return ret;
 }
 
 
@@ -58,20 +63,30 @@ inline double Length2(pair<double,double> pa, pair<double,double> pb) {
 	return (pa.first-pb.first)*(pa.first-pb.first) + (pa.second-pb.second)*(pa.second-pb.second);
 }
 
-bool satisfy(const node_t& worker, const node_t& task) {
-	// 2&3. capacity of worker & task
-	if (worker.cap<=worker.flow || task.cap<=task.flow)
-		return false;
-	
-	// 1. condition of deadline
-	if (!(worker.begTime<=task.endTime && task.begTime<=worker.endTime))
-		return false;
-	
+inline bool satisfyLoc(const node_t& worker, const node_t& task) {
 	// 4. condition of location
 	if (Length2(worker.loc, task.loc) > worker.rad * worker.rad)
 		return false;
 	
 	return true;
+}
+
+inline bool satisfyCap(const node_t& worker, const node_t& task) {
+	// 2&3. capacity of worker & task
+	if (worker.cap<=worker.flow || task.cap<=task.flow)
+		return false;
+	return true;
+}
+
+inline bool satisfyTime(const node_t& worker, const node_t& task) {
+	// 1. condition of deadline
+	if (!(worker.begTime<=task.endTime && task.begTime<=worker.endTime))
+		return false;
+	return true;
+}
+
+bool satisfy(const node_t& worker, const node_t& task) {
+	return satisfyCap(worker, task) && satisfyTime(worker, task) && satisfyLoc(worker, task);
 }
 
 
@@ -106,10 +121,9 @@ struct Greedy_t {
 	
 	void init(int n=0) {
 		this->n = n;
+		clear();
 		yx.resize(n, -1);
 		xy.resize(n, -1);
-		while (!Q.empty())
-			Q.pop();
 	}
 	
 	void clear() {
@@ -126,38 +140,32 @@ struct Greedy_t {
 		int vertexN = max(Tsz+(node.type==task), Wsz+(node.type==worker));
 		
 		init(vertexN);
-		for (int i=0; i<Wsz; ++i) {
-			const int workerId = W_delta[i];
-			// double rad2 = workers[workerId].rad * workers[workerId].rad;
-			for (int j=0; j<Tsz; ++j) {
-				const int taskId = T_delta[j];
-				if (true/* Length2(workers[workerId].loc, tasks[taskId].loc) <= rad2 */) {
-					double cost = calcCost(tasks[taskId], workers[workerId]);
-					Q.push(vertex_t(i, j, cost));
+		for (int i=0; i<vertexN; ++i) {
+			const int workerId = (i < Wsz) ? W_delta[i] : 
+								 (node.type==worker) ? -1 : -2;
+
+			for (int j=0; j<vertexN; ++j) {
+				const int taskId = (j < Tsz) ? T_delta[j]:
+								 (node.type==task) ? -1 : -2;
+
+				double cost;
+				if (workerId==-2 || taskId==-2) {
+					cost = 0.0;
+				} else if (workerId == -1) {
+					cost = calcCost(tasks[taskId], node);
+				} else if (taskId == -1) {
+					cost = calcCost(node, workers[workerId]);
+				} else {
+					cost = calcCost(tasks[taskId], workers[workerId]);
 				}
+
+				Q.push(vertex_t(i, j, cost));
 			}
-		}
-		
-		if (node.type == task) {
-			const int j = Tsz;
-			for (int i=0; i<Wsz; ++i) {
-				const int workerId = W_delta[i];
-				// double rad2 = workers[workerId].rad * workers[workerId].rad;
-				if (true/* Length2(workers[workerId].loc, node.loc) <= rad2 */) {
-					double cost = calcCost(node, workers[workerId]);
-					Q.push(vertex_t(i, j, cost));
-				}
-			}
-		} else {
-			const int i = Wsz;
-			// double rad2 = node.rad * node.tad;
-			for (int j=0; j<Tsz; ++j) {
-				const int taskId = T_delta[j];
-				if (true/* Length2(node.loc, tasks[taskId].loc) <= rad2 */) {
-					double cost = calcCost(tasks[taskId], node);
-					Q.push(vertex_t(i, j, cost));
-				}
-			}
+
+			// #ifdef LOCAL_DEBUG
+			// printf("%d: sz = %d, vertexN = %d\n", i, (int)g[i].size(), vertexN);
+			// assert(g[i].size() == vertexN);
+			// #endif
 		}
 	}
 	
@@ -171,16 +179,27 @@ struct Greedy_t {
 		while (!Q.empty()) {
 			ver = Q.top();
 			Q.pop();
-			workerId = (ver.u==Wsz) ? -1:W_delta[ver.u];
-			taskId = (ver.v==Tsz) ? -1:T_delta[ver.v];
-			const node_t& workerNode = (workerId==-1) ? node:workers[workerId];
-			const node_t& taskNode = (taskId==-1) ? node:tasks[taskId]; 
 			if (xy[ver.u]>=0 || yx[ver.v]>=0) break;
-			if (satisfy(workerNode, taskNode)) {
-				xy[ver.u] = ver.v;
-				yx[ver.v] = ver.u;
+
+			workerId = (ver.u<Wsz) ? W_delta[ver.u] :
+						(node.type==worker) ? -1 : -2;
+			taskId = (ver.v<Tsz) ? T_delta[ver.v] : 
+						(node.type==task) ? -1 : -2;
+
+			
+			if (workerId>=-1 && taskId>=-1) {
+				const node_t& workerNode = (workerId==-1) ? node:workers[workerId];
+				const node_t& taskNode = (taskId==-1) ? node:tasks[taskId]; 
+				
+				if (true /* satisfy(workerNode, taskNode) */) {
+					xy[ver.u] = ver.v;
+					yx[ver.v] = ver.u;
+				} else {
+					break;
+				}
 			} else {
-				break;
+				xy[ver.u] = ver.v;
+				yx[ver.v] = ver.u;	
 			}
 		}
 	}
@@ -362,7 +381,7 @@ void solve(string fileName) {
 		exit(1);
 	}
 
-	fin >> taskN >> workerN >> Umax >> sumC;
+	fin >> workerN >> taskN >> Umax >> sumC;
 	seqN = taskN + workerN;
 	init(taskN, workerN, Umax);
 	TGOA_Greedy(fin, seqN);
@@ -384,8 +403,13 @@ int main(int argc, char* argv[]) {
 			}
 		}
 	} else {
-		dataPath = "/home/turf/Code/Data/9";
-		fileName = "/home/turf/Code/Data/9/order10.txt";
+		#ifdef AT_THE_SERVER
+		dataPath = "/home/server/zyx/Data0/7";
+		fileName = "/home/server/zyx/Data0/7/order14.txt";
+		#else
+		dataPath = "/home/turf/Code/Data/Data0/0";
+		fileName = "/home/turf/Code/Data/Data0/0/order14.txt";
+		#endif
 	}
 
 	input_weight(dataPath, weightArr);
