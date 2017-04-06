@@ -63,7 +63,7 @@ def logDist(size, low, high):
 
 
 def sample(size, low, high, distId):
-    print "distId =", distId
+    # print "distId =", distId
     if distId == 0:
 	    ret = normDist(size, low, high)
     elif distId == 1:

@@ -169,8 +169,10 @@ if __name__ == "__main__":
         filePath = os.path.join("/home/turf/tmp/dataz", str(i))
         if not os.path.exists(filePath):
             os.mkdir(filePath)
-	    weightToFile(filePath, distId=i%4, n=50, m=50, high=10*(i+1)) 
-	    orderToFile2(filePath, distId=i%4, workerN=50, taskN=50, degRate=0.1*(i+1), cap=1, umax=10*(i+1), orderN=20)
+	    taskN = 50
+	    workerN = taskN - 3 * i
+	    weightToFile(filePath, distId=i%4, n=workerN, m=taskN, high=10*(i+1)) 
+	    orderToFile2(filePath, distId=i%4, workerN=workerN, taskN=taskN, degRate=0.1*(i+1), cap=1, umax=10*(i+1), orderN=20)
 	# orderToFile2("/home/turf/tmp/data1", distId=0, workerN=100, taskN=100, degRate=0.5, cap=1, umax=10)
 	# orderToFile2("/home/turf/tmp/data2", distId=0, workerN=100, taskN=100, degRate=0.75, cap=1, umax=10)
 	# orderToFile2("/home/turf/tmp/data3", distId=0, workerN=100, taskN=100, degRate=1.0, cap=1, umax=10)
