@@ -301,6 +301,7 @@ void TGOA_Greedy(ifstream& fin, int seqN) {
 	node_t node;
 	vector<node_t> tasks, workers;
 	int taskId, workerId;
+	bool isSecondHalf = false;
 	
 	while (seqN--) {
 		workerId = taskId = -1;
@@ -313,7 +314,7 @@ void TGOA_Greedy(ifstream& fin, int seqN) {
 			workers.push_back(node);
 		}
 		
-		if (W_delta.size() + T_delta.size() < k) {
+		if (!isSecondHalf && W_delta.size() + T_delta.size() < k) {
 			if (node.type == task) {
 				workerId = chosenNextWorker(workers, node);
 			} else {
@@ -359,6 +360,12 @@ void TGOA_Greedy(ifstream& fin, int seqN) {
 			addOneMatch(tasks[taskId], workers[workerId]);
 		}
 		
+		if (!isSecondHalf && T_delta.size()+node.cap+W_delta.size()>=k) {
+			isSecondHalf = true;
+			T_delta.clear();
+			W_delta.clear();
+			//printf("clear T_delta & W_delta");
+		}
 		if (node.type == task) {
 			for (int i=0; i<node.cap; ++i)
 				T_delta.push_back(taskId);
