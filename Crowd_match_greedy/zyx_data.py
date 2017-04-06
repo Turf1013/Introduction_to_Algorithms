@@ -17,10 +17,10 @@ def genDataSet(dataSetN, filePath):
 
 
 def genCaseFast(dirName, distId, workerN, taskN, degRate, umax, orderN):
-	print "begin genCaseFast"		
+	#print "begin genCaseFast"		
 	weightToFile(dirName, distId, workerN, taskN, umax)
 	orderToFile2(dirName, distId, workerN, taskN, degRate, cap=1, umax=umax, orderN=orderN)
-	print "end genCaseFast"
+	#print "end genCaseFast"
 
 # distId:
 #	0: norm

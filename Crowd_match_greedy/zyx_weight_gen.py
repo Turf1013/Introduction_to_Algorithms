@@ -14,6 +14,7 @@ def sampleOne(low=1, high=100, distId=0):
 
 def weightToFile(filePath, distId=0, n = 1000, m = 1000, high=10):
     fileName = os.path.join(filePath, "weight.txt")
+    print fileName
     with open(fileName, "w") as fout:
     	weightList = sample(n*m, 1, high, distId)
         for i in xrange(n):

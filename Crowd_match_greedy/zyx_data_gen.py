@@ -8,6 +8,8 @@ import bisect
 import math
 from zyx_dist import sample
 
+from zyx_weight_gen import weightToFile
+						   
 def sampleOne(distId=0, low=1, high=100):
 	ret = sample(1, low, high, distId)[0]
 	return ret
@@ -163,7 +165,12 @@ def orderToFile2(filePath, distId=0, workerN=1000, taskN=1000, degRate=1.0, cap=
 		fp.close()
 
 if __name__ == "__main__":
-	orderToFile2("/home/turf/tmp/dataz", distId=3, workerN=100, taskN=100, degRate=0.25, cap=1, umax=10, orderN=10)
+    for i in xrange(8):
+        filePath = os.path.join("/home/turf/tmp/dataz", str(i))
+        if not os.path.exists(filePath):
+            os.mkdir(filePath)
+	    weightToFile(filePath, distId=i%4, n=50, m=50, high=10*(i+1)) 
+	    orderToFile2(filePath, distId=i%4, workerN=50, taskN=50, degRate=0.1*(i+1), cap=1, umax=10*(i+1), orderN=20)
 	# orderToFile2("/home/turf/tmp/data1", distId=0, workerN=100, taskN=100, degRate=0.5, cap=1, umax=10)
 	# orderToFile2("/home/turf/tmp/data2", distId=0, workerN=100, taskN=100, degRate=0.75, cap=1, umax=10)
 	# orderToFile2("/home/turf/tmp/data3", distId=0, workerN=100, taskN=100, degRate=1.0, cap=1, umax=10)
