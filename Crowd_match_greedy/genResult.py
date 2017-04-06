@@ -9,6 +9,11 @@ class constForGenResult:
 	TASKN = "taskN"
 	DEGRATE = "degRate"
 	UMAX = "Umax"
+	paraNameList = [
+		"Utility",
+		"Time(s)",
+		"Memory(MB)",
+	]
 	
 	
 class CFGR(constForGenResult):	
@@ -126,14 +131,58 @@ def getResultFromFile(fileName):
 	return ret
 	
 	
+def getAlgoSet(allResults):
+	algoNameSet = set()
+	for resultList in allResults:
+		for result in resultList:
+			algoName = result[0]
+			algoNameSet.add(algoName)
+	return algoNameSet
+
+	
+def getAlgoNum(allResults):
+	return getAlgoSet(allResults)
+	
+	
+def dumpResult(allResults):	
+	caseSet = set()
+	algoNameSet = set()
+	algoDict = dict()
+	paraN = 0
+	for resultList in allResults:
+		for result in resultList:
+			algoName = result[0]
+			algoNameSet.add(algoName)
+			caseId = result[1]
+			caseSet.add(caseId)
+			if algoName not in algoDict:
+				algoDict[algoName] = dict()
+			algoDict[algoName][caseId] = result[2:]
+			paraN = len(result) - 2
+	ret = []
+	for paraId in xrange(paraN):
+		ret.append(CFGR.paraNameList[paraId])
+		for algoName in algoNameSet:
+			line = algoName
+			for caseId in caseSet:
+				tmpList = algoDict[algoName][caseId]
+				line += " " + str(tmpList[paraId])
+			ret.append(line)
+	return ret
+	
+	
 def dumpDictToFile(fileName, aDict):
 	with open(fileName, "w") as fout:
 		for name, allResults in aDict.iteritems():
-			fout.write(name + "\n")
-			for resultList in allResults:
-				for result in resultList:
-					line = " ".join(map(str, result)) + "\n"
-					fout.write(line)
+			dataInfo = name.split('.')[0].split('_')
+			workerN = int(dataInfo[0])
+			taskN = int(dataInfo[1])
+			degRate = int(dataInfo[2]) / 100.0
+			Umax = int(dataInfo[3])
+			infoLine = "workerN=%d,taskN=%d,degRate=%.2f,Umax=%d" % (workerN, taskN, degRate, Umax)
+			fout.write(infoLine + "\n")
+			lines = dumpResult(allResults)
+			fout.write("\n".join(lines) + "\n")
 			fout.write("\n\n")	
 	
 	
