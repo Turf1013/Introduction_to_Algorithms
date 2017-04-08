@@ -279,7 +279,7 @@ void Static_Greedy(ifstream& fin, int seqN) {
 	#ifdef WATCH_MEM
 	watchSolutionOnce(getpid(), usedMemory);
 	#endif
-	greedy.match();
+	greedy.match(T_delta, W_delta, tasks, workers);
 
 	const int Tsz = T_delta.size();
 	const int Wsz = W_delta.size();

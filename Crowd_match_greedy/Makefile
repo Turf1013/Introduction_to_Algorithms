@@ -7,7 +7,7 @@ LIBS = -lrt
 CFLAGS = --std=c++0x -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: Ext TGOA Filter Greedy ExtMem TGOAMem FilterMem GreedyMem OPT OPTMem Pure PureMem
+all: Ext TGOA Filter Greedy ExtMem TGOAMem FilterMem GreedyMem OPT OPTMem Pure PureMem Static StaticMem
 Ext: monitor.h input.h Extended_Greedy_RT.cpp
 	$(CXX) $(CFLAGS) -o Ext Extended_Greedy_RT.cpp $(LIBS)
 
@@ -44,6 +44,12 @@ Pure: monitor.h input.h Pure_Greedy.cpp
 PureMem: monitor.h input.h Pure_Greedy.cpp
 	$(CXX) $(CFLAGS) -o PureMem Pure_Greedy.cpp $(LIBS) -D WATCH_MEM
 
+Static: monitor.h input.h Static_Greedy.cpp
+	$(CXX) $(CFLAGS) -o Static Static_Greedy.cpp $(LIBS)
+
+StaticMem: monitor.h input.h Static_Greedy.cpp
+	$(CXX) $(CFLAGS) -o StaticMem Static_Greedy.cpp $(LIBS) -D WATCH_MEM	
+	
 .PHONY: clean 
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
@@ -57,3 +63,5 @@ clean:
 		-@rm GreedyMem GreedyMem.g* 2> /dev/null || true
 		-@rm OPT OPTMem OPT.g* OPTMem.g* 2> /dev/null || true	
 		-@rm Pure PureMem Pure.g* PureMem.g* 2> /dev/null || true	
+		-@rm Static StaticMem Static.g* StaticMem.g* 2> /dev/null || true
+		
