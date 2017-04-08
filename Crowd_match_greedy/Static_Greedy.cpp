@@ -356,6 +356,8 @@ int main(int argc, char* argv[]) {
 		#else
 		dataPath = "/home/turf/Code/Data/Data0/0";
 		fileName = "/home/turf/Code/Data/Data0/0/order14.txt";
+		dataPath = "/home/server/zyx/Data0/7";
+		fileName = "/home/server/zyx/Data0/7/order14.txt";
 		#endif
 
 	}
