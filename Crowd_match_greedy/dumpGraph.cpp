@@ -1,9 +1,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-#include "input.h"
-
-#define LOCAL_DEBUG
+//#define LOCAL_DEBUG
 
 struct edge_t {
 	int u, v;
@@ -30,13 +28,57 @@ struct task_t {
 };
 
 vector<edge_t> E;
-vector<vector<int> > weightArr;
+vector<vector<double> > weightArr;
 
 bool satisfyLoc(const worker_t& worker, const task_t& task) {
 	return (worker.x-task.x)*(worker.x-task.x) + (worker.y-task.y)*(worker.y-task.y) <= worker.r*worker.r;
 }
 
-void input_edge(ifstream& fin, vector<edge_t>& E, edgeN) {
+void input_basic(const string& fileName, int& taskN, int& workerN, int& Umax, int& sumC, int& seqN) {
+	ifstream fin(fileName.c_str(), ios::in);
+
+	if (!fin.is_open()) {
+		printf("Error openning FILE %s.\n", fileName.c_str());
+		exit(1);
+	}
+
+	fin >> workerN >> taskN >> Umax >> sumC;
+	seqN = workerN + taskN;
+
+	fin.close();
+}
+
+void input_weight(const string& path, vector<vector<double> >& weightArr) {
+	int taskN, workerN, sumC, seqN, Umax;
+
+	// get basic parameter from any order file 
+	string dataFileName = path + "/" + "order0.txt";
+	input_basic(dataFileName, taskN, workerN, Umax, sumC, seqN);
+
+	// get weight array
+	string fileName = path + "/" + "weight.txt";
+	ifstream fin(fileName.c_str(), ios::in);
+	weightArr.clear();
+	vector<double> weightRow(taskN, 0);
+
+	if (!fin.is_open()) {
+		printf("Error openning FILE %s.\n", fileName.c_str());
+		exit(1);
+	}
+
+	weightArr.clear();
+	for (int i=0; i<workerN; ++i) {
+		for (int j=0; j<taskN; ++j) {
+			fin >> weightRow[j];
+		}
+		weightArr.push_back(weightRow);
+	}
+
+
+	fin.close();
+}
+
+void input_edge(ifstream& fin, vector<edge_t>& E, int edgeN) {
 	E.clear();
 	int timeId, begTime, endTime, cap;
 	double rate, payback;
@@ -53,7 +95,7 @@ void input_edge(ifstream& fin, vector<edge_t>& E, edgeN) {
 		} else {
 			task_t task;
 			fin >> task.id >> task.x >> task.y >> endTime >> payback;
-			tasks.push_back(tas);
+			tasks.push_back(task);
 		}
 	}
 	
@@ -62,12 +104,21 @@ void input_edge(ifstream& fin, vector<edge_t>& E, edgeN) {
 	
 	for (int i=0; i<workerN; ++i) {
 		const int workerId = workers[i].id;
+		#ifdef LOCAL_DEBUG
+		int c = 0;
+		#endif
 		for (int j=0; j<taskN; ++j) {
 			const int taskId = tasks[j].id;
 			if (satisfyLoc(workers[i], tasks[j])) {
 				E.push_back(edge_t(workerId, taskId, weightArr[workerId][taskId]));
+				#ifdef LOCAL_DEBUG
+				++c;
+				#endif
 			}
 		}
+		#ifdef LOCAL_DEBUG
+			printf("%d: c = %d\n", workerId, c);
+		#endif
 	}
 }
 
@@ -114,9 +165,12 @@ void dumpGraph(string srcFileName, string desFileName) {
 int main(int argc, char **argv) {
 	cin.tie(0);
 	ios::sync_with_stdio(false);
+#ifdef LOCAL_DEBUG
+	freopen("data.in", "r", stdin);
+	freopen("data.out", "w", stdout);
+#endif
 
 	string dataPath, fileName, desFileName;
-	program_t begProg, endProg;
 
 	if (argc > 2) {
 		fileName = string(argv[1]);
@@ -128,15 +182,16 @@ int main(int argc, char **argv) {
 		}
 		desFileName = string(argv[2]);
 	} else {
-		dataPath = "I:\\zyx\\0_0";
-		fileName = "I:\\zyx\\0_0\\order0.txt";
-		desFileName = "I:\\zyx\\gra";
+		dataPath = "/home/turf/Code/SmallData";
+		fileName = "/home/turf/Code/SmallData";
+		desFileName = "/home/turf/Code/SmallData/graph";
 		for (int i=dataPath.length()-1; i>=0; --i) {
-			if (fileName[i] == '\\') {
-				desFileName += "\\" + fileName.substr(i+1, dataPath.length()) + "\\.txt";
+			if (fileName[i] == '/') {
+				desFileName += "/" + fileName.substr(i+1, dataPath.length()) + ".txt";
 				break;
 			}
 		}
+		// cout << dataPath << " " << fileName << " " << desFileName << endl;
 	}
 	
 	input_weight(dataPath, weightArr);
