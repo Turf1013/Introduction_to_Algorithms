@@ -27,7 +27,7 @@ def testPool(distId):
 		# "Static",
 		"StaticMem",
 	]
-	orderN, caseN = 100, 20
+	orderN, caseN = 1, 20
 	numRateList = [0.25, 0.5, 1.0]
 	numCountList = [100, 200, 400, 1000]
 	degRateList = [0.25, 0.5, 0.75, 1.0]

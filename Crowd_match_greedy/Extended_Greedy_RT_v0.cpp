@@ -8,7 +8,7 @@ using namespace std;
 #include "monitor.h"
 #include "input.h"
 
-// #define AT_THE_SERVER
+//#define AT_THE_SERVER
 //#define LOCAL_DEBUG
 
 enum rule_t {
@@ -44,7 +44,7 @@ struct node_t {
 typedef long long LL;
 int n, m, umax;
 double utility;
-int usedMemory = 0;
+int usedMemory;
 vector<vector<double> > weightArr;
 
 void init(int taskN, int workerN, int Umax) {
@@ -52,7 +52,7 @@ void init(int taskN, int workerN, int Umax) {
 	m = taskN;
 	umax = Umax;
 	utility = 0;
-	// usedMemory = 0;
+	usedMemory = 0;
 }
 
 void nextSeq(ifstream& fin, node_t& nd) {
@@ -178,7 +178,9 @@ void addOneMatch(node_t& task, node_t& worker) {
 	// printf("tmp = %.2lf\n", tmp);
 }
 
-void Extend_Greedy_RT(ifstream& fin, int seqN, int k) {
+void Extend_Greedy_RT(ifstream& fin, int seqN) {
+	int theta = ceil(log(umax + 1.0));
+	int k = rand() % theta;
 	double costBound = pow(exp(1.0), k);
 	node_t node;
 	vector<node_t> tasks, workers;
@@ -243,45 +245,17 @@ void Extend_Greedy_RT(ifstream& fin, int seqN, int k) {
 
 void solve(string fileName) {
 	int taskN, workerN, Umax, seqN, sumC;
-	{// get Umax to calculate theta
-		ifstream fin(fileName, ios::in);
+	ifstream fin(fileName, ios::in);
 
-		if (!fin.is_open()) {
-			printf("Error openning FILE %s.\n", fileName.c_str());
-			exit(1);
-		}
-
-		fin >> workerN >> taskN >> Umax >> sumC;
-		fin.close();
+	if (!fin.is_open()) {
+		printf("Error openning FILE %s.\n", fileName.c_str());
+		exit(1);
 	}
-	
-	int theta = ceil(log(Umax + 1.0));
-	double mxUtility = -1;
-	
-	for (int k=0; k<theta; ++k) {
-		ifstream fin(fileName, ios::in);
 
-		if (!fin.is_open()) {
-			printf("Error openning FILE %s.\n", fileName.c_str());
-			exit(1);
-		}
-
-		fin >> workerN >> taskN >> Umax >> sumC;
-		seqN = taskN + workerN;
-		init(taskN, workerN, Umax);
-		Extend_Greedy_RT(fin, seqN, k);
-		
-		if (utility > mxUtility)
-			mxUtility = utility;
-		
-		#ifdef AT_THE_SERVER 
-			printf("k = %d, utility = %.4lf\n", k, utility);
-		#endif
-		
-		fin.close();
-	}
-	
-	utility = mxUtility;
+	fin >> workerN >> taskN >> Umax >> sumC;
+	seqN = taskN + workerN;
+	init(taskN, workerN, Umax);
+	Extend_Greedy_RT(fin, seqN);
 
 	#ifdef LOCAL_DEBUG
 	assert(weightArr.size() == workerN);

@@ -28,7 +28,7 @@ def genDataSetFast(distId, filePath):
 	orderN, caseN = 40, 5
 	numRateList = [0.25, 0.5, 1.0]
 	numCountList = [100, 200, 400]
-	degRateList = [0.25, 0.5, 0.75, 1.0]
+	degRateList = [0.01, 0.02, 0.05, 0.08]
 	umaxList = [10, 100, 1000]
 
 	# directory name: $workerN_$taskN_$degRate_$umax
@@ -52,4 +52,7 @@ def genDataSetFast(distId, filePath):
 
 
 if __name__ == "__main__":
-	genDataSetFast(3, "/home/turf/tmp/data3/")
+	filePrefix = "/home/sever/zyx/SmallData/data"
+	for i in xrange(4):
+		filePath = filePrefix + str(i)
+		genDataSetFast(i, filePath)

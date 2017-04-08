@@ -27,14 +27,14 @@ def testPool(distId):
 		# "Static",
 		"StaticMem",
 	]
-	orderN, caseN = 40, 5
+	orderN, caseN = 1, 5
 	numRateList = [0.25, 0.5, 1.0]
 	numCountList = [100, 200, 400]
-	degRateList = [0.25, 0.5, 0.75, 1.0]
+	degRateList = [0.01, 0.02, 0.05, 0.08]
 	umaxList = [10, 100, 1000]
 
 	#farFilePrefix = "/home/turf/tmp/data" + str(distId)
-	farFilePrefix = "/home/server/zyx/Data/data" + str(distId)
+	farFilePrefix = "/home/server/zyx/SmallData/data" + str(distId)
 
 	# directory name: $workerN_$taskN_$degRate_$umax
 	for execName in execNameList:
@@ -42,10 +42,10 @@ def testPool(distId):
 		execPath = os.path.join("/home/server/zyx/Introduction_to_Algorithms/Crowd_match_greedy", execName)
 		if execName.endswith("Mem"):
 			name = execName[:execName.rindex("Mem")]
-			logFilePrefix = "/home/server/zyx/Log/%s_mem_%d" % (name, distId)
+			logFilePrefix = "/home/server/zyx/SmallLog/%s_mem_%d" % (name, distId)
 		else:
 			name = execName
-			logFilePrefix = "/home/server/zyx/Log/%s_clk_%d" % (name, distId)
+			logFilePrefix = "/home/server/zyx/SmallLog/%s_clk_%d" % (name, distId)
 		if not os.path.exists(logFilePrefix):
 			os.mkdir(logFilePrefix)
 		pool = multiprocessing.Pool(processes = 10)
@@ -65,5 +65,6 @@ def testPool(distId):
 if __name__ == "__main__":
 	distId = 0
 	if len(sys.argv) > 1:
-		distId = int(sys.argv[1])	
-	testPool(distId)
+		distId = int(sys.argv[1])
+	for distId in xrange(4):
+		testPool(distId)

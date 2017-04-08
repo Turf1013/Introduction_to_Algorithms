@@ -1,6 +1,6 @@
 /**
 	\author: Trasier
-	\date: 2017.04.02
+	\date: 2017.04.07
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -9,7 +9,7 @@ using namespace std;
 #include "monitor.h"
 
 //#define AT_THE_SERVER
-#define LOCAL_DEBUG
+// #define LOCAL_DEBUG
 
 enum rule_t {
 	worker, task
@@ -370,9 +370,9 @@ int main(int argc, char* argv[]) {
 
 	double usedTime = calc_time(begProg, endProg);
 	#ifdef WATCH_MEM
-	printf("OPT %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	printf("Static %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
 	#else
-	printf("OPT %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	printf("Static %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
 	#endif
 	fflush(stdout);
 	
