@@ -9,7 +9,7 @@ using namespace std;
 #include "monitor.h"
 
 //#define AT_THE_SERVER
-#define LOCAL_DEBUG
+//#define LOCAL_DEBUG
 
 enum rule_t {
 	worker, task
@@ -107,108 +107,105 @@ struct Greedy_t {
 			u(u), v(v), w(w) {}
 			
 		bool operator<(const vertex_t& o) const {
-			return w > o.w;
+			return w < o.w;
 		}
 	};
 	
 	const double INF = 1e18;
-	vector<vertex_t> E;
+	priority_queue<vertex_t> Q;
 	vector<int> yx, xy;
+	int n;
 	
 	Greedy_t() {
-		init(0, 0);
+		init();
 	}
 	
-	void init(int Wsz, int Tsz) {
+	void init(int n=0) {
+		this->n = n;
 		clear();
-		yx.resize(Tsz, -1);
-		xy.resize(Wsz, -1);
+		yx.resize(n, -1);
+		xy.resize(n, -1);
 	}
 	
 	void clear() {
 		yx.clear();
 		xy.clear();
-		E.clear();
+		while (!Q.empty())
+			Q.pop();
 	}
 	
 	void build(const vector<int>& T_delta, const vector<int>& W_delta, const vector<node_t>& tasks, 
 				const vector<node_t>& workers, const node_t& node) {
 		const int Tsz = T_delta.size();
 		const int Wsz = W_delta.size();
-		const int curTsz = Tsz + (node.type == task);
-		const int curWsz = Wsz + (node.type == worker);
+		int vertexN = max(Tsz+(node.type==task), Wsz+(node.type==worker));
 		
-		init(curWsz, curTsz);
-		for (int i=0; i<curWsz; ++i) {
-			const int workerId = (i < Wsz) ? W_delta[i] : -1;
+		init(vertexN);
+		for (int i=0; i<vertexN; ++i) {
+			const int workerId = (i < Wsz) ? W_delta[i] : 
+								 (i==Wsz && node.type==worker) ? -1 : -2;
 
-			for (int j=0; j<curTsz; ++j) {
-				const int taskId = (j < Tsz) ? T_delta[j] : -1;
+			for (int j=0; j<vertexN; ++j) {
+				const int taskId = (j < Tsz) ? T_delta[j]:
+								 (j==Tsz && node.type==task) ? -1 : -2;
 
 				double cost;
-				if (workerId==-1) {
-					if (satisfyLoc(node, tasks[taskId])) {
-						cost = calcCost(tasks[taskId], node);
-						E.push_back(vertex_t(i, j, cost));
-					}
+				if (workerId==-2 || taskId==-2) {
+					cost = 0.0;
+				} else if (workerId == -1) {
+					cost = calcCost(tasks[taskId], node);
 				} else if (taskId == -1) {
-					if (satisfyLoc(workers[workerId], node)) {
-						cost = calcCost(node, workers[workerId]);
-						E.push_back(vertex_t(i, j, cost));
-					}	
+					cost = calcCost(node, workers[workerId]);
 				} else {
-					if (satisfyLoc(workers[workerId], tasks[taskId])) {
-						cost = calcCost(tasks[taskId], workers[workerId]);
-						E.push_back(vertex_t(i, j, cost));
-					}
+					cost = calcCost(tasks[taskId], workers[workerId]);
 				}
+
+				Q.push(vertex_t(i, j, cost));
 			}
+
+			// #ifdef LOCAL_DEBUG
+			// printf("%d: sz = %d, vertexN = %d\n", i, (int)g[i].size(), vertexN);
+			// assert(g[i].size() == vertexN);
+			// #endif
 		}
+
+		#ifdef LOCAL_DEBUG
+		assert(Q.size() == vertexN * vertexN);
+		#endif
 	}
 	
 	void GreedyMatch(const vector<int>& T_delta, const vector<int>& W_delta, const vector<node_t>& tasks, 
 				const vector<node_t>& workers, const node_t& node) {
 		const int Tsz = T_delta.size();
 		const int Wsz = W_delta.size();
-		const int Esz = E.size();
 		vertex_t ver;
 		int taskId, workerId;
 		
-		sort(E.begin(), E.end());
-		#ifdef LOCAL_DEBUG
-		printf("E.size() = %d\n", (int)E.size());
-		#endif
-		for (int i=0; i<Esz; ++i) {
-			ver = E[i];
-
+		while (!Q.empty()) {
+			ver = Q.top();
+			Q.pop();
 			if (xy[ver.u]>=0 || yx[ver.v]>=0) continue;
 
-			workerId = (ver.u<Wsz) ? W_delta[ver.u] : -1;
-			taskId = (ver.v<Tsz) ? T_delta[ver.v] : -1;
-			const node_t& workerNode = (workerId==-1) ? node:workers[workerId];
-			const node_t& taskNode = (taskId==-1) ? node:tasks[taskId]; 
+			workerId = (ver.u<Wsz) ? W_delta[ver.u] :
+						(ver.u==Wsz && node.type==worker) ? -1 : -2;
+			taskId = (ver.v<Tsz) ? T_delta[ver.v] : 
+						(ver.v==Tsz && node.type==task) ? -1 : -2;
 
-			#ifdef LOCAL_DEBUG
-			if (workerId == -1) {
-				assert(taskId>=0 && taskId<tasks.size());
-			} else if (taskId == -1) {
-				assert(workerId>=0 && workerId<workers.size());
-			}
-			#endif
-
-			if ((workerId==-1 || taskId==-1)) {
+			
+			if (workerId>=-1 && taskId>=-1) {
+				const node_t& workerNode = (workerId==-1) ? node:workers[workerId];
+				const node_t& taskNode = (taskId==-1) ? node:tasks[taskId]; 
+				
 				if (satisfy(workerNode, taskNode)) {
 					xy[ver.u] = ver.v;
 					yx[ver.v] = ver.u;
+				} else {
+					//break;
 				}
-				#ifdef LOCAL_DEBUG
-				assert(!(workerId==-1 && taskId==-1));
-				#endif
-				return ;
+			} else {
+				xy[ver.u] = ver.v;
+				yx[ver.v] = ver.u;	
 			}
-
-			xy[ver.u] = ver.v;
-			yx[ver.v] = ver.u;
 		}
 	}
 	
@@ -317,7 +314,7 @@ void TGOA_Greedy(ifstream& fin, int seqN) {
 			workers.push_back(node);
 		}
 		
-		if (!isSecondHalf && W_delta.size() + T_delta.size() <= k) {
+		if (!isSecondHalf && W_delta.size() + T_delta.size() < k) {
 			if (node.type == task) {
 				workerId = chosenNextWorker(workers, node);
 			} else {
@@ -325,28 +322,17 @@ void TGOA_Greedy(ifstream& fin, int seqN) {
 			}
 			
 		} else {
-			#ifdef LOCAL_DEBUG
-			printf("ws.size() = %d, ts.size() = %d, ", W_delta.size(), T_delta.size());
-			#endif
-
 			greedy.build(T_delta, W_delta, tasks, workers, node);
 			greedy.match(T_delta, W_delta, tasks, workers, node);
 			const int Tsz = T_delta.size();
 			const int Wsz = W_delta.size();
 			
 			if (node.type == task) {
-				if (greedy.yx[Tsz] >= 0) {
-					#ifdef LOCAL_DEBUG
- 					assert(greedy.yx[Tsz] < Wsz);
-					#endif
-
+				if (greedy.yx[Tsz]>=0 && greedy.yx[Tsz]<Wsz) {
 					workerId = W_delta[greedy.yx[Tsz]];
-
 					#ifdef LOCAL_DEBUG
 					assert(workerId < workers.size());
-					// assert(satisfy(workers[workerId], node));
 					#endif
-
 					if (satisfy(workers[workerId], node)) {
 						/* valid, do nothing*/
 					} else {
@@ -355,18 +341,11 @@ void TGOA_Greedy(ifstream& fin, int seqN) {
 				}
 				
 			} else {
-				if (greedy.xy[Wsz] >= 0) {
-					#ifdef LOCAL_DEBUG
-					assert(greedy.xy[Wsz] < Tsz);
-					#endif
-
+				if (greedy.xy[Wsz]>=0 && greedy.xy[Wsz]<Tsz) {
 					taskId = T_delta[greedy.xy[Wsz]];
-
 					#ifdef LOCAL_DEBUG
 					assert(taskId < tasks.size());
-					// assert(satisfy(node, tasks[taskId]));
 					#endif
-
 					if (satisfy(node, tasks[taskId])) {
 						/* valid, do nothing*/
 					} else {
@@ -380,29 +359,13 @@ void TGOA_Greedy(ifstream& fin, int seqN) {
 		if (workerId>=0 && taskId>=0) {
 			addOneMatch(tasks[taskId], workers[workerId]);
 		}
-
-		#ifdef LOCAL_DEBUG
-			if (workerId>=0 && taskId>=0) {
-				if (isSecondHalf) {
-					if (node.type == worker)
-						printf("w.id = %d, tmp = %.4lf\n", workerId, weightArr[workerId][taskId]);
-					else
-						printf("t.id = %d, tmp = %.4lf\n", taskId, weightArr[workerId][taskId]);
-				} else {
-					printf("w.id = %d, t.id = %d, tmp = %.4lf\n", workerId, taskId, weightArr[workerId][taskId]);
-				}
-			} else {
-				if (isSecondHalf) {
-					if (node.type == worker)
-						printf("w.id = %d, tmp = %.4lf\n", workerId, 0.0);
-					else
-						printf("t.id = %d, tmp = %.4lf\n", taskId, 0.0);
-				} else {
-					printf("w.id = %d, t.id = %d, tmp = %.4lf\n", workerId, taskId, -1.0);
-				}
-			}
-		#endif
 		
+		if (!isSecondHalf && T_delta.size()+node.cap+W_delta.size()>=k) {
+			isSecondHalf = true;
+			T_delta.clear();
+			W_delta.clear();
+			//printf("clear T_delta & W_delta");
+		}
 		if (node.type == task) {
 			for (int i=0; i<node.cap; ++i)
 				T_delta.push_back(taskId);
@@ -411,11 +374,6 @@ void TGOA_Greedy(ifstream& fin, int seqN) {
 				W_delta.push_back(workerId);
 		}
 
-		if (!isSecondHalf && T_delta.size()+W_delta.size()>k) {
-			isSecondHalf = true;
-			T_delta.clear();
-			W_delta.clear();
-		}
 		#ifdef WATCH_MEM
 		watchSolutionOnce(getpid(), usedMemory);
 		#endif
@@ -475,8 +433,8 @@ int main(int argc, char* argv[]) {
 		dataPath = "/home/server/zyx/Data0/7";
 		fileName = "/home/server/zyx/Data0/7/order14.txt";
 		#else
-		dataPath = "/home/turf/tmp/";
-		fileName = "/home/turf/tmp/order0.txt";
+		dataPath = "/home/turf/Code/Data/Data0/0";
+		fileName = "/home/turf/Code/Data/Data0/0/order14.txt";
 		#endif
 	}
 
