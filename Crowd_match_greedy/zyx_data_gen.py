@@ -81,18 +81,18 @@ def orderToFile2(filePath, distId=0, workerN=1000, taskN=1000, degRate=1.0, cap=
 		degRate = eps * 1.1
 	if degRate > 1.0:
 		degRate = 1.0
-	degList = np.random.uniform(degRate-eps, degRate+eps, workerN)
+	degList = np.random.normal(degRate, 1.0, workerN)
 	
-	xList = sample(workerN, 1, 1000, distId)
-	yList = sample(workerN, 1, 1000, distId)
+	xList = random.sample(xrange(10**4), workerN)
+	yList = random.sample(xrange(10**4), workerN)
 	workerLocList = []
 	for i in xrange(workerN):
 		x = xList[i]
 		y = yList[i]
 		workerLocList.append([x, y])
 
-	xList = sample(taskN, 1, 1000, distId)
-	yList = sample(taskN, 1, 1000, distId)
+	xList = random.sample(xrange(10**4), taskN)
+	yList = random.sample(xrange(10**4), taskN)
 	taskLocList = []
 	for i in xrange(taskN):
 		x = xList[i]
@@ -108,13 +108,13 @@ def orderToFile2(filePath, distId=0, workerN=1000, taskN=1000, degRate=1.0, cap=
 		degNum = max(0, degNum)
 		degList[workerId] = degNum
 		for taskId in xrange(taskN):
-			distList[taskId] = Distance(workerLocList[workerId], taskLocList[taskId])
+			distList[taskId] = Distance2(workerLocList[workerId], taskLocList[taskId])
 		distList.sort()
 		# print degNum
 		if degNum == 0:
 			workerRadList[workerId] = 0.0
 		else:
-			workerRadList[workerId] = math.sqrt(distList[degNum-1]) + eps	
+			workerRadList[workerId] = distList[degNum-1] ** 0.5 + eps	
 	random.shuffle(taskLocList)	
 	sumDeg = sum(degList)
 
