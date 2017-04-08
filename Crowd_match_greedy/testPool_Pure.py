@@ -31,9 +31,9 @@ def testPool(distId):
 	]
 	orderN, caseN = 40, 5
 	numRateList = [0.25, 0.5, 1.0]
-	numCountList = [100, 200, 400]
-	degRateList = [0.01, 0.02, 0.05, 0.08]
-	umaxList = [10, 100, 1000]
+	numCountList = [100, 200, 400, 1000]
+	degRateList = [0.01, 0.02, 0.05, 0.10, 0.20, 0.5, 0.75, 1.00]
+	umaxList = [100]
 
 	#farFilePrefix = "/home/turf/tmp/data" + str(distId)
 	farFilePrefix = "/home/server/zyx/SmallData/data" + str(distId)
