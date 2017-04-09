@@ -229,12 +229,14 @@ def getResult(srcPath, desPath):
 	
 	
 if __name__ == "__main__":
-	srcPath = "G:/Log"
-	desPath = "G:/Result"
+	srcPath = "F:/Log"
+	desPath = "F:/Result"
 	if len(sys.argv) > 1:
 		srcPath = sys.argv[1]
 	if len(sys.argv) > 2:
 		desPath = sys.argv[2]
+	if not os.path.exists(desPath):
+		os.mkdir(desPath)
 		
 	getResult(srcPath, desPath)
 	
