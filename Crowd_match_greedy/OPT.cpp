@@ -333,9 +333,6 @@ void OPT(ifstream& fin, int seqN) {
 		const int taskId = (y < Tsz) ? T_delta[y] : -2;
 
 		if (workerId>=0 && taskId>=0) {
-			#ifdef LOCAL_DEBUG
-			assert(satisfy(workers[workerId], tasks[taskId]));
-			#endif
 			addOneMatch(tasks[taskId], workers[workerId]);
 		}
 	}

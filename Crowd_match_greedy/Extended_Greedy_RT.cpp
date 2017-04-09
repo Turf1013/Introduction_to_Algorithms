@@ -179,7 +179,7 @@ void addOneMatch(node_t& task, node_t& worker) {
 }
 
 void Extend_Greedy_RT(ifstream& fin, int seqN, int k) {
-	double costBound = pow(exp(1.0), k);
+	double costBound = (k==0) ? 0.0 : pow(exp(1.0), k);
 	node_t node;
 	vector<node_t> tasks, workers;
 	int taskId, workerId;
