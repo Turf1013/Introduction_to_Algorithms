@@ -29,3 +29,4 @@ StaticMem
 dumpGraph
 ExtMinMem
 ExtMaxMem
+ExtAvgMem

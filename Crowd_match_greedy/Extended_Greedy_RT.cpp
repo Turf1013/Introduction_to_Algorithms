@@ -352,11 +352,27 @@ int main(int argc, char* argv[]) {
 	save_time(endProg);
 
 	double usedTime = calc_time(begProg, endProg);
-	#ifdef WATCH_MEM
-	printf("Extend_Greedy_RT %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+#ifdef WATCH_MEM
+	#if defined(USE_MIN)
+		printf("RT_MIN %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	#elif defined(USE_MAX)
+		printf("RT_MAX %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	#elif defined(USE_AVG)
+		printf("RT_AVG %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
 	#else
-	printf("Extend_Greedy_RT %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+		printf("RT %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
 	#endif
+#else
+	#if defined(USE_MIN)
+		printf("RT_MIN %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	#elif defined(USE_MAX)
+		printf("RT_MAX %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	#elif defined(USE_AVG)
+		printf("RT_AVG %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	#else
+		printf("RT %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	#endif
+#endif
 	fflush(stdout);
 	
 	return 0;
