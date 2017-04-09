@@ -51,7 +51,7 @@ StaticMem: monitor.h input.h Static_Greedy.cpp
 	$(CXX) $(CFLAGS) -o StaticMem Static_Greedy.cpp $(LIBS) -D WATCH_MEM	
 	
 dumpGraph: dumpGraph.cpp
-	$(CXX) $(CFLAGS) -o dumpGraph dumpGraph.cpp $(LIBS) -D WATCH_MEM	
+	$(CXX) $(CFLAGS) -o dumpGraph dumpGraph.cpp $(LIBS)	
 
 .PHONY: clean 
 clean:

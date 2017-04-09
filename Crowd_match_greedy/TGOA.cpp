@@ -466,7 +466,7 @@ void TGOA(ifstream& fin, int seqN) {
 
 void solve(string fileName) {
 	int taskN, workerN, Umax, seqN, sumC;
-	ifstream fin(fileName, ios::in);
+	ifstream fin(fileName.c_str(), ios::in);
 
 	if (!fin.is_open()) {
 		printf("Error openning FILE %s.\n", fileName.c_str());

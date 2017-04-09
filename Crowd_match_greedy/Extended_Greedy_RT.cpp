@@ -244,7 +244,7 @@ void Extend_Greedy_RT(ifstream& fin, int seqN, int k) {
 void solve(string fileName) {
 	int taskN, workerN, Umax, seqN, sumC;
 	{// get Umax to calculate theta
-		ifstream fin(fileName, ios::in);
+		ifstream fin(fileName.c_str(), ios::in);
 
 		if (!fin.is_open()) {
 			printf("Error openning FILE %s.\n", fileName.c_str());
@@ -259,7 +259,7 @@ void solve(string fileName) {
 	double mxUtility = -1;
 	
 	for (int k=0; k<theta; ++k) {
-		ifstream fin(fileName, ios::in);
+		ifstream fin(fileName.c_str(), ios::in);
 
 		if (!fin.is_open()) {
 			printf("Error openning FILE %s.\n", fileName.c_str());

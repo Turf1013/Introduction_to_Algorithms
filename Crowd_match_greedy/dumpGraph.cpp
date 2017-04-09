@@ -152,6 +152,7 @@ void dumpInfo() {
 	vector<int> taskDeg(taskN, 0);
 	int workerSumDeg = 0, taskSumDeg = 0;
 	const int edgeN = E.size();
+	set<int> taskSet;
 	
 	for (int i=0; i<edgeN; ++i) {
 		const int workerId = E[i].u;
@@ -160,6 +161,7 @@ void dumpInfo() {
 		++taskDeg[taskId];
 		++workerSumDeg;
 		++taskSumDeg;
+		taskSet.insert(E[i].v);
 	}
 
 	double workerAvgDeg = workerSumDeg * 1.0 / workerN, taskAvgDeg = taskSumDeg * 1.0 / taskN;
@@ -175,8 +177,11 @@ void dumpInfo() {
 	}
 	if (taskN > 0) taskVarDeg /= taskN;
 
-	printf("workerAvgDeg=%.2lf workerVarDeg=%.2lf taskAvgDeg=%.2lf taskVarDeg=%.2lf\n", 
-		workerAvgDeg, workerVarDeg, taskAvgDeg, taskVarDeg);
+	assert(taskSet.size() <= taskN);
+	double aloneTaskRate = (taskN==0) ? 0.0 : (taskN-taskSet.size())*1.0 / taskN;
+
+	printf("workerAvgDeg=%.2lf workerVarDeg=%.2lf taskAvgDeg=%.2lf taskVarDeg=%.2lf aloneTaskRate=%.2lf\n", 
+		workerAvgDeg, workerVarDeg, taskAvgDeg, taskVarDeg, aloneTaskRate);
 }
 
 void dumpGraph(string srcFileName, string desFileName) {

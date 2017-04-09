@@ -24,4 +24,6 @@ OPT
 OPTMem
 Pure
 PureMem
+Static
+StaticMem
 dumpGraph
