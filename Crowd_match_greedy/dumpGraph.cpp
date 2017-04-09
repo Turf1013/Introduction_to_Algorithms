@@ -145,6 +145,40 @@ void dumpEdge(string fileName) {
 	fout.close();
 }
 
+void dumpInfo() {
+	const int workerN = weightArr.size();
+	const int taskN = (workerN==0) ? 0 : weightArr[0].size();
+	vector<int> workerDeg(workerN, 0);
+	vector<int> taskDeg(taskN, 0);
+	int workerSumDeg = 0, taskSumDeg = 0;
+	const int edgeN = E.size();
+	
+	for (int i=0; i<edgeN; ++i) {
+		const int workerId = E[i].u;
+		const int taskId = E[i].v;
+		++workerDeg[workerId];
+		++taskDeg[taskId];
+		++workerSumDeg;
+		++taskSumDeg;
+	}
+
+	double workerAvgDeg = workerSumDeg * 1.0 / workerN, taskAvgDeg = taskSumDeg * 1.0 / taskN;
+	double workerVarDeg = 0., taskVarDeg = 0.;
+
+	for (int i=0; i<workerN; ++i) {
+		workerVarDeg += (workerDeg[i] - workerAvgDeg) * (workerDeg[i] - workerAvgDeg);
+	}
+	if (workerN > 0) workerVarDeg /= workerN;
+
+	for (int i=0; i<taskN; ++i) {
+		taskVarDeg += (taskDeg[i] - taskAvgDeg) * (taskDeg[i] - taskAvgDeg);
+	}
+	if (taskN > 0) taskVarDeg /= taskN;
+
+	printf("workerAvgDeg=%.2lf workerVarDeg=%.2lf taskAvgDeg=%.2lf taskVarDeg=%.2lf\n", 
+		workerAvgDeg, workerVarDeg, taskAvgDeg, taskVarDeg);
+}
+
 void dumpGraph(string srcFileName, string desFileName) {
 	int workerN, taskN, Umax, sumC;
 	
@@ -158,6 +192,7 @@ void dumpGraph(string srcFileName, string desFileName) {
 	fin >> workerN >> taskN >> Umax >> sumC;
 	input_edge(fin, E, workerN+taskN);
 	dumpEdge(desFileName);
+	dumpInfo();
 	
 	fin.close();
 }
