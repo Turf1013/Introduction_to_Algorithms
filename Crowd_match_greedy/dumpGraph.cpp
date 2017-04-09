@@ -164,6 +164,15 @@ void dumpInfo() {
 		taskSet.insert(E[i].v);
 	}
 
+	#ifdef LOCAL_DEBUG
+	for (int i=0; i<taskN; ++i) {
+		if (i>0 && i%10==0)
+			putchar('\n');
+		printf("%d ", taskDeg[i]);
+	}
+	putchar('\n');
+	#endif
+
 	double workerAvgDeg = workerSumDeg * 1.0 / workerN, taskAvgDeg = taskSumDeg * 1.0 / taskN;
 	double workerVarDeg = 0., taskVarDeg = 0.;
 
@@ -206,7 +215,7 @@ int main(int argc, char **argv) {
 	cin.tie(0);
 	ios::sync_with_stdio(false);
 #ifdef LOCAL_DEBUG
-	freopen("data.in", "r", stdin);
+	//freopen("data.in", "r", stdin);
 	freopen("data.out", "w", stdout);
 #endif
 
@@ -222,12 +231,12 @@ int main(int argc, char **argv) {
 		}
 		desFileName = string(argv[2]);
 	} else {
-		dataPath = "/home/turf/Code/SmallData";
-		fileName = "/home/turf/Code/SmallData";
-		desFileName = "/home/turf/Code/SmallData/graph";
+		dataPath = "/home/turf/Code/SmallData/data0/1000_1000_100_100/0";
+		fileName = "/home/turf/Code/SmallData/data0/1000_1000_100_100/0/order0.txt";
+		desFileName = "/home/turf/tmp";
 		for (int i=dataPath.length()-1; i>=0; --i) {
-			if (fileName[i] == '/') {
-				desFileName += "/" + fileName.substr(i+1, dataPath.length()) + ".txt";
+			if (dataPath[i] == '/') {
+				desFileName += "/" + dataPath.substr(i+1, dataPath.length()) + ".txt";
 				break;
 			}
 		}

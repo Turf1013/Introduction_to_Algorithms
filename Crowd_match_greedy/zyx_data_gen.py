@@ -77,7 +77,10 @@ def Distance2(workerLoc, taskLoc):
 def orderToFile2(filePath, distId=0, workerN=1000, taskN=1000, degRate=1.0, cap=1, umax=10, orderN=100):
 	# print "begin orderToFile2"
 	# handle degree
-	degList = np.random.normal(degRate*taskN, 1.0, workerN)
+	if degRate == 1.0:
+		degList = [taskN] * workerN
+	else:
+		degList = np.random.normal(degRate*taskN, 1.0, workerN)
 	
 	xList = random.sample(xrange(10**4), workerN)
 	yList = random.sample(xrange(10**4), workerN)
