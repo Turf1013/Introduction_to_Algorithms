@@ -241,6 +241,31 @@ void Extend_Greedy_RT(ifstream& fin, int seqN, int k) {
 	#endif
 }
 
+double calcUtility(const vector<double>& utilities) {
+	double ret;
+	const int sz = utilities.size();
+
+#if defined(USE_MIN)
+	ret = (sz==0) ? 0.0 : utilities[0];
+	for (int i=0; i<sz; ++i)
+		ret = min(ret, utilities[i]);
+
+#elif defined(USE_MAX)
+	ret = (sz==0) ? 0.0 : utilities[0];
+	for (int i=0; i<sz; ++i)
+		ret = max(ret, utilities[i]);
+
+#else
+	ret = 0.0;
+	for (int i=0; i<sz; ++i)
+		ret += utilities[i];
+	ret /= sz;
+
+#endif
+
+	return ret;
+}
+
 void solve(string fileName) {
 	int taskN, workerN, Umax, seqN, sumC;
 	{// get Umax to calculate theta
@@ -255,10 +280,12 @@ void solve(string fileName) {
 		fin.close();
 	}
 	
+	const int runTime = 30;
 	int theta = ceil(log(Umax + 1.0));
-	double mxUtility = -1;
+	vector<double> utilities;
 	
-	for (int k=0; k<theta; ++k) {
+	for (int i=0; i<runTime; ++i) {
+		int k = (theta==0) ? 0 : (rand() % theta);
 		ifstream fin(fileName.c_str(), ios::in);
 
 		if (!fin.is_open()) {
@@ -271,8 +298,7 @@ void solve(string fileName) {
 		init(taskN, workerN, Umax);
 		Extend_Greedy_RT(fin, seqN, k);
 		
-		if (utility > mxUtility)
-			mxUtility = utility;
+		utilities.push_back(utility);
 		
 		#ifdef AT_THE_SERVER 
 			printf("k = %d, utility = %.4lf\n", k, utility);
@@ -281,7 +307,7 @@ void solve(string fileName) {
 		fin.close();
 	}
 	
-	utility = mxUtility;
+	utility = calcUtility(utilities);
 
 	#ifdef LOCAL_DEBUG
 	assert(weightArr.size() == workerN);
@@ -313,8 +339,8 @@ int main(int argc, char* argv[]) {
 		dataPath = "/home/server/zyx/Data0/7";
 		fileName = "/home/server/zyx/Data0/7/order14.txt";
 		#else
-		dataPath = "/home/turf/tmp/data0/25_100_25_10/4";
-		fileName = "/home/turf/tmp/data0/25_100_25_10/4/order1.txt";
+		dataPath = "/home/turf/tmp/data0/100_100_25_1000/4";
+		fileName = "/home/turf/tmp/data0/100_100_25_1000/4/order1.txt";
 		#endif
 	}
 

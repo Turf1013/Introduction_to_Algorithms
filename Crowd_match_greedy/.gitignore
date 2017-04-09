@@ -27,3 +27,5 @@ PureMem
 Static
 StaticMem
 dumpGraph
+ExtMinMem
+ExtMaxMem
