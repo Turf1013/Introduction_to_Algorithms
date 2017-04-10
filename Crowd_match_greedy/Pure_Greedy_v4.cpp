@@ -8,8 +8,8 @@ using namespace std;
 #include "monitor.h"
 #include "input.h"
 
-// #define AT_THE_SERVER
-//#define LOCAL_DEBUG
+//#define AT_THE_SERVER
+// #define LOCAL_DEBUG
 
 enum rule_t {
 	worker, task
@@ -44,7 +44,7 @@ struct node_t {
 typedef long long LL;
 int n, m, umax;
 double utility;
-int usedMemory = 0;
+int usedMemory;
 vector<vector<double> > weightArr;
 
 void init(int taskN, int workerN, int Umax) {
@@ -52,7 +52,7 @@ void init(int taskN, int workerN, int Umax) {
 	m = taskN;
 	umax = Umax;
 	utility = 0;
-	// usedMemory = 0;
+	usedMemory = 0;
 }
 
 void nextSeq(ifstream& fin, node_t& nd) {
@@ -124,40 +124,36 @@ bool satisfy(const node_t& worker, const node_t& task) {
 	return satisfyCap(worker, task) && satisfyLoc(worker, task);
 }
 
-int chosenNextTask(const vector<node_t>& tasks, node_t& worker, double costBound) {
+int chosenNextTask(const vector<node_t>& tasks, node_t& worker) {
 	int taskN = tasks.size();
 	double tmpCost;
 	double mxCost = -1e8;
-
 	int ret = -1;
+
 	//puts("chosenNextTask");
 	for (int i=0; i<taskN; ++i) {
 		tmpCost = calcCost(tasks[i], worker);
 		//printf("tmpCost = %.4lf, costBound = %.4lf, dis = %.4lf\n", tmpCost, costBound, Length(worker.loc, tasks[i].loc));
-		if (tmpCost>=costBound && satisfy(worker, tasks[i])) {
-			if (tmpCost > mxCost) {
-				mxCost = tmpCost;
-				ret = i;
-			}
+		if (satisfy(worker, tasks[i]) && tmpCost>mxCost) {
+			mxCost = tmpCost;
+			ret = i;
 		}
 	}
 	return ret;
 }
 
-int chosenNextWorker(const vector<node_t>& workers, node_t& task, double costBound) {
+int chosenNextWorker(const vector<node_t>& workers, node_t& task) {
 	int workerN = workers.size();
 	double tmpCost;
-
 	double mxCost = -1e8;
 	int ret = -1;
+
 	for (int i=0; i<workerN; ++i) {
 		tmpCost = calcCost(task, workers[i]);
 		//printf("tmpCost = %.4lf, costBound = %.4lf, dis = %.4lf\n", tmpCost, costBound, Length(workers[i].loc, task.loc));
-		if (tmpCost>=costBound && satisfy(workers[i], task)) {
-			if (tmpCost > mxCost) {
-				mxCost = tmpCost;
-				ret = i;
-			}
+		if (satisfy(workers[i], task) && tmpCost>mxCost) {
+			mxCost = tmpCost;
+			ret = i;
 		}
 	}
 	return ret;
@@ -178,8 +174,7 @@ void addOneMatch(node_t& task, node_t& worker) {
 	// printf("tmp = %.2lf\n", tmp);
 }
 
-void Extend_Greedy_RT(ifstream& fin, int seqN, int k) {
-	double costBound = (k==0) ? 0.0 : pow(exp(1.0), k);
+void Pure_Greedy(ifstream& fin, int seqN) {
 	node_t node;
 	vector<node_t> tasks, workers;
 	int taskId, workerId;
@@ -190,11 +185,11 @@ void Extend_Greedy_RT(ifstream& fin, int seqN, int k) {
 		if (node.type == task) { // node is task
 			taskId = tasks.size();
 			tasks.push_back(node);
-			workerId = chosenNextWorker(workers, node, costBound);
+			workerId = chosenNextWorker(workers, node);
 		} else {
 			workerId = workers.size();
 			workers.push_back(node);
-			taskId = chosenNextTask(tasks, node, costBound);
+			taskId = chosenNextTask(tasks, node);
 		}
 		
 		if (workerId>=0 && taskId>=0) {
@@ -241,59 +236,19 @@ void Extend_Greedy_RT(ifstream& fin, int seqN, int k) {
 	#endif
 }
 
-double calcUtility(const vector<double>& utilities) {
-	double ret;
-	const int sz = utilities.size();
-
-	ret = 0.0;
-	for (int i=0; i<sz; ++i)
-		ret += utilities[i];
-	ret /= sz;
-
-	return ret;
-}
-
 void solve(string fileName) {
 	int taskN, workerN, Umax, seqN, sumC;
-	{// get Umax to calculate theta
-		ifstream fin(fileName.c_str(), ios::in);
+	ifstream fin(fileName.c_str(), ios::in);
 
-		if (!fin.is_open()) {
-			printf("Error openning FILE %s.\n", fileName.c_str());
-			exit(1);
-		}
-
-		fin >> workerN >> taskN >> Umax >> sumC;
-		fin.close();
+	if (!fin.is_open()) {
+		printf("Error openning FILE %s.\n", fileName.c_str());
+		exit(1);
 	}
-	
-	int theta = ceil(log(Umax + 1.0));
-	vector<double> utilities;
-	
-	for (int i=0; i<theta; ++i) {
-		int k = (theta==0) ? 0 : i;
-		ifstream fin(fileName.c_str(), ios::in);
 
-		if (!fin.is_open()) {
-			printf("Error openning FILE %s.\n", fileName.c_str());
-			exit(1);
-		}
-
-		fin >> workerN >> taskN >> Umax >> sumC;
-		seqN = taskN + workerN;
-		init(taskN, workerN, Umax);
-		Extend_Greedy_RT(fin, seqN, k);
-		
-		utilities.push_back(utility);
-		
-		#ifdef AT_THE_SERVER 
-			printf("k = %d, utility = %.4lf\n", k, utility);
-		#endif
-		
-		fin.close();
-	}
-	
-	utility = calcUtility(utilities);
+	fin >> workerN >> taskN >> Umax >> sumC;
+	seqN = taskN + workerN;
+	init(taskN, workerN, Umax);
+	Pure_Greedy(fin, seqN);
 
 	#ifdef LOCAL_DEBUG
 	assert(weightArr.size() == workerN);
@@ -305,82 +260,44 @@ void solve(string fileName) {
 	#endif
 }
 
-vector<string> split(string fileName, char ch) {
-	vector<string> vstr;
-	int len = fileName.length();
-
-	for (int i=0,j=0; i<=len; ++i) {
-		if (i==len || fileName[i]==ch) {
-			if (i > j) {
-				string str = fileName.substr(j, i-j);
-				// puts(str.c_str());
-				// fflush(stdout);
-				vstr.push_back(str);
-			}
-			j = i + 1;
-		}
-	}
-
-	return vstr;
-}
-
-int strToInt(string s) {
-	int len = s.length(), ret = 0;
-
-	for (int i=0; i<len; ++i)
-		ret = ret * 10 + s[i]-'0';
-
-	return ret;
-}
-
-string getParaStr(string fileName, double mu) {
-	vector<string> vname = split(fileName, '/');
-	string info = vname[vname.size()-2];
-	vector<string> vinfo = split(info, '_');
-	double degrate = strToInt(vinfo[vinfo.size()-2]) * 1.0 / 1000.0;
-
-	string ret = "degrate=" + to_string(degrate) + ",mu=" + to_string(mu);
-
-	// for (int i=0; i<vname.size(); ++i)
-	// 	puts(vname[i].c_str());
-	// for (int i=0; i<vinfo.size(); ++i)
-	// 	puts(vinfo[i].c_str());
-
-	return ret;
-}
-
 int main(int argc, char* argv[]) {
 	cin.tie(0);
 	ios::sync_with_stdio(false);
 
-	string edgeFileName, weightFileName;
+	string dataPath, fileName;
 	program_t begProg, endProg;
-	double mu = 0.005;
 
-	if (argc >= 4) {
-		weightFileName = string(argv[1]);
-		edgeFileName = string(argv[2]);
-		sscanf(argv[3], "%lf", &mu);
+	if (argc > 1) {
+		fileName = string(argv[1]);
+		for (int i=fileName.length()-1; i>=0; --i) {
+			if (fileName[i] == '/') {
+				dataPath = fileName.substr(0, i);
+				break;
+			}
+		}
 	} else {
 		#ifdef AT_THE_SERVER
-		weightFileName = "/home/server/zyx/Data0/7";
-		edgeFileName = "/home/server/zyx/Data0/7/order14.txt";
+		dataPath = "/home/server/zyx/Data0/7";
+		fileName = "/home/server/zyx/Data0/7/order14.txt";
 		#else
-		weightFileName = "/home/turf/tmp/dataz/1000_1000_5_100/weight.txt";
-		edgeFileName = "/home/turf/tmp/dataz/1000_1000_5_100/order0.txt";
+		dataPath = "/home/turf/tmp/data0/25_100_25_10/4";
+		fileName = "/home/turf/tmp/data0/25_100_25_10/4/order1.txt";
 		#endif
 	}
 
 	//printf("[%d]: fileName = %s\n", getpid(), fileName.c_str());
-	input_weight(edgeFileName, weightFileName, weightArr);
+	input_weight(dataPath, weightArr);
 
 	save_time(begProg);
-	solve(edgeFileName);
+	solve(fileName);
 	save_time(endProg);
 
 	double usedTime = calc_time(begProg, endProg);
-	string paraStr = getParaStr(edgeFileName, mu);
-	printf("RT %s %.6lf\n", paraStr.c_str(), utility);
+	#ifdef WATCH_MEM
+	printf("Pure_Greedy %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	#else
+	printf("Pure_Greedy %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	#endif
 	fflush(stdout);
 	
 	return 0;

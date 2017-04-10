@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import os
 import multiprocessing
@@ -43,9 +43,7 @@ def genDataSetFast(distId, filePath):
 					if not os.path.exists(dirName):
 						os.mkdir(dirName)
 					for caseId in xrange(caseN):
-						caseFileName = os.path.join(dirName, str(caseId))
-						if not os.path.exists(caseFileName):
-							os.mkdir(caseFileName)
+						caseFileName = dirName
 						pool.apply_async(genCaseFast, (caseFileName, distId, workerN, taskN, degRate, umax, orderN, ))
 	pool.close()
 	pool.join()
@@ -53,7 +51,7 @@ def genDataSetFast(distId, filePath):
 
 if __name__ == "__main__":
 	# filePrefix = "/home/sever/zyx/SmallData/data"
-	filePrefix = "/home/turf/Code/SmallData/data"
+	filePrefix = "/home/turf/tmp/dataz/data"
 	for i in xrange(1):
 		filePath = filePrefix + str(i)
 		if not os.path.exists(filePath):

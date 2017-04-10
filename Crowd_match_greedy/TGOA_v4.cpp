@@ -8,7 +8,7 @@ using namespace std;
 #include "input.h"
 #include "monitor.h"
 
-//#define AT_THE_SERVER
+#define AT_THE_SERVER
 //#define LOCAL_DEBUG
 
 enum rule_t {
@@ -42,7 +42,6 @@ struct node_t {
 };
 
 bool satisfyLoc(const node_t& worker, const node_t& task);
-bool satisfy(const node_t& worker, const node_t& task);
 
 vector<vector<double> > weightArr;
 inline double calcCost(const node_t& task, const node_t& worker) {
@@ -115,35 +114,63 @@ struct Hungarian_t {
 		slack.clear();
 	}
 	
-	void build(const vector<int>& T_delta, const vector<int>& W_delta, 
-				const vector<node_t>& tasks, const vector<node_t>& workers) {
+	void build(const vector<int>& T_delta, const vector<int>& W_delta, const vector<node_t>& tasks, 
+				const vector<node_t>& workers, const node_t& node) {
 		const int Tsz = T_delta.size();
 		const int Wsz = W_delta.size();
-		int vertexN = max(Tsz, Wsz);
+		int vertexN = max(Tsz+(node.type==task), Wsz+(node.type==worker));
 		
 		init(vertexN);
 		for (int i=0; i<vertexN; ++i) {
-			const int workerId = (i < Wsz) ? W_delta[i] : -2;
+			const int workerId = (i < Wsz) ? W_delta[i] : 
+								 (i==Wsz && node.type==worker) ? -1 : -2;
 
 			for (int j=0; j<vertexN; ++j) {
-				const int taskId = (j < Tsz) ? T_delta[j] : -2;
+				const int taskId = (j < Tsz) ? T_delta[j]:
+								 (j==Tsz && node.type==task) ? -1 : -2;
 
 				double cost;
 				if (workerId==-2 || taskId==-2) {
 					cost = 0.0;
+				} else if (workerId == -1) {
+					cost = calcCost(tasks[taskId], node);
+				} else if (taskId == -1) {
+					cost = calcCost(node, workers[workerId]);
 				} else {
-					cost = satisfy(workers[workerId], tasks[taskId]) ? calcCost(tasks[taskId], workers[workerId]) : 0.0;
+					cost = calcCost(tasks[taskId], workers[workerId]);
 				}
 
 				g[i].push_back(vertex_t(j, cost));
 			}
 
-			#ifdef LOCAL_DEBUG
-			assert(g[i].size() == vertexN);
-			#endif
+			// #ifdef LOCAL_DEBUG
+			// printf("%d: sz = %d, vertexN = %d\n", i, (int)g[i].size(), vertexN);
+			// assert(g[i].size() == vertexN);
+			// #endif
 		}
 	}
-
+	
+	bool agument(int x) {
+		int sz = g[x].size(), y;
+		
+		for (int i=0; i<sz; ++i) {
+			y = g[x][i].v;
+			if (yx[y]==-1 || agument(yx[y])) {
+				yx[y] = x;
+				xy[x] = y;
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	void maximumMatch() {
+		for (int x=0; x<n; ++x) {
+			agument(x);
+		}
+	}
+	
 	bool dfs(int x) {
 		int sz = g[x].size(), y;
 		S[x] = true;
@@ -281,6 +308,40 @@ bool satisfy(const node_t& worker, const node_t& task) {
 	return satisfyCap(worker, task) && satisfyLoc(worker, task);
 }
 
+int chosenNextTask(const vector<node_t>& tasks, node_t& worker) {
+	int taskN = tasks.size();
+	double tmpCost;
+	double mxCost = -1e8;
+	int ret = -1;
+	
+	for (int i=0; i<taskN; ++i) {
+		tmpCost = calcCost(tasks[i], worker);
+		if (satisfy(worker, tasks[i]) && tmpCost>mxCost) {
+			mxCost = tmpCost;
+			ret = i;
+		}
+	}
+	
+	return ret;
+}
+
+int chosenNextWorker(const vector<node_t>& workers, node_t& task) {
+	int workerN = workers.size();
+	double tmpCost;
+	double mxCost = -1e8;
+	int ret = -1;
+	
+	for (int i=0; i<workerN; ++i) {
+		tmpCost = calcCost(task, workers[i]);
+		if (satisfy(workers[i], task) && tmpCost>mxCost) {
+			mxCost = tmpCost;
+			ret = i;
+		}
+	}
+	
+	return ret;
+}
+
 void addOneMatch(node_t& task, node_t& worker) {
 	// add cost to utility
 	utility += calcCost(task, worker);
@@ -289,7 +350,8 @@ void addOneMatch(node_t& task, node_t& worker) {
 	++worker.flow;
 }
 
-void OPT(ifstream& fin, int seqN) {
+void TGOA(ifstream& fin, int seqN) {
+	int k = (m + n) / 2;
 	vector<int> W_delta, T_delta;
 	node_t node;
 	vector<node_t> tasks, workers;
@@ -306,6 +368,70 @@ void OPT(ifstream& fin, int seqN) {
 			workers.push_back(node);
 		}
 		
+		if (W_delta.size() + T_delta.size() < k) {
+			if (node.type == task) {
+				workerId = chosenNextWorker(workers, node);
+			} else {
+				taskId = chosenNextTask(tasks, node);
+			}
+			
+		} else {
+			// #ifdef LOCAL_DEBUG
+			// puts("before build");
+			// #endif
+			hung.build(T_delta, W_delta, tasks, workers, node);
+			// #ifdef LOCAL_DEBUG
+			// puts("after build");
+			// #endif
+
+			// #ifdef LOCAL_DEBUG
+			// puts("before match");
+			// #endif
+			hung.match();
+			// #ifdef LOCAL_DEBUG
+			// puts("after match");
+			// fflush(stdout);
+			// #endif
+			
+			const int Tsz = T_delta.size();
+			const int Wsz = W_delta.size();
+			
+			if (node.type == task) {
+				if (hung.yx[Tsz]>=0 && hung.yx[Tsz]<Wsz) {
+					workerId = W_delta[hung.yx[Tsz]];
+					#ifdef LOCAL_DEBUG
+					assert(workerId < workers.size());
+					#endif
+					if (satisfy(workers[workerId], node)) {
+						/* valid, do nothing*/
+					} else {
+						workerId = -1;
+					}
+				}
+				
+			} else {
+				if (hung.xy[Wsz]>=0 && hung.xy[Wsz]<Tsz) {
+					taskId = T_delta[hung.xy[Wsz]];
+					#ifdef LOCAL_DEBUG
+					assert(taskId < tasks.size());
+					#endif
+					if (satisfy(node, tasks[taskId])) {
+						/* valid, do nothing*/
+					} else {
+						taskId = -1;
+					}
+				}
+			}
+			
+			// #ifdef LOCAL_DEBUG
+			// printf("workerId = %d, taskId = %d\n", workerId, taskId);
+			// #endif
+		}
+		
+		if (workerId>=0 && taskId>=0) {
+			addOneMatch(tasks[taskId], workers[workerId]);
+		}
+		
 		if (node.type == task) {
 			for (int i=0; i<node.cap; ++i)
 				T_delta.push_back(taskId);
@@ -313,28 +439,10 @@ void OPT(ifstream& fin, int seqN) {
 			for (int i=0; i<node.cap; ++i)
 				W_delta.push_back(workerId);
 		}
-	}
-
-	hung.build(T_delta, W_delta, tasks, workers);	
-	#ifdef WATCH_MEM
-	watchSolutionOnce(getpid(), usedMemory);
-	#endif
-	hung.match();
-
-	const int Tsz = T_delta.size();
-	const int Wsz = W_delta.size();
-
-	for (int x=0; x<hung.xy.size(); ++x) {
-		int y = hung.xy[x];
 		
-		if (y < 0) continue;
-
-		const int workerId = (x < Wsz) ? W_delta[x] : -2;
-		const int taskId = (y < Tsz) ? T_delta[y] : -2;
-
-		if (workerId>=0 && taskId>=0) {
-			addOneMatch(tasks[taskId], workers[workerId]);
-		}
+		#ifdef WATCH_MEM
+		watchSolutionOnce(getpid(), usedMemory);
+		#endif
 	}
 
 	#ifdef LOCAL_DEBUG
@@ -368,85 +476,47 @@ void solve(string fileName) {
 	fin >> workerN >> taskN >> Umax >> sumC;
 	seqN = taskN + workerN;
 	init(taskN, workerN, Umax);
-	OPT(fin, seqN);
-}
-
-vector<string> split(string fileName, char ch) {
-	vector<string> vstr;
-	int len = fileName.length();
-
-	for (int i=0,j=0; i<=len; ++i) {
-		if (i==len || fileName[i]==ch) {
-			if (i > j) {
-				string str = fileName.substr(j, i-j);
-				// puts(str.c_str());
-				// fflush(stdout);
-				vstr.push_back(str);
-			}
-			j = i + 1;
-		}
-	}
-
-	return vstr;
-}
-
-int strToInt(string s) {
-	int len = s.length(), ret = 0;
-
-	for (int i=0; i<len; ++i)
-		ret = ret * 10 + s[i]-'0';
-
-	return ret;
-}
-
-string getParaStr(string fileName, double mu) {
-	vector<string> vname = split(fileName, '/');
-	string info = vname[vname.size()-2];
-	vector<string> vinfo = split(info, '_');
-	double degrate = strToInt(vinfo[vinfo.size()-2]) * 1.0 / 1000.0;
-
-	string ret = "degrate=" + to_string(degrate) + ",mu=" + to_string(mu);
-
-	// for (int i=0; i<vname.size(); ++i)
-	// 	puts(vname[i].c_str());
-	// for (int i=0; i<vinfo.size(); ++i)
-	// 	puts(vinfo[i].c_str());
-
-	return ret;
+	TGOA(fin, seqN);
 }
 
 int main(int argc, char* argv[]) {
 	cin.tie(0);
 	ios::sync_with_stdio(false);
 
-	string edgeFileName, weightFileName;
+	string dataPath, fileName;
 	program_t begProg, endProg;
-	double mu = 0.005;
 
-	if (argc >= 4) {
-		weightFileName = string(argv[1]);
-		edgeFileName = string(argv[2]);
-		sscanf(argv[3], "%lf", &mu);
+	if (argc > 1) {
+		fileName = string(argv[1]);
+		for (int i=fileName.length()-1; i>=0; --i) {
+			if (fileName[i] == '/') {
+				dataPath = fileName.substr(0, i);
+				break;
+			}
+		}
 	} else {
 		#ifdef AT_THE_SERVER
-		weightFileName = "/home/server/zyx/Data0/7";
-		edgeFileName = "/home/server/zyx/Data0/7/order14.txt";
+		dataPath = "/home/server/zyx/Data0/7";
+		fileName = "/home/server/zyx/Data0/7/order14.txt";
 		#else
-		weightFileName = "/home/turf/tmp/dataz/1000_1000_5_100/weight.txt";
-		edgeFileName = "/home/turf/tmp/dataz/1000_1000_5_100/order0.txt";
+		dataPath = "/home/turf/Code/Data/Data0/0";
+		fileName = "/home/turf/Code/Data/Data0/0/order14.txt";
 		#endif
+
 	}
 
-	//printf("[%d]: fileName = %s\n", getpid(), fileName.c_str());
-	input_weight(edgeFileName, weightFileName, weightArr);
+	input_weight(dataPath, weightArr);
 
 	save_time(begProg);
-	solve(edgeFileName);
+	solve(fileName);
 	save_time(endProg);
 
 	double usedTime = calc_time(begProg, endProg);
-	string paraStr = getParaStr(edgeFileName, mu);
-	printf("OPT %s %.6lf\n", paraStr.c_str(), utility);
+	#ifdef WATCH_MEM
+	printf("TGOA %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	#else
+	printf("TGOA %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	#endif
 	fflush(stdout);
 	
 	return 0;

@@ -1,6 +1,6 @@
 /**
 	\author: Trasier
-	\date: 2017.04.02
+	\date: 2017.04.07
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -9,7 +9,7 @@ using namespace std;
 #include "monitor.h"
 
 //#define AT_THE_SERVER
-//#define LOCAL_DEBUG
+// #define LOCAL_DEBUG
 
 enum rule_t {
 	worker, task
@@ -70,49 +70,40 @@ inline int dcmp(double a) {
 	return a>0 ? 1:-1;
 }
 
-struct Hungarian_t {
+struct Greedy_t {
 	struct vertex_t {
-		int v;
+		int u, v;
 		double w;
 		
-		vertex_t(int v=0, double w=0):
-			v(v), w(w) {}
+		vertex_t(int u=0, int v=0, double w=0):
+			u(u), v(v), w(w) {}
+			
+		bool operator<(const vertex_t& o) const {
+			return w < o.w;
+		}
 	};
 	
 	const double INF = 1e18;
-	vector<vector<vertex_t> > g;
+	priority_queue<vertex_t> Q;
 	vector<int> yx, xy;
-	vector<double> lx, ly;
-	vector<bool> S, T;
-	vector<double> slack;
 	int n;
 	
-	Hungarian_t() {
+	Greedy_t() {
 		init();
 	}
 	
 	void init(int n=0) {
-		clear();
 		this->n = n;
-		g.resize(n, vector<vertex_t>());
+		clear();
 		yx.resize(n, -1);
 		xy.resize(n, -1);
-		lx.resize(n, 0);
-		ly.resize(n, 0);
-		S.resize(n, false);
-		T.resize(n, false);
-		slack.resize(n, 0);
 	}
 	
 	void clear() {
-		g.clear();
 		yx.clear();
 		xy.clear();
-		lx.clear();
-		ly.clear();
-		S.clear();
-		T.clear();
-		slack.clear();
+		while (!Q.empty())
+			Q.pop();
 	}
 	
 	void build(const vector<int>& T_delta, const vector<int>& W_delta, 
@@ -132,94 +123,63 @@ struct Hungarian_t {
 				if (workerId==-2 || taskId==-2) {
 					cost = 0.0;
 				} else {
-					cost = satisfy(workers[workerId], tasks[taskId]) ? calcCost(tasks[taskId], workers[workerId]) : 0.0;
+					cost = calcCost(tasks[taskId], workers[workerId]);
 				}
 
-				g[i].push_back(vertex_t(j, cost));
+				Q.push(vertex_t(i, j, cost));
 			}
 
-			#ifdef LOCAL_DEBUG
-			assert(g[i].size() == vertexN);
-			#endif
+			// #ifdef LOCAL_DEBUG
+			// printf("%d: sz = %d, vertexN = %d\n", i, (int)g[i].size(), vertexN);
+			// assert(g[i].size() == vertexN);
+			// #endif
 		}
-	}
 
-	bool dfs(int x) {
-		int sz = g[x].size(), y;
-		S[x] = true;
+		#ifdef LOCAL_DEBUG
+		assert(Q.size() == vertexN * vertexN);
+		#endif
+	}
+	
+	void GreedyMatch(const vector<int>& T_delta, const vector<int>& W_delta, 
+					const vector<node_t>& tasks, const vector<node_t>& workers) {
+		const int Tsz = T_delta.size();
+		const int Wsz = W_delta.size();
+		vertex_t ver;
+		int taskId, workerId;
 		
-		for (int i=0; i<sz; ++i) {
-			y = g[x][i].v;
-			if (T[y]) continue;
+		while (!Q.empty()) {
+			ver = Q.top();
+			Q.pop();
+			if (xy[ver.u]>=0 || yx[ver.v]>=0) continue;
+
+			workerId = (ver.u<Wsz) ? W_delta[ver.u] : -2;
+			taskId = (ver.v<Tsz) ? T_delta[ver.v] : -2;
+
 			
-			double tmp = lx[x] + ly[y] - g[x][i].w;
-			if (dcmp(tmp) == 0) {
-				T[y] = true;
-				if (yx[y]==-1 || dfs(yx[y])) {
-					yx[y] = x;
-					xy[x] = y;
-					return true;
+			if (workerId>=0 && taskId>=0) {
+				const node_t& workerNode = workers[workerId];
+				const node_t& taskNode = tasks[taskId]; 
+				
+				if (satisfy(workerNode, taskNode)) {
+					xy[ver.u] = ver.v;
+					yx[ver.v] = ver.u;
 				}
 			} else {
-				slack[y] = min(slack[y], tmp);
-			}
-		}
-		
-		return false;
-	}
-	
-	void update() {
-		double mn = INF;
-		
-		for (int i=0; i<n; ++i) {
-			if (!T[i]) {
-				mn = min(mn, slack[i]);
-			}
-		}
-		
-		for (int i=0; i<n; ++i) {
-			if (S[i]) lx[i] -= mn;
-			if (T[i]) ly[i] += mn;
-			//else	  slack[i] -= mn;
-		}
-	}
-	
-	void weightedMaximumMatch() {
-		int i, j, k;
-		
-		fill(lx.begin(), lx.end(), 0.0);
-		fill(ly.begin(), ly.end(), 0.0);
-		fill(xy.begin(), xy.end(), -1);
-		fill(yx.begin(), yx.end(), -1);
-		for (int x=0; x<n; ++x) {
-			int sz = g[x].size();
-			for (int i=0; i<sz; ++i) {
-				lx[x] = max(lx[x], g[x][i].w);
-			}
-		}
-		
-		for (int x=0; x<n; ++x) {
-			for (;;) {
-				fill(slack.begin(), slack.end(), INF);
-				fill(S.begin(), S.end(), false);
-				fill(T.begin(), T.end(), false);
-				if (dfs(x))
-					break;
-				else
-					update();
+				xy[ver.u] = ver.v;
+				yx[ver.v] = ver.u;	
 			}
 		}
 	}
 	
-	void match() {
-		weightedMaximumMatch();
+	void match(const vector<int>& T_delta, const vector<int>& W_delta, const vector<node_t>& tasks, const vector<node_t>& workers) {
+		GreedyMatch(T_delta, W_delta, tasks, workers);
 	}
 };
 
 typedef long long LL;
 int n, m, umax;
 double utility;
-Hungarian_t hung;
+Greedy_t greedy;
 int usedMemory;
 
 void init(int taskN, int workerN, int Umax) {
@@ -289,7 +249,7 @@ void addOneMatch(node_t& task, node_t& worker) {
 	++worker.flow;
 }
 
-void OPT(ifstream& fin, int seqN) {
+void Static_Greedy(ifstream& fin, int seqN) {
 	vector<int> W_delta, T_delta;
 	node_t node;
 	vector<node_t> tasks, workers;
@@ -315,17 +275,17 @@ void OPT(ifstream& fin, int seqN) {
 		}
 	}
 
-	hung.build(T_delta, W_delta, tasks, workers);	
+	greedy.build(T_delta, W_delta, tasks, workers);	
 	#ifdef WATCH_MEM
 	watchSolutionOnce(getpid(), usedMemory);
 	#endif
-	hung.match();
+	greedy.match(T_delta, W_delta, tasks, workers);
 
 	const int Tsz = T_delta.size();
 	const int Wsz = W_delta.size();
 
-	for (int x=0; x<hung.xy.size(); ++x) {
-		int y = hung.xy[x];
+	for (int x=0; x<greedy.xy.size(); ++x) {
+		int y = greedy.xy[x];
 		
 		if (y < 0) continue;
 
@@ -333,6 +293,9 @@ void OPT(ifstream& fin, int seqN) {
 		const int taskId = (y < Tsz) ? T_delta[y] : -2;
 
 		if (workerId>=0 && taskId>=0) {
+			#ifdef LOCAL_DEBUG
+			assert(satisfy(workers[workerId], tasks[taskId]));
+			#endif
 			addOneMatch(tasks[taskId], workers[workerId]);
 		}
 	}
@@ -368,85 +331,49 @@ void solve(string fileName) {
 	fin >> workerN >> taskN >> Umax >> sumC;
 	seqN = taskN + workerN;
 	init(taskN, workerN, Umax);
-	OPT(fin, seqN);
-}
-
-vector<string> split(string fileName, char ch) {
-	vector<string> vstr;
-	int len = fileName.length();
-
-	for (int i=0,j=0; i<=len; ++i) {
-		if (i==len || fileName[i]==ch) {
-			if (i > j) {
-				string str = fileName.substr(j, i-j);
-				// puts(str.c_str());
-				// fflush(stdout);
-				vstr.push_back(str);
-			}
-			j = i + 1;
-		}
-	}
-
-	return vstr;
-}
-
-int strToInt(string s) {
-	int len = s.length(), ret = 0;
-
-	for (int i=0; i<len; ++i)
-		ret = ret * 10 + s[i]-'0';
-
-	return ret;
-}
-
-string getParaStr(string fileName, double mu) {
-	vector<string> vname = split(fileName, '/');
-	string info = vname[vname.size()-2];
-	vector<string> vinfo = split(info, '_');
-	double degrate = strToInt(vinfo[vinfo.size()-2]) * 1.0 / 1000.0;
-
-	string ret = "degrate=" + to_string(degrate) + ",mu=" + to_string(mu);
-
-	// for (int i=0; i<vname.size(); ++i)
-	// 	puts(vname[i].c_str());
-	// for (int i=0; i<vinfo.size(); ++i)
-	// 	puts(vinfo[i].c_str());
-
-	return ret;
+	Static_Greedy(fin, seqN);
 }
 
 int main(int argc, char* argv[]) {
 	cin.tie(0);
 	ios::sync_with_stdio(false);
 
-	string edgeFileName, weightFileName;
+	string dataPath, fileName;
 	program_t begProg, endProg;
-	double mu = 0.005;
 
-	if (argc >= 4) {
-		weightFileName = string(argv[1]);
-		edgeFileName = string(argv[2]);
-		sscanf(argv[3], "%lf", &mu);
+	if (argc > 1) {
+		fileName = string(argv[1]);
+		for (int i=fileName.length()-1; i>=0; --i) {
+			if (fileName[i] == '/') {
+				dataPath = fileName.substr(0, i);
+				break;
+			}
+		}
 	} else {
 		#ifdef AT_THE_SERVER
-		weightFileName = "/home/server/zyx/Data0/7";
-		edgeFileName = "/home/server/zyx/Data0/7/order14.txt";
+		dataPath = "/home/server/zyx/Data0/7";
+		fileName = "/home/server/zyx/Data0/7/order14.txt";
 		#else
-		weightFileName = "/home/turf/tmp/dataz/1000_1000_5_100/weight.txt";
-		edgeFileName = "/home/turf/tmp/dataz/1000_1000_5_100/order0.txt";
+		dataPath = "/home/turf/Code/Data/Data0/0";
+		fileName = "/home/turf/Code/Data/Data0/0/order14.txt";
+		dataPath = "/home/server/zyx/Data0/7";
+		fileName = "/home/server/zyx/Data0/7/order14.txt";
 		#endif
+
 	}
 
-	//printf("[%d]: fileName = %s\n", getpid(), fileName.c_str());
-	input_weight(edgeFileName, weightFileName, weightArr);
+	input_weight(dataPath, weightArr);
 
 	save_time(begProg);
-	solve(edgeFileName);
+	solve(fileName);
 	save_time(endProg);
 
 	double usedTime = calc_time(begProg, endProg);
-	string paraStr = getParaStr(edgeFileName, mu);
-	printf("OPT %s %.6lf\n", paraStr.c_str(), utility);
+	#ifdef WATCH_MEM
+	printf("Static %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	#else
+	printf("Static %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	#endif
 	fflush(stdout);
 	
 	return 0;

@@ -245,10 +245,23 @@ double calcUtility(const vector<double>& utilities) {
 	double ret;
 	const int sz = utilities.size();
 
+#if defined(USE_MIN)
+	ret = (sz==0) ? 0.0 : utilities[0];
+	for (int i=0; i<sz; ++i)
+		ret = min(ret, utilities[i]);
+
+#elif defined(USE_MAX)
+	ret = (sz==0) ? 0.0 : utilities[0];
+	for (int i=0; i<sz; ++i)
+		ret = max(ret, utilities[i]);
+
+#else
 	ret = 0.0;
 	for (int i=0; i<sz; ++i)
 		ret += utilities[i];
 	ret /= sz;
+
+#endif
 
 	return ret;
 }
@@ -267,11 +280,12 @@ void solve(string fileName) {
 		fin.close();
 	}
 	
+	const int runTime = 30;
 	int theta = ceil(log(Umax + 1.0));
 	vector<double> utilities;
 	
-	for (int i=0; i<theta; ++i) {
-		int k = (theta==0) ? 0 : i;
+	for (int i=0; i<runTime; ++i) {
+		int k = (theta==0) ? 0 : (rand() % theta);
 		ifstream fin(fileName.c_str(), ios::in);
 
 		if (!fin.is_open()) {
@@ -305,82 +319,60 @@ void solve(string fileName) {
 	#endif
 }
 
-vector<string> split(string fileName, char ch) {
-	vector<string> vstr;
-	int len = fileName.length();
-
-	for (int i=0,j=0; i<=len; ++i) {
-		if (i==len || fileName[i]==ch) {
-			if (i > j) {
-				string str = fileName.substr(j, i-j);
-				// puts(str.c_str());
-				// fflush(stdout);
-				vstr.push_back(str);
-			}
-			j = i + 1;
-		}
-	}
-
-	return vstr;
-}
-
-int strToInt(string s) {
-	int len = s.length(), ret = 0;
-
-	for (int i=0; i<len; ++i)
-		ret = ret * 10 + s[i]-'0';
-
-	return ret;
-}
-
-string getParaStr(string fileName, double mu) {
-	vector<string> vname = split(fileName, '/');
-	string info = vname[vname.size()-2];
-	vector<string> vinfo = split(info, '_');
-	double degrate = strToInt(vinfo[vinfo.size()-2]) * 1.0 / 1000.0;
-
-	string ret = "degrate=" + to_string(degrate) + ",mu=" + to_string(mu);
-
-	// for (int i=0; i<vname.size(); ++i)
-	// 	puts(vname[i].c_str());
-	// for (int i=0; i<vinfo.size(); ++i)
-	// 	puts(vinfo[i].c_str());
-
-	return ret;
-}
-
 int main(int argc, char* argv[]) {
 	cin.tie(0);
 	ios::sync_with_stdio(false);
 
-	string edgeFileName, weightFileName;
+	string dataPath, fileName;
 	program_t begProg, endProg;
-	double mu = 0.005;
 
-	if (argc >= 4) {
-		weightFileName = string(argv[1]);
-		edgeFileName = string(argv[2]);
-		sscanf(argv[3], "%lf", &mu);
+	if (argc > 1) {
+		fileName = string(argv[1]);
+		for (int i=fileName.length()-1; i>=0; --i) {
+			if (fileName[i] == '/') {
+				dataPath = fileName.substr(0, i);
+				break;
+			}
+		}
 	} else {
 		#ifdef AT_THE_SERVER
-		weightFileName = "/home/server/zyx/Data0/7";
-		edgeFileName = "/home/server/zyx/Data0/7/order14.txt";
+		dataPath = "/home/server/zyx/Data0/7";
+		fileName = "/home/server/zyx/Data0/7/order14.txt";
 		#else
-		weightFileName = "/home/turf/tmp/dataz/1000_1000_5_100/weight.txt";
-		edgeFileName = "/home/turf/tmp/dataz/1000_1000_5_100/order0.txt";
+		dataPath = "/home/turf/tmp/data0/100_100_25_1000/4";
+		fileName = "/home/turf/tmp/data0/100_100_25_1000/4/order1.txt";
 		#endif
 	}
 
 	//printf("[%d]: fileName = %s\n", getpid(), fileName.c_str());
-	input_weight(edgeFileName, weightFileName, weightArr);
+	input_weight(dataPath, weightArr);
 
 	save_time(begProg);
-	solve(edgeFileName);
+	solve(fileName);
 	save_time(endProg);
 
 	double usedTime = calc_time(begProg, endProg);
-	string paraStr = getParaStr(edgeFileName, mu);
-	printf("RT %s %.6lf\n", paraStr.c_str(), utility);
+#ifdef WATCH_MEM
+	#if defined(USE_MIN)
+		printf("RT_MIN %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	#elif defined(USE_MAX)
+		printf("RT_MAX %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	#elif defined(USE_AVG)
+		printf("RT_AVG %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	#else
+		printf("RT %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
+	#endif
+#else
+	#if defined(USE_MIN)
+		printf("RT_MIN %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	#elif defined(USE_MAX)
+		printf("RT_MAX %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	#elif defined(USE_AVG)
+		printf("RT_AVG %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	#else
+		printf("RT %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
+	#endif
+#endif
 	fflush(stdout);
 	
 	return 0;

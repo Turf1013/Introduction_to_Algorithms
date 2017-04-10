@@ -260,44 +260,82 @@ void solve(string fileName) {
 	#endif
 }
 
+vector<string> split(string fileName, char ch) {
+	vector<string> vstr;
+	int len = fileName.length();
+
+	for (int i=0,j=0; i<=len; ++i) {
+		if (i==len || fileName[i]==ch) {
+			if (i > j) {
+				string str = fileName.substr(j, i-j);
+				// puts(str.c_str());
+				// fflush(stdout);
+				vstr.push_back(str);
+			}
+			j = i + 1;
+		}
+	}
+
+	return vstr;
+}
+
+int strToInt(string s) {
+	int len = s.length(), ret = 0;
+
+	for (int i=0; i<len; ++i)
+		ret = ret * 10 + s[i]-'0';
+
+	return ret;
+}
+
+string getParaStr(string fileName, double mu) {
+	vector<string> vname = split(fileName, '/');
+	string info = vname[vname.size()-2];
+	vector<string> vinfo = split(info, '_');
+	double degrate = strToInt(vinfo[vinfo.size()-2]) * 1.0 / 1000.0;
+
+	string ret = "degrate=" + to_string(degrate) + ",mu=" + to_string(mu);
+
+	// for (int i=0; i<vname.size(); ++i)
+	// 	puts(vname[i].c_str());
+	// for (int i=0; i<vinfo.size(); ++i)
+	// 	puts(vinfo[i].c_str());
+
+	return ret;
+}
+
 int main(int argc, char* argv[]) {
 	cin.tie(0);
 	ios::sync_with_stdio(false);
 
-	string dataPath, fileName;
+	string edgeFileName, weightFileName;
 	program_t begProg, endProg;
+	double mu = 0.005;
 
-	if (argc > 1) {
-		fileName = string(argv[1]);
-		for (int i=fileName.length()-1; i>=0; --i) {
-			if (fileName[i] == '/') {
-				dataPath = fileName.substr(0, i);
-				break;
-			}
-		}
+	if (argc >= 4) {
+		weightFileName = string(argv[1]);
+		edgeFileName = string(argv[2]);
+		sscanf(argv[3], "%lf", &mu);
 	} else {
 		#ifdef AT_THE_SERVER
-		dataPath = "/home/server/zyx/Data0/7";
-		fileName = "/home/server/zyx/Data0/7/order14.txt";
+		weightFileName = "/home/server/zyx/Data0/7";
+		edgeFileName = "/home/server/zyx/Data0/7/order14.txt";
 		#else
-		dataPath = "/home/turf/tmp/data0/25_100_25_10/4";
-		fileName = "/home/turf/tmp/data0/25_100_25_10/4/order1.txt";
+		weightFileName = "/home/turf/tmp/dataz/1000_1000_5_100/weight.txt";
+		edgeFileName = "/home/turf/tmp/dataz/1000_1000_5_100/order0.txt";
 		#endif
 	}
 
 	//printf("[%d]: fileName = %s\n", getpid(), fileName.c_str());
-	input_weight(dataPath, weightArr);
+	input_weight(edgeFileName, weightFileName, weightArr);
 
 	save_time(begProg);
-	solve(fileName);
+	solve(edgeFileName);
 	save_time(endProg);
 
 	double usedTime = calc_time(begProg, endProg);
-	#ifdef WATCH_MEM
-	printf("Pure_Greedy %s %.6lf %.6lfs %dKB\n", fileName.c_str(), utility, usedTime, usedMemory);
-	#else
-	printf("Pure_Greedy %s %.6lf %.6lfs\n", fileName.c_str(), utility, usedTime);
-	#endif
+	string paraStr = getParaStr(edgeFileName, mu);
+	printf("Pure %s %.6lf\n", paraStr.c_str(), utility);
 	fflush(stdout);
 	
 	return 0;
