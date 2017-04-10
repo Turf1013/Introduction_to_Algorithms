@@ -122,5 +122,5 @@ if __name__ == "__main__":
 		os.mkdir(plotDesPath)
 	
 		
-	# getResult(srcPath, resDesPath)
+	getResult(srcPath, resDesPath)
 	plotAllResult(resDesPath, plotDesPath)
