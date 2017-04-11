@@ -4,10 +4,10 @@
 CC = gcc
 CXX = g++
 LIBS = -lrt
-CFLAGS = --std=c++0x -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
+CFLAGS = --std=c++11 -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: Ext TGOA Filter Greedy ExtMem TGOAMem FilterMem GreedyMem OPT OPTMem Pure PureMem Static StaticMem dumpGraph ExtMinMem ExtMaxMem ExtAvgMem
+all: Ext TGOA Filter Greedy ExtMem TGOAMem FilterMem GreedyMem OPT OPTMem Pure PureMem Static StaticMem dumpGraph ExtMinMem ExtMaxMem ExtAvgMem Xuan
 Ext: monitor.h input.h Extended_Greedy_RT.cpp
 	$(CXX) $(CFLAGS) -o Ext Extended_Greedy_RT.cpp $(LIBS)
 
@@ -19,6 +19,10 @@ Filter: monitor.h input.h TGOA_Filter.cpp
 
 Greedy: monitor.h input.h TGOA_Greedy.cpp
 	$(CXX) $(CFLAGS) -o Greedy TGOA_Greedy.cpp $(LIBS)
+
+Xuan: TGOA_sky.cpp
+	$(CXX) $(CFLAGS) -o Xuan TGOA_sky.cpp $(LIBS)
+
 
 ExtMem: monitor.h input.h Extended_Greedy_RT.cpp
 	$(CXX) $(CFLAGS) -o ExtMem Extended_Greedy_RT.cpp $(LIBS) -D WATCH_MEM
@@ -77,3 +81,4 @@ clean:
 		-@rm Pure PureMem Pure.g* PureMem.g* 2> /dev/null || true	
 		-@rm Static StaticMem Static.g* StaticMem.g* 2> /dev/null || true
 		-@rm dumpGraph dumpGraph.g* 2> /dev/null || true	
+		-@rm Xuan 2> /dev/null || true	
