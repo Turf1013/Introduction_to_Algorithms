@@ -19,6 +19,7 @@ class constForDumpResult:
 		'STATIC': 	'y*-',
 		'PURE': 	'b^-',
 		'TGOA': 	'cD-',
+		'XUAN': 	'mx-',
 	}
 	
 class CFDR(constForDumpResult):
@@ -181,9 +182,9 @@ def plotPic_mu2(filePath, resDict, deg, muList):
 		tmpList = []
 		for mu in muList:
 			paraLine = genParaLine(mu=mu, deg=deg)
-			result = paraDict[paraLine]
+			result = paraDict[paraLine] / mu
+			#print result
 			tmpList.append(result)
-		tmpList = map(lambda x:x/mu, tmpList)
 		YList.append(tmpList)
 	title = "deg = %s, mu = %s" % (deg, str(muList))
 	plotPic(fileName, X, YList, title, algoNameList)
