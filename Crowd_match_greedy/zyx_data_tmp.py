@@ -27,8 +27,8 @@ def genCaseFast(dirName, distId, workerN, taskN, degRate, umax, orderN):
 def genDataSetFast(distId, filePath):
 	orderN, caseN = 40, 1
 	numRateList = [1.0]
-	numCountList = [1000]
-	degRateList = [0.005, 0.01, 0.02, 0.05, 0.10, 0.20, 0.5, 0.75, 1.00]
+	numCountList = [1000, 5000]
+	degRateList = [0.001, 0.002, 0.004, 0.006, 0.008, 0.01, 0.02, 0.04, 0.08, 0.10]
 	umaxList = [100]
 
 	# directory name: $workerN_$taskN_$degRate_$umax
@@ -51,9 +51,10 @@ def genDataSetFast(distId, filePath):
 
 if __name__ == "__main__":
 	# filePrefix = "/home/sever/zyx/SmallData/data"
-	filePrefix = "/home/turf/tmp/dataz/data"
+	filePrefix = "/home/turf/tmp/dataz"
 	for i in xrange(1):
-		filePath = filePrefix + str(i)
+		#filePath = filePrefix + str(i)
+		filePath = filePrefix
 		if not os.path.exists(filePath):
 			os.mkdir(filePath)
 		genDataSetFast(i, filePath)
