@@ -227,6 +227,45 @@ def plotPic_deg(filePath, resDict, tlen, mu, degList):
 	plotPic(fileName, X, YList, title, algoNameList)
 
 
+def dumpRes_mu(resDict, tlen, deg, muList):
+	ret = []
+	line = "deg=%s\n" % (deg)
+	ret.append(line)
+	line = " ".join(["mu"] + map(str, muList)) + "\n"
+	ret.append(line)
+	for algoName in CFDR.algoList:
+		paraDict = resDict[algoName]
+		tmpList = [algoName]
+		for mu in muList:
+			paraLine = genParaLine(mu=mu, deg=deg, tlen=tlen)
+			result = paraDict[paraLine]
+			tmpList.append(str(result))
+		line = " ".join(tmpList) + "\n"
+		ret.append(line)
+	ret.append("\n")
+	return ret
+
+
+
+def dumpRes_deg(resDict, tlen, mu, degList):
+	ret = []
+	line = "mu=%s\n" % (mu)
+	ret.append(line)
+	line = " ".join(["deg"] + map(str, degList)) + "\n"
+	ret.append(line)
+	for algoName in CFDR.algoList:
+		paraDict = resDict[algoName]
+		tmpList = [algoName]
+		for deg in degList:
+			paraLine = genParaLine(mu=mu, deg=deg, tlen=tlen)
+			result = paraDict[paraLine]
+			tmpList.append(str(result))
+		line = " ".join(tmpList) + "\n"
+		ret.append(line)
+	ret.append("\n")
+	return ret
+
+
 def plotResult(filePath, resDict):
 	if not os.path.exists(filePath):
 		os.mkdir(filePath)
@@ -244,6 +283,7 @@ def plotResult(filePath, resDict):
 	print "degList =", degList
 	print "muList =", muList
 	print "tlenList =", tlenList
+	lines = []
 	for tlen in tlenList:
 		curFilePath = os.path.join(filePath, "tlen=%d" % (tlen))
 		if not os.path.exists(curFilePath):
@@ -252,6 +292,18 @@ def plotResult(filePath, resDict):
 			plotPic_mu(curFilePath, resDict, tlen, deg, muList)
 		for mu in muList:
 			plotPic_deg(curFilePath, resDict, tlen, mu, degList)	
+
+		line = "tlen = %d\n" % (tlen)
+		lines.append(line)
+		for deg in degList:
+			lines += dumpRes_mu(resDict, tlen, deg, muList)
+		for mu in muList:
+			lines += dumpRes_deg(resDict, tlen, mu, degList)
+		lines.append( "\n\n" )
+	plotFileName = "plotResult.txt"
+	plotFileName = os.path.join(filePath, plotFileName)
+	with open(plotFileName, "w") as fout:
+		fout.writelines(lines)
 
 
 if __name__ == "__main__":
