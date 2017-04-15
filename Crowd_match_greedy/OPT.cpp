@@ -22,7 +22,6 @@ union W_un {
 };
 	
 struct node_t {
-	int id;				// id
 	rule_t type;		// 0: task, 1: worker
 	pair<double, double> loc;	// location
 	int	cap;			// capacity
@@ -33,26 +32,21 @@ struct node_t {
 
 	void print() {
 		if (type == worker)
-		 	printf("id = %d, loc = (%.2lf, %.2lf), rad = %.2lf, cap = %d, time = (%d, %d)\n",
-		 			id, loc.first, loc.second, rad, cap, begTime, endTime);
+		 	printf("w: loc = (%.2lf, %.2lf), rad = %.2lf, cap = %d, time = (%d, %d), ratio = %.2lf\n",
+		 			loc.first, loc.second, rad, cap, begTime, endTime, cost.rate);
 		else
-			printf("id = %d, loc = (%.2lf, %.2lf), time = (%d, %d)\n",
-		 			id, loc.first, loc.second, begTime, endTime);
+			printf("t: loc = (%.2lf, %.2lf), time = (%d, %d), pay = %.2lf\n",
+		 			loc.first, loc.second, begTime, endTime, cost.pay);
 	}
 };
 
 bool satisfyLoc(const node_t& worker, const node_t& task);
+bool satisfyTime(const node_t& worker, const node_t& task);
 bool satisfy(const node_t& worker, const node_t& task);
 
-vector<vector<double> > weightArr;
+
 inline double calcCost(const node_t& task, const node_t& worker) {
-	#ifdef LOCAL_DEBUG
-	assert(worker.id>=0 && worker.id<weightArr.size());
-	assert(task.id>=0 && task.id<weightArr[worker.id].size());
-	#endif
-	double ret = weightArr[worker.id][task.id];
-	if (!satisfyLoc(worker, task)) ret = 0.0;
-	return ret;
+	return (satisfyLoc(worker, task) && satisfyTime(worker, task)) ? task.cost.pay * worker.cost.rate : 0.0;
 }
 
 inline double Length(pair<double,double> pa, pair<double,double> pb) {
@@ -70,6 +64,7 @@ inline int dcmp(double a) {
 	return a>0 ? 1:-1;
 }
 
+const double INF = 1e18;
 struct Hungarian_t {
 	struct vertex_t {
 		int v;
@@ -79,7 +74,7 @@ struct Hungarian_t {
 			v(v), w(w) {}
 	};
 	
-	const double INF = 1e18;
+	//const double INF = 1e18;
 	vector<vector<vertex_t> > g;
 	vector<int> yx, xy;
 	vector<double> lx, ly;
@@ -132,7 +127,7 @@ struct Hungarian_t {
 				if (workerId==-2 || taskId==-2) {
 					cost = 0.0;
 				} else {
-					cost = satisfy(workers[workerId], tasks[taskId]) ? calcCost(tasks[taskId], workers[workerId]) : 0.0;
+					cost = calcCost(tasks[taskId], workers[workerId]);
 				}
 
 				g[i].push_back(vertex_t(j, cost));
@@ -217,15 +212,17 @@ struct Hungarian_t {
 };
 
 typedef long long LL;
-int n, m, umax;
+int n, m, sumC;
+double umax;
 double utility;
 Hungarian_t hung;
 int usedMemory;
 
-void init(int taskN, int workerN, int Umax) {
+void init(int taskN, int workerN, double Umax, int SumC) {
 	n = workerN;
 	m = taskN;
 	umax = Umax;
+	sumC = SumC;
 	utility = 0;
 	usedMemory = 0;
 }
@@ -237,21 +234,16 @@ void nextSeq(ifstream& fin, node_t& nd) {
 	fin >> nd.begTime >> stype;
 	if (stype[0] == 'w') {
 		nd.type = worker;
-		fin >> nd.id >> nd.loc.first >> nd.loc.second >> nd.rad >> nd.cap >> nd.endTime >> nd.cost.rate;
+		fin >> nd.loc.first >> nd.loc.second >> nd.rad >> nd.cap >> nd.endTime >> nd.cost.rate;
 		nd.endTime += nd.begTime;
 	} else {
 		nd.type = task;
-		fin >> nd.id >> nd.loc.first >> nd.loc.second >> nd.endTime >> nd.cost.pay;
+		fin >> nd.loc.first >> nd.loc.second >> nd.endTime >> nd.cost.pay;
 		nd.endTime += nd.begTime;
+		nd.cap = 1;
 	}
 
 	nd.flow = 0;
-	nd.cap = 1;
-	nd.endTime = 1e8;
-
-	// #ifdef LOCAL_DEBUG
-	// nd.print();
-	// #endif
 }
 
 inline bool satisfyLoc(const node_t& worker, const node_t& task) {
@@ -271,14 +263,15 @@ inline bool satisfyCap(const node_t& worker, const node_t& task) {
 
 inline bool satisfyTime(const node_t& worker, const node_t& task) {
 	// 1. condition of deadline
-	if (!(worker.begTime<=task.endTime && task.begTime<=worker.endTime))
+	// if (!(worker.begTime<=task.endTime && task.begTime<=worker.endTime))
+	if (!(worker.begTime<task.endTime && task.begTime<worker.endTime))
 		return false;
 	return true;
 }
 
 bool satisfy(const node_t& worker, const node_t& task) {
-	// return satisfyCap(worker, task) && satisfyTime(worker, task) && satisfyLoc(worker, task);
-	return satisfyCap(worker, task) && satisfyLoc(worker, task);
+	return satisfyCap(worker, task) && satisfyTime(worker, task) && satisfyLoc(worker, task);
+	//return satisfyCap(worker, task) && satisfyLoc(worker, task);
 }
 
 void addOneMatch(node_t& task, node_t& worker) {
@@ -296,25 +289,35 @@ void OPT(ifstream& fin, int seqN) {
 	int taskId, workerId;
 	
 	while (seqN--) {
-		workerId = taskId = -1;
 		nextSeq(fin, node);
-		if (node.type == task) { // node is task
-			taskId = tasks.size();
-			tasks.push_back(node);
-		} else {
-			workerId = workers.size();
-			workers.push_back(node);
-		}
-		
-		if (node.type == task) {
-			for (int i=0; i<node.cap; ++i)
-				T_delta.push_back(taskId);
-		} else {
-			for (int i=0; i<node.cap; ++i)
-				W_delta.push_back(workerId);
+		int cap = node.cap;
+		#ifdef LOCAL_DEBUG
+		if (seqN < 10)
+			node.print();
+		#endif
+
+		while (cap--) {
+			node.flow = 0;
+			node.cap = 1;
+			if (node.type == task) { // node is task
+				taskId = tasks.size();
+				tasks.push_back(node);
+			} else {
+				workerId = workers.size();
+				workers.push_back(node);
+			}
+			
+			if (node.type == task) {
+				for (int i=0; i<node.cap; ++i)
+					T_delta.push_back(taskId);
+			} else {
+				for (int i=0; i<node.cap; ++i)
+					W_delta.push_back(workerId);
+			}
 		}
 	}
 
+	//printf("sumC_task = %d, sumC_worker = %d, sumC = %d\n", (int)T_delta.size(), (int)W_delta.size(), sumC);
 	hung.build(T_delta, W_delta, tasks, workers);	
 	#ifdef WATCH_MEM
 	watchSolutionOnce(getpid(), usedMemory);
@@ -326,8 +329,8 @@ void OPT(ifstream& fin, int seqN) {
 
 	for (int x=0; x<hung.xy.size(); ++x) {
 		int y = hung.xy[x];
-		
-		if (y < 0) continue;
+		//assert(y >= 0);
+		//if (y < 0) continue;
 
 		const int workerId = (x < Wsz) ? W_delta[x] : -2;
 		const int taskId = (y < Tsz) ? T_delta[y] : -2;
@@ -357,7 +360,8 @@ void OPT(ifstream& fin, int seqN) {
 }
 
 void solve(string fileName) {
-	int taskN, workerN, Umax, seqN, sumC;
+	int taskN, workerN, seqN, sumC;
+	double Umax;
 	ifstream fin(fileName.c_str(), ios::in);
 
 	if (!fin.is_open()) {
@@ -367,87 +371,39 @@ void solve(string fileName) {
 
 	fin >> workerN >> taskN >> Umax >> sumC;
 	seqN = taskN + workerN;
-	init(taskN, workerN, Umax);
+	init(taskN, workerN, Umax, sumC);
 	OPT(fin, seqN);
-}
-
-vector<string> split(string fileName, char ch) {
-	vector<string> vstr;
-	int len = fileName.length();
-
-	for (int i=0,j=0; i<=len; ++i) {
-		if (i==len || fileName[i]==ch) {
-			if (i > j) {
-				string str = fileName.substr(j, i-j);
-				// puts(str.c_str());
-				// fflush(stdout);
-				vstr.push_back(str);
-			}
-			j = i + 1;
-		}
-	}
-
-	return vstr;
-}
-
-int strToInt(string s) {
-	int len = s.length(), ret = 0;
-
-	for (int i=0; i<len; ++i)
-		ret = ret * 10 + s[i]-'0';
-
-	return ret;
-}
-
-string getParaStr(string fileName, double mu) {
-	vector<string> vname = split(fileName, '/');
-	string info = vname[vname.size()-2];
-	vector<string> vinfo = split(info, '_');
-	double degrate = strToInt(vinfo[vinfo.size()-2]) * 1.0 / 1000.0;
-
-	string ret = "degrate=" + to_string(degrate) + ",mu=" + to_string(mu);
-
-	// for (int i=0; i<vname.size(); ++i)
-	// 	puts(vname[i].c_str());
-	// for (int i=0; i<vinfo.size(); ++i)
-	// 	puts(vinfo[i].c_str());
-
-	return ret;
 }
 
 int main(int argc, char* argv[]) {
 	cin.tie(0);
 	ios::sync_with_stdio(false);
 
-	string edgeFileName, weightFileName;
-	program_t begProg, endProg;
-	double mu = 0.005;
+	string edgeFileName;
 
-	if (argc >= 4) {
-		weightFileName = string(argv[1]);
-		edgeFileName = string(argv[2]);
-		sscanf(argv[3], "%lf", &mu);
+	if (argc > 1) {
+		edgeFileName = string(argv[1]);
 	} else {
 		#ifdef AT_THE_SERVER
-		weightFileName = "/home/server/zyx/Data0/7";
 		edgeFileName = "/home/server/zyx/Data0/7/order14.txt";
 		#else
-		weightFileName = "/home/turf/tmp/dataz/1000_1000_5_100/weight.txt";
 		edgeFileName = "/home/turf/tmp/dataz/1000_1000_5_100/order0.txt";
 		#endif
 	}
 
-	//printf("[%d]: fileName = %s\n", getpid(), fileName.c_str());
-	input_weight(edgeFileName, weightFileName, weightArr);
-
+	program_t begProg, endProg;
 	save_time(begProg);
 	solve(edgeFileName);
 	save_time(endProg);
 
 	double usedTime = calc_time(begProg, endProg);
-	string paraStr = getParaStr(edgeFileName, mu);
-	printf("OPT %s %.6lf\n", paraStr.c_str(), utility);
+	#ifdef WATCH_MEM
+	printf("OPT %.6lf %.6lfs %dKB\n", utility, usedTime, usedMemory);
+	#else
+	printf("OPT %.6lf %.6lfs\n", utility, usedTime);
+	#endif
 	fflush(stdout);
 	
 	return 0;
 }
+

@@ -9,7 +9,7 @@ import multiprocessing
 def runExtGreedy(execName, edgeFileName):
 	lines = []	
 	cmdLine = "%s %s" % (execName, edgeFileName)
-	print cmdLine
+	#print cmdLine
 	line = commands.getoutput(cmdLine)
 	print line
 	lines.append(line)
@@ -22,10 +22,10 @@ def dumpToFile(fileName, lines):
 
 
 def testFunc(execName, edgeFileName, logFileName):
-	print "begin testFunc"
+	#print "begin testFunc"
 	lines = runExtGreedy(execName, edgeFileName)
 	dumpToFile(logFileName, lines)
-	print "end testFunc"
+	#print "end testFunc"
 
 
 def getMaxV(a):
@@ -49,7 +49,7 @@ def filterDataSet(filePath):
 	for tmp in tmpList:
 		print getMaxV(tmp), tmp
 		v = getMaxV(tmp)
-		if v <= bound:
+		if v > bound:
 			ret.append(tmp)
 	return ret
 
