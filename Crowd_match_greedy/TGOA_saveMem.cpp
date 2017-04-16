@@ -128,7 +128,9 @@ struct Hungarian_t {
 				const vector<node_t>& tasks, const vector<node_t>& workers) {
 		Tsz = T_delta.size();
 		Wsz = W_delta.size();
+		#ifdef LOCAL_DEBUG
 		assert(Tsz >= Wsz);
+		#endif
 		int vertexN = max(Tsz, Wsz);
 		
 		init(vertexN);
@@ -382,7 +384,7 @@ void TGOA(ifstream& fin, int seqN) {
 
 					const int Tsz = T_delta.size();
 					const int Wsz = W_delta.size();
-					assert(Wsz <= Tsz);
+					
 					if (node.type == task) {
 						if (hung.yx[Tsz-1]>=0 && hung.yx[Tsz-1]<Wsz) {
 							workerId = W_delta[hung.yx[Tsz-1]];
@@ -418,7 +420,7 @@ void TGOA(ifstream& fin, int seqN) {
 
 					const int Tsz = T_delta.size();
 					const int Wsz = W_delta.size();
-					assert(Wsz >= Tsz);
+					
 					if (node.type == task) {
 						if (hung.xy[Tsz-1]>=0 && hung.xy[Tsz-1]<Wsz) {
 							workerId = W_delta[hung.xy[Tsz-1]];
@@ -529,9 +531,9 @@ int main(int argc, char* argv[]) {
 
 	double usedTime = calc_time(begProg, endProg);
 	#ifdef WATCH_MEM
-	printf("TGOA %.6lf %.6lfs %dKB\n", utility, usedTime, usedMemory);
+	printf("TGOA %.6lf %.6lf %d\n", utility, usedTime, usedMemory);
 	#else
-	printf("TGOA %.6lf %.6lfs\n", utility, usedTime);
+	printf("TGOA %.6lf %.6lf\n", utility, usedTime);
 	#endif
 	fflush(stdout);
 	

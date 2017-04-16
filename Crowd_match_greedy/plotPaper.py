@@ -7,22 +7,25 @@ import matplotlib.pyplot as plt
 
 class constForPlotPaper:
 	algoNameList = [
+		"OPT",
 		"Ext",
 		"Greedy",
 		"Pure",
-		"OPT",
+		"TGOA",
 	]
 	colorDict = {
 		'Ext': 		'blue',
 		'Pure': 	'black',
 		'Greedy': 	'green',
 		'OPT': 		'pink',
+		'TGOA':		'red'
 	}
 	markDict = {
 		'Ext': 		'o',
 		'Pure': 	'*',
 		'Greedy': 	'd',
 		'OPT': 		's',
+		'TGOA': 	'x',
 	}
 
 class CFPP(constForPlotPaper):
@@ -61,7 +64,7 @@ def mergeTime(aDict):
 			# print tmpClk, float(tmpList[-2])
 			tmpClk = min(tmpClk, float(tmpList[-2]))
 			tmpList[-2] = str(tmpClk)
-			tmpList[-1] = str(int(tmpList[-1]) / 1024)
+			tmpList[-1] = str(float(tmpList[-1]) / 1024.0)
 			# print tmpList
 			line = " ".join(tmpList)
 			retDict[algoName][infoName] = line
@@ -112,7 +115,11 @@ def plotPic(desFileName, X, yList, varName, varList, ytitle):
 	else:
 		title = "%s of varying %s" % (ytitle, varName)
 	plt.title(title)
-	for i,algoName in enumerate(CFPP.algoNameList):
+	if ytitle.startswith('U'):
+		algoNameList = CFPP.algoNameList
+	else:
+		algoNameList = CFPP.algoNameList[1:]
+	for i,algoName in enumerate(algoNameList):
 		Y = yList[i]
 		col = CFPP.colorDict[algoName]
 		marker = CFPP.markDict[algoName]
@@ -140,7 +147,11 @@ def plotPics(desFilePath, dataDict, varName, varList):
 	]
 	for i in xrange(3):
 		yList = []
-		for algoName in CFPP.algoNameList:
+		if i>0:
+			algoNameList = CFPP.algoNameList[1:]
+		else:
+			algoNameList = CFPP.algoNameList
+		for algoName in algoNameList:
 			Y = []
 			nY = len(dataDict[algoName])
 			for j in xrange(nY):
@@ -230,6 +241,14 @@ def plotAllPic(resDict, desFilePath):
 		logName = genLogName(taskN, workerN, cap, rad, rate, dl, pay)
 		updateDataDict(logName, resDict, dataDict)
 	plotPics(desFilePath, dataDict, "pay", payList)
+	
+	# cap is variable
+	taskN, workerN, cap, rad, rate, dl, pay = _taskN, _workerN, _cap, _rad, _rate, _dl, _pay
+	dataDict = dict()
+	for cap in payList:
+		logName = genLogName(taskN, workerN, cap, rad, rate, dl, pay)
+		updateDataDict(logName, resDict, dataDict)
+	plotPics(desFilePath, dataDict, "cap", payList)
 
 
 def plotAllResult(srcFilePath, desFilePath):
@@ -240,6 +259,6 @@ def plotAllResult(srcFilePath, desFilePath):
 
 
 if __name__ == "__main__":
-	srcFilePath = "/home/turf/tmp/logz"
-	desFilePath = "/home/turf/tmp/resultz"
+	srcFilePath = "I:/logz"
+	desFilePath = "I:/resultz"
 	plotAllResult(srcFilePath, desFilePath)
