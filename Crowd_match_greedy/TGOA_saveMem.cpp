@@ -43,9 +43,10 @@ struct node_t {
 bool satisfyLoc(const node_t& worker, const node_t& task);
 bool satisfyTime(const node_t& worker, const node_t& task);
 
-inline double calcCost(const node_t& task, const node_t& worker) {
-	if (satisfyLoc(worker, task) && satisfyTime(worker, task)) 
-		return task.cost.pay * worker.cost.rate;
+inline double calcCost(const node_t& atask, const node_t& aworker) {
+	assert(atask.type==task && aworker.type==worker);
+	if (satisfyLoc(aworker, atask) && satisfyTime(aworker, atask)) 
+		return atask.cost.pay * aworker.cost.rate;
 	else
 		return 0.0;
 }
@@ -80,7 +81,6 @@ struct Hungarian_t {
 	vector<bool> S, T;
 	vector<double> slack;
 	int Tsz, Wsz;
-	int n;
 	
 	Hungarian_t() {
 		init();
@@ -88,14 +88,13 @@ struct Hungarian_t {
 	
 	void init(int n=0) {
 		clear();
-		this->n = n;
-		yx.resize(n, -1);
-		xy.resize(n, -1);
-		lx.resize(n, 0);
-		ly.resize(n, 0);
-		S.resize(n, false);
-		T.resize(n, false);
-		slack.resize(n, 0);
+		yx.resize(Tsz, -1);
+		xy.resize(Wsz, -1);
+		lx.resize(Wsz, 0);
+		ly.resize(Tsz, 0);
+		S.resize(Wsz, false);
+		T.resize(Tsz, false);
+		slack.resize(Tsz, 0);
 	}
 	
 	void clear() {
@@ -225,9 +224,11 @@ struct Hungarian_t {
 	void match(const vector<int>& T_delta, const vector<int>& W_delta, 
 				const vector<node_t>& tasks, const vector<node_t>& workers) {
 		weightedMaximumMatch(T_delta, W_delta, tasks, workers);
-		for (int x=0; x<Wsz; ++x)
+		#ifdef LOCAL_DEBUG
+		for (int x=0; x<Wsz; ++x) {
 			assert(xy[x] != -1);
 		}
+		#endif
 	}
 };
 
@@ -344,13 +345,13 @@ void TGOA(ifstream& fin, int seqN) {
 	bool isSecondHalf = false;
 
 	while (seqN--) {
-		workerId = taskId = -1;
+		
 		nextSeq(fin, node);
 		int cap = node.cap;
 		node.cap = 1;
 		
 		while (cap--) {
-			
+			workerId = taskId = -1;
 			if (node.type == task) { // node is task
 				taskId = tasks.size();
 				tasks.push_back(node);
@@ -381,14 +382,14 @@ void TGOA(ifstream& fin, int seqN) {
 
 					const int Tsz = T_delta.size();
 					const int Wsz = W_delta.size();
-
+					assert(Wsz <= Tsz);
 					if (node.type == task) {
 						if (hung.yx[Tsz-1]>=0 && hung.yx[Tsz-1]<Wsz) {
 							workerId = W_delta[hung.yx[Tsz-1]];
 							#ifdef LOCAL_DEBUG
 							assert(workerId < workers.size());
 							#endif
-							if (satisfy(workers[workerId], node)) {
+							if (satisfy(workers[workerId], tasks[taskId])) {
 								/* valid, do nothing*/
 							} else {
 								workerId = -1;
@@ -401,27 +402,30 @@ void TGOA(ifstream& fin, int seqN) {
 							#ifdef LOCAL_DEBUG
 							assert(taskId < tasks.size());
 							#endif
-							if (satisfy(node, tasks[taskId])) {
+							if (satisfy(workers[workerId], tasks[taskId])) {
 								/* valid, do nothing*/
 							} else {
 								taskId = -1;
 							}
 						}
 					}
+					#ifdef LOCAL_DEBUG
+					printf("1 %d %d\n", workerId, taskId);
+					#endif
 				} else {
 					hung.build(W_delta, T_delta, workers, tasks);
 					hung.match(W_delta, T_delta, workers, tasks);
 
 					const int Tsz = T_delta.size();
 					const int Wsz = W_delta.size();
-
+					assert(Wsz >= Tsz);
 					if (node.type == task) {
 						if (hung.xy[Tsz-1]>=0 && hung.xy[Tsz-1]<Wsz) {
 							workerId = W_delta[hung.xy[Tsz-1]];
 							#ifdef LOCAL_DEBUG
 							assert(workerId < workers.size());
 							#endif
-							if (satisfy(workers[workerId], node)) {
+							if (satisfy(workers[workerId], tasks[taskId])) {
 								/* valid, do nothing*/
 							} else {
 								workerId = -1;
@@ -434,7 +438,7 @@ void TGOA(ifstream& fin, int seqN) {
 							#ifdef LOCAL_DEBUG
 							assert(taskId < tasks.size());
 							#endif
-							if (satisfy(node, tasks[taskId])) {
+							if (satisfy(workers[workerId], tasks[taskId])) {
 								/* valid, do nothing*/
 							} else {
 								taskId = -1;
@@ -443,9 +447,15 @@ void TGOA(ifstream& fin, int seqN) {
 					}
 
 				}
+				#ifdef LOCAL_DEBUG
+				printf("2 %d %d\n", workerId, taskId);
+				#endif
 			}
 			
 			if (workerId>=0 && taskId>=0) {
+				#ifdef LOCAL_DEBUG
+				assert(satisfy(workers[workerId], tasks[taskId]));
+				#endif
 				addOneMatch(tasks[taskId], workers[workerId]);
 			}
 
@@ -509,7 +519,7 @@ int main(int argc, char* argv[]) {
 		#ifdef AT_THE_SERVER
 		edgeFileName = "/home/server/zyx/Data0/7/order14.txt";
 		#else
-		edgeFileName = "/home/turf/tmp/dataz/1000_1000_5_100/order0.txt";
+		edgeFileName = "/home/turf/TmpTest/data2.txt";
 		#endif
 	}
 
