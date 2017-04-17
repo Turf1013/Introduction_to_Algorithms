@@ -4,15 +4,23 @@ import os
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from copy import deepcopy
 
 class constForPlotPaper:
 	algoNameList = [
-		"OPT",
 		"Ext",
 		"Greedy",
-		"Pure",
 		"TGOA",
+		"Pure",
+		"OPT",
 	]
+	algoReNameDict = {
+		"Ext" : "extended",
+		"Greedy": "fgoag",
+		"TGOA": "fgoa",
+		"Pure": "simg",
+		"OPT": "opt",
+	}
 	colorDict = {
 		'Ext': 		'blue',
 		'Pure': 	'black',
@@ -115,10 +123,9 @@ def plotPic(desFileName, X, yList, varName, varList, ytitle):
 	else:
 		title = "%s of varying %s" % (ytitle, varName)
 	plt.title(title)
-	if ytitle.startswith('U'):
-		algoNameList = CFPP.algoNameList
-	else:
-		algoNameList = CFPP.algoNameList[1:]
+	algoNameList = deepcopy(CFPP.algoNameList)
+	if not ytitle.startswith('U'):
+		algoNameList.remove("OPT")
 	for i,algoName in enumerate(algoNameList):
 		Y = yList[i]
 		col = CFPP.colorDict[algoName]
@@ -147,10 +154,9 @@ def plotPics(desFilePath, dataDict, varName, varList):
 	]
 	for i in xrange(3):
 		yList = []
-		if i>0:
-			algoNameList = CFPP.algoNameList[1:]
-		else:
-			algoNameList = CFPP.algoNameList
+		algoNameList = deepcopy(CFPP.algoNameList)
+		if i > 0:
+			algoNameList.remove("OPT")
 		for algoName in algoNameList:
 			Y = []
 			nY = len(dataDict[algoName])
@@ -163,6 +169,11 @@ def plotPics(desFilePath, dataDict, varName, varList):
 		desFileName = os.path.join(desFilePath, desFileName)
 		ytitle = ytitleList[i]
 		plotPic(desFileName, X, yList, varName, varList, ytitle)
+		print ytitle, varName
+		for i,algoName in enumerate(algoNameList):
+			algoReName = CFPP.algoReNameDict[algoName]
+			print "%s = %s;" % (algoReName, yList[i])
+		print "\n"
 
 
 def plotAllPic(resDict, desFilePath):
@@ -186,14 +197,6 @@ def plotAllPic(resDict, desFilePath):
 	_dl = dlList[2]
 	_pay = payList[2]
 
-	# taskN is variable
-	taskN, workerN, cap, rad, rate, dl, pay = _taskN, _workerN, _cap, _rad, _rate, _dl, _pay
-	dataDict = dict()
-	for taskN in taskNumList:
-		logName = genLogName(taskN, workerN, cap, rad, rate, dl, pay)
-		updateDataDict(logName, resDict, dataDict)
-	plotPics(desFilePath, dataDict, "taskN", taskNumList)
-
 	# workerN is variable
 	taskN, workerN, cap, rad, rate, dl, pay = _taskN, _workerN, _cap, _rad, _rate, _dl, _pay
 	dataDict = dict()
@@ -202,13 +205,21 @@ def plotAllPic(resDict, desFilePath):
 		updateDataDict(logName, resDict, dataDict)
 	plotPics(desFilePath, dataDict, "workerN", workerNumList)
 
+	# taskN is variable
+	taskN, workerN, cap, rad, rate, dl, pay = _taskN, _workerN, _cap, _rad, _rate, _dl, _pay
+	dataDict = dict()
+	for taskN in taskNumList:
+		logName = genLogName(taskN, workerN, cap, rad, rate, dl, pay)
+		updateDataDict(logName, resDict, dataDict)
+	plotPics(desFilePath, dataDict, "taskN", taskNumList)
+
 	# cap is variable
 	taskN, workerN, cap, rad, rate, dl, pay = _taskN, _workerN, _cap, _rad, _rate, _dl, _pay
 	dataDict = dict()
 	for cap in capNumList:
 		logName = genLogName(taskN, workerN, cap, rad, rate, dl, pay)
 		updateDataDict(logName, resDict, dataDict)
-	plotPics(desFilePath, dataDict, "workerN", workerNumList)
+	plotPics(desFilePath, dataDict, "cap", capNumList)
 
 	# rad is variable
 	taskN, workerN, cap, rad, rate, dl, pay = _taskN, _workerN, _cap, _rad, _rate, _dl, _pay
@@ -242,14 +253,8 @@ def plotAllPic(resDict, desFilePath):
 		updateDataDict(logName, resDict, dataDict)
 	plotPics(desFilePath, dataDict, "pay", payList)
 	
-	# cap is variable
-	taskN, workerN, cap, rad, rate, dl, pay = _taskN, _workerN, _cap, _rad, _rate, _dl, _pay
-	dataDict = dict()
-	for cap in payList:
-		logName = genLogName(taskN, workerN, cap, rad, rate, dl, pay)
-		updateDataDict(logName, resDict, dataDict)
-	plotPics(desFilePath, dataDict, "cap", payList)
 
+	
 
 def plotAllResult(srcFilePath, desFilePath):
 	if not os.path.exists(desFilePath):
