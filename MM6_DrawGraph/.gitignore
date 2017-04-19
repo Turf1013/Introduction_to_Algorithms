@@ -1,0 +1,13 @@
+*~
+*.exe
+*.pdf
+*.png
+*.htm
+*.log
+*.in
+*.out
+*.o
+*.gcno
+*.jar
+star
+base
