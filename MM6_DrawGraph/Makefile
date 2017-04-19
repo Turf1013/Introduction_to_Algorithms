@@ -4,24 +4,28 @@
 CC = gcc
 CXX = g++
 LIBS = -lrt
-CFLAGS = --std=c++0x -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
+CFLAGS = --std=c++11 -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: star
-star: starTraveller.cpp
-	$(CXX) $(CFLAGS) -o star starTraveller.cpp $(LIBS)
+all: base greedy
+base: GraphDrawing_base_v0.cpp monitor.h
+	$(CXX) $(CFLAGS) -o base GraphDrawing_base_v0.cpp $(LIBS)
 
-base: starTraveller_v0.cpp
-	$(CXX) $(CFLAGS) -o base starTraveller_v0.cpp $(LIBS)
+greedy: GraphDrawing_greedy_v0.cpp monitor.h
+	$(CXX) $(CFLAGS) -o greedy GraphDrawing_greedy_v0.cpp $(LIBS)
+
+raw: GraphDrawing.cpp monitor.h
+	$(CXX) $(CFLAGS) -o raw GraphDrawing.cpp $(LIBS)
 
 
 .PHONY: clean test
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
-		-@rm star star.g* 2> /dev/null || true	
-		-@rm base 2> /dev/null || true	
+		-@rm greedy greedy.g* 2> /dev/null || true	
+		-@rm base base.g* 2> /dev/null || true	
+		-@rm raw raw.g* 2> /dev/null || true	
 
 test: build
-		java -jar tester.jar -exec ./star -seed 1 -vis -delay 1000
+		java -jar tester.jar -exec ./base -seed 1 -vis -delay 1000
 		@echo
 

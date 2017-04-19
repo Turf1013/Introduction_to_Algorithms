@@ -9,5 +9,8 @@
 *.o
 *.gcno
 *.jar
-star
+SmallTestCase/
+LargeTestCase/
+greedy
 base
+raw
