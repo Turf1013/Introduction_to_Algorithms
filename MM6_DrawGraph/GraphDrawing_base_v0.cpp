@@ -23,6 +23,7 @@ int degs[maxn];
 bool visit[maxn];
 int g[maxn][maxn], mark[maxn][maxn], markCnt = 0;
 int w[maxn][maxn], w2[maxn][maxn];
+pii best[maxn], cur[maxn];
 int gsz[maxn];
 double sx, sxx;
 double sy, syy;
@@ -51,7 +52,7 @@ private:
     int N;
     int sx, sy, sxx, syy;
 
-    double calcResult(const vector<pii>& positions, const vector<int>& edges) {
+    double calcResult(const pii* positions, const vector<int>& edges) {
         #ifdef LOCAL_DEBUG
         assert(positions.size() == N);
         #endif
@@ -97,7 +98,7 @@ private:
         }
     }
 
-    vector<int> toReturn(const vector<pii>& vp) {
+    vector<int> toReturn(const pii *vp) {
         vector<int> ret;
         set<pii> st;
 
@@ -167,7 +168,6 @@ private:
     }
 
     void init() {
-        sx = sy = sxx = syy = 0;
         memcpy(degs, gsz, sizeof(gsz));
         memset(visit, false, sizeof(visit));
     }
@@ -213,7 +213,7 @@ private:
         u = -1;
     }
 
-    void updateVertex(const int u, int bx, int by, vector<pii>& vp, degSet& st) {
+    void updateVertex(const int u, int bx, int by, pii* vp, degSet& st) {
         #ifdef LOCAL_DEBUG
         assert(u>=0 && u<vp.size());
         //printf("u = %d\n", u);
@@ -241,7 +241,7 @@ private:
         // syy += by * by;
     }
 
-    void initParameter(int u, const vector<pii>& vp, vector<int>& neighbours) {
+    void initParameter(int u, const pii* vp, vector<int>& neighbours) {
         int v;
         sx = sxx = 0;
         sy = syy = 0;
@@ -276,7 +276,7 @@ private:
     /**
         \function:  using drawn vertex to calculate the position of current vertex
     */
-    void calcPosition(const int u, int& bx, int& by, const vector<pii>& vp, const vector<int>& edges) {
+    void calcPosition(const int u, int& bx, int& by, const pii* vp, const vector<int>& edges) {
         vector<int> neighbours;
         initParameter(u, vp, neighbours);
         int n = neighbours.size();
@@ -341,7 +341,7 @@ private:
                 assert(dcmp(V0-V700) <= 0);
                 #endif
                 if (dcmp(V0) >= 0) {
-                        for (int d=0; d<=5; ++d) {
+                        for (int d=0; d<=1; ++d) {
                             y = d;
                             if (judge(y)) {
                                 double tmp = fabs(A*y*y + B*y + C);
@@ -361,7 +361,7 @@ private:
                         }
                 }
                 if (dcmp(V700) <= 0) {
-                    for (int d=-5; d<=0; ++d) {
+                    for (int d=-1; d<=0; ++d) {
                         y = maxn - 1 - d;
                         if (judge(y)) {
                             double tmp = fabs(A*y*y + B*y + C);
@@ -385,7 +385,7 @@ private:
                 assert(dcmp(V0-V700) >= 0);
                 #endif
                 if (dcmp(V0) <= 0) {
-                        for (int d=0; d<=5; ++d) {
+                        for (int d=0; d<=1; ++d) {
                             y = d;
                             if (judge(y)) {
                                 double tmp = fabs(A*y*y + B*y + C);
@@ -405,7 +405,7 @@ private:
                         }
                 }
                 if (dcmp(V700) >= 0) {
-                    for (int d=-5; d<=0; ++d) {
+                    for (int d=-1; d<=0; ++d) {
                         y = maxn - 1 - d;
                         if (judge(y)) {
                             double tmp = fabs(A*y*y + B*y + C);
@@ -431,7 +431,7 @@ private:
                     assert(dcmp(V700) >= 0);
                     #endif
                     // in this case peakY is the best value
-                    for (int d=-2; d<=2; ++d) {
+                    for (int d=-1; d<=1; ++d) {
                         y = peakY + d;
                         if (judge(y)) {
                             double tmp = fabs(A*y*y + B*y + C);
@@ -451,7 +451,7 @@ private:
                     }
                 } else {
                     if (dcmp(V0) <= 0) {
-                        for (int d=0; d<=5; ++d) {
+                        for (int d=0; d<=1; ++d) {
                             y = d;
                             if (judge(y)) {
                                 double tmp = fabs(A*y*y + B*y + C);
@@ -471,7 +471,7 @@ private:
                         }
                     }
                     if (dcmp(V700) <= 0) {
-                        for (int d=-5; d<=0; ++d) {
+                        for (int d=-1; d<=0; ++d) {
                             y = maxn - 1 - d;
                             if (judge(y)) {
                                 double tmp = fabs(A*y*y + B*y + C);
@@ -495,7 +495,7 @@ private:
         }
 
         int sz = vtmp.size();
-        int threshSz = 100;
+        int threshSz = 40;
         sz = min(sz, threshSz);
         double bestVal = -1e20;
 
@@ -530,7 +530,7 @@ private:
         by = bstY;
     }
 
-    void getVertex(int bx, int by, vector<pii>& vp, const vector<int>& edges) {
+    void getVertex(int bx, int by, pii* vp, const vector<int>& edges) {
         degSet vst;
         int u, v;
         pii p;
@@ -565,7 +565,7 @@ private:
 
     vector<int> plot(int N, const vector<int>& edges) {
         this->N = N;
-        vector<pii> best(N, make_pair(0,0)), cur(N, make_pair(0,0));
+        //vector<pii> best(N, make_pair(0,0)), cur(N, make_pair(0,0));
         int bestBx = -1, bestBy = -1;
         double bestRes = 2, curRes;
 
@@ -592,6 +592,8 @@ private:
 };
 // -------8<------- end of solution submitted to the website -------8<-------
 #include "monitor.h"
+
+//#define DEBUG
 
 void calcRatio(const vector<int>& res, const vector<int>& edges) {
     double ratio, mn = 1e20, mx = -1e20;
@@ -636,16 +638,17 @@ int main(int argc, char **argv) {
     save_time(endProg);
 
     assert(ret.size() == N*2);
+    #ifdef DEBUG
     printf("%d\n", ret.size());
     for (int i=0; i<N; ++i)
         printf("%d\n%d\n", ret[2*i], ret[2*i+1]);
+    #endif
 
-    #ifdef LOCAL_DEBUG
+    //#ifdef LOCAL_DEBUG
     double usedTime = calc_time(begProg, endProg);
-    double usedTime = clock() / 1000.0;
     printf("time = %.3lfs\n", usedTime);
     calcRatio(ret, edges);
-    #endif
+    //#endif
 
     fflush(stdout);
 
