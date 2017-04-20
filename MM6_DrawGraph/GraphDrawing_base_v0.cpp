@@ -2,7 +2,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-#define LOCAL_DEBUG
+// #define LOCAL_DEBUG
 typedef pair<int,int> pii;
 
 struct node_t {
@@ -127,7 +127,7 @@ private:
                                     break;
                                 }
                                 p.second += dy;
-                            }   
+                            }
                         }
                         if (flag) break;
                         p.first -= dx;
@@ -150,7 +150,7 @@ private:
                                     break;
                                 }
                                 p.second += dy;
-                            }   
+                            }
                         }
                         if (flag) break;
                         p.first += dx;
@@ -168,7 +168,7 @@ private:
     void init() {
         sx = sy = sxx = syy = 0;
         memcpy(degs, gsz, sizeof(gsz));
-        memset(visit, false, sizeof(visit));        
+        memset(visit, false, sizeof(visit));
     }
 
     void init(const vector<int>& edges) {
@@ -186,7 +186,7 @@ private:
         }
     }
 
-    void setBeginVertex(int bx, int by, int& u) {
+    void setBeginVertex(int& u) {
         int mx = -1, c = 0;
 
         for (int i=0; i<N; ++i) {
@@ -200,7 +200,7 @@ private:
 
         int idx = rand() % c;
         for (int i=0; i<N; ++i) {
-            if (degs[i]==mx && --c==0) {
+            if (degs[i]==mx && idx--==0) {
                 u = i;
                 return ;
             }
@@ -251,7 +251,7 @@ private:
 
         for (int i=0; i<gsz[u]; ++i) {
             v = g[u][i];
-            if (!visit[v]) 
+            if (!visit[v])
                 continue;
             neighbours.push_back(i);
 
@@ -281,7 +281,6 @@ private:
         int n = neighbours.size();
         int x, y;
         int bstX = -1, bstY = -1;
-        double bestVal = 1e20;
         // int sa = sx*2, saa = sxx;
         // int sb = sy*2, sbb = syy;
         // int sc = sl, scc = sll;
@@ -295,7 +294,7 @@ private:
         for (x=0; x<maxn; ++x) {
         // for (x=0; x<15; ++x) {
             // int nxx = n * x * x;
-            // double A = n; 
+            // double A = n;
             // double B = -sb;
             // double C = saa + sbb - scc + nxx - sa * x;
             double A = sll2;
@@ -319,7 +318,7 @@ private:
                             if (mark[x][y] != markCnt) {
                                 mark[x][y] = markCnt;
                                 vtmp.push_back(nd);
-                            }   
+                            }
                             // if (tmp < bestVal) {
                                 // bestVal = tmp;
                                 // bstX = x;
@@ -497,6 +496,7 @@ private:
         int sz = vtmp.size();
         int threshSz = 100;
         sz = min(sz, threshSz);
+        double bestVal = -1e20;
 
         // #ifdef LOCAL_DEBUG
         // printf("sz = %d, threshSz = %d\n", sz, threshSz);
@@ -528,7 +528,7 @@ private:
         bx = bstX;
         by = bstY;
     }
-    
+
     void getVertex(int bx, int by, vector<pii>& vp, const vector<int>& edges) {
         degSet vst;
         int u, v;
@@ -542,7 +542,7 @@ private:
         /**
             \step 2: first the most freqeunt vertex as the begin vertex
         */
-        setBeginVertex(bx, by, u);
+        setBeginVertex(u);
         updateVertex(u, bx, by, vp, vst);
 
         /**
@@ -590,7 +590,7 @@ private:
     }
 };
 // -------8<------- end of solution submitted to the website -------8<-------
-#include "monitor.h"
+//#include "monitor.h"
 
 void calcRatio(const vector<int>& res, const vector<int>& edges) {
     double ratio, mn = 1e20, mx = -1e20;
@@ -612,12 +612,16 @@ int main(int argc, char **argv) {
     GraphDrawing gd;
     int N;
     int E;
-    program_t begProg, endProg;
+    //program_t begProg, endProg;
 
-    if (argc > 1) 
+    if (argc > 1)
         freopen(argv[1], "r", stdin);
+    else
+    	freopen("data.in", "r", stdin);
     if (argc > 2)
         freopen(argv[2], "w", stdout);
+    else
+    	freopen("data.out", "w", stdout);
 
     scanf("%d", &N);
     scanf("%d", &E);
@@ -625,18 +629,18 @@ int main(int argc, char **argv) {
     for (int i=0; i<3*E; ++i) {
         scanf("%d", &edges[i]);
     }
-    
-    save_time(begProg);
+
+   //save_time(begProg);
     vector<int> ret = gd.plot(N, edges);
-    save_time(endProg);
+   // save_time(endProg);
 
     assert(ret.size() == N*2);
-    printf("%d\n", N);
+    printf("%d\n", ret.size());
     for (int i=0; i<N; ++i)
         printf("%d %d\n", ret[2*i], ret[2*i+1]);
-    
+
     #ifdef LOCAL_DEBUG
-    double usedTime = calc_time(begProg, endProg);
+    double usedTime = clock() / 1000.0;//calc_time(begProg, endProg);
     printf("time = %.3lfs\n", usedTime);
     calcRatio(ret, edges);
     #endif
