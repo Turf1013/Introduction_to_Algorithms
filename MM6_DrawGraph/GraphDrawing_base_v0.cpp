@@ -5,33 +5,51 @@ using namespace std;
 #define LOCAL_DEBUG
 typedef pair<int,int> pii;
 
+struct node_t {
+    double w;
+    int x, y;
+
+    node_t(double w=0., int x=0, int y=0):
+        w(w), x(x), y(y) {}
+
+    bool operator< (const node_t& o) const {
+        return w < o.w;
+    }
+};
+
 const int maxn = 1015;
 const double eps = 1e-7;
 int degs[maxn];
 bool visit[maxn];
-int g[maxn][maxn];
+int g[maxn][maxn], mark[maxn][maxn], markCnt = 0;
 int w[maxn][maxn], w2[maxn][maxn];
 int gsz[maxn];
+double sx, sxx;
+double sy, syy;
+double sl, sll;
+double sx2, sxx2;
+double sy2, syy2;
+double sl2, sll2;
+
+int dcmp(double x) {
+    if (fabs(x) < eps)
+        return 0;
+    return x>0 ? 1:-1;
+}
+
+int Length2(const pii& a, const pii& b) {
+    return (a.first-b.first)*(a.first-b.first) + (a.second-b.second)*(a.second-b.second);
+}
+
+double Length(const pii& a, const pii& b) {
+    return sqrt((double)((a.first-b.first)*(a.first-b.first) + (a.second-b.second)*(a.second-b.second)));
+}
 
 class GraphDrawing {
 private:
     typedef set<pii, greater<pii> > degSet;
     int N;
     int sx, sy, sxx, syy;
-
-    int dcmp(double x) {
-        if (fabs(x) < eps)
-            return 0;
-        return x>0 ? 1:-1;
-    }
-
-    int Length2(const pii& a, const pii& b) {
-        return (a.first-b.first)*(a.first-b.first) + (a.second-b.second)*(a.second-b.second);
-    }
-
-    double Length(const pii& a, const pii& b) {
-        return sqrt((double)((a.first-b.first)*(a.first-b.first) + (a.second-b.second)*(a.second-b.second)));
-    }
 
     double calcResult(const vector<pii>& positions, const vector<int>& edges) {
         #ifdef LOCAL_DEBUG
@@ -84,64 +102,64 @@ private:
         set<pii> st;
 
         #ifdef LOCAL_DEBUG
-        assert(vp.size() == N*2);
+        assert(vp.size() == N);
         #endif
-        for (int i=0; i<vp; ++i) {
+        for (int i=0; i<N; ++i) {
             pii p = vp[i];
             if (st.count(p) > 0) {
                 bool flag = false;
                 for (int dx=0; dx<maxn; ++dx) {
-                    if (judge(x + dx)) {
-                        p.fir += dx;
-                        for (int dy=0; y<maxn; ++dy) {
-                            if (judge(y + dy)) {
-                                p.sec += dy;
+                    if (judge(p.first + dx)) {
+                        p.first += dx;
+                        for (int dy=0; dy<maxn; ++dy) {
+                            if (judge(p.second + dy)) {
+                                p.second += dy;
                                 if (st.count(p) > 0) {
                                     flag = true;
                                     break;
                                 }
-                                p.sec -= dy;
+                                p.second -= dy;
                             }
-                            if (judge(y - dy)) {
-                                p.sec -= dy;
+                            if (judge(p.second - dy)) {
+                                p.second -= dy;
                                 if (st.count(p) > 0) {
                                     flag = true;
                                     break;
                                 }
-                                p.sec += dy;
+                                p.second += dy;
                             }   
                         }
                         if (flag) break;
-                        p.fir -= dx;
+                        p.first -= dx;
                     }
-                    if (judge(x - dx)) {
-                        p.fir -= dx;
-                        for (int dy=0; y<maxn; ++dy) {
-                            if (judge(y + dy)) {
-                                p.sec += dy;
+                    if (judge(p.first - dx)) {
+                        p.first -= dx;
+                        for (int dy=0; dy<maxn; ++dy) {
+                            if (judge(p.second + dy)) {
+                                p.second += dy;
                                 if (st.count(p) > 0) {
                                     flag = true;
                                     break;
                                 }
-                                p.sec -= dy;
+                                p.second -= dy;
                             }
-                            if (judge(y - dy)) {
-                                p.sec -= dy;
+                            if (judge(p.second - dy)) {
+                                p.second -= dy;
                                 if (st.count(p) > 0) {
                                     flag = true;
                                     break;
                                 }
-                                p.sec += dy;
+                                p.second += dy;
                             }   
                         }
                         if (flag) break;
-                        p.fir += dx;
+                        p.first += dx;
                     }
                 }
             }
             st.insert(p);
-            ret.push_back(p.fir);
-            ret.push_back(p.sec);
+            ret.push_back(p.first);
+            ret.push_back(p.second);
         }
 
         return ret;
@@ -172,17 +190,17 @@ private:
         int mx = -1, c = 0;
 
         for (int i=0; i<N; ++i) {
-            if (deg[i] > mx) {
-                mx = deg[i];
+            if (degs[i] > mx) {
+                mx = degs[i];
                 c = 1;
-            } else if (deg[i] == mx) {
+            } else if (degs[i] == mx) {
                 ++c;
             }
         }
 
         int idx = rand() % c;
         for (int i=0; i<N; ++i) {
-            if (deg[i]==mx && --c==0) {
+            if (degs[i]==mx && --c==0) {
                 u = i;
                 return ;
             }
@@ -194,9 +212,10 @@ private:
         u = -1;
     }
 
-    void udapteVertex(const int u, int bx, int by, vector<int>& vp, degSet& st) {
+    void updateVertex(const int u, int bx, int by, vector<pii>& vp, degSet& st) {
         #ifdef LOCAL_DEBUG
         assert(u>=0 && u<vp.size());
+        //printf("u = %d\n", u);
         #endif
 
         vp[u].first = bx;
@@ -215,57 +234,104 @@ private:
             }
         }
 
-        sx += bx;
-        sy += by;
-        sxx += bx * bx;
-        syy += by * by;
+        // sx += bx;
+        // sy += by;
+        // sxx += bx * bx;
+        // syy += by * by;
+    }
+
+    void initParameter(int u, const vector<pii>& vp, vector<int>& neighbours) {
+        int v;
+        sx = sxx = 0;
+        sy = syy = 0;
+        sl = sll = 0;
+        sx2 = sxx2 = 0;
+        sy2 = syy2 = 0;
+        sl2 = sll2 = 0;
+
+        for (int i=0; i<gsz[u]; ++i) {
+            v = g[u][i];
+            if (!visit[v]) 
+                continue;
+            neighbours.push_back(i);
+
+            sx += vp[v].first;
+            sy += vp[v].second;
+            sxx += vp[v].first * vp[v].first;
+            syy += vp[v].second * vp[v].second;
+            sl += w[u][i];
+            sll += w2[u][i];
+
+            double ll =  w2[u][i];
+            sx2 += vp[v].first / ll;
+            sxx2 += vp[v].first * vp[v].first / ll;
+            sy2 += vp[v].second / ll;
+            syy2 += vp[v].second * vp[v].second / ll;
+            sl2 += 1.0 / w[u][i];
+            sll2 += 1.0 / ll;
+        }
     }
 
     /**
         \function:  using drawn vertex to calculate the position of current vertex
     */
-    void calcPoisiton(const int u, int& bx, int& by, const vector<int>& edges) {
-        int sa = sx*2, sa2 = sxx;
-        int sb = sy*2, sb2 = syy;
-        int sc = 0, v;
-        int x, y, n = 0;
-        double bestVal = 1e20;
+    void calcPosition(const int u, int& bx, int& by, const vector<pii>& vp, const vector<int>& edges) {
+        vector<int> neighbours;
+        initParameter(u, vp, neighbours);
+        int n = neighbours.size();
+        int x, y;
         int bstX = -1, bstY = -1;
+        double bestVal = 1e20;
+        // int sa = sx*2, saa = sxx;
+        // int sb = sy*2, sbb = syy;
+        // int sc = sl, scc = sll;
+        double sa = 2.0 * sx2, sb = 2.0 * sy2;
+        double saa = sxx2, sbb = syy2;
+        double scc = n * 1.0;
+        node_t nd;
+        vector<node_t> vtmp;
 
-        for (int i=0; i<gsz[u]; ++i) {
-            v = g[u][i];
-            if (visit[v]) {
-                sc += w2[u][i];
-                ++n;
-            }
-        }
-
+        ++markCnt;
         for (x=0; x<maxn; ++x) {
-            int nx2 = n * x * x;
-            double A = n;
+        // for (x=0; x<15; ++x) {
+            // int nxx = n * x * x;
+            // double A = n; 
+            // double B = -sb;
+            // double C = saa + sbb - scc + nxx - sa * x;
+            double A = sll2;
             double B = -sb;
-            double C = sa2 + sb2 - sc2 + nx2 - sa * x;
+            double C = x * x * sll2 - sa * x + saa + sbb - scc;
+
 
             // solve the equation Ax^2 + Bx + C = 0
             double delta = B * B - 4.0 * A * C;
-            double sqrtDelta = sqrt(delta);
-            for (int dy=-1; dy<=1; dy+=2) {
-                double tmpy = (-B + sqrtDelta) / (A * 2.0);
-                for (int d=-2; d<=2; ++d) {
-                    y = tmpy + d;
-                    if (judge(y)) {
-                        double tmp = fabs(A*y*y + B*y + C);
-                        if (tmp < bestVal) {
-                            bestVal = tmp;
-                            bstX = x;
-                            bstY = y;
+            if (dcmp(delta) >= 0) {
+                double sqrtDelta = sqrt(delta);
+                for (int dy=-1; dy<=1; dy+=2) {
+                    double tmpy = (-B + dy*sqrtDelta) / (A * 2.0);
+                    for (int d=-2; d<=2; ++d) {
+                        y = tmpy + d;
+                        if (judge(y)) {
+                            double tmp = fabs(A*y*y + B*y + C);
+                            nd.w = tmp;
+                            nd.x = x;
+                            nd.y = y;
+                            if (mark[x][y] != markCnt) {
+                                mark[x][y] = markCnt;
+                                vtmp.push_back(nd);
+                            }   
+                            // if (tmp < bestVal) {
+                                // bestVal = tmp;
+                                // bstX = x;
+                                // bstY = y;
+                            // }
                         }
                     }
                 }
             }
 
             // Via deviation to detec the bestVal
-            double peakY = -B / (A * 2.0);
+            double peakY = -B / A;
             double peakV = A*peakY*peakY + B*peakY + C;
             double V0 = C;
             double V700 = A*(maxn-1)*(maxn-1) + B*(maxn-1) + C;
@@ -279,11 +345,18 @@ private:
                             y = d;
                             if (judge(y)) {
                                 double tmp = fabs(A*y*y + B*y + C);
-                                if (tmp < bestVal) {
-                                    bestVal = tmp;
-                                    bstX = x;
-                                    bstY = y;
+                                nd.w = tmp;
+                                nd.x = x;
+                                nd.y = y;
+                                if (mark[x][y] != markCnt) {
+                                    mark[x][y] = markCnt;
+                                    vtmp.push_back(nd);
                                 }
+                                // if (tmp < bestVal) {
+                                    // bestVal = tmp;
+                                    // bstX = x;
+                                    // bstY = y;
+                                // }
                             }
                         }
                 }
@@ -292,15 +365,22 @@ private:
                         y = maxn - 1 - d;
                         if (judge(y)) {
                             double tmp = fabs(A*y*y + B*y + C);
-                            if (tmp < bestVal) {
-                                bestVal = tmp;
-                                bstX = x;
-                                bstY = y;
+                            nd.w = tmp;
+                            nd.x = x;
+                            nd.y = y;
+                            if (mark[x][y] != markCnt) {
+                                mark[x][y] = markCnt;
+                                vtmp.push_back(nd);
                             }
+                            // if (tmp < bestVal) {
+                                // bestVal = tmp;
+                                // bstX = x;
+                                // bstY = y;
+                            // }
                         }
                     }
                 }
-            } else if (dcmp(peakY-maxn+1) > 0) {
+            } else if (dcmp(peakY-maxn+1) >= 0) {
                 #ifdef LOCAL_DEBUG
                 assert(dcmp(V0-V700) >= 0);
                 #endif
@@ -309,11 +389,18 @@ private:
                             y = d;
                             if (judge(y)) {
                                 double tmp = fabs(A*y*y + B*y + C);
-                                if (tmp < bestVal) {
-                                    bestVal = tmp;
-                                    bstX = x;
-                                    bstY = y;
+                                nd.w = tmp;
+                                nd.x = x;
+                                nd.y = y;
+                                if (mark[x][y] != markCnt) {
+                                    mark[x][y] = markCnt;
+                                    vtmp.push_back(nd);
                                 }
+                                // if (tmp < bestVal) {
+                                    // bestVal = tmp;
+                                    // bstX = x;
+                                    // bstY = y;
+                                // }
                             }
                         }
                 }
@@ -322,11 +409,18 @@ private:
                         y = maxn - 1 - d;
                         if (judge(y)) {
                             double tmp = fabs(A*y*y + B*y + C);
-                            if (tmp < bestVal) {
-                                bestVal = tmp;
-                                bstX = x;
-                                bstY = y;
+                            nd.w = tmp;
+                            nd.x = x;
+                            nd.y = y;
+                            if (mark[x][y] != markCnt) {
+                                mark[x][y] = markCnt;
+                                vtmp.push_back(nd);
                             }
+                            // if (tmp < bestVal) {
+                                // bestVal = tmp;
+                                // bstX = x;
+                                // bstY = y;
+                            // }
                         }
                     }
                 }
@@ -341,43 +435,98 @@ private:
                         y = peakY + d;
                         if (judge(y)) {
                             double tmp = fabs(A*y*y + B*y + C);
-                            if (tmp < bestVal) {
-                                bestVal = tmp;
-                                bstX = x;
-                                bstY = y;
+                            nd.w = tmp;
+                            nd.x = x;
+                            nd.y = y;
+                            if (mark[x][y] != markCnt) {
+                                mark[x][y] = markCnt;
+                                vtmp.push_back(nd);
                             }
+                            // if (tmp < bestVal) {
+                                // bestVal = tmp;
+                                // bstX = x;
+                                // bstY = y;
+                            // }
                         }
                     }
                 } else {
-                    if (dcmp(V0) >= 0) {
+                    if (dcmp(V0) <= 0) {
                         for (int d=0; d<=5; ++d) {
                             y = d;
                             if (judge(y)) {
                                 double tmp = fabs(A*y*y + B*y + C);
-                                if (tmp < bestVal) {
-                                    bestVal = tmp;
-                                    bstX = x;
-                                    bstY = y;
+                                nd.w = tmp;
+                                nd.x = x;
+                                nd.y = y;
+                                if (mark[x][y] != markCnt) {
+                                    mark[x][y] = markCnt;
+                                    vtmp.push_back(nd);
                                 }
+                                // if (tmp < bestVal) {
+                                    // bestVal = tmp;
+                                    // bstX = x;
+                                    // bstY = y;
+                                // }
                             }
                         }
                     }
-                    if (dcmp(V700) >= 0) {
+                    if (dcmp(V700) <= 0) {
                         for (int d=-5; d<=0; ++d) {
                             y = maxn - 1 - d;
                             if (judge(y)) {
                                 double tmp = fabs(A*y*y + B*y + C);
-                                if (tmp < bestVal) {
-                                    bestVal = tmp;
-                                    bstX = x;
-                                    bstY = y;
+                                nd.w = tmp;
+                                nd.x = x;
+                                nd.y = y;
+                                if (mark[x][y] != markCnt) {
+                                    mark[x][y] = markCnt;
+                                    vtmp.push_back(nd);
                                 }
+                                // if (tmp < bestVal) {
+                                    // bestVal = tmp;
+                                    // bstX = x;
+                                    // bstY = y;
+                                // }
                             }
                         }
                     }
                 }
             }
         }
+
+        int sz = vtmp.size();
+        int threshSz = 100;
+        sz = min(sz, threshSz);
+
+        // #ifdef LOCAL_DEBUG
+        // printf("sz = %d, threshSz = %d\n", sz, threshSz);
+        // fflush(stdout);
+        // #endif
+        nth_element(vtmp.begin(), vtmp.begin()+sz, vtmp.end());
+
+        const int neighboursSz = neighbours.size();
+
+        for (int i=0; i<sz; ++i) {
+            x = vtmp[i].x, y = vtmp[i].y;
+            double tmp = 0, mn = 1e20, mx = -1e20;
+            for (int j=0; j<neighboursSz; ++j) {
+                int idx = neighbours[j], v = g[u][idx];
+                double xx = vp[v].first, yy = vp[v].second;
+                double l0 = (x-xx)*(x-xx) + (y-yy)*(y-yy);
+                l0 /= (w[u][idx] * w[u][idx]);
+                mn = min(mn, l0);
+                mx = max(mx, l0);
+            }
+            tmp = mn / mx;
+            if (tmp > bestVal) {
+                bestVal = tmp;
+                bstX = x;
+                bstY = y;
+            }
+        }
+
+        bx = bstX;
+        by = bstY;
     }
     
     void getVertex(int bx, int by, vector<pii>& vp, const vector<int>& edges) {
@@ -404,7 +553,7 @@ private:
             /**
                 \step 4: calculate the position of current vertex
             */
-            calcPosition(u, bx, by, edges);
+            calcPosition(u, bx, by, vp, edges);
             updateVertex(u, bx, by, vp, vst);
         }
     }
@@ -420,10 +569,13 @@ private:
         double bestRes = 2, curRes;
 
         initEdge(edges);
-        for (int bx=0; bx<maxn; ++bx) {
-            for (int by=0; by<maxn; ++by) {
+        for (int bx=0; bx<10; ++bx) {
+            for (int by=0; by<10; ++by) {
                 getVertex(bx, by, cur, edges);
                 curRes = calcResult(cur, edges);
+                #ifdef LOCAL_DEBUG
+                printf("bx = %d, by = %d, res = %.3lf\n", bx, by, curRes);
+                #endif
                 if (bestBx<0 || dcmp(curRes-bestRes)>0) {
                     bestRes = curRes;
                     bestBx = bx;
@@ -431,7 +583,8 @@ private:
                 }
             }
         }
-        calcResult(best, edges);
+        getVertex(bestBx, bestBy, best, edges);
+        //calcResult(best, edges);
 
         return toReturn(best);
     }
@@ -439,6 +592,21 @@ private:
 // -------8<------- end of solution submitted to the website -------8<-------
 #include "monitor.h"
 
+void calcRatio(const vector<int>& res, const vector<int>& edges) {
+    double ratio, mn = 1e20, mx = -1e20;
+    const int sz = edges.size();
+
+    for (int i=0; i<sz; i+=3) {
+        int u = edges[i], v = edges[i+1];
+        pii pu = make_pair(res[u*2], res[u*2+1]);
+        pii pv = make_pair(res[v*2], res[v*2+1]);
+        ratio = Length(pu, pv) / edges[i+2];
+        mn = min(mn, ratio);
+        mx = max(mx, ratio);
+    }
+
+    printf("%.6lf\n", mn/mx*1000000);
+}
 
 int main(int argc, char **argv) {
     GraphDrawing gd;
@@ -467,9 +635,11 @@ int main(int argc, char **argv) {
     for (int i=0; i<N; ++i)
         printf("%d %d\n", ret[2*i], ret[2*i+1]);
     
-
+    #ifdef LOCAL_DEBUG
     double usedTime = calc_time(begProg, endProg);
     printf("time = %.3lfs\n", usedTime);
+    calcRatio(ret, edges);
+    #endif
 
     fflush(stdout);
 
