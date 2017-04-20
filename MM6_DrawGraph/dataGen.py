@@ -48,7 +48,7 @@ def dumpDataSet(fileName):
 	for i in xrange(N):
 		st.add((i, i))
 	lines = []
-	line = "%d\n%d\n" % (N, E)
+	line = "%d\n%d\n" % (N, E*3)
 	lines.append(line)
 	for i in xrange(E):
 		if vc > 0:
