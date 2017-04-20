@@ -8,6 +8,7 @@ public:
 
 public:
     vector<int> plot(int N, const vector<int>& edges) {
+		//perror("plot");
         vector<int> ret;
         set<pair<int,int> > st;
         pair<int,int> p;
@@ -37,16 +38,19 @@ int main(int argc, char **argv) {
     int E;
     program_t begProg, endProg;
 
-    if (argc > 1) 
-        freopen(argv[1], "r", stdin);
-    if (argc > 2)
-        freopen(argv[2], "w", stdout);
+    // if (argc > 1) 
+    //     freopen(argv[1], "r", stdin);
+    // if (argc > 2)
+    //     freopen(argv[2], "w", stdout);
 
-    scanf("%d", &N);
-    scanf("%d", &E);
-    vector<int> edges(3*E, 0);
-    for (int i=0; i<3*E; ++i) {
-        scanf("%d", &edges[i]);
+    //scanf("%d", &N);
+    cin >> N;
+    cin >> E;
+    //scanf("%d", &E);
+    vector<int> edges(E, 0);
+    for (int i=0; i<E; ++i) {
+        cin >> edges[i];
+        //scanf("%d", &edges[i]);
     }
     
     save_time(begProg);
@@ -54,15 +58,18 @@ int main(int argc, char **argv) {
     save_time(endProg);
 
     assert(ret.size() == N*2);
-    printf("%d\n", N);
-    for (int i=0; i<N; ++i)
-        printf("%d %d\n", ret[2*i], ret[2*i+1]);
+    //printf("%d\n", ret.size());
+    cout << ret.size() << endl;
+    for (int i=0; i<ret.size(); ++i)
+        cout << ret[i] << endl;
+       // printf("%d\n%d\n", ret[2*i], ret[2*i+1]);
+    cout.flush();
     
 
-    double usedTime = calc_time(begProg, endProg);
-    printf("time = %.3lfs\n", usedTime);
+    //double usedTime = calc_time(begProg, endProg);
+    //printf("time = %.3lfs\n", usedTime);
 
-    fflush(stdout);
+    //fflush(stdout);
 
     return 0;
 }

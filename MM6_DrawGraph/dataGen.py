@@ -77,17 +77,23 @@ def dumpDataSet(fileName):
 	with open(fileName, "w") as fout:
 		for line in lines:
 			fout.write(line)
-
+	trueName = fileName[:fileName.rindex('.')] + ".out"
+	with open(trueName, "w") as fout:
+		fout.write("%d\n" % (N))
+		for i in xrange(N):
+			x,y = pos[i]
+			fout.write("%d %d\n" % (x, y))
 
 def dataGen(dataSetN, filePath):
 	for dataSetId in xrange(dataSetN):
-		fileName = "data%d.txt" % (dataSetId)
+		fileName = "data%d.in" % (dataSetId)
 		fileName = os.path.join(filePath, fileName)
 		P = randint(1, 10)
 		dumpDataSet(fileName)
 
 
 if __name__ == "__main__":
-	testCase = 5
+	testCase = 10
 	srcFilePath = "/home/turf/Code/Introduction_to_Algorithms/MM6_DrawGraph/SmallTestCase"
 	dataGen(testCase, srcFilePath)
+

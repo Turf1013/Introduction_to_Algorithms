@@ -9,8 +9,10 @@
 *.o
 *.gcno
 *.jar
+*.class
 SmallTestCase/
 LargeTestCase/
 greedy
 base
 raw
+main

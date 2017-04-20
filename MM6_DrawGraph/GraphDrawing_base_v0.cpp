@@ -114,7 +114,7 @@ private:
                         for (int dy=0; dy<maxn; ++dy) {
                             if (judge(p.second + dy)) {
                                 p.second += dy;
-                                if (st.count(p) > 0) {
+                                if (st.count(p) == 0) {
                                     flag = true;
                                     break;
                                 }
@@ -122,7 +122,7 @@ private:
                             }
                             if (judge(p.second - dy)) {
                                 p.second -= dy;
-                                if (st.count(p) > 0) {
+                                if (st.count(p) == 0) {
                                     flag = true;
                                     break;
                                 }
@@ -137,7 +137,7 @@ private:
                         for (int dy=0; dy<maxn; ++dy) {
                             if (judge(p.second + dy)) {
                                 p.second += dy;
-                                if (st.count(p) > 0) {
+                                if (st.count(p) == 0) {
                                     flag = true;
                                     break;
                                 }
@@ -145,7 +145,7 @@ private:
                             }
                             if (judge(p.second - dy)) {
                                 p.second -= dy;
-                                if (st.count(p) > 0) {
+                                if (st.count(p) == 0) {
                                     flag = true;
                                     break;
                                 }
@@ -156,6 +156,7 @@ private:
                         p.first += dx;
                     }
                 }
+                //assert(flag == true);
             }
             st.insert(p);
             ret.push_back(p.first);
@@ -590,7 +591,7 @@ private:
     }
 };
 // -------8<------- end of solution submitted to the website -------8<-------
-//#include "monitor.h"
+#include "monitor.h"
 
 void calcRatio(const vector<int>& res, const vector<int>& edges) {
     double ratio, mn = 1e20, mx = -1e20;
@@ -612,35 +613,36 @@ int main(int argc, char **argv) {
     GraphDrawing gd;
     int N;
     int E;
-    //program_t begProg, endProg;
+    program_t begProg, endProg;
 
-    if (argc > 1)
-        freopen(argv[1], "r", stdin);
-    else
-    	freopen("data.in", "r", stdin);
-    if (argc > 2)
-        freopen(argv[2], "w", stdout);
-    else
-    	freopen("data.out", "w", stdout);
+    // if (argc > 1)
+    //     freopen(argv[1], "r", stdin);
+    // else
+    // 	freopen("data.in", "r", stdin);
+    // if (argc > 2)
+    //     freopen(argv[2], "w", stdout);
+    // else
+    // 	freopen("data.out", "w", stdout);
 
     scanf("%d", &N);
     scanf("%d", &E);
-    vector<int> edges(3*E, 0);
-    for (int i=0; i<3*E; ++i) {
+    vector<int> edges(E, 0);
+    for (int i=0; i<E; ++i) {
         scanf("%d", &edges[i]);
     }
 
-   //save_time(begProg);
+    save_time(begProg);
     vector<int> ret = gd.plot(N, edges);
-   // save_time(endProg);
+    save_time(endProg);
 
     assert(ret.size() == N*2);
     printf("%d\n", ret.size());
     for (int i=0; i<N; ++i)
-        printf("%d %d\n", ret[2*i], ret[2*i+1]);
+        printf("%d\n%d\n", ret[2*i], ret[2*i+1]);
 
     #ifdef LOCAL_DEBUG
-    double usedTime = clock() / 1000.0;//calc_time(begProg, endProg);
+    double usedTime = calc_time(begProg, endProg);
+    double usedTime = clock() / 1000.0;
     printf("time = %.3lfs\n", usedTime);
     calcRatio(ret, edges);
     #endif

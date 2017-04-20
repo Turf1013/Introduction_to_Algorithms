@@ -285,6 +285,7 @@ public class GraphDrawingVis {
         int[] ret = new int[nret];
         for (i = 0; i < nret; ++i)
             ret[i] = Integer.parseInt(br.readLine());
+        System.out.println("plot is over");
         return ret;
     }
     // ---------------------------------------------------
@@ -401,11 +402,16 @@ public class GraphDrawingVis {
         String seed = "1";
         vis = false;
         labels = false;
-        for (int i = 0; i<args.length; i++)
-        {   if (args[i].equals("-seed"))
+        for (int i = 0; i<args.length; i++) {   
+            System.out.println(args[i]);
+            if (args[i].equals("-seed")) {
                 seed = args[++i];
-            if (args[i].equals("-exec"))
+                System.out.println(seed);
+            }
+            if (args[i].equals("-exec")) {
                 exec = args[++i];
+                System.out.println(exec);
+            }
             if (args[i].equals("-vis"))
                 vis = true;
             if (args[i].equals("-debug"))
