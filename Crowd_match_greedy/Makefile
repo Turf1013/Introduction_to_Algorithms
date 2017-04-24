@@ -7,18 +7,25 @@ LIBS = -lrt
 CFLAGS = --std=c++11 -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: Ext TGOA Filter Greedy ExtMem TGOAMem FilterMem GreedyMem OPT OPTMem Pure PureMem Static StaticMem dumpGraph ExtMinMem ExtMaxMem ExtAvgMem Xuan
+all: Ext TGOA Filter Greedy ExtMem TGOAMem FilterMem GreedyMem OPT OPTMem Pure PureMem Static StaticMem dumpGraph ExtMinMem ExtMaxMem ExtAvgMem Xuan GreedyNew GreedyNewMem TGOANew TGOANewMem
 Ext: monitor.h input.h Extended_Greedy_RT.cpp
 	$(CXX) $(CFLAGS) -o Ext Extended_Greedy_RT.cpp $(LIBS)
 
 TGOA: monitor.h input.h TGOA.cpp
 	$(CXX) $(CFLAGS) -o TGOA TGOA.cpp $(LIBS)
 
+TGOANew: monitor.h input.h TGOANew.cpp
+	$(CXX) $(CFLAGS) -o TGOANew TGOANew.cpp $(LIBS)
+
+
 Filter: monitor.h input.h TGOA_Filter.cpp
 	$(CXX) $(CFLAGS) -o Filter TGOA_Filter.cpp $(LIBS)
 
 Greedy: monitor.h input.h TGOA_Greedy.cpp
 	$(CXX) $(CFLAGS) -o Greedy TGOA_Greedy.cpp $(LIBS)
+
+GreedyNew: monitor.h input.h TGOA_GreedyNew.cpp
+	$(CXX) $(CFLAGS) -o GreedyNew TGOA_GreedyNew.cpp $(LIBS)
 
 Xuan: TGOA_sky.cpp
 	$(CXX) $(CFLAGS) -o Xuan TGOA_sky.cpp $(LIBS)
@@ -30,11 +37,17 @@ ExtMem: monitor.h input.h Extended_Greedy_RT.cpp
 TGOAMem: monitor.h input.h TGOA.cpp
 	$(CXX) $(CFLAGS) -o TGOAMem TGOA.cpp $(LIBS) -D WATCH_MEM
 
+TGOANewMem: monitor.h input.h TGOANew.cpp
+	$(CXX) $(CFLAGS) -o TGOANewMem TGOANew.cpp $(LIBS) -D WATCH_MEM
+
 FilterMem: monitor.h input.h TGOA_Filter.cpp
 	$(CXX) $(CFLAGS) -o FilterMem TGOA_Filter.cpp $(LIBS) -D WATCH_MEM
 
 GreedyMem: monitor.h input.h TGOA_Greedy.cpp
 	$(CXX) $(CFLAGS) -o GreedyMem TGOA_Greedy.cpp $(LIBS) -D WATCH_MEM
+
+GreedyNewMem: monitor.h input.h TGOA_GreedyNew.cpp
+	$(CXX) $(CFLAGS) -o GreedyNewMem TGOA_GreedyNew.cpp $(LIBS) -D WATCH_MEM
 
 ExtMaxMem: monitor.h input.h Extended_Greedy_RT.cpp
 	$(CXX) $(CFLAGS) -o ExtMaxMem Extended_Greedy_RT.cpp $(LIBS) -D WATCH_MEM -D USE_MAX

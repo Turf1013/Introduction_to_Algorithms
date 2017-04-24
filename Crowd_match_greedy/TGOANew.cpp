@@ -463,8 +463,8 @@ void TGOA(ifstream& fin, int seqN) {
 
 			if (!isSecondHalf && T_delta.size()+W_delta.size()>=k) {
 				isSecondHalf = true;
-				//T_delta.clear();
-				//W_delta.clear();
+				T_delta.clear();
+				W_delta.clear();
 			}
 		}
 
@@ -531,9 +531,9 @@ int main(int argc, char* argv[]) {
 
 	double usedTime = calc_time(begProg, endProg);
 	#ifdef WATCH_MEM
-	printf("TGOA %.6lf %.6lf %d\n", utility, usedTime, usedMemory);
+	printf("TGOANew %.6lf %.6lf %d\n", utility, usedTime, usedMemory);
 	#else
-	printf("TGOA %.6lf %.6lf\n", utility, usedTime);
+	printf("TGOANew %.6lf %.6lf\n", utility, usedTime);
 	#endif
 	fflush(stdout);
 	

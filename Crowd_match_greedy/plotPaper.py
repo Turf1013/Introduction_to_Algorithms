@@ -10,7 +10,7 @@ class constForPlotPaper:
 	algoNameList = [
 		"Ext",
 		"Greedy",
-		"Greedy2",
+		"GreedyNew",
 		"TGOA",
 		"Pure",
 		"OPT",
@@ -18,7 +18,7 @@ class constForPlotPaper:
 	algoReNameDict = {
 		"Ext" : "extended",
 		"Greedy": "tgoag",
-		"Greedy2": "tgoag2",
+		"GreedyNew": "tgoagn",
 		"TGOA": "tgoa",
 		"Pure": "simg",
 		"OPT": "opt",
@@ -27,7 +27,7 @@ class constForPlotPaper:
 		'Ext': 		'blue',
 		'Pure': 	'black',
 		'Greedy': 	'green',
-		'Greedy2': 	'yellow',
+		'GreedyNew': 	'yellow',
 		'OPT': 		'pink',
 		'TGOA':		'red'
 	}
@@ -35,7 +35,7 @@ class constForPlotPaper:
 		'Ext': 		'o',
 		'Pure': 	'*',
 		'Greedy': 	'd',
-		'Greedy2': 	'D',
+		'GreedyNew': 	'D',
 		'OPT': 		's',
 		'TGOA': 	'x',
 	}
