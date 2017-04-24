@@ -20,7 +20,7 @@ struct node_t {
 const int maxn = 1015;
 const int maxm = 701;
 const double eps = 1e-7;
-int degs[maxn];
+int degs[maxn], vrate[maxn];
 bool visit[maxn];
 bool visitPos[maxm][maxm];
 int g[maxn][maxn], mark[maxn][maxn], markCnt = 0;
@@ -50,7 +50,7 @@ double Length(const pii& a, const pii& b) {
 
 class GraphDrawing {
 private:
-    typedef set<pii> degSet;
+    typedef set<pii,greater<pii> > degSet;
     int N;
     int sx, sy, sxx, syy;
 
@@ -125,11 +125,12 @@ private:
 
     void init(degSet& st) {
         memcpy(degs, gsz, sizeof(gsz));
-        memset(visit, false, sizeof(visit));
 
 		st.clear();
 		for (int i=0; i<N; ++i) {
-			st.insert(make_pair(degs[i], i));
+			// vrate[i] = 1000000;
+			vrate[i] = 0;
+			st.insert(make_pair(vrate[i], i));
 		}
     }
 
@@ -234,16 +235,18 @@ private:
 		// calculate the position
 		calcFitPosition(u, bx, by, vp);
 		visit[u] = true;
-		st.erase(make_pair(degs[u], u));
+		st.erase(make_pair(vrate[u], u));
 
         int v;
 
         for (int i=0; i<gsz[u]; ++i) {
             v = g[u][i];
             if (!visit[v]) {
-                st.erase(make_pair(degs[v], v));
+                st.erase(make_pair(vrate[v], v));
                 --degs[v];
-                st.insert(make_pair(degs[v], v));
+				++vrate[v];
+				//vrate[v] = 1000000.0 * degs[v] / gsz[v];
+                st.insert(make_pair(vrate[v], v));
             }
         }
     }
@@ -502,7 +505,7 @@ private:
         }
 
         int sz = vtmp.size();
-        int threshSz = 40;
+        int threshSz = 200;
         sz = min(sz, threshSz);
         double bestVal = -1e20;
 
@@ -613,7 +616,7 @@ int main(int argc, char **argv) {
     // if (argc > 1)
     //     freopen(argv[1], "r", stdin);
     // else
-    // 	freopen("data.in", "r", stdin);
+    // freopen("data.in", "r", stdin);
     // if (argc > 2)
     //     freopen(argv[2], "w", stdout);
     // else
