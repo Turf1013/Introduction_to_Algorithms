@@ -5,7 +5,7 @@ import sys
 import commands
 
 def testOne(fileName):
-	execName = "/home/turf/Code/Introduction_to_Algorithms/MM6_DrawGraph/base"
+	execName = "/home/turf/Code/Introduction_to_Algorithms/MM6_DrawGraph/grid"
 	cmdLine = "%s <%s" % (execName, fileName)
 	print cmdLine
 	outLine = commands.getoutput(cmdLine)

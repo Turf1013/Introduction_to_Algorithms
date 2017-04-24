@@ -7,12 +7,15 @@ LIBS = -lrt
 CFLAGS = --std=c++11 -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: base greedy
+all: base greedy grid
 base: GraphDrawing_base_v0.cpp monitor.h
 	$(CXX) $(CFLAGS) -o base GraphDrawing_base_v0.cpp $(LIBS)
 
 greedy: GraphDrawing_greedy_v0.cpp monitor.h
 	$(CXX) $(CFLAGS) -o greedy GraphDrawing_greedy_v0.cpp $(LIBS)
+
+grid: GraphDrawing_grid_v0.cpp monitor.h
+	$(CXX) $(CFLAGS) -o grid GraphDrawing_grid_v0.cpp $(LIBS)
 
 raw: GraphDrawing.cpp monitor.h
 	$(CXX) $(CFLAGS) -o raw GraphDrawing.cpp $(LIBS)
