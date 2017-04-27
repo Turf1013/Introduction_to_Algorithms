@@ -15,9 +15,9 @@ box on;
 x22 = [10000, 20000, 30000, 40000, 50000, 100000];
 mpdc4 = distinguishable_colors(4);
 
-extended22 = [4511.084500, 4577.620800, 4857.296000, 4661.583400, 5084.215600, 4780.111100];
-fgoa22 = [8481.519100, 8999.909400, 9400.443900, 9935.846300, 9867.597100, 10071.706300];
-fgoag22 = [15144.323100, 19880.213600, 21954.114800, 22113.846500, 23366.825300, 25190.758900];
+extended22 = [1167.144800, 1223.413900, 1397.435300, 1198.458300, 1228.814200, 1280.320800];
+fgoa22 = [2217.534800, 2267.396000, 2447.939600, 2461.279200, 2680.582600, 2629.962600];
+fgoag22 = [4669.914600, 5398.172700, 5953.347900, 5759.753800, 6224.866700, 6438.335600];
 
 plot(x22, extended22, 'o-', 'Color', mpdc4(1, :), 'LineWidth', linewidth, 'MarkerSize',markersize);
 plot(x22, fgoa22, 'x-', 'Color', mpdc4(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
@@ -43,9 +43,10 @@ box on;
 x23 = [10000, 20000, 30000, 40000, 50000, 100000];
 mpdc4 = distinguishable_colors(4);
 
-extended23 = [0.177704, 0.298875, 0.433575, 0.552416, 0.671079, 1.177756];
-fgoa23 = [0.352684, 0.655662, 0.833884, 0.967912, 1.182652, 2.030971];
-fgoag23 = [0.838442, 1.532395, 1.738115, 2.546284, 3.010636, 5.885208];
+extended23 = [0.18282, 0.286087, 0.434034, 0.576006, 0.785585, 1.236594];
+fgoa23 = [0.316077, 0.566512, 0.816208, 1.020574, 1.223554, 2.228855];
+fgoag23 = [0.770557, 1.417196, 2.009837, 2.274495, 2.777762, 5.618526];
+
 plot(x23, extended23, 'o-', 'Color', mpdc4(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x23, fgoa23, 'x-', 'Color', mpdc4(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x23, fgoag23, 'd-', 'Color', mpdc4(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
@@ -73,6 +74,7 @@ mpdc4 = distinguishable_colors(4);
 extended24 = [18.40625, 19.5, 19.5, 22.125, 22.125, 27.375];
 fgoa24 = [18.41015625, 19.71875, 19.71875, 22.34375, 22.34375, 27.59375];
 fgoag24 = [18.84765625, 20.37890625, 20.15625, 23.65625, 22.78125, 28.03125];
+
 plot(x24, extended24, 'o-', 'Color', mpdc4(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x24, fgoa24, 'x-', 'Color', mpdc4(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x24, fgoag24, 'd-', 'Color', mpdc4(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
