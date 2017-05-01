@@ -69,7 +69,8 @@ typedef pair<int,int> position_t;
 vector<position_t> vRest, vDist;
 vector<order_t> vOrder;
 vector<receiver_t> receivers;
-vector<vector<move_t> > senders;
+vector<sender_t> senders;
+vector<vector<move_t> > moves;
 vector<bool> visit;
 vector<vector<double> > R2D, R2R, D2D;
 int R, D, M, C, N;
@@ -158,10 +159,17 @@ void init_Receiver() {
 void init_Sender() {
 	senders.clear();
 	for (int i=0; i<M; ++i) {
-		senders.push_back(vector<move_t>());
+		senders.push_back(sender());
 	}
 	senderPosId.clear();
 	senderPosId.resize(M, -1);
+}
+
+void init_Move() {
+	moves.clear();
+	for (int i=0; i<M; ++i) {
+		moves.push_back(vector<move_t>());
+	}
 }
 
 void init_calc() {
@@ -253,6 +261,33 @@ void addOrder(sender_t& sender, int& posId, const int orderId) {
 	posId = rid;
 }
 
+void addOrderWithUpdate(sender_t& sender, int& posId, const int orderId, vector<move_t>& vmove) {
+	const order_t& order = vOrder[orderId];
+	const int rid = order.rid;
+	move_t move;
+
+	senders[i].x = vRest[rid].first;
+	senders[i].y = vRest[rid].second;
+	if (posId >= D) {
+		senders[i].curTime += dist_D2R(posId-D, rid);
+
+	} else {
+		senders[i].curTime += dist_R2R(posId, rid);
+	}
+	senders[i].addOrder(orderId);
+
+	// update current posId
+	posId = rid;
+
+	// update the move
+	move.x = senders[i].x;
+	move.y = senders[i].y;
+	move.arrive = senders[i].curTime;
+	move.leave = move.arrive;
+	vmove.push_back(move);
+}
+
+
 double calcResult() {
 	double ret = 0.0;
 
@@ -325,7 +360,54 @@ double calc(int C) {
 }
 
 void calcWithUpdate(int C) {
+	init_calc();	
+	/** 
+		\step1: obviously the first M order should distributed equally to every sender
+	*/
+	for (int i=0; i<M; ++i) {
+		const int rid = vOrder[i].rid;
+		senders[i].curTime = 0;
+		senderPosId[i] = rid;
+		addOrderWithUpdate(senders[i], senderPosId[i], i);
+		if (senders[i].isFull(C))
+			deliverWithUpdate(i);
+	}
 
+	/**
+		\step2: hand the next order
+	*/
+	for (int i=M; i<N; ++i) {
+		const int rid = vOrder[i].rid;
+		int v = -1;
+		double mn = inf, tmp;
+		for (int j=0; j<M; ++j) {
+			if (senders[j].isEmpty()) {
+				tmp = dist_D2R(senderPosId[j]-D, rid);
+			} else {
+				tmp = dist_R2R(senderPosId[j], rid);
+			}
+			if (tmp < mn) {
+				v = j;
+				mn = tmp;
+			}
+		}
+		addOrderWithUpdate(senders[v], senderPosId[i], i);
+		if (senders[v].isFull(C))
+			deliverWithUpdate(v);
+	}
+
+	/**
+		\step 3: deliver all the sender
+	*/
+	for (int i=0; i<M; ++i) {
+		if (!senders[i].isEmpty())
+			deliverWithUpdate(i);
+	}
+
+	/**
+		\step 4: calculate result
+	*/
+	ret = calcResult();
 }
 
 double fastSolve() {
@@ -360,6 +442,7 @@ void printAns(double ans) {
 void solve() {
 	init_Receiver();
 	init_Sender();
+	init_Move();
 	init_Dist();
 
 	if (M >= N) {
