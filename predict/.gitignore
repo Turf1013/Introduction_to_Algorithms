@@ -1,0 +1,16 @@
+*~
+*.exe
+*.pdf
+*.png
+*.htm
+*.log
+*.in
+*.out
+*.o
+*.gcno
+*.log
+*.pyc
+OPT
+OPTMem
+Simple
+SimpleMem
