@@ -4,7 +4,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-extern int dr, dw, vw;
+extern double dr, dw, vw;
 extern int gridLength, gridWidth;
 struct worker_t;
 struct task_t;

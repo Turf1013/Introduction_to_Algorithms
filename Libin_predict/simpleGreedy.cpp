@@ -31,14 +31,14 @@ struct task_t {
 
 const double inf = 1e20;
 int workerN, taskN;
-int dw, dr, vw;
+double dw, dr, vw;
 int slotN, gridLength, gridWidth;
 #ifdef WATCH_MEM
 int usedMemory = 0;
 #endif
 
 void init() {
-	scanf("%d %d %d %d %d %d %d %d", &workerN, &taskN, &dw, &dr, &vw, &slotN, &gridLength, &gridWidth);
+	scanf("%d %d %lf %lf %lf %d %d %d", &workerN, &taskN, &dw, &dr, &vw, &slotN, &gridLength, &gridWidth);
 }
 
 int findBestTask(const worker_t& worker, const vector<task_t>& tasks) {

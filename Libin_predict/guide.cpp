@@ -44,7 +44,7 @@ vector<edge_t> E;
 vector<worker_t> workers;
 vector<task_t> tasks;
 int workerN, taskN;
-int dw, dr, vw;
+double dw, dr, vw;
 int slotN, gridLength, gridWidth;
 int st, ed;
 #ifdef WATCH_MEM
@@ -156,12 +156,13 @@ int Ford_Fulkerson() {
     return maxFlow;
 }
 
-void output_network() {
+void output_network(int maxFlow) {
 	int u, v, k, f;
 	int edgeN = 0;
 
 	for (u=0; u<workerN; ++u) {
 		for (k=head[u]; k!=-1; k=E[k].nxt) {
+			if (k & 1) continue;
 			v = E[k].v;
 			f = tasks[v-workerN].cap - E[k].f;
 			if (f > 0) {
@@ -170,12 +171,15 @@ void output_network() {
 		}
 	}
 
-	printf("%d %d %d %d %d %d %d %d", workerN, taskN, dw, dr, vw, slotN, gridLength, gridWidth);
+	printf("%d %d %.4lf %.4lf %.4lf %d %d %d", workerN, taskN, dw, dr, vw, slotN, gridLength, gridWidth);
 	for (u=0; u<workerN; ++u)
 		printf("%d %d\n", workers[u].begTime, workers[u].gridId);
 	for (v=0; v<taskN; ++v)
 		printf("%d %d\n", tasks[v].begTime, tasks[v].gridId);
 
+	#ifdef LOCAL_DEBUG
+	int curFlow = 0;
+	#endif
 	printf("%d\n", edgeN);
 	for (u=0; u<workerN; ++u) {
 		for (k=head[u]; k!=-1; k=E[k].nxt) {
@@ -183,16 +187,23 @@ void output_network() {
 			v = E[k].v;
 			f = tasks[v-workerN].cap - E[k].f;
 			if (E[k].f>=0 && f>0) {
+				#ifdef LOCAL_DEBUG
+				curFlow += f;
+				#endif
 				printf("%d %d %d\n", u, v-workerN, f);
 			}
 		}
 	}
+	#ifdef LOCAL_DEBUG
+	assert(curFlow == maxFlow);
+	fprintf(stderr, "maxFlow = %d\n", maxFlow);
+	#endif
 }
 
 void solve() {
 	init();
 	int maxFlow = Ford_Fulkerson();
-	output_network();
+	output_network(maxFlow);
 }
 
 int main(int argc, char **argv) {

@@ -25,29 +25,29 @@ struct networkEdge_t {
 		u(u), v(v), f(f) {}
 };
 
-void readInput_predict(const string& fileName, int& workerN, int& taskN, int& dw, int& dr,
-						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items);
-void readInput_predict(ifstream& fin, int& workerN, int& taskN, int& dw, int& dr,
-						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items);
-void readInput_predict(int& workerN, int& taskN, int& dw, int& dr,
-						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items);
+void readInput_predict(const string& fileName, int& workerN, int& taskN, double& dw, double& dr,
+						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items);
+void readInput_predict(ifstream& fin, int& workerN, int& taskN, double& dw, double& dr,
+						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items);
+void readInput_predict(int& workerN, int& taskN, double& dw, double& dr,
+						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items);
 
 
-void readInput_network(ifstream& fin, int& workerN, int& taskN, int& dw, int& dr,
-						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items,
+void readInput_network(ifstream& fin, int& workerN, int& taskN, double& dw, double& dr,
+						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items,
 						int& edgeN, vector<networkEdge_t>& edges);
-void readInput_network(const string& fileName, int& workerN, int& taskN, int& dw, int& dr,
-						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items,
+void readInput_network(const string& fileName, int& workerN, int& taskN, double& dw, double& dr,
+						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items,
 						int& edgeN, vector<networkEdge_t>& edges);
 
-void readInput_ground(ifstream& fin, int& workerN, int& taskN, int& dw, int& dr,
-						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items);
-void readInput_ground(const string& fileName, int& workerN, int& taskN, int& dw, int& dr,
-						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items);
+void readInput_ground(ifstream& fin, int& workerN, int& taskN, double& dw, double& dr,
+						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items);
+void readInput_ground(const string& fileName, int& workerN, int& taskN, double& dw, double& dr,
+						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items);
 
 
-void readInput_predict(const string& fileName, int& workerN, int& taskN, int& dw, int& dr,
-						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items) {
+void readInput_predict(const string& fileName, int& workerN, int& taskN, double& dw, double& dr,
+						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items) {
 	ifstream fin(fileName.c_str(), ios::in);
 
 	readInput_predict(fin, workerN, taskN, dw, dr, vw, slotN, gridLength, gridWidth, items);
@@ -55,8 +55,8 @@ void readInput_predict(const string& fileName, int& workerN, int& taskN, int& dw
 	fin.close();
 }
 
-void readInput_predict(ifstream& fin, int& workerN, int& taskN, int& dw, int& dr,
-						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items) {
+void readInput_predict(ifstream& fin, int& workerN, int& taskN, double& dw, double& dr,
+						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items) {
 	
 	fin >> workerN >> taskN >> dw >> dr >> vw >> slotN >> gridLength >> gridWidth;
 
@@ -74,8 +74,8 @@ void readInput_predict(ifstream& fin, int& workerN, int& taskN, int& dw, int& dr
 	}
 }
 
-void readInput_predict(int& workerN, int& taskN, int& dw, int& dr,
-						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items) {
+void readInput_predict(int& workerN, int& taskN, double& dw, double& dr,
+						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items) {
 	
 	cin >> workerN >> taskN >> dw >> dr >> vw >> slotN >> gridLength >> gridWidth;
 
@@ -93,8 +93,8 @@ void readInput_predict(int& workerN, int& taskN, int& dw, int& dr,
 	}
 }
 
-void readInput_network(ifstream& fin, int& workerN, int& taskN, int& dw, int& dr,
-						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items,
+void readInput_network(ifstream& fin, int& workerN, int& taskN, double& dw, double& dr,
+						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items,
 						int& edgeN, vector<networkEdge_t>& edges) {
 	items.clear();
 	fin >> workerN >> taskN >> dw >> dr >> vw >> slotN >> gridLength >> gridWidth;	
@@ -115,8 +115,8 @@ void readInput_network(ifstream& fin, int& workerN, int& taskN, int& dw, int& dr
 	}
 }
 
-void readInput_network(const string& fileName, int& workerN, int& taskN, int& dw, int& dr,
-						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items,
+void readInput_network(const string& fileName, int& workerN, int& taskN, double& dw, double& dr,
+						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items,
 						int& edgeN, vector<networkEdge_t>& edges) {
 	ifstream fin(fileName.c_str(), ios::in);
 
@@ -126,8 +126,8 @@ void readInput_network(const string& fileName, int& workerN, int& taskN, int& dw
 	fin.close();
 }
 
-void readInput_ground(ifstream& fin, int& workerN, int& taskN, int& dw, int& dr,
-						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items) {
+void readInput_ground(ifstream& fin, int& workerN, int& taskN, double& dw, double& dr,
+						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items) {
 
 	items.clear();
 	fin >> workerN >> taskN >> dw >> dr >> vw >> slotN >> gridLength >> gridWidth;	
@@ -142,8 +142,8 @@ void readInput_ground(ifstream& fin, int& workerN, int& taskN, int& dw, int& dr,
 	}
 }
 
-void readInput_ground(const string& fileName, int& workerN, int& taskN, int& dw, int& dr,
-						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items) {
+void readInput_ground(const string& fileName, int& workerN, int& taskN, double& dw, double& dr,
+						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items) {
 	ifstream fin(fileName.c_str(), ios::in);
 
 	readInput_ground(fin, workerN, taskN, dw, dr, vw, slotN, gridLength, gridWidth, items);

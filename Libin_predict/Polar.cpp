@@ -16,7 +16,7 @@ vector<int> workerCap, workerFlow;
 vector<int> taskCap, taskFlow;
 unordered_map<int,int> guideMap;
 int workerN, taskN;
-int dw, dr, vw;
+double dw, dr, vw;
 int slotN, gridLength, gridWidth, gridNum, spatialN;
 #ifdef WATCH_MEM
 int usedMemory = 0;
@@ -82,7 +82,7 @@ void init(const string& networkFileName) {
 int Polar() {
 	int ret = 0;
 
-	scanf("%d %d %d %d %d %d %d %d", &workerN, &taskN, &dw, &dr, &vw, &slotN, &gridLength, &gridWidth);
+	scanf("%d %d %lf %lf %lf %d %d %d", &workerN, &taskN, &dw, &dr, &vw, &slotN, &gridLength, &gridWidth);
 	const int itemN = workerN + taskN;
 	int typeId, slotId, gridId;
 	vector<int> workerQueue;
