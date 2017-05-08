@@ -66,6 +66,8 @@ void init_network() {
 	pre.resize(vertexN, -1);
 	mnf.clear();
 	mnf.resize(vertexN, 0);
+	eid.clear();
+	eid.resize(vertexN, 0);
 	head.clear();
 	head.resize(vertexN, -1);
 	E.clear();
