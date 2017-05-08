@@ -1,3 +1,7 @@
+/**
+	\author: Trasier
+	\date: 2017.05.07
+*/
 #ifndef OUTPUT_H
 #define OUTPUT_H
 

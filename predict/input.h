@@ -1,3 +1,7 @@
+/**
+	\author: Trasier
+	\date: 2017.05.07
+*/
 #ifndef INPUT_H
 #define INPUT_H
 
@@ -25,8 +29,17 @@ void readInput_predict(const string& fileName, int& workerN, int& taskN, int& dw
 						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items);
 void readInput_predict(const ifstream& fin, int& workerN, int& taskN, int& dw, int& dr,
 						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items);
-void readInput_network(const ifstream& fin, int& vertexN, int& edgeN, vector<networkEdge_t>& edges);
-void readInput_network(const string& fileName, int& vertexN, int& edgeN, vector<networkEdge_t>& edges);
+void readInput_predict(int& workerN, int& taskN, int& dw, int& dr,
+						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items);
+
+
+void readInput_network(const ifstream& fin, int& workerN, int& taskN, int& edgeN, vector<networkEdge_t>& edges);
+void readInput_network(const string& fileName, int& workerN, int& taskN, int& edgeN, vector<networkEdge_t>& edges);
+
+void readInput_ground(const ifstream& fin, int& workerN, int& taskN, int& dw, int& dr,
+						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items);
+void readInput_ground(const string& fileName, int& workerN, int& taskN, int& dw, int& dr,
+						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items);
 
 
 void readInput_predict(const string& fileName, int& workerN, int& taskN, int& dw, int& dr,
@@ -57,8 +70,27 @@ void readInput_predict(const ifstream& fin, int& workerN, int& taskN, int& dw, i
 	}
 }
 
-void readInput_network(const ifstream& fin, int& vertexN, int& edgeN, vector<networkEdge_t>& edges) {
-	fin >> vertexN >> edgeN;
+void readInput_predict(int& workerN, int& taskN, int& dw, int& dr,
+						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items) {
+	
+	cin >> workerN >> taskN >> dw >> dr >> vw >> slotN >> gridLength >> gridWidth;
+
+	const int gridN = gridLength * gridWidth;
+	int slotId, gridId;
+	predictItem_t item;
+	items.clear();
+	items.resize(slotN*gridN, item)
+
+	for (int i=0; i<slotN; ++i) {
+		for (int j=0; j<gridN; ++j) {
+			cin >> slotId >> gridId >> item.workerN >> item.taskN;
+			items[slotId*gridN+gridId] = item;
+		}
+	}
+}
+
+void readInput_network(const ifstream& fin, int& workerN, int& taskN, int& edgeN, vector<networkEdge_t>& edges) {
+	fin >> workerN >> taskN >> edgeN;
 
 	edges.clear();
 	edges.resize(edgeN, networkEdge_t());
@@ -67,12 +99,37 @@ void readInput_network(const ifstream& fin, int& vertexN, int& edgeN, vector<net
 	}
 }
 
-void readInput_network(const string& fileName, int& vertexN, int& edgeN, vector<networkEdge_t>& edges) {
+void readInput_network(const string& fileName, int& workerN, int& taskN, int& edgeN, vector<networkEdge_t>& edges) {
 	ifstream fin(fileName.c_str(), ios::in);
 
-	readInput_network(fin, vertexN, edgeN, edges);
+	readInput_network(fin, workerN, taskN, edgeN, edges);
 
 	fin.close();
+}
+
+void readInput_ground(const ifstream& fin, int& workerN, int& taskN, int& dw, int& dr,
+						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items) {
+
+	items.clear();
+	fin >> workerN >> taskN >> dw >> dr >> vw >> slotN >> gridLength >> gridWidth;	
+	const int itemN = workerN + taskN;
+	int typeId, begTime, gridId;
+
+	for (int i=0; i<itemN; ++i) {
+		fin >> typeId >> begTime >> gridId;
+		items.push_back(typeId);
+		items.push_back(begTime);
+		items.push_back(gridId);
+	}
+}
+
+void readInput_ground(const string& fileName, int& workerN, int& taskN, int& dw, int& dr,
+						int& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items) {
+	ifstream fin(fileName.c_str(), ios::in);
+
+	readInput_output(fin, workerN, taskN, dw, dr, vw, slotN, gridLength, gridWidth, items);
+
+	fin.close();	
 }
 
 #endif
