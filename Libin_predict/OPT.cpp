@@ -5,9 +5,11 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-#include "global.h"
+#include "monitor.h"
 #include "input.h"
 #include "output.h"
+
+#define LOCAL_DEBUG
 
 struct worker_t {
 	int gridId;
@@ -26,6 +28,8 @@ struct task_t {
 	task_t(int gridId=0, int begTime=0, int cap=0):
 		gridId(gridId), begTime(begTime), cap(cap) {}
 };
+
+#include "global.h"
 
 struct edge_t {
 	int v, f, nxt;
@@ -71,7 +75,6 @@ void init_network() {
 	head.clear();
 	head.resize(vertexN, -1);
 	E.clear();
-	E.resize(vertexN, vector<edge_t>());
 
 	for (int i=0; i<workerN; ++i) {
 		addEdge(st, i, workers[i].cap);
@@ -91,19 +94,23 @@ void init_network() {
 void init() {
 	vector<predictItem_t> predictItems;
 
-	readInput_predict(workerN, taskN, dw, dr, vw, slotN, gridLength, gridWidth, predictItems);
-	const int gridN = gridLength * gridWidth;
-	int itemId = 0;
+	scanf("%d %d %d %d %d %d %d %d", &workerN, &taskN, &dw, &dr, &vw, &slotN, &gridLength, &gridWidth);
+	const int itemN = workerN + taskN;
+	int typeId;
+	worker_t worker;
+	task_t task;
 
 	workers.clear();
 	tasks.clear();
-	for (int begTime=0; begTime<slotN; ++begTime) {
-		for (int gridId=0; gridId<gridN; ++gridId) {
-			if (predictItems[itemId].workerN > 0)
-				workers.push_back(worker_t(gridId, begTime, predictItems[itemId].workerN));
-			if (predictItems[itemId].taskN > 0)
-				tasks.push_back(task_t(gridId, begTime, predictItems[itemId].taskN));
-			++itemId;
+	worker.cap = task.cap = 1;
+	for (int i=0; i<itemN; ++i) {
+		scanf("%d", &typeId);
+		if (typeId == 0) {
+			scanf("%d %d", &worker.begTime, &worker.gridId);
+			workers.push_back(worker);
+		} else {
+			scanf("%d %d", &task.begTime, &task.gridId);
+			tasks.push_back(task);
 		}
 	}
 
@@ -117,7 +124,7 @@ bool bfs() {
     fill(mnf.begin(), mnf.end(), 0);
     Q.push(st);
     mnf[st] = INT_MAX;
-    pre[st] = s;
+    pre[st] = -1;
     
     while (!Q.empty()) {
         u = Q.front();
@@ -142,71 +149,47 @@ int Ford_Fulkerson() {
 	int maxFlow = 0;
 
 	while (bfs()) {
-        for (u=ed,v=pre[u]; u!=st; u=v,v=pre[u]) {
+        for (u=ed,v=pre[u]; u!=-1; u=v,v=pre[u]) {
         	k = eid[v];
         	E[k].f -= mnf[ed];
         	E[k^1].f += mnf[ed];
         }
         maxFlow += mnf[ed];
+
+		#ifdef WATCH_MEM
+		watchSolutionOnce(getpid(), usedMemory);
+		#endif
     }
 
     return maxFlow;
 }
 
-void output_network() {
-	int u, v, k, f;
-	int edgeN = 0;
-
-	for (u=0; u<workerN; ++u) {
-		for (k=head[u]; k!=-1; k=E[k].nxt) {
-			v = E[k].v;
-			f = tasks[v].cap - E[k].f;
-			if (f > 0) {
-				++edgeN;
-			}
-		}
-	}
-
-	printf("%d %d %d %d %d %d %d %d", workerN, taskN, dw, dr, vw, slotN, gridLength, gridWidth);
-	for (u=0; u<workerN; ++u)
-		printf("%d %d\n", workers[u].begTime, workers[u].gridId);
-	for (v=0; v<taskN; ++v)
-		printf("%d %d\n", tasks[v].begTime, tasks[v].gridId);
-
-	printf("%d\n", edgeN);
-	for (u=0; u<workerN; ++u) {
-		for (k=head[u]; k!=-1; k=E[k].nxt) {
-			if (k & 1) continue;
-			v = E[k].v;
-			f = tasks[v].cap - E[k].f;
-			if (E[k].f>=0 && f>0) {
-				printf("%d %d %d\n", u, v, f);
-			}
-		}
-	}
-}
-
-void solve() {
+int solve() {
 	init();
 	int maxFlow = Ford_Fulkerson();
-	output_network();
+	return maxFlow;
 }
 
 int main(int argc, char **argv) {
 	ios::sync_with_stdio(false);
 	cin.tie(0);
-	// program_t begProg, endProg;
+	program_t begProg, endProg;
 
 	if (argc > 1)
 		freopen(argv[1], "r", stdin);
 	if (argc > 2)
 		freopen(argv[2], "w", stdout);
 
-	// save_time(begProg);
-	solve();
-	// save_time(endProg);
+	save_time(begProg);
+	int nPairs = solve();
+	save_time(endProg);
 
-	// double usedTime = calc_time(begProg, endProg);
+	double usedTime = calc_time(begProg, endProg);
+	#ifdef WATCH_MEM
+	printf("OPT %d %.4lf %d\n", nPairs, usedTime, usedMemory/1024);
+	#else
+	printf("OPT %d %.4lf\n", nPairs, usedTime);
+	#endif
 	
 	return 0;
 }

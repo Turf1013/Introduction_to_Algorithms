@@ -1,5 +1,5 @@
 ##
-#	Makefile for `dna` application
+#	Makefile for `Tong_two_side_match` application
 ##
 CC = gcc
 CXX = g++

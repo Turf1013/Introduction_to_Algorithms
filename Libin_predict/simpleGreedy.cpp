@@ -2,10 +2,10 @@
 	\author: Trasier
 	\date: 2017.05.08
 */
-#include <bits/stdc.h>
+#include <bits/stdc++.h>
 using namespace std;
 
-#include "global.h"
+#include "monitor.h"
 #include "input.h"
 #include "output.h"
 
@@ -26,6 +26,8 @@ struct task_t {
 	task_t(int gridId=0, int begTime=0):
 		gridId(gridId), begTime(begTime) {}
 };
+
+#include "global.h"
 
 const double inf = 1e20;
 int workerN, taskN;

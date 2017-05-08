@@ -87,5 +87,3 @@ void input_weight(const string& edgeFileName, const string& weightFileName, vect
 
 
 #endif
-
-#endif
