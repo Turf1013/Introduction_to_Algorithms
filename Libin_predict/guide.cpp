@@ -171,7 +171,7 @@ void output_network(int maxFlow) {
 		}
 	}
 
-	printf("%d %d %.4lf %.4lf %.4lf %d %d %d", workerN, taskN, dw, dr, vw, slotN, gridLength, gridWidth);
+	printf("%d %d %.4lf %.4lf %.4lf %d %d %d\n", workerN, taskN, dw, dr, vw, slotN, gridLength, gridWidth);
 	for (u=0; u<workerN; ++u)
 		printf("%d %d\n", workers[u].begTime, workers[u].gridId);
 	for (v=0; v<taskN; ++v)

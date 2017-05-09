@@ -164,8 +164,9 @@ int Polar() {
 }
 
 int solve(const string& networkFileName) {
+	int ret;
 	init(networkFileName);
-	int ret = Polar();
+	ret = Polar();
 	return ret;
 }
 
