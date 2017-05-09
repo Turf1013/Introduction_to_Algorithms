@@ -107,9 +107,10 @@ void readInput_network(ifstream& fin, int& workerN, int& taskN, double& dw, doub
 		items.push_back(gridId);
 	}
 
+	fin >> edgeN;
 	edges.clear();
 	edges.resize(edgeN, networkEdge_t());
-	fin >> edgeN;
+	
 	for (int i=0; i<edgeN; ++i) {
 		fin >> edges[i].u >> edges[i].v >> edges[i].f;
 	}
@@ -120,8 +121,10 @@ void readInput_network(const string& fileName, int& workerN, int& taskN, double&
 						int& edgeN, vector<networkEdge_t>& edges) {
 	ifstream fin(fileName.c_str(), ios::in);
 
+	//printf("begin readInput_network\n");
 	readInput_network(fin, workerN, taskN, dw, dr, vw, slotN, 
 						gridLength, gridWidth, items, edgeN, edges);
+	//printf("end readInput_network\n");
 
 	fin.close();
 }

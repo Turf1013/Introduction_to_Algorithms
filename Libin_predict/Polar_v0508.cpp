@@ -108,7 +108,7 @@ int Polar() {
 			int validN = 0, validId;
 			for (auto taskH : taskQueue) {
 				LL pairH = calcPairH(spatialH, taskH);
-				if (guideMap[pairH] > 0) {
+				if (guideMap[pairH]>0 && taskFlow[taskH]<taskCap[taskH]) {
 					++validN;
 				}
 			}
@@ -116,27 +116,19 @@ int Polar() {
 			if (validN > 0) {
 				validId = rand() % validN;
 				validN = 0;
-				#ifdef LOCAL_DEBUG
-				bool makePair = false;
-				#endif
 				for (int j=0; j<taskQueue.size(); ++j) {
 					int taskH = taskQueue[j];
 					LL pairH = calcPairH(spatialH, taskH);
-					if (guideMap[pairH]>0 && validN++==validId) {
+					if (guideMap[pairH]>0 && taskFlow[taskH]<taskCap[taskH] && validN++==validId) {
 						if (--guideMap[pairH] == 0)
 							guideMap.erase(pairH);
+						++taskFlow[taskH];
 						taskQueue[j] = *taskQueue.rbegin();
 						taskQueue.pop_back();
-						#ifdef LOCAL_DEBUG
-						makePair = true;
-						#endif
 						break;
 					}
 				}
 				++ret;
-				#ifdef LOCAL_DEBUG
-				assert(makePair);
-				#endif
 			} else {
 				workerQueue.push_back(spatialH);
 			}
@@ -147,7 +139,7 @@ int Polar() {
 			int validN = 0, validId;
 			for (auto workerH : workerQueue) {
 				LL pairH = calcPairH(workerH, spatialH);
-				if (guideMap[pairH] > 0) {
+				if (guideMap[pairH]>0 && workerFlow[workerH]<workerCap[workerH]) {
 					++validN;
 				}
 			}
@@ -155,27 +147,19 @@ int Polar() {
 			if (validN > 0) {
 				validId = rand() % validN;
 				validN = 0;
-				#ifdef LOCAL_DEBUG
-				bool makePair = false;
-				#endif
 				for (int j=0; j<workerQueue.size(); ++j) {
 					int workerH = workerQueue[j];
 					LL pairH = calcPairH(workerH, spatialH);
-					if (guideMap[pairH]>0 && validN++==validId) {
+					if (guideMap[pairH]>0 && workerFlow[workerH]<workerCap[workerH] && validN++==validId) {
 						if (--guideMap[pairH] == 0)
 							guideMap.erase(pairH);
+						++workerFlow[workerH];
 						workerQueue[j] = *workerQueue.rbegin();
 						workerQueue.pop_back();
-						#ifdef LOCAL_DEBUG
-						makePair = true;
-						#endif
 						break;
 					}		
 				}
 				++ret;
-				#ifdef LOCAL_DEBUG
-				assert(makePair);
-				#endif
 			} else {
 				taskQueue.push_back(spatialH);
 			}
