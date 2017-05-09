@@ -1,5 +1,6 @@
 
 #include <cstdio>
+#include <cstring>
 #include <algorithm>
 #include <set>
 #include <iostream>
@@ -38,7 +39,7 @@ int main()
 	FILE *fp0 = fopen("prediction.in", "r");
 	fscanf(fp0, "%d%d%lf%lf%lf%d%d%d", &x, &y, &Dw, &Dr, &ve, &t, &gridh, &gridw);
 	g = gridh*gridw;
-	FILE *fp2 = fopen("network.in", "r");
+	FILE *fp2 = fopen("guide.in", "r");
 	for (int i = 0;i<t;i++)
 		f[i] = Dr;//deadline request
 	printf("deadline=%f,velocity=%f\n", f[0], ve);
@@ -63,7 +64,7 @@ int main()
 	{
 		Lm[p] = q;Rm[q] = p;
 	}
-	
+	printf("guide end...\n");
 	
 	FILE *fp1 = fopen("rscenario.in", "r");
 	fscanf(fp1, "%d%d%lf%lf%lf%d%d%d", &x, &y, &Dw, &Dr, &ve, &t, &gridh, &gridw);
@@ -87,9 +88,10 @@ int main()
 				if (woc[j] == 0 && Lm[j] != -1)
 				{
 					woc[j] = 1;
-					if (roc[Lm[j]] == 1)
+					if (roc[Lm[j]] == 1) {
+						//woc[j] = roc[Lm[j]] = -1;
 						res++;
-
+					}
 				}
 			}
 		}
@@ -103,8 +105,10 @@ int main()
 				if (roc[j] == 0 && Rm[j] != -1)
 				{
 					roc[j] = 1;
-					if (woc[Rm[j]] == 1)
+					if (woc[Rm[j]] == 1) {
+						//roc[j] = woc[Rm[j]] = -1;
 						res++;
+					}
 				}
 			}
 		}

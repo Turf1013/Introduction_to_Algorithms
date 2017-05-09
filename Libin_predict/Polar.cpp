@@ -34,7 +34,7 @@ void init(const string& predictFileName, const string& bipartiteFileName) {
 	*/
 	vector<predictItem_t> predictItems;
 
-	readInput_predict(workerN, taskN, dw, dr, vw, slotN, gridLength, gridWidth, predictItems);
+	readInput_predict(predictFileName, workerN, taskN, dw, dr, vw, slotN, gridLength, gridWidth, predictItems);
 
 	gridNum = gridLength * gridWidth;
 	spatialN = slotN * gridNum;
@@ -167,7 +167,7 @@ int main(int argc, char **argv) {
 	if (argc > 2) {
 		bipartiteFileName = string(argv[2]);
 	} else {
-		perror("no valid network File");
+		perror("no valid bipartite File");
 		exit(1);	
 	}
 	if (argc > 3) 

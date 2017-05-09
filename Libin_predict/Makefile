@@ -32,10 +32,10 @@ Guide: monitor.h input.h output.h global.h guide.cpp
 GuideH: monitor.h input.h output.h global.h guide_hung.cpp
 	$(CXX) $(CFLAGS) -o GuideH guide_hung.cpp $(LIBS)
 
-Polar: monitor.h input.h output.h Polar.cpp
+Polar: monitor.h input.h output.h global.h Polar.cpp
 	$(CXX) $(CFLAGS) -o Polar Polar.cpp $(LIBS)
 
-PolarMem: monitor.h input.h output.h Polar.cpp
+PolarMem: monitor.h input.h output.h global.h Polar.cpp
 	$(CXX) $(CFLAGS) -o PolarMem Polar.cpp $(LIBS) -D WATCH_MEM
 
 Lig: Libin_SimpleG.cpp
