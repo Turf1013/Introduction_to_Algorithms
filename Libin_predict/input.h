@@ -46,6 +46,9 @@ void readInput_ground(const string& fileName, int& workerN, int& taskN, double& 
 						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<int>& items);
 
 
+void readInput_bipartite(ifstream& fin, vector<pair<int,int> >& items);
+void readInput_bipartite(const string& fileName, vector<pair<int,int> >& items);
+
 void readInput_predict(const string& fileName, int& workerN, int& taskN, double& dw, double& dr,
 						double& vw, int& slotN, int& gridLength, int& gridWidth, vector<predictItem_t>& items) {
 	ifstream fin(fileName.c_str(), ios::in);
@@ -152,6 +155,22 @@ void readInput_ground(const string& fileName, int& workerN, int& taskN, double& 
 	readInput_ground(fin, workerN, taskN, dw, dr, vw, slotN, gridLength, gridWidth, items);
 
 	fin.close();	
+}
+
+void readInput_bipartite(ifstream& fin, vector<pair<int,int> >& items) {
+	int workerId, taskId;
+
+	while (fin >> workerId >> taskId) {
+		items.push_back(make_pair(workerId, taskId));
+	}
+}
+
+void readInput_bipartite(const string& fileName, vector<pair<int,int> >& items) {
+	ifstream fin(fileName.c_str(), ios::in);
+
+	readInput_bipartite(fin, items);
+
+	fin.close();
 }
 
 #endif

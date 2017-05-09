@@ -47,7 +47,8 @@ int findBestTask(const worker_t& worker, const vector<task_t>& tasks) {
 	int ret = -1;
 
 	for (int i=0; i<taskSz; ++i) {
-		if (judgeTime(worker, tasks[i])) {
+
+		if (judgeTime0(worker, tasks[i])) {
 			tmp = calcTime(worker, tasks[i]);
 			if (tmp < mn) {
 				mn = tmp;
@@ -65,7 +66,7 @@ int findBestWorker(const task_t& task, const vector<worker_t>& workers) {
 	int ret = -1;
 
 	for (int i=0; i<workerSz; ++i) {
-		if (judgeTime(workers[i], task)) {
+		if (judgeTime1(workers[i], task)) {
 			tmp = calcTime(workers[i], task);
 			if (tmp < mn) {
 				mn = tmp;
@@ -132,6 +133,40 @@ int solve() {
 	return ret;
 }
 
+struct triple_t {
+	int typeId, begTime, gridId;
+
+	bool operator< (const triple_t& o) const {
+		return begTime < o.begTime;
+	}
+};
+
+void reSort() {
+	const char *desFileName = "tmp.in";
+
+	FILE* fp = fopen(desFileName, "w");
+	scanf("%d %d %lf %lf %lf %d %d %d", &workerN, &taskN, &dw, &dr, &vw, &slotN, &gridLength, &gridWidth);
+	fprintf(fp, "%d %d %.4lf %.4lf %.4lf %d %d %d\n", workerN, taskN, dw, dr, vw, slotN, gridLength, gridWidth);
+	const int itemN = workerN + taskN;
+	triple_t t;
+	vector<triple_t> triples;
+
+	for (int i=0; i<itemN; ++i) {
+		scanf("%d %d %d", &t.typeId, &t.begTime, &t.gridId);
+		triples.push_back(t);
+	}
+
+	sort(triples.begin(), triples.end());
+
+	for (int i=0; i<itemN; ++i) {
+		fprintf(fp, "%d %d %d\n", triples[i].typeId, triples[i].begTime, triples[i].gridId);
+	}
+
+	fclose(fp);
+
+	freopen(desFileName, "r", stdin);
+}
+
 int main(int argc, char **argv) {
 	program_t begProg, endProg;
 
@@ -139,6 +174,8 @@ int main(int argc, char **argv) {
 		freopen(argv[1], "r", stdin);
 	if (argc > 2)
 		freopen(argv[2], "w", stdout);
+
+	//reSort();
 
 	save_time(begProg);
 	int nPairs = solve();

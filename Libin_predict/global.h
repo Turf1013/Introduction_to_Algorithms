@@ -22,12 +22,27 @@ double calcTime(const worker_t& worker, const task_t& task) {
 	return dist / vw;
 }
 
-inline bool judgeTime(const worker_t& worker, const task_t& task) {
+inline bool judgeTime0(const worker_t& worker, const task_t& task) {
 	double d = calcTime(worker, task);
-	if (worker.begTime <= task.begTime)
-		return dcmp(task.begTime - (worker.begTime + dw))<0 && dcmp(dr - d)>=0;
-	else
-		return dcmp(dr - (worker.begTime-task.begTime) - d) >= 0;
+	// if (worker.begTime <= task.begTime)
+	// 	return dcmp(task.begTime - (worker.begTime + dw))<0 && dcmp(dr - d)>=0;
+	// else
+	// 	return dcmp(dr - (worker.begTime-task.begTime) - d) >= 0;
+	return dcmp(task.begTime - worker.begTime)<=0 && dcmp(dr - (worker.begTime-task.begTime) - d)>=0;
+}
+
+inline bool judgeTime1(const worker_t& worker, const task_t& task) {
+	double d = calcTime(worker, task);
+	// if (worker.begTime <= task.begTime)
+	// 	return dcmp(task.begTime - (worker.begTime + dw))<0 && dcmp(dr - d)>=0;
+	// else
+	// 	return dcmp(dr - (worker.begTime-task.begTime) - d) >= 0;
+	return dcmp(task.begTime - worker.begTime - dw)<=0 && dcmp(dr - d)>=0;
+}
+
+inline bool judgeTime2(const worker_t& worker, const task_t& task) {
+	double d = calcTime(worker, task);
+	return dcmp(dr - (worker.begTime-task.begTime) - d)>=0 && dcmp(task.begTime - (worker.begTime+dw))<=0;
 }
 
 #endif

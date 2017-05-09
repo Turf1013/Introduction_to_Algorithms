@@ -84,7 +84,7 @@ void init_network() {
 	}
 	for (int i=0; i<workerN; ++i) {
 		for (int j=0; j<taskN; ++j) {
-			if (judgeTime(workers[i], tasks[j])) {
+			if (judgeTime2(workers[i], tasks[j])) {
 				addEdge(i, j+workerN, tasks[j].cap);
 			}
 		}
@@ -124,7 +124,7 @@ bool bfs() {
     fill(mnf.begin(), mnf.end(), 0);
     Q.push(st);
     mnf[st] = INT_MAX;
-    pre[st] = -1;
+    pre[st] = st;
     
     while (!Q.empty()) {
         u = Q.front();
@@ -149,7 +149,7 @@ int Ford_Fulkerson() {
 	int maxFlow = 0;
 
 	while (bfs()) {
-        for (u=ed,v=pre[u]; u!=-1; u=v,v=pre[u]) {
+        for (v=ed,u=pre[v]; v!=st; v=u,u=pre[v]) {
         	k = eid[v];
         	E[k].f -= mnf[ed];
         	E[k^1].f += mnf[ed];

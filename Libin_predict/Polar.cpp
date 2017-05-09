@@ -12,6 +12,8 @@ using namespace std;
 #define LOCAL_DEBUG
 
 typedef long long LL;
+vector<int> xy, yx;
+vector<int> workerVisit, taskVisit;
 vector<int> workerCap, workerFlow;
 vector<int> taskCap, taskFlow;
 unordered_map<int,int> guideMap;
@@ -26,17 +28,13 @@ inline int calcSpatialH(const int slotId, const int gridId) {
 	return slotId * gridNum + gridId;
 }
 
-inline LL calcPairH(const int sp1, const int sp2) {
-	return 1LL * sp1 * spatialN + sp2;
-}
+void init(const string& predictFileName, const string& bipartiteFileName) {
+	/**
+		\step 1: parse from predict file.
+	*/
+	vector<predictItem_t> predictItems;
 
-void init(const string& networkFileName) {
-	vector<int> items;
-	vector<networkEdge_t> edges;
-	int edgeN;
-
-	readInput_network(networkFileName, workerN, taskN, dw, dr, vw,
-						slotN, gridLength, gridWidth, items, edgeN, edges);
+	readInput_predict(workerN, taskN, dw, dr, vw, slotN, gridLength, gridWidth, predictItems);
 
 	gridNum = gridLength * gridWidth;
 	spatialN = slotN * gridNum;
@@ -50,43 +48,54 @@ void init(const string& networkFileName) {
 	taskCap.resize(spatialN, 0);
 	taskFlow.resize(spatialN, 0);
 
-	vector<int> workers, tasks;
+	for (int i=0; i<spatialN; ++i) {
+		int workerCnt = predictItems[i].workerN, taskCnt = predictItems[i].taskN;
+		if (i > 0) {
+			workerCap[i] = workerCap[i-1] + workerCnt;
+			taskCap[i] = taskCap[i-1] + taskCnt;
 
-	for (int i=0; i<workerN; ++i) {
-		#ifdef LOCAL_DEBUG
-		assert(((i<<1)|1) < items.size());
-		#endif
-		int workerH = calcSpatialH(items[i<<1], items[(i<<1)|1]);
-		workers.push_back(workerH);
-	}
-	for (int j=workerN; j<workerN+taskN; ++j) {
-		#ifdef LOCAL_DEBUG
-		assert(((j<<1)|1) < items.size());
-		#endif
-		int taskH = calcSpatialH(items[j<<1], items[(j<<1)|1]);
-		tasks.push_back(taskH);
+			workerFlow[i] = workerCap[i-1];
+			taskFlow[i] = taskCap[i-1];
+		} else {
+			workerCap[i] = workerCnt;
+			taskCap[i] = taskCnt;
+
+			workerFlow[i] = 0;
+			taskFlow[i] = 0;
+		}
 	}
 
-	int u, v, f;
-	guideMap.clear();
+
+	/**
+		\step 2: parse from bipartie file
+	*/
+	vector<pair<int,int> > edges;
+
+	readInput_bipartite(bipartiteFileName, edges);
+	int edgeN = edges.size();
+
+	xy.clear();
+	yx.clear();
+	xy.resize(workerN, -1);
+	yx.resize(taskN, -1);
+	
+	workerVisit.clear();
+	taskVisit.clear();
+	workerVisit.resize(workerN, 0);
+	taskVisit.resize(taskN, 0);
+
 	for (int i=0; i<edgeN; ++i) {
-		u = edges[i].u;
-		v = edges[i].v;
-		f = edges[i].f;
 		#ifdef LOCAL_DEBUG
-		assert(u>=0 && u<workers.size());
-		assert(v>=0 && v<tasks.size());
-		assert(guideMap.count(calcPairH(workers[u], tasks[v])) == 0);
+		assert(edges[i].first>=0 && edges[i].first<xy.size());
+		assert(edges[i].second>=0 && edges[i].second<yx.size());
 		#endif
-		LL pairH = calcPairH(workers[u], tasks[v]);
-		guideMap[pairH] = f;
-		#ifdef LOCAL_DEBUG
-		assert(workers[u]>=0 && workers[u]<workerCap.size());
-		assert(tasks[v]>=0 && tasks[v]<taskCap.size());
-		#endif
-		workerCap[workers[u]] += f;
-		taskCap[tasks[v]] += f;
+		xy[edges[i].first] = edges[i].second;
+		yx[edges[i].second] = edges[i].first;
 	}
+
+	#ifdef WATCH_MEM
+	watchSolutionOnce(getpid(), usedMemory);
+	#endif
 }
 
 int Polar() {
@@ -100,85 +109,32 @@ int Polar() {
 
 	for (int i=0; i<itemN; ++i) {
 		scanf("%d %d %d", &typeId, &slotId, &gridId);
-		int spatialH = calcSpatialH(slotId, gridId);
-		if (typeId==0 && workerFlow[spatialH]<workerCap[spatialH]) {
-			++workerFlow[spatialH];
+		int spatialId = calcSpatialH(slotId, gridId);
 
-			// calculate the number of valid task
-			int validN = 0, validId;
-			for (auto taskH : taskQueue) {
-				LL pairH = calcPairH(spatialH, taskH);
-				if (guideMap[pairH] > 0) {
-					++validN;
+		if (typeId==0 && workerFlow[spatialId]<workerCap[spatialId]) {// worker
+			int xid = workerFlow[spatialId], yid = xy[xid];
+
+			if (workerVisit[xid]==0 && yid!=-1) {
+				workerVisit[xid] = 1;
+				if (taskVisit[yid] == 1) {
+					workerVisit[xid] = taskVisit[yid] = -1;
+					++ret;
 				}
 			}
-			// random selected or add into the waitQueue
-			if (validN > 0) {
-				validId = rand() % validN;
-				validN = 0;
-				#ifdef LOCAL_DEBUG
-				bool makePair = false;
-				#endif
-				for (int j=0; j<taskQueue.size(); ++j) {
-					int taskH = taskQueue[j];
-					LL pairH = calcPairH(spatialH, taskH);
-					if (guideMap[pairH]>0 && validN++==validId) {
-						if (--guideMap[pairH] == 0)
-							guideMap.erase(pairH);
-						taskQueue[j] = *taskQueue.rbegin();
-						taskQueue.pop_back();
-						#ifdef LOCAL_DEBUG
-						makePair = true;
-						#endif
-						break;
-					}
-				}
-				++ret;
-				#ifdef LOCAL_DEBUG
-				assert(makePair);
-				#endif
-			} else {
-				workerQueue.push_back(spatialH);
-			}
-		} else if (typeId==1 && taskFlow[spatialH]<taskCap[spatialH]) {
-			++taskFlow[spatialH];
-			
-			// calculate the number of valid worker
-			int validN = 0, validId;
-			for (auto workerH : workerQueue) {
-				LL pairH = calcPairH(workerH, spatialH);
-				if (guideMap[pairH] > 0) {
-					++validN;
+
+			++workerFlow[spatialId];
+		} else if (typeId==1 && taskFlow[spatialId]<taskCap[spatialId]) {// task
+			int yid = taskFlow[spatialId], xid = yx[yid];
+
+			if (taskVisit[yid]==0 && xid!=-1) {
+				taskVisit[yid] = 1;
+				if (workerVisit[xid] == 1) {
+					workerVisit[xid] = taskVisit[yid] = -1;
+					++ret;
 				}
 			}
-			// random selected or add into the waitQueue
-			if (validN > 0) {
-				validId = rand() % validN;
-				validN = 0;
-				#ifdef LOCAL_DEBUG
-				bool makePair = false;
-				#endif
-				for (int j=0; j<workerQueue.size(); ++j) {
-					int workerH = workerQueue[j];
-					LL pairH = calcPairH(workerH, spatialH);
-					if (guideMap[pairH]>0 && validN++==validId) {
-						if (--guideMap[pairH] == 0)
-							guideMap.erase(pairH);
-						workerQueue[j] = *workerQueue.rbegin();
-						workerQueue.pop_back();
-						#ifdef LOCAL_DEBUG
-						makePair = true;
-						#endif
-						break;
-					}		
-				}
-				++ret;
-				#ifdef LOCAL_DEBUG
-				assert(makePair);
-				#endif
-			} else {
-				taskQueue.push_back(spatialH);
-			}
+
+			++taskFlow[spatialId];
 		}
 
 		#ifdef WATCH_MEM
@@ -189,9 +145,9 @@ int Polar() {
 	return ret;
 }
 
-int solve(const string& networkFileName) {
+int solve(const string& predictFileName, const string& bipartiteFileName) {
 	int ret;
-	init(networkFileName);
+	init(predictFileName, bipartiteFileName);
 	ret = Polar();
 	return ret;
 }
@@ -200,21 +156,27 @@ int main(int argc, char **argv) {
 	ios::sync_with_stdio(false);
 	cin.tie(0);
 	program_t begProg, endProg;
-	string networkFileName;
+	string predictFileName, bipartiteFileName;
 
 	if (argc > 1) {
-		networkFileName = string(argv[1]);
+		predictFileName = string(argv[1]);
 	} else {
-		perror("no valid network File");
+		perror("no valid predict File");
 		exit(1);
 	}
-	if (argc > 2)
-		freopen(argv[2], "r", stdin);
-	if (argc > 3)
-		freopen(argv[3], "w", stdout);
+	if (argc > 2) {
+		bipartiteFileName = string(argv[2]);
+	} else {
+		perror("no valid network File");
+		exit(1);	
+	}
+	if (argc > 3) 
+		freopen(argv[3], "r", stdin);
+	if (argc > 4)
+		freopen(argv[4], "w", stdout);
 
 	save_time(begProg);
-	int nPairs = solve(networkFileName);
+	int nPairs = solve(predictFileName, bipartiteFileName);
 	save_time(endProg);
 
 	double usedTime = calc_time(begProg, endProg);
