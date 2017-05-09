@@ -9,7 +9,7 @@ using namespace std;
 #include "input.h"
 #include "output.h"
 
-#define LOCAL_DEBUG
+//#define LOCAL_DEBUG
 
 struct worker_t {
 	int gridId;
@@ -142,16 +142,17 @@ void output_bipartite(int maxFlow) {
 	if (workers.size() <= tasks.size()) {
 		for (int x=0; x<nx; ++x) {
 			if (xy[x] != -1) {
-				printf("%d %d\n", x, xy[x]);
+				fprintf(stderr, "%d %d\n", x, xy[x]);
 			}
 		}
 	} else {
 		for (int x=0; x<nx; ++x) {
 			if (xy[x] != -1) {
-				printf("%d %d\n", xy[x], x);
+				fprintf(stderr, "%d %d\n", xy[x], x);
 			}	
 		}
 	}
+	printf("maxFlow %d\n", maxFlow);
 
 	#ifdef LOCAL_DEBUG
 	fprintf(stderr, "maxFlow = %d\n", maxFlow);
@@ -172,7 +173,7 @@ int main(int argc, char **argv) {
 	if (argc > 1)
 		freopen(argv[1], "r", stdin);
 	if (argc > 2)
-		freopen(argv[2], "w", stdout);
+		freopen(argv[2], "w", stderr);
 
 	// save_time(begProg);
 	solve();

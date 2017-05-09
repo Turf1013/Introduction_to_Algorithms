@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
 	if (argc > 2)
 		freopen(argv[2], "w", stdout);
 
-	//reSort();
+	reSort();
 
 	save_time(begProg);
 	int nPairs = solve();
