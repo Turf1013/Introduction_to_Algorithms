@@ -9,7 +9,7 @@ using namespace std;
 #include "input.h"
 #include "output.h"
 
-//#define LOCAL_DEBUG
+#define LOCAL_DEBUG
 
 struct worker_t {
 	int gridId;
@@ -41,6 +41,7 @@ vector<int> dis;
 vector<edge_t> E;
 vector<worker_t> workers;
 vector<task_t> tasks;
+vector<int> workerCap, taskCap;
 int workerN, taskN;
 double dw, dr, vw;
 int slotN, gridLength, gridWidth;
@@ -73,15 +74,20 @@ void init_network() {
 	E.clear();
 
 	for (int i=0; i<workerN; ++i) {
-		addEdge(st, i, 1);
+		if (workerCap[i])
+			addEdge(st, i, workerCap[i]);
 	}
 	for (int j=0; j<taskN; ++j) {
-		addEdge(j+workerN, ed, 1);
+		if (taskCap[j])
+			addEdge(j+workerN, ed, taskCap[j]);
 	}
 	for (int i=0; i<workerN; ++i) {
+		if (workerCap[i] == 0) continue;
 		for (int j=0; j<taskN; ++j) {
+			if (taskCap[j] == 0) continue;
+
 			if (judgeTime2(workers[i], tasks[j])) {
-				addEdge(i, j+workerN, 1);
+				addEdge(i, j+workerN, min(workerCap[i], taskCap[j]));
 			}
 		}
 	}
@@ -90,27 +96,37 @@ void init_network() {
 void init() {
 	vector<predictItem_t> predictItems;
 
-	readInput_predict(workerN, taskN, dw, dr, vw, slotN, gridLength, gridWidth, predictItems);
+	scanf("%d %d %lf %lf %lf %d %d %d", &workerN, &taskN, &dw, &dr, &vw, &slotN, &gridLength, &gridWidth);
+	const int itemN = workerN + taskN;
 	const int gridN = gridLength * gridWidth;
-	int itemId = 0;
+	const int spatialN = slotN * gridN;
+	int typeId, slotId, gridId;
+	
+	workerCap.clear();
+	taskCap.clear();
+	workerCap.resize(spatialN, 0);
+	taskCap.resize(spatialN, 0);
+	for (int i=0; i<itemN; ++i) {
+		scanf("%d %d %d", &typeId, &slotId, &gridId);
+		const int spatialId = slotId * gridN + gridId;
+		if (typeId == 0) {
+			++workerCap[spatialId];
+		} else {
+			++taskCap[spatialId];
+		}
+	}
+
+	worker_t worker;
+	task_t task;
 
 	workers.clear();
 	tasks.clear();
-	for (int begTime=0; begTime<slotN; ++begTime) {
-		for (int gridId=0; gridId<gridN; ++gridId) {
-			if (predictItems[itemId].workerN > 0) {
-				worker_t worker(gridId, begTime);
-				int cap = predictItems[itemId].workerN;
-				while (cap--)
-					workers.push_back(worker);
-			}
-			if (predictItems[itemId].taskN > 0) {
-				task_t task(gridId, begTime);
-				int cap = predictItems[itemId].taskN;
-				while (cap--)
-					tasks.push_back(task);
-			}
-			++itemId;
+	for (slotId=0; slotId<slotN; ++slotId) {
+		worker.begTime = task.begTime = slotId;
+		for (gridId=0; gridId<gridN; ++gridId) {
+			worker.gridId = task.gridId = gridId;
+			workers.push_back(worker);
+			tasks.push_back(task);
 		}
 	}
 
@@ -165,9 +181,7 @@ int dfs(int u, int val) {
 
 int Dinic() {
 	const int vertexN = head.size();
-	int k, u, v;
 	int maxFlow = 0, tmp;
-
 
 	while (bfs()) {
 		for (int i=0; i<vertexN; ++i)
@@ -188,52 +202,32 @@ int Dinic() {
     return maxFlow;
 }
 
-void output_network(int maxFlow) {
-	int u, v, k;
-
-	#ifdef LOCAL_DEBUG
-	int curFlow = 0;
-	#endif
-	for (u=0; u<workerN; ++u) {
-		for (k=head[u]; k!=-1; k=E[k].nxt) {
-			if (k & 1) continue;
-			v = E[k].v;
-			if (E[k].f == 0) {
-				fprintf(stderr, "%d %d\n", u, v-workerN);
-				#ifdef LOCAL_DEBUG
-				++curFlow;
-				#endif
-			}
-		}
-	}
-	printf("maxFlow = %d\n", maxFlow);
-
-	#ifdef LOCAL_DEBUG
-	assert(curFlow == maxFlow);
-	#endif
-}
-
-void solve() {
+int solve() {
 	init();
 	int maxFlow = Dinic();
-	output_network(maxFlow);
+	return maxFlow;
 }
 
 int main(int argc, char **argv) {
 	ios::sync_with_stdio(false);
 	cin.tie(0);
-	// program_t begProg, endProg;
+	program_t begProg, endProg;
 
 	if (argc > 1)
 		freopen(argv[1], "r", stdin);
 	if (argc > 2)
-		freopen(argv[2], "w", stderr);
+		freopen(argv[2], "w", stdout);
 
-	// save_time(begProg);
-	solve();
-	// save_time(endProg);
+	save_time(begProg);
+	int nPairs = solve();
+	save_time(endProg);
 
-	// double usedTime = calc_time(begProg, endProg);
+	double usedTime = calc_time(begProg, endProg);
+	#ifdef WATCH_MEM
+	printf("OPT %d %.4lf %d\n", nPairs, usedTime, usedMemory/1024);
+	#else
+	printf("OPT %d %.4lf\n", nPairs, usedTime);
+	#endif
 	
 	return 0;
 }

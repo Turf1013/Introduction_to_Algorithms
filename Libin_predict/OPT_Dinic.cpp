@@ -9,7 +9,7 @@ using namespace std;
 #include "input.h"
 #include "output.h"
 
-#define LOCAL_DEBUG
+//#define LOCAL_DEBUG
 
 struct worker_t {
 	int gridId;

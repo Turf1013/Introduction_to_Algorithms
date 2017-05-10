@@ -20,6 +20,9 @@ OPT: monitor.h input.h output.h global.h OPT.cpp
 Dinic: monitor.h input.h output.h global.h OPT_Dinic.cpp
 	$(CXX) $(CFLAGS) -o Dinic OPT_Dinic.cpp $(LIBS)
 
+DinicF: monitor.h input.h output.h global.h OPT_Dinic_fast.cpp
+	$(CXX) $(CFLAGS) -o DinicF OPT_Dinic_fast.cpp $(LIBS)
+
 Hung: monitor.h input.h output.h global.h OPT_hungarian.cpp
 	$(CXX) $(CFLAGS) -o Hung OPT_hungarian.cpp $(LIBS)
 
