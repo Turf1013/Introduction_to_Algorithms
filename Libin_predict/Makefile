@@ -7,7 +7,7 @@ LIBS = -lrt
 CFLAGS = --std=c++11 -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: Simple SimpleMem OPT OPTMem Guide Polar PolarMem Hung GuideH
+all: Simple SimpleMem OPT OPTMem Guide Polar PolarMem Hung GuideH Dinic
 Simple: monitor.h input.h output.h global.h simpleGreedy.cpp
 	$(CXX) $(CFLAGS) -o Simple simpleGreedy.cpp $(LIBS)
 
@@ -16,6 +16,9 @@ SimpleMem: monitor.h input.h output.h global.h simpleGreedy.cpp
 
 OPT: monitor.h input.h output.h global.h OPT.cpp
 	$(CXX) $(CFLAGS) -o OPT OPT.cpp $(LIBS)
+
+Dinic: monitor.h input.h output.h global.h OPT_Dinic.cpp
+	$(CXX) $(CFLAGS) -o Dinic OPT_Dinic.cpp $(LIBS)
 
 Hung: monitor.h input.h output.h global.h OPT_hungarian.cpp
 	$(CXX) $(CFLAGS) -o Hung OPT_hungarian.cpp $(LIBS)
@@ -31,6 +34,12 @@ Guide: monitor.h input.h output.h global.h guide.cpp
 
 GuideH: monitor.h input.h output.h global.h guide_hung.cpp
 	$(CXX) $(CFLAGS) -o GuideH guide_hung.cpp $(LIBS)
+
+GuideD: monitor.h input.h output.h global.h guide_dinic.cpp
+	$(CXX) $(CFLAGS) -o GuideD guide_dinic.cpp $(LIBS)
+
+GuideDF: monitor.h input.h output.h global.h guide_dinic_fast.cpp
+	$(CXX) $(CFLAGS) -o GuideDF guide_dinic_fast.cpp $(LIBS)
 
 Polar: monitor.h input.h output.h global.h Polar.cpp
 	$(CXX) $(CFLAGS) -o Polar Polar.cpp $(LIBS)
