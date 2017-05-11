@@ -56,6 +56,12 @@ Polar: monitor.h input.h output.h global.h Polar.cpp
 PolarMem: monitor.h input.h output.h global.h Polar.cpp
 	$(CXX) $(CFLAGS) -o PolarMem Polar.cpp $(LIBS) -D WATCH_MEM
 
+Sha: monitor.h input.h output.h global.h Shahabi.cpp
+	$(CXX) $(CFLAGS) -o Sha Shahabi.cpp $(LIBS)
+
+ShaMem: monitor.h input.h output.h global.h Shahabi.cpp
+	$(CXX) $(CFLAGS) -o ShaMem Shahabi.cpp $(LIBS) -D WATCH_MEM
+
 Lig: monitor.h Libin_SimpleG.cpp
 	$(CXX) $(CFLAGS) -o Lig Libin_SimpleG.cpp $(LIBS)
 

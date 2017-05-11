@@ -47,6 +47,16 @@ def runOPT(execName, scenarioFileName, logFileName):
     dumpToFile(logFileName, lines)
     # print "end OPT"
 
+def runSha(execName, scenarioFileName, logFileName):
+    # print "begin Sha"
+    lines = []
+    cmdLine = "%s %s" % (execName, scenarioFileName)
+    print cmdLine
+    line = commands.getoutput(cmdLine)
+    print line
+    lines.append(line)
+    dumpToFile(logFileName, lines)
+    # print "end Sha"
 
 def testPool_Guide():
     pool = multiprocessing.Pool(processes = 6)
@@ -101,10 +111,27 @@ def testPool_OPT():
             filePrefix = os.path.join(dataSetDirPath, oneSetName)
             scenarioFileName = os.path.join(filePrefix, "rscenario.txt")
             logFileName = os.path.join(filePrefix, "result_OPT.txt")
-            pool.apply_async(runSimple, (execName, scenarioFileName, logFileName, ))
+            pool.apply_async(runOPT, (execName, scenarioFileName, logFileName, ))
     pool.close()
     pool.join()
 
+def testPool_Sha():
+    pool = multiprocessing.Pool(processes = 16)
+    execName = "/home/server/zyx/Libin_predict/ShaMem"
+
+    dataSetDirPrefix = "/home/server/zyx/Data30"
+    dataSetDirList = os.listdir(dataSetDirPrefix)
+
+    for dirName in dataSetDirList:
+        dataSetDirPath = os.path.join(dataSetDirPrefix, dirName)
+        dirList = os.listdir(dataSetDirPath)
+        for oneSetName in dirList:
+            filePrefix = os.path.join(dataSetDirPath, oneSetName)
+            scenarioFileName = os.path.join(filePrefix, "rscenario.txt")
+            logFileName = os.path.join(filePrefix, "result_Sha.txt")
+            pool.apply_async(runSha, (execName, scenarioFileName, logFileName, ))
+    pool.close()
+    pool.join()
 
 if __name__ == "__main__":
     testPool_Simple()

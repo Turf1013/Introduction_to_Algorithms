@@ -10,6 +10,7 @@
 *.gcno
 *.log
 *.pyc
+*.tmp
 OPT
 OPTMem
 Simple
@@ -28,3 +29,5 @@ Dinic
 DinicF
 GuideD
 GuideDF
+Sha
+ShaMem

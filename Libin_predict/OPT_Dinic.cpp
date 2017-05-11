@@ -90,8 +90,6 @@ void init_network() {
 }
 
 void init() {
-	vector<predictItem_t> predictItems;
-
 	scanf("%d %d %lf %lf %lf %d %d %d", &workerN, &taskN, &dw, &dr, &vw, &slotN, &gridLength, &gridWidth);
 	const int itemN = workerN + taskN;
 	int typeId;
