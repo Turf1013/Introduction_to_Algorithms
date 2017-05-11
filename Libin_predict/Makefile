@@ -56,10 +56,10 @@ Polar: monitor.h input.h output.h global.h Polar.cpp
 PolarMem: monitor.h input.h output.h global.h Polar.cpp
 	$(CXX) $(CFLAGS) -o PolarMem Polar.cpp $(LIBS) -D WATCH_MEM
 
-Lig: Libin_SimpleG.cpp
+Lig: monitor.h Libin_SimpleG.cpp
 	$(CXX) $(CFLAGS) -o Lig Libin_SimpleG.cpp $(LIBS)
 
-Lip: Libin_Polar.cpp
+Lip: monitor.h Libin_Polar.cpp
 	$(CXX) $(CFLAGS) -o Lip Libin_Polar.cpp $(LIBS)
 
 Edge: input.h global.h calcEdge.cpp

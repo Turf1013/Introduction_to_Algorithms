@@ -1,4 +1,4 @@
-
+#include <cstring>
 #include <cstdio>
 #include <algorithm>
 #include <set>
@@ -16,6 +16,10 @@
 #include <set>
 #include <iomanip>
 using namespace std;
+
+#include "monitor.h" 
+#define WATCH_MEM
+
 typedef struct tuple {
 	int type, s;
 	int grid;
@@ -28,17 +32,28 @@ bool com(const tri &a,const tri &b)
 {
 	return a.s<b.s;
 }
+
+#ifdef WATCH_MEM
+int usedMemory = 0;
+#endif
 vector<tri> ob;
 double ve = 1;//1minute 660m
 int t = 96, g = 540;
 int gridh = 30, gridw = 18;//map height/width in grid(1.708*2.226)
 double f[288];
 double Dw, Dr;
-bool used[200000];
+const int maxn = 600005;
+vector<bool> used;
 const char* opath = "rscenario_sort.in";
-int main()
+int main(int argc, char **argv)
 {
-	FILE *fp1 = fopen("rscenario.in", "r");
+	program_t begProg, endProg;
+	FILE *fp1;
+
+	if (argc > 1)
+		fp1 = fopen(argv[1], "r");	
+	else
+		fp1 = fopen("rscenario.in", "r");
 	FILE *fp2 = fopen("rscenario_sort.in", "w");
 	//ostream fout(opath);
 
@@ -61,7 +76,14 @@ int main()
 	 
 	int deg = 0;
 	sort(ob.begin(), ob.end(), com);
-	
+	#ifdef WATCH_MEM
+	watchSolutionOnce(getpid(), usedMemory);
+	#endif
+
+	save_time(begProg);
+	used.clear();
+	used.resize(n, false);
+
 	for (int i = 0;i<n;i++)
 	{
 		fprintf(fp2, "%d %d %d\n", ob[i].type, ob[i].s, ob[i].grid);
@@ -105,9 +127,19 @@ int main()
 			if (ind != -1) { used[ind] = used[i] = 1;res++; }
 		}
 	}
+	#ifdef WATCH_MEM
+	watchSolutionOnce(getpid(), usedMemory);
+	#endif
 	
-	printf("Greedy:%d\n", res);
 	fclose(fp2);
+	save_time(endProg);
+
+	double usedTime = calc_time(begProg, endProg);
+	#ifdef WATCH_MEM
+	printf("Greedy %d %.4lf %d\n", res, usedTime, usedMemory/1024);
+	#else
+	printf("Greedy %d %.4lf\n", res, usedTime);
+	#endif
 
 	return 0;
 }
