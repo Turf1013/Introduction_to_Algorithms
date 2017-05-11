@@ -281,9 +281,9 @@ int main(int argc, char **argv) {
 
 	double usedTime = calc_time(begProg, endProg);
 	#ifdef WATCH_MEM
-	fprintf(stderr, "Guide: %d %.4lf %d\n", ans, usedTime, usedMemory/1024);
+	fprintf(stderr, "Guide %d %.4lf %d\n", ans, usedTime, usedMemory/1024);
 	#else
-	fprintf(stderr, "Guide: %d %.4lf\n", ans, usedTime);
+	fprintf(stderr, "Guide %d %.4lf\n", ans, usedTime);
 	#endif
 	
 	return 0;
