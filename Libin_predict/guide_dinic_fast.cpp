@@ -188,10 +188,13 @@ int Dinic() {
         	maxFlow += tmp;
         }
 
+		//#ifdef WATCH_MEM
+		//watchSolutionOnce(getpid(), usedMemory);
+		//#endif
+    }
 		#ifdef WATCH_MEM
 		watchSolutionOnce(getpid(), usedMemory);
 		#endif
-    }
 
     return maxFlow;
 }
@@ -206,7 +209,7 @@ void output_network(int maxFlow) {
 	int curFlow = 0;
 	#endif
 	
-	fprintf(stderr, "maxFlow = %d\n", maxFlow);
+	//fprintf(stderr, "maxFlow = %d\n", maxFlow);
 	for (u=0; u<workerN; ++u) {
 		for (k=head[u]; k!=-1; k=E[k].nxt) {
 			if (k & 1) continue;
@@ -234,7 +237,7 @@ void output_network(int maxFlow) {
 	#endif
 }
 
-void solve() {
+int solve() {
 	// #ifdef LOCAL_DEBUG
 	// puts("begin init");
 	// #endif
@@ -258,23 +261,30 @@ void solve() {
 	// #ifdef LOCAL_DEBUG
 	// puts("end output");
 	// #endif
+
+	return maxFlow;
 }
 
 int main(int argc, char **argv) {
 	ios::sync_with_stdio(false);
 	cin.tie(0);
-	// program_t begProg, endProg;
+	program_t begProg, endProg;
 
 	if (argc > 1)
 		freopen(argv[1], "r", stdin);
 	if (argc > 2)
 		freopen(argv[2], "w", stdout);
 
-	// save_time(begProg);
-	solve();
-	// save_time(endProg);
+	save_time(begProg);
+	int ans = solve();
+	save_time(endProg);
 
-	// double usedTime = calc_time(begProg, endProg);
+	double usedTime = calc_time(begProg, endProg);
+	#ifdef WATCH_MEM
+	fprintf(stderr, "Guide: %d %.4lf %d\n", ans, usedTime, usedMemory/1024);
+	#else
+	fprintf(stderr, "Guide: %d %.4lf\n", ans, usedTime);
+	#endif
 	
 	return 0;
 }

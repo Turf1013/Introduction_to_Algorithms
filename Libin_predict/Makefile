@@ -23,6 +23,9 @@ Dinic: monitor.h input.h output.h global.h OPT_Dinic.cpp
 DinicF: monitor.h input.h output.h global.h OPT_Dinic_fast.cpp
 	$(CXX) $(CFLAGS) -o DinicF OPT_Dinic_fast.cpp $(LIBS)
 
+DinicFMem: monitor.h input.h output.h global.h OPT_Dinic_fast.cpp
+	$(CXX) $(CFLAGS) -o DinicFMem OPT_Dinic_fast.cpp $(LIBS) -D WATCH_MEM
+
 Hung: monitor.h input.h output.h global.h OPT_hungarian.cpp
 	$(CXX) $(CFLAGS) -o Hung OPT_hungarian.cpp $(LIBS)
 
@@ -43,6 +46,9 @@ GuideD: monitor.h input.h output.h global.h guide_dinic.cpp
 
 GuideDF: monitor.h input.h output.h global.h guide_dinic_fast.cpp
 	$(CXX) $(CFLAGS) -o GuideDF guide_dinic_fast.cpp $(LIBS)
+
+GuideDFMem: monitor.h input.h output.h global.h guide_dinic_fast.cpp
+	$(CXX) $(CFLAGS) -o GuideDFMem guide_dinic_fast.cpp $(LIBS) -D WATCH_MEM
 
 Polar: monitor.h input.h output.h global.h Polar.cpp
 	$(CXX) $(CFLAGS) -o Polar Polar.cpp $(LIBS)

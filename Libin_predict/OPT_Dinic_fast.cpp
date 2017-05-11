@@ -91,6 +91,9 @@ void init_network() {
 			}
 		}
 	}
+		#ifdef WATCH_MEM
+		watchSolutionOnce(getpid(), usedMemory);
+		#endif
 }
 
 void init() {
@@ -130,6 +133,9 @@ void init() {
 		}
 	}
 
+		#ifdef WATCH_MEM
+		watchSolutionOnce(getpid(), usedMemory);
+		#endif
 	init_network();
 }
 
@@ -194,11 +200,14 @@ int Dinic() {
         	maxFlow += tmp;
         }
 
+		//#ifdef WATCH_MEM
+		//watchSolutionOnce(getpid(), usedMemory);
+		//#endif
+    }
+
 		#ifdef WATCH_MEM
 		watchSolutionOnce(getpid(), usedMemory);
 		#endif
-    }
-
     return maxFlow;
 }
 
