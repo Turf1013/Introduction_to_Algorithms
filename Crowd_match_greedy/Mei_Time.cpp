@@ -108,9 +108,9 @@ struct Hungarian_t {
 		slack.clear();
 	}
 	
-	double getCost(int i, int j, const vector<node_t>& tasks, const vector<node_t>& workers) {
-		const node_t& task = tasks[i];
-		const node_t& worker = workers[j];
+	double getCost(int workerId, int taskId, const vector<node_t>& tasks, const vector<node_t>& workers) {
+		const node_t& task = tasks[taskId];
+		const node_t& worker = workers[workerId];
 		return calcCost(task, worker);
 	}
 	
@@ -272,6 +272,7 @@ void removeNode(vector<node_t>& nodes, int idx) {
 }
 
 void markDeadNode(vector<bool>& visit, const vector<node_t>& nodes, const int timeBound) {
+	
 	#ifdef LOCAL_DEBUG
 	assert(visit.size() == nodes.size());
 	#endif
@@ -296,13 +297,14 @@ void Mei(ifstream& fin, int seqN) {
 
 		// Execute KM once when condition is satisfied
 		if (seqN==0 || node.begTime>=curBound) {
-			if (node.begTime < timeBound) {
-				while (cap--) {
+			if (seqN == 0) {
+				while (cap > 0) {
 					if (node.type == task) { // node is task
 						tasks.push_back(node);
 					} else {
 						workers.push_back(node);
 					}
+					--cap;
 				}
 			}
 
@@ -338,8 +340,8 @@ void Mei(ifstream& fin, int seqN) {
 				}
 
 				// remove node which is beyond deadline
-				markDeadNode(visitX, workers, curBound);
-				markDeadNode(visitY, tasks, curBound);
+				//markDeadNode(visitX, workers, curBound);
+				//markDeadNode(visitY, tasks, curBound);
 
 				// remove matched workers and tasks, trick is remove from the tail
 				// for (x=Wsz-1; x>=0; --x) {
@@ -384,11 +386,11 @@ void Mei(ifstream& fin, int seqN) {
 					// if (visitY[y])
 					// 	removeNode(workers, y);
 				// }
-				for (x=0; x<Wsz; ++x) {
+				for (x=0; x<Tsz; ++x) {
 					if (!visitX[x])
 						tasksTmp.push_back(tasks[x]);
 				}
-				for (y=0; y<Tsz; ++y) {
+				for (y=0; y<Wsz; ++y) {
 					if (!visitY[y])
 						workersTmp.push_back(workers[y]);
 				}
@@ -409,12 +411,13 @@ void Mei(ifstream& fin, int seqN) {
 			curBound += timeBound;
 		}
 
-		while (cap--) {
+		while (cap > 0) {
 			if (node.type == task) { // node is task
 				tasks.push_back(node);
 			} else {
 				workers.push_back(node);
 			}
+			--cap;
 		}
 	}
 }
@@ -449,7 +452,7 @@ int main(int argc, char* argv[]) {
 	if (argc > 2) {
 		sscanf(argv[2], "%d", &timeBound);
 	} else {
-		timeBound = 500;
+		timeBound = 5000;
 	}
 
 	program_t begProg, endProg;
