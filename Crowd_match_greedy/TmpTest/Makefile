@@ -1,5 +1,5 @@
 ##
-#	Makefile for `Tong_two_side_match` application
+#	Makefile for `dna` application
 ##
 CC = gcc
 CXX = g++
@@ -90,18 +90,6 @@ StaticMem: monitor.h input.h Static_Greedy.cpp
 dumpGraph: dumpGraph.cpp
 	$(CXX) $(CFLAGS) -o dumpGraph dumpGraph.cpp $(LIBS)	
 
-MeiN: monitor.h input.h Mei_Num.cpp
-	$(CXX) $(CFLAGS) -o MeiN Mei_Num.cpp $(LIBS)
-
-MeiNMem: monitor.h input.h Mei_Num.cpp
-	$(CXX) $(CFLAGS) -o MeiNMem Mei_Num.cpp $(LIBS) -D WATCH_MEM
-
-MeiT: monitor.h input.h Mei_Time.cpp
-	$(CXX) $(CFLAGS) -o MeiT Mei_Time.cpp $(LIBS)
-
-MeiTMem: monitor.h input.h Mei_Time.cpp
-	$(CXX) $(CFLAGS) -o MeiTMem Mei_Time.cpp $(LIBS) -D WATCH_MEM
-
 .PHONY: clean 
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
@@ -118,4 +106,3 @@ clean:
 		-@rm Static StaticMem Static.g* StaticMem.g* 2> /dev/null || true
 		-@rm dumpGraph dumpGraph.g* 2> /dev/null || true	
 		-@rm Xuan 2> /dev/null || true	
-		-@rm MeiN MeiNMem MeiT MeiTMem 2> /dev/null || true

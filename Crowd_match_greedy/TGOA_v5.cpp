@@ -191,7 +191,7 @@ struct Hungarian_t {
 		
 		for (int i=0; i<Tsz; ++i) {
 			if (T[i]) ly[i] += mn;
-			else	  slack[i] -= mn;
+			//else	  slack[i] -= mn;
 		}
 	}
 	
@@ -211,9 +211,8 @@ struct Hungarian_t {
 		}
 		
 		for (int x=0; x<Wsz; ++x) {
-			fill(slack.begin(), slack.end(), INF);
 			for (;;) {
-				//fill(slack.begin(), slack.end(), INF);
+				fill(slack.begin(), slack.end(), INF);
 				fill(S.begin(), S.end(), false);
 				fill(T.begin(), T.end(), false);
 				if (dfs(x, T_delta, W_delta, tasks, workers))
@@ -340,7 +339,7 @@ void addOneMatch(node_t& task, node_t& worker) {
 }
 
 void TGOA(ifstream& fin, int seqN) {
-	int k = sumC * 0.78;
+	int k = sumC / 2;
 	vector<int> W_delta, T_delta;
 	node_t node;
 	vector<node_t> tasks, workers;
@@ -464,19 +463,15 @@ void TGOA(ifstream& fin, int seqN) {
 
 			if (!isSecondHalf && T_delta.size()+W_delta.size()>=k) {
 				isSecondHalf = true;
-				T_delta.clear();
-				W_delta.clear();
+				//T_delta.clear();
+				//W_delta.clear();
 			}
 		}
-
-		//#ifdef WATCH_MEM
-		//watchSolutionOnce(getpid(), usedMemory);
-		//#endif
-	}
 
 		#ifdef WATCH_MEM
 		watchSolutionOnce(getpid(), usedMemory);
 		#endif
+	}
 
 	#ifdef LOCAL_DEBUG
 	int taskFlow = 0, workerFlow = 0;

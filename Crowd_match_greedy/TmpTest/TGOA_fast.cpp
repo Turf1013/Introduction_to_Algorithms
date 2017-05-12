@@ -69,7 +69,15 @@ inline int dcmp(double a) {
 }
 
 const double INF = 1e18;
+const int maxg = 5025;
+double g[maxg][maxg];
+
 struct Hungarian_t {
+	int yx[maxg], xy[maxg];
+	double lx[maxg], ly[maxg];
+	bool S[maxg], T[maxg];
+	double slack[maxg];
+
 	struct vertex_t {
 		int v;
 		double w;
@@ -78,10 +86,11 @@ struct Hungarian_t {
 			v(v), w(w) {}
 	};
 	
-	vector<int> yx, xy;
-	vector<double> lx, ly;
-	vector<bool> S, T;
-	vector<double> slack;
+	//vector<vector<double> > g;
+	// vector<int> yx, xy;
+	// vector<double> lx, ly;
+	// vector<bool> S, T;
+	// vector<double> slack;
 	int Tsz, Wsz;
 	
 	Hungarian_t() {
@@ -89,24 +98,31 @@ struct Hungarian_t {
 	}
 	
 	void init(int n=0) {
-		clear();
-		yx.resize(Tsz, -1);
-		xy.resize(Wsz, -1);
-		lx.resize(Wsz, 0);
-		ly.resize(Tsz, 0);
-		S.resize(Wsz, false);
-		T.resize(Tsz, false);
-		slack.resize(Tsz, 0);
+		// clear();
+		// yx.resize(Tsz, -1);
+		// xy.resize(Wsz, -1);
+		// lx.resize(Wsz, 0);
+		// ly.resize(Tsz, 0);
+		// S.resize(Wsz, false);
+		// T.resize(Tsz, false);
+		// slack.resize(Tsz, 0);
+		memset(yx, -1, sizeof(yx));
+		memset(xy, -1, sizeof(xy));
+		memset(lx, 0, sizeof(lx));
+		memset(ly, 0, sizeof(ly));
+		memset(T, false, sizeof(T));
+		memset(S, false, sizeof(S));
 	}
 	
 	void clear() {
-		yx.clear();
-		xy.clear();
-		lx.clear();
-		ly.clear();
-		S.clear();
-		T.clear();
-		slack.clear();
+		// yx.clear();
+		// xy.clear();
+		// lx.clear();
+		// ly.clear();
+		// S.clear();
+		// T.clear();
+		//g.clear();
+		// slack.clear();
 	}
 	
 	double getCost(int i, int j, const vector<int>& T_delta, const vector<int>& W_delta, 
@@ -134,6 +150,11 @@ struct Hungarian_t {
 		int vertexN = max(Tsz, Wsz);
 		
 		init(vertexN);
+		for (int x=0; x<Wsz; ++x) {
+			for (int y=0; y<Tsz; ++y) {
+				g[x][y] = getCost(x, y, T_delta, W_delta, tasks, workers);
+			}
+		}
 		// for (int i=0; i<vertexN; ++i) {
 			// const int workerId = (i < Wsz) ? W_delta[i] : -2;
 
@@ -160,7 +181,7 @@ struct Hungarian_t {
 		for (y=0; y<Tsz; ++y) {
 			if (T[y]) continue;
 			
-			double tmp = lx[x] + ly[y] - getCost(x, y, T_delta, W_delta, tasks, workers);
+			double tmp = lx[x] + ly[y] - g[x][y]; //getCost(x, y, T_delta, W_delta, tasks, workers);
 			if (dcmp(tmp) == 0) {
 				T[y] = true;
 				if (yx[y]==-1 || dfs(yx[y], T_delta, W_delta, tasks, workers)) {
@@ -199,23 +220,27 @@ struct Hungarian_t {
 				const vector<node_t>& tasks, const vector<node_t>& workers) {
 		int i, j, k;
 		
-		fill(lx.begin(), lx.end(), 0.0);
-		fill(ly.begin(), ly.end(), 0.0);
-		fill(xy.begin(), xy.end(), -1);
-		fill(yx.begin(), yx.end(), -1);
+		// fill(lx.begin(), lx.end(), 0.0);
+		// fill(ly.begin(), ly.end(), 0.0);
+		// fill(xy.begin(), xy.end(), -1);
+		// fill(yx.begin(), yx.end(), -1);
 		for (int x=0; x<Wsz; ++x) {
 			for (int y=0; y<Tsz; ++y) {
-				double tmp = getCost(x, y, T_delta, W_delta, tasks, workers);
-				lx[x] = max(lx[x], tmp);
+				//double tmp = getCost(x, y, T_delta, W_delta, tasks, workers);
+				lx[x] = max(lx[x], g[x][y]);
 			}
 		}
 		
 		for (int x=0; x<Wsz; ++x) {
-			fill(slack.begin(), slack.end(), INF);
+			//fill(slack.begin(), slack.end(), INF);
+			for (int y=0; y<Tsz; ++y)
+				slack[y] = INF;
 			for (;;) {
 				//fill(slack.begin(), slack.end(), INF);
-				fill(S.begin(), S.end(), false);
-				fill(T.begin(), T.end(), false);
+				// fill(S.begin(), S.end(), false);
+				// fill(T.begin(), T.end(), false);
+				memset(S, false, sizeof(S));
+				memset(T, false, sizeof(T));
 				if (dfs(x, T_delta, W_delta, tasks, workers))
 					break;
 				else
@@ -340,7 +365,7 @@ void addOneMatch(node_t& task, node_t& worker) {
 }
 
 void TGOA(ifstream& fin, int seqN) {
-	int k = sumC * 0.78;
+	int k = sumC * 0.8;
 	vector<int> W_delta, T_delta;
 	node_t node;
 	vector<node_t> tasks, workers;
@@ -468,15 +493,11 @@ void TGOA(ifstream& fin, int seqN) {
 				W_delta.clear();
 			}
 		}
-
-		//#ifdef WATCH_MEM
-		//watchSolutionOnce(getpid(), usedMemory);
-		//#endif
 	}
 
-		#ifdef WATCH_MEM
-		watchSolutionOnce(getpid(), usedMemory);
-		#endif
+	#ifdef WATCH_MEM
+	watchSolutionOnce(getpid(), usedMemory);
+	#endif
 
 	#ifdef LOCAL_DEBUG
 	int taskFlow = 0, workerFlow = 0;
