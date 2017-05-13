@@ -34,7 +34,9 @@ def runMei(execName, srcFileName, bound, logFileName):
 def testPool():
 	execNameList = [
 		"OPT",
-		"Simple",
+		"Pure",
+		"PureT",
+		"PureN",
 		"MeiT",
 		"MeiN",
 	]
@@ -44,7 +46,7 @@ def testPool():
 	timeBoundList = [30, 60, 120, 300, 600, 900]
 	numBoundList = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5]
 	sumDeg = 10**4
-	orderN = 2
+	orderN = 30
 
 	numBoundList = map(lambda x:int(x*sumDeg), numBoundList)
 	dataSetNameList = os.listdir(srcFilePath)
@@ -59,25 +61,25 @@ def testPool():
 			if not os.path.exists(logSetPath):
 				os.mkdir(logSetPath)
 
-			pool = multiprocessing.Pool(processes = 10)
-			for orderId in orderN:
+			pool = multiprocessing.Pool(processes = 15)
+			for orderId in xrange(orderN):
 				dataFileName = "order%d.txt" % (orderId)
 				dataFileName = os.path.join(dataSetPath, dataFileName)
 				logFileName = "res%d_%s.log" % (orderId, progName)
 				logFileName = os.path.join(logSetPath, logFileName)
 
 				if not progName.startswith("Mei"):
-					pool.apply_async(runProg, (execName, srcFileName, logFileName, ))
+					pool.apply_async(runProg, (execName, dataFileName, logFileName, ))
 				else:
 					boundList = []
 					if "T" in progName:
 						boundList = timeBoundList
 					elif "N" in progName:
 						boundList = numBoundList
-					for bound in boundList[:1]:
+					for bound in boundList:
 						logFileName = "res%d_%s_%s.log" % (orderId, progName, bound)
 						logFileName = os.path.join(logSetPath, logFileName)
-						pool.apply_async(runMei, (execName, srcFileName, logFileName, ))
+						pool.apply_async(runMei, (execName, dataFileName, bound, logFileName, ))
 					
 			pool.close()
 			pool.join()

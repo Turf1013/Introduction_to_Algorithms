@@ -7,7 +7,7 @@ LIBS = -lrt
 CFLAGS = --std=c++11 -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: Ext TGOA Greedy GreedyF ExtMem TGOAMem  GreedyMem OPT OPTMem Pure PureMem GreedyNew GreedyNewMem TGOA TGOANewMem TGOAF TGOAFMem GreedyFMem
+all: Ext TGOA Greedy GreedyF ExtMem TGOAMem  GreedyMem OPT OPTMem Pure PureMem GreedyNew GreedyNewMem TGOA TGOANewMem TGOAF TGOAFMem GreedyFMem PureN PureT
 Ext: monitor.h input.h Extended_Greedy_RT.cpp
 	$(CXX) $(CFLAGS) -o Ext Extended_Greedy_RT.cpp $(LIBS)
 
@@ -102,6 +102,18 @@ MeiT: monitor.h input.h Mei_Time.cpp
 MeiTMem: monitor.h input.h Mei_Time.cpp
 	$(CXX) $(CFLAGS) -o MeiTMem Mei_Time.cpp $(LIBS) -D WATCH_MEM
 
+PureN: monitor.h input.h Simple_Num.cpp
+	$(CXX) $(CFLAGS) -o PureN Simple_Num.cpp $(LIBS)
+
+PureNMem: monitor.h input.h Simple_Num.cpp
+	$(CXX) $(CFLAGS) -o PureNMem Simple_Num.cpp $(LIBS) -D WATCH_MEM
+
+PureT: monitor.h input.h Simple_Time.cpp
+	$(CXX) $(CFLAGS) -o PureT Simple_Time.cpp $(LIBS)
+
+PureTMem: monitor.h input.h Simple_Time.cpp
+	$(CXX) $(CFLAGS) -o PureTMem Simple_Time.cpp $(LIBS) -D WATCH_MEM
+
 .PHONY: clean 
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
@@ -119,3 +131,4 @@ clean:
 		-@rm dumpGraph dumpGraph.g* 2> /dev/null || true	
 		-@rm Xuan 2> /dev/null || true	
 		-@rm MeiN MeiNMem MeiT MeiTMem 2> /dev/null || true
+		-@rm PureN PureNMem PureT PureTMem 2> /dev/null || true
