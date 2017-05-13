@@ -4,59 +4,84 @@ import os
 import commands
 import multiprocessing
 
-def dumpToFile(fileName, lines):
-	with open(fileName, "w") as fout:
+def dumpToFile(logFileName, lines):
+	with open(logFileName, "w") as fout:
 		for line in lines:
-			fout.write("%s\n" % (line))
+			line = line.strip() + "\n"
+			fout.write(line)
 
 
-def runMei(execName, srcFileName, bound, logFileName):
+def runProg(execName, srcFileName, logFileName):
 	lines = []
-	cmdLine = "%s %s %s" % (execName, srcFileName, bound)
-	line = commands.getoutput(cmdLine)
+	cmdLine = "%s %s" % (execName, srcFileName)
 	print cmdLine
+	line = commands.getoutput(cmdLine)
 	print line
 	lines.append(line)
 	dumpToFile(logFileName, lines)
 
 
-def runMeiTime(execName, srcFileName, timeBound, logFileName):
-	runMei(execName, srcFileName, timeBound, logFileName)
+def runMei(execName, srcFileName, bound, logFileName):
+	lines = []
+	cmdLine = "%s %s %s" % (execName, srcFileName, bound)
+	print cmdLine
+	line = commands.getoutput(cmdLine)
+	print line
+	lines.append(line)
+	dumpToFile(logFileName, lines)
 
 
-def runMeiNum(execName, srcFileName, numBound, logFileName):
-	runMei(execName, srcFileName, numBound, logFileName)
+def testPool():
+	execNameList = [
+		"OPT",
+		"Simple",
+		"MeiT",
+		"MeiN",
+	]
+	execFilePath = "/home/server/zyx_TGOA/TmpTest/"
+	srcFilePath = "/home/server/zyx_TGOA/data"
+	logFilePath = "/home/server/zyx_TGOA/log"
+	timeBoundList = [30, 60, 120, 300, 600, 900]
+	numBoundList = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5]
+	sumDeg = 10**4
+	orderN = 2
 
+	numBoundList = map(lambda x:int(x*sumDeg), numBoundList)
+	dataSetNameList = os.listdir(srcFilePath)
+	if not os.path.exists(logFilePath):
+		os.mkdir(logFilePath)
 
-def testPool(execName, srcFileName, boundList):
-	pool = multiprocessing.Pool(processes = 4)
-	dataSetName = srcFileName[srcFileName.rindex('/')+1 : srcFileName.rindex('.')]
-	execProgName = execName[execName.rindex('/')+1:]
+	for progName in execNameList:
+		execName = os.path.join(execFilePath, progName)
+		for dataSetName in dataSetNameList:
+			dataSetPath = os.path.join(srcFilePath, dataSetName)
+			logSetPath = os.path.join(logFilePath, dataSetName)
+			if not os.path.exists(logSetPath):
+				os.mkdir(logSetPath)
 
-	for bound in boundList:
-		logFileName = "%s_%s_%s.log" % (execName, dataSetName, bound)
-		print logFileName
-		pool.apply_async(runMei, (execName, srcFileName, bound, logFileName, ))
-	pool.close()
-	pool.join()
-	del(pool)
+			pool = multiprocessing.Pool(processes = 10)
+			for orderId in orderN:
+				dataFileName = "order%d.txt" % (orderId)
+				dataFileName = os.path.join(dataSetPath, dataFileName)
+				logFileName = "res%d_%s.log" % (orderId, progName)
+				logFileName = os.path.join(logSetPath, logFileName)
 
-
-def testPool_Num(execName, srcFileName, boundList = range(500, 3001, 500)):
-	testPool(execName, srcFileName, boundList)
-
-def testPool_Time(execName, srcFileName, boundList = range(500, 2501, 500)):
-	testPool(execName, srcFileName, boundList)
+				if not progName.startswith("Mei"):
+					pool.apply_async(runProg, (execName, srcFileName, logFileName, ))
+				else:
+					boundList = []
+					if "T" in progName:
+						boundList = timeBoundList
+					elif "N" in progName:
+						boundList = numBoundList
+					for bound in boundList[:1]:
+						logFileName = "res%d_%s_%s.log" % (orderId, progName, bound)
+						logFileName = os.path.join(logSetPath, logFileName)
+						pool.apply_async(runMei, (execName, srcFileName, logFileName, ))
+					
+			pool.close()
+			pool.join()
 
 
 if __name__ == "__main__":
-	# execName = "/home/turf/Code/Introduction_to_Algorithms/Crowd_match_greedy/MeiN"
-	# srcFileName = "/home/turf/Code/Introduction_to_Algorithms/Crowd_match_greedy/order.in"
-	# testPool_Num(execName, srcFileName)
-	# execName = "/home/turf/Code/Introduction_to_Algorithms/Crowd_match_greedy/MeiNMem"
-	# testPool_Num(execName, srcFileName)
-	execName = "/home/turf/Code/Introduction_to_Algorithms/Crowd_match_greedy/MeiT"
-	srcFileName = "/home/turf/Code/Introduction_to_Algorithms/Crowd_match_greedy/order.in"
-	# testPool_Time(execName, srcFileName)
-	execName = "/home/turf/Code/Introduction_to_Algorithms/Crowd_match_greedy/MeiTMem"
-	testPool_Time(execName, srcFileName)
+	testPool()
