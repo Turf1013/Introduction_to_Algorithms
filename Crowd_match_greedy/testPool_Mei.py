@@ -46,7 +46,7 @@ def testPool():
 	timeBoundList = [30, 60, 120, 300, 600, 900]
 	numBoundList = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5]
 	sumDeg = 10**4
-	orderN = 30
+	orderN = 100
 
 	numBoundList = map(lambda x:int(x*sumDeg), numBoundList)
 	dataSetNameList = os.listdir(srcFilePath)
@@ -61,7 +61,7 @@ def testPool():
 			if not os.path.exists(logSetPath):
 				os.mkdir(logSetPath)
 
-			pool = multiprocessing.Pool(processes = 15)
+			pool = multiprocessing.Pool(processes = 20)
 			for orderId in xrange(orderN):
 				dataFileName = "order%d.txt" % (orderId)
 				dataFileName = os.path.join(dataSetPath, dataFileName)
