@@ -87,7 +87,7 @@ void init_network() {
 	#endif
 	for (int i=0; i<workerN; ++i) {
 		for (int j=0; j<taskN; ++j) {
-			if (judgeTime2(workers[i], tasks[j])) {
+			if (judgeTime1(workers[i], tasks[j])) {
 				addEdge(i, j+workerN, tasks[j].cap);
 				#ifdef LOCAL_DEBUG
 				workerVisit[i] = taskVisit[j] = true;
@@ -273,7 +273,7 @@ int solve() {
 		}
 		while (i < itemN) {
 			scanf("%d %d %d", &typeId, &begTime, &gridId);
-			if (begTime > preBegTime) {
+			if (begTime > preBegTime+timeBound) {
 				++i;
 				break;
 			}
@@ -287,25 +287,10 @@ int solve() {
 		}
 
 		// calculate this network
-		vector<worker_t> workerTmp = workers;
-		vector<task_t> taskTmp = tasks;
-		const int wsz = workerTmp.size() / timeBound;
-		const int tsz = taskTmp.size() / timeBound;
-		for (int i=0; i<timeBound; ++i) {
-			workers.clear();
-			tasks.clear();
-			if (i == timeBound-1) {
-				workers.insert(workers.begin(), workerTmp.begin()+i*wsz, workerTmp.end());
-				tasks.insert(tasks.begin(), taskTmp.begin()+i*tsz, taskTmp.end());
-			} else {
-				workers.insert(workers.begin(), workerTmp.begin()+i*wsz, workerTmp.begin()+(i+1)*wsz);
-				tasks.insert(tasks.begin(), taskTmp.begin()+i*tsz, taskTmp.begin()+(i+1)*tsz);
-			}
-			printf("%d %d\n", workers.size(), tasks.size());
-			init_network();
-			tmpFlow = Dinic();
-			maxFlow += tmpFlow;
-		}
+		init_network();
+		tmpFlow = Dinic();
+		maxFlow += tmpFlow;
+
 		#ifdef LOCAL_DEBUG
 		printf("%d: workerN = %d, taskN = %d, E.size() = %d, tmpFlow = %d\n", preBegTime, workers.size(), tasks.size(), E.size(), tmpFlow);
 		workerCnt -= workers.size();
@@ -342,6 +327,7 @@ int main(int argc, char **argv) {
 		sscanf(argv[2], "%d", &timeBound);
 	else
 		timeBound = 1;
+	timeBound = max(0, timeBound-1);
 	if (argc > 3)
 		freopen(argv[3], "w", stdout);
 

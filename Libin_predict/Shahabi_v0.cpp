@@ -9,7 +9,7 @@ using namespace std;
 #include "input.h"
 #include "output.h"
 
-//#define LOCAL_DEBUG
+#define LOCAL_DEBUG
 
 struct worker_t {
 	int gridId;
@@ -47,7 +47,6 @@ int workerN, taskN;
 double dw, dr, vw;
 int slotN, gridLength, gridWidth;
 int st, ed;
-int timeBound;
 #ifdef WATCH_MEM
 int usedMemory = 0;
 #endif
@@ -247,7 +246,6 @@ void reSort(const char *srcFileName) {
 }
 
 int solve() {
-	//const int timeBound = 3;
 	scanf("%d %d %lf %lf %lf %d %d %d", &workerN, &taskN, &dw, &dr, &vw, &slotN, &gridLength, &gridWidth);
 	const int itemN = workerN + taskN;
 	int typeId, begTime, gridId;
@@ -273,7 +271,7 @@ int solve() {
 		}
 		while (i < itemN) {
 			scanf("%d %d %d", &typeId, &begTime, &gridId);
-			if (begTime > preBegTime) {
+			if (begTime != preBegTime) {
 				++i;
 				break;
 			}
@@ -287,25 +285,9 @@ int solve() {
 		}
 
 		// calculate this network
-		vector<worker_t> workerTmp = workers;
-		vector<task_t> taskTmp = tasks;
-		const int wsz = workerTmp.size() / timeBound;
-		const int tsz = taskTmp.size() / timeBound;
-		for (int i=0; i<timeBound; ++i) {
-			workers.clear();
-			tasks.clear();
-			if (i == timeBound-1) {
-				workers.insert(workers.begin(), workerTmp.begin()+i*wsz, workerTmp.end());
-				tasks.insert(tasks.begin(), taskTmp.begin()+i*tsz, taskTmp.end());
-			} else {
-				workers.insert(workers.begin(), workerTmp.begin()+i*wsz, workerTmp.begin()+(i+1)*wsz);
-				tasks.insert(tasks.begin(), taskTmp.begin()+i*tsz, taskTmp.begin()+(i+1)*tsz);
-			}
-			printf("%d %d\n", workers.size(), tasks.size());
-			init_network();
-			tmpFlow = Dinic();
-			maxFlow += tmpFlow;
-		}
+		init_network();
+		tmpFlow = Dinic();
+		maxFlow += tmpFlow;
 		#ifdef LOCAL_DEBUG
 		printf("%d: workerN = %d, taskN = %d, E.size() = %d, tmpFlow = %d\n", preBegTime, workers.size(), tasks.size(), E.size(), tmpFlow);
 		workerCnt -= workers.size();
@@ -339,11 +321,7 @@ int main(int argc, char **argv) {
 	if (argc > 1)
 		freopen(argv[1], "r", stdin);
 	if (argc > 2)
-		sscanf(argv[2], "%d", &timeBound);
-	else
-		timeBound = 1;
-	if (argc > 3)
-		freopen(argv[3], "w", stdout);
+		freopen(argv[2], "w", stdout);
 
 	reSort(argv[1]);
 

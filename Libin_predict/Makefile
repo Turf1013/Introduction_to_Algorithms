@@ -71,6 +71,12 @@ Lip: monitor.h Libin_Polar.cpp
 Edge: input.h global.h calcEdge.cpp
 	$(CXX) $(CFLAGS) -o Edge calcEdge.cpp $(LIBS)
 
+OPreTo: monitor.h OPreTO.cpp
+	$(CXX) $(CFLAGS) -o OPreTo OPreTO.cpp $(LIBS)
+
+OPreToMem: monitor.h OPreTO.cpp
+	$(CXX) $(CFLAGS) -o OPreToMem OPreTO.cpp $(LIBS) -D WATCH_MEM
+
 .PHONY: clean 
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true	
@@ -78,4 +84,5 @@ clean:
 		-@rm Simple SimpleMem 2> /dev/null || true	
 		-@rm OPT OPTMem 2> /dev/null || true
 		-@rm Polar PolarMem 2> /dev/null || true
-		-@rm Lig 2> /dev/null || true
+		-@rm Lig Lip 2> /dev/null || true
+		-@rm OPreTo OPreToMem 2> /dev/null || true

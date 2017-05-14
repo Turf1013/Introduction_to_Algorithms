@@ -303,5 +303,5 @@ def plotResult_ByBound(srcFilePath, desFileFarPath):
 if __name__ == "__main__":
 	srcFilePath = "/home/turf/dataSet/dataSet_v0513/log"
 	desFilePath = "/home/turf/dataSet/dataSet_v0513/result"
-	plotResult(srcFilePath, desFilePath)
-	# plotResult_ByBound(srcFilePath, desFilePath)
+	# plotResult(srcFilePath, desFilePath)
+	plotResult_ByBound(srcFilePath, desFilePath)
