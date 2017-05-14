@@ -30,6 +30,14 @@ def runMei(execName, srcFileName, bound, logFileName):
 	lines.append(line)
 	dumpToFile(logFileName, lines)
 
+def runPureX(execName, srcFileName, bound, logFileName):
+	lines = []
+	cmdLine = "%s %s %s" % (execName, srcFileName, bound)
+	print cmdLine
+	line = commands.getoutput(cmdLine)
+	print line
+	lines.append(line)
+	dumpToFile(logFileName, lines)
 
 def testPool():
 	execNameList = [
@@ -68,9 +76,7 @@ def testPool():
 				logFileName = "res%d_%s.log" % (orderId, progName)
 				logFileName = os.path.join(logSetPath, logFileName)
 
-				if not progName.startswith("Mei"):
-					pool.apply_async(runProg, (execName, dataFileName, logFileName, ))
-				else:
+				if progName.startswith("Mei"):
 					boundList = []
 					if "T" in progName:
 						boundList = timeBoundList
@@ -80,6 +86,18 @@ def testPool():
 						logFileName = "res%d_%s_%s.log" % (orderId, progName, bound)
 						logFileName = os.path.join(logSetPath, logFileName)
 						pool.apply_async(runMei, (execName, dataFileName, bound, logFileName, ))
+				elif progName.startswith("Pure") and len(progName)>4:
+					boundList = []
+					if "T" in progName:
+						boundList = timeBoundList
+					elif "N" in progName:
+						boundList = numBoundList
+					for bound in boundList:
+						logFileName = "res%d_%s_%s.log" % (orderId, progName, bound)
+						logFileName = os.path.join(logSetPath, logFileName)
+						pool.apply_async(runPureX, (execName, dataFileName, bound, logFileName, ))
+				else:
+					pool.apply_async(runProg, (execName, dataFileName, logFileName, ))
 					
 			pool.close()
 			pool.join()

@@ -73,28 +73,6 @@ def calcMeiDict(resDict):
 	return retMinDict, retAvgDict
 
 
-def calcPureDict(resDict):
-	retMinDict = dict()
-	# retAvgDict = dict()
-	tmpDict = dict()
-	for fileName, resLine in resDict.iteritems():
-		keyName = fileName[:fileName.rindex('_')] + ".log"
-		if keyName not in tmpDict:
-			tmpDict[keyName] = list()
-		itemList = resLine.strip().split()
-		utility = float(itemList[1])
-		tmpDict[keyName].append(utility)
-
-	for keyName, tmpList in tmpDict.iteritems():
-		mn = min(tmpList)
-		mnFileName = keyName[:keyName.index('.')] + ".log"
-		retMinDict[mnFileName] = mn
-		# avg = sum(tmpList) * 1.0 / len(tmpList)
-		# avgFileName = keyName[:keyName.index('.')] + ".log"
-		# retAvgDict[avgFileName] = avg
-	return retMinDict
-
-
 def calcOtherDict(resDict):
 	retDict = dict()
 	for fileName, resLine in resDict.iteritems():
@@ -195,9 +173,6 @@ def plotDataSet(srcFilePath, desFilePath):
 			mnDict, avgDict = calcMeiDict(tmpDict)
 			resultDict[execName+"_avg"] = avgDict
 			resultDict[execName+"_min"] = mnDict
-		elif execName.startswith("Pure") and len(execName)>4:
-			mnDict = calcPureDict(tmpDict)
-			resultDict[execName] = mnDict
 		else:
 			tmpDict = calcOtherDict(tmpDict)
 			resultDict[execName] = tmpDict
@@ -303,5 +278,5 @@ def plotResult_ByBound(srcFilePath, desFileFarPath):
 if __name__ == "__main__":
 	srcFilePath = "/home/turf/dataSet/dataSet_v0513/log"
 	desFilePath = "/home/turf/dataSet/dataSet_v0513/result"
-	plotResult(srcFilePath, desFilePath)
-	# plotResult_ByBound(srcFilePath, desFilePath)
+	# plotResult(srcFilePath, desFilePath)
+	plotResult_ByBound(srcFilePath, desFilePath)
