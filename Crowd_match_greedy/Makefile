@@ -102,6 +102,18 @@ MeiT: monitor.h input.h Mei_Time.cpp
 MeiTMem: monitor.h input.h Mei_Time.cpp
 	$(CXX) $(CFLAGS) -o MeiTMem Mei_Time.cpp $(LIBS) -D WATCH_MEM
 
+ShaN: monitor.h input.h Sha_Num.cpp
+	$(CXX) $(CFLAGS) -o ShaN Sha_Num.cpp $(LIBS)
+
+ShaNMem: monitor.h input.h Sha_Num.cpp
+	$(CXX) $(CFLAGS) -o ShaNMem Sha_Num.cpp $(LIBS) -D WATCH_MEM
+
+ShaT: monitor.h input.h Sha_Time.cpp
+	$(CXX) $(CFLAGS) -o ShaT Sha_Time.cpp $(LIBS)
+
+ShaTMem: monitor.h input.h Mei_Time.cpp
+	$(CXX) $(CFLAGS) -o ShaTMem Sha_Time.cpp $(LIBS) -D WATCH_MEM
+
 PureN: monitor.h input.h Simple_Num.cpp
 	$(CXX) $(CFLAGS) -o PureN Simple_Num.cpp $(LIBS)
 
