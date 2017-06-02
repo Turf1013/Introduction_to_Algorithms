@@ -17,6 +17,8 @@ greedy: greedy_v0.cpp monitor.h
 genD: genData.cpp
 	$(CXX) $(CFLAGS) -o genD genData.cpp $(LIBS)
 
+tshare: input.h output.h monitor.h TShare.cpp
+	$(CXX) $(CFLAGS) -o tshare TShare.cpp $(LIBS)
 
 .PHONY: clean test
 clean:
@@ -24,5 +26,6 @@ clean:
 		-@rm greedy greedy.g* 2> /dev/null || true	
 		-@rm base base.g* 2> /dev/null || true	
 		-@rm genD genD.g* 2> /dev/null || true	
+		-@rm tshare tshare.g* 2> /dev/null || true	
 
 

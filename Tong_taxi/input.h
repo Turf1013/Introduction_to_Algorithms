@@ -6,14 +6,14 @@ using namespace std;
 
 void readInput(const string& fileName, int& R, int& D, int& M, int& C, int& N, 
 			vector<int>& vRest, vector<int>& vDist, vector<int>& vOrder);
-void readInput(const ifstream& fin, int& R, int& D, int& M, int& C, int& N, 
+void readInput(ifstream& fin, int& R, int& D, int& M, int& C, int& N, 
 			vector<int>& vRest, vector<int>& vDist, vector<int>& vOrder);
 void readInput(int& R, int& D, int& M, int& C, int& N, 
 			vector<int>& vRest, vector<int>& vDist, vector<int>& vOrder);
 
 void readInput(const string& fileName, int& R, int& D, int& M, int& C, int& N, 
 			vector<double>& vRest, vector<double>& vDist, vector<int>& vOrder);
-void readInput(const ifstream& fin, int& R, int& D, int& M, int& C, int& N, 
+void readInput(ifstream& fin, int& R, int& D, int& M, int& C, int& N, 
 			vector<double>& vRest, vector<double>& vDist, vector<int>& vOrder);
 void readInput(int& R, int& D, int& M, int& C, int& N, 
 			vector<double>& vRest, vector<double>& vDist, vector<int>& vOrder);
@@ -48,7 +48,7 @@ void readInput(int& R, int& D, int& M, int& C, int& N,
 	}	
 }
 
-void readInput(const ifstream& fin, int& R, int& D, int& M, int& C, int& N, 
+void readInput(ifstream& fin, int& R, int& D, int& M, int& C, int& N, 
 			vector<int>& vRest, vector<int>& vDist, vector<int>& vOrder) {
 
 	vRest.clear();
@@ -88,13 +88,13 @@ void readInput(int& R, int& D, int& M, int& C, int& N,
 
 	double x, y;
 	for (int i=0; i<R; ++i) {
-		scanf("%d %d", &x, &y);
+		scanf("%lf %lf", &x, &y);
 		vRest.push_back(x);
 		vRest.push_back(y);
 	}
 
 	for (int i=0; i<D; ++i) {
-		scanf("%d %d", &x, &y);
+		scanf("%lf %lf", &x, &y);
 		vDist.push_back(x);
 		vDist.push_back(y);
 	}
@@ -108,7 +108,7 @@ void readInput(int& R, int& D, int& M, int& C, int& N,
 	}	
 }
 
-void readInput(const ifstream& fin, int& R, int& D, int& M, int& C, int& N, 
+void readInput(ifstream& fin, int& R, int& D, int& M, int& C, int& N, 
 			vector<double>& vRest, vector<double>& vDist, vector<int>& vOrder) {
 
 	vRest.clear();

@@ -9,7 +9,7 @@ struct move_t {
 	double arrive, leave;
 	vector<int> bucket;
 
-	void print() {
+	void print() const {
 		int nBucket = bucket.size();
 		printf("%.4lf %.4lf %.4lf %.4lf %d", x, y, arrive, leave, nBucket);
 		for (int i=0; i<nBucket; ++i) {
