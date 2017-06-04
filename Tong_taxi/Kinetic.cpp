@@ -1,8 +1,16 @@
 /**
 	\author: 	Trasier
-	\date: 		2017.6.3
+	\date: 		2017.6.4
 	\source: 	VLDB14 Large Scale Real-time Ridesharing with Service Guarantee on Road Networks
-	\note: 		Branch and Bound
+	\note: 		Kinetic Tree
+			The main difference between Kinetic-Tree and Branch-and-Bound is
+			1) there are always multiple routes in the tree, while driver still chooses the best route;
+			2) As soon as the driver reaches some key locations, the tree needs to be pruned since some routes are out of date.
+			In summary, both `taxiScheduling` and `updateMove` need to be coded.
+	\readme:	1) During the process of insertNode, supposed that there is no valid route at last, 
+					the original route is still deleted due to `If insert failed, delete(l,c)`.
+					But driver should stick to his original route.
+					My replacement is rebuild a whole tree, if there is some valid route, then use the new one to replace the old.
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -10,6 +18,7 @@ using namespace std;
 #include "input.h"
 #include "output.h"
 #include "monitor.h"
+#include "treeNode.h"
 
 struct position_t {
 	double x, y;
@@ -41,7 +50,13 @@ struct node_t {
 
 	node_t(int placeId=0, int orderId=0):
 		placeId(placeId), orderId(orderId) {}
+
+	bool operator==(const node_t& oth) const {
+		return placeId==oth.placeId && orderId==oth.orderId;
+	}
 };
+
+typedef treeNode_t<node_t> treeNode;
 
 struct driver_t {
 	position_t pos;
@@ -92,18 +107,20 @@ struct rider_t {
 		begTime(begTime), endTime(endTime) {}
 };
 
+
 int graphLength, graphWidth;
 int gridLength, gridWidth;
+const double waitTime = 5.0;
 const double inf = 1e20;
 vector<position_t> vRest, vDist;
 vector<order_t> vOrder;
 vector<rider_t> riders;
 vector<driver_t> drivers;
+vector<treeNode*> kineticRoots;
 vector<vector<move_t> > moves;
 vector<bool> visit;
 vector<vector<double> > R2D, R2R, D2D;
 int R, D, M, C, N;
-
 
 inline double Length(const position_t& pa, const position_t& pb) {
 	return sqrt(1.0*(pa.x-pb.y)*(pa.x-pb.x) + 1.0*(pa.y-pb.y)*(pa.y-pb.y));
@@ -186,8 +203,11 @@ void initRider() {
 
 void initDriver() {
 	drivers.clear();
+	kineticRoots.clear();
 	for (int i=0; i<M; ++i) {
 		drivers.push_back(driver_t());
+		treeNode* rt = new treeNode(node_t(-1, -1));
+		kineticRoots.push_back(rt);
 	}
 }
 
@@ -237,8 +257,6 @@ void init() {
 	initGrid();
 }
 
-const double waitTime = 5;
-
 bool checkConstraint(double curTime, const node_t& nd) {
 	const int placeId = nd.placeId;
 	const int orderId = nd.orderId;
@@ -261,8 +279,9 @@ bool checkConstraint(double curTime, const node_t& nd) {
 
 void updateMove(const int driverId) {
 	driver_t& driver = drivers[driverId];
-	const int placeId = driver.route.begin()->placeId;
-	const int orderId = driver.route.begin()->orderId;
+	node_t node = *driver.route.begin();
+	const int placeId = node.placeId;
+	const int orderId = node.orderId;
 	position_t& nextPos = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
 	double t = Length(driver.pos, nextPos);
 	double driverTid = (placeId < R) ? max(driver.curTime+t, vOrder[orderId].tid+waitTime) : (driver.curTime + t);
@@ -289,6 +308,27 @@ void updateMove(const int driverId) {
 	// update the driver: position, time
 	driver.pos = nextPos;
 	driver.curTime = driverTid;
+
+	// update the kinetic tree
+	treeNode *rt = kineticRoots[driverId], *nrt = NULL;
+	const int childSz = rt->size();
+	
+	for (int i=0; i<childSz; ++i) {
+		if (rt->children[i]->val == node) {
+			#ifdef LOCAL_DEBUG
+			assert(nrt == NULL);
+			#endif
+			nrt = rt->children[i];
+		} else {
+			deleteTree(rt->children[i]);
+		}
+	}
+	#ifdef LOCAL_DEBUG
+	assert(nrt != NULL);
+	#endif
+
+	rt->children = nrt->children;
+	delete nrt;
 }
 
 void updateIndex(const int driverId, const double orderTid) {
@@ -351,124 +391,122 @@ vector<int> taxiSearching(const int orderId) {
 	return ret;
 }
 
-vector<node_t> bestRoute;
-vector<double> minCost;
-double bestVal;
-int curOrderId, curDriverId;
+vector<node_t> directAssign(const int driverId, const int orderId) {
+	driver_t& driver = drivers[driverId];
+	order_t& order = vOrder[orderId];
+	vector<node_t> route;
 
-void init_minCost(vector<node_t>& src) {
-	const int sz = src.size();
+	route.push_back(node_t(order.sid, orderId));
+	route.push_back(node_t(order.eid+R, orderId));
 
-	minCost.clear();
-	for (int i=0; i<sz; ++i) {
-		double mn = inf, tmp;
-		position_t& ap = (src[i].placeId < R) ? vRest[src[i].placeId] : vDist[src[i].placeId-R];
-		for (int j=0; j<sz; ++j) {
-			if (i == j) continue;
-			position_t& bp = (src[j].placeId < R) ? vRest[src[i].placeId] : vDist[src[j].placeId-R];
-			tmp = Length(ap, bp);
-			mn = min(mn, tmp);
-		}
-		minCost.push_back(mn);
-	}
-}
-
-void updateRoute(vector<node_t>& newRoute) {
-	driver_t& driver = drivers[curDriverId];
-	order_t& order = vOrder[curOrderId];
-	double curTime = order.tid;
 	position_t curLoc = driver.pos, nextLoc;
-	const int sz = newRoute.size();
-	double val = inf;
-	int cap = 0;
+	double curTime = order.tid;
+	const int sz = route.size();
 
 	for (int i=0; i<sz; ++i) {
-		const int placeId = newRoute[i].placeId;
-		const int orderId = newRoute[i].orderId;
-		nextLoc = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
+		const int placeId = route[i].placeId;
+		const int orderId = route[i].orderId;
+		nextLoc = (placeId<R) ? vRest[placeId] : vDist[placeId-R];
 		curTime += Length(curLoc, nextLoc);
-		if (placeId<R && curTime<vOrder[orderId].tid)
-			curTime = vOrder[orderId].tid;
+		if (placeId < R)
+			curTime = max(curTime, (double)vOrder[orderId].tid);
 
-		if (placeId < R) {
-			riders[orderId].begTime = curTime;
-			++cap;
-		} else {
-			riders[orderId].endTime = curTime;
-			val = max(val, riders[orderId].endTime-riders[orderId].begTime);
-			--cap;
-		}
-		if (cap > C) return ;
+		if (!checkConstraint(curTime, route[i]))
+			return vector<node_t>();
 
 		curLoc = nextLoc;
 	}
 
-	if (val < bestVal) {
-		bestVal = val;
-		bestRoute = newRoute;
-	}
+	return route;
 }
 
-void dfs(vector<node_t>& src, vector<node_t>& des, int idx, int n, double curTime, double curBound) {
-	if (n == 0) {
-		updateRoute(des);
-		return ;
-	}
+vector<treeNode*> bestRoute, curRoute;
+double bestVal;
+int curOrderId, curDriverId;
+bool validRoute;
 
-	double newCurTime, newCurBound;
-	position_t curLoc, nextLoc;
+bool copyNodes(treeNode* rt, const vector<treeNode*>& src, double detour, int dep);
+bool insertNode(treeNode*& rt, const vector<node_t>& src, double detour, int dep);
+bool feasible(treeNode* rt, const node_t& node, double detour);
+void findBestSchedule(treeNode* rt, int dep);
 
-	if (idx == 0) {
-		curLoc = drivers[curDriverId].pos;
-	} else {
-		const int placeId = des[idx].placeId;
-		if (placeId < R)
-			curLoc = vRest[placeId];
-		else
-			curLoc = vRest[placeId-R];
-	}
+void updateRoute() {
+	#ifdef LOCAL_DEBUG
+	assert(bestRoute.size() == curRoute.size());
+	#endif
 
-	for (int i=0; i<n; ++i) {
-		des[idx] = src[i];
-
-		const int placeId = des[idx].placeId;
-		const int orderId = des[idx].orderId;
+	driver_t& driver = drivers[curDriverId];
+	order_t& order = vOrder[curOrderId];
+	position_t curLoc = driver.pos, nextLoc;
+	double val = inf;
+	const int sz = curRoute.size();
+	double curTime = order.tid;
+	
+	for (int i=0; i<sz; ++i) {
+		const int placeId = curRoute[i]->val.placeId;
+		const int orderId = curRoute[i]->val.orderId;
 		nextLoc = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
-		newCurTime = curTime + Length(curLoc, nextLoc);
-		if (placeId<R && vOrder[orderId].tid>newCurTime)
-			newCurTime = vOrder[orderId].tid;
+		curTime += Length(curLoc, nextLoc);
+		if (placeId < R) {
+			curTime = max(curTime, (double)vOrder[orderId].tid);
+			riders[orderId].begTime = curTime;
+		} else {
+			riders[orderId].endTime = curTime;
+			val = max(val, riders[orderId].endTime-riders[orderId].begTime);
+		}
+	}
 
-		if (!checkConstraint(newCurTime, des[idx]) || newCurTime>=bestVal)
-			continue;
-
-		newCurBound = curBound - curTime - minCost[i] + newCurTime;
-		if (newCurBound >= bestVal) continue;
-
-		swap(minCost[i], minCost[n-1]);
-		swap(src[i], src[n-1]);
-		dfs(src, des, idx+1, n-1, newCurTime, newCurBound);
-		swap(src[i], src[n-1]);
-		swap(minCost[i], minCost[n-1]);
+	if (val < bestVal) {
+		bestVal = val;
+		for (int i=0; i<sz; ++i)
+			bestRoute[i] = curRoute[i];
 	}
 }
 
 vector<node_t> scheduling(const int driverId, const int orderId) {
 	driver_t& driver = drivers[driverId];
 	order_t& order = vOrder[orderId];
-	vector<node_t> src, des;
+	vector<node_t>& route = driver.route;
+	treeNode* root = kineticRoots[driverId];
 	
-	src = driver.route;
-	src.push_back(node_t(order.sid, orderId));
-	src.push_back(node_t(order.eid+R, orderId));
-	des = src;
 	bestVal = inf;
-	init_minCost(src);
 	curDriverId = driverId;
 	curOrderId = orderId;
-	double curBound = accumulate(minCost.begin(), minCost.end(), (double)order.tid);
-	dfs(src, des, 0, src.size(), order.tid, curBound);
+	validRoute = false;
 
-	return bestRoute;
+	bestRoute.clear();
+	curRoute.clear();
+	bestRoute.resize(route.size()+2, NULL);
+	curRoute.resize(route.size()+2, NULL);
+
+	if (root == NULL) {
+		// if there is no valid route for the driver, then we can just assign the task immediately.
+		return directAssign(driverId, orderId);;
+	}
+	treeNode* newTreeRoot;
+	copyTree(newTreeRoot, root);
+	// add fake head 
+	// treeNode* fakeHead;
+	// fakeHead = new treeNode(node_t(-1, -1));
+	// fakeHead->push_back(newTreeRoot);
+	vector<node_t> pairs;
+
+	pairs.push_back(node_t(order.sid, orderId));
+	pairs.push_back(node_t(order.eid+R, orderId));
+	insertNode(newTreeRoot, pairs, order.tid, 0);
+	if (newTreeRoot == NULL) {
+		return vector<node_t>();
+	} else {
+		deleteTree(root);
+		kineticRoots[driverId] = newTreeRoot;
+		findBestSchedule(newTreeRoot, -1);
+	}
+
+	vector<node_t> ret;
+	for (int i=0; i<bestRoute.size(); ++i)
+		ret.push_back(bestRoute[i]->val);
+
+	return ret;
 }
 
 void responseDriver(const int driverId, const int orderId, vector<node_t>& newRoute) {
@@ -477,7 +515,7 @@ void responseDriver(const int driverId, const int orderId, vector<node_t>& newRo
 	driver.route = newRoute;
 }
 
-void branchAndBound() {
+void Kinetic() {
 	for (int orderId=0; orderId<M; ++orderId) {
 		for (int driverId=0; driverId<N; ++driverId) {
 			updateIndex(driverId, vOrder[orderId].tid);
@@ -511,7 +549,7 @@ void printAns() {
 void solve() {
 	init();
 
-	branchAndBound();
+	Kinetic();
 	printAns();
 }
 
@@ -551,4 +589,128 @@ int main(int argc, char **argv) {
 	solve();
 
 	return 0;
+}
+
+
+double calcTime(const treeNode* rt, const node_t& node, double curTime) {
+	#ifdef LOCAL_DEBUG
+	assert(rt != NULL);
+	#endif
+
+	const node_t& fnode = rt->val;
+	position_t curLoc, nextLoc;
+
+	if (fnode.orderId < 0) {
+		curLoc = drivers[curDriverId].pos;
+	} else {
+		curLoc = (fnode.placeId<R) ? vRest[fnode.placeId] : vDist[fnode.placeId-R];
+	}
+	nextLoc = (node.placeId<R) ? vRest[node.placeId] : vDist[node.placeId-R];
+
+	double newCurTime = curTime + Length(curLoc, nextLoc);
+	if (node.placeId < R)
+		newCurTime = max(newCurTime, (double)vOrder[node.orderId].tid);
+
+	return newCurTime;
+}
+
+bool insertNode(treeNode*& rt, const vector<node_t>& src, double curTime, int dep) {
+	if (feasible(rt, src[0], curTime)) {
+		int fail = 0;
+		treeNode* nd = new treeNode(src[0]);
+		double newCurTime;
+		{// insert the children of rt into nd
+			newCurTime = calcTime(rt, nd->val, curTime);
+			if (!copyNodes(nd, rt->children, newCurTime, dep+1))
+				fail = 1;
+		}
+		{// insert the dropoff into the subtree of nd
+			if (fail==0 && src.size()>1) {
+				vector<node_t> vtmp(1, src[1]);
+				if (!insertNode(nd, vtmp, newCurTime, dep+1))
+					fail = 1;
+			}
+			// if (fail == 0)
+			// 	validRoute = true;
+		}
+
+		bool flag = false;
+		{// insert the (pickup,dropoff) into the subtree of rt
+			const int sz = rt->size();
+			for (int i=sz-1; i>=0; --i) {
+				treeNode* nrt = rt->children[i];
+				newCurTime = calcTime(rt, nrt->val, curTime);
+				if (insertNode(nrt, src, newCurTime, dep+1)) {
+					flag = true;
+				} else {
+					deleteTree(nrt);
+					rt->children[i] = *(rt->children.rbegin());
+					rt->children.pop_back();
+				}
+			}
+			if (flag) {
+				fail = 0;
+			}
+			// if (flag)
+			// 	validRoute = true;
+		}
+
+		if (fail == 0) {
+			rt->children.push_back(nd);
+		}
+		if (rt->isEmpty()) {
+			deleteTree(rt);
+			rt = NULL;
+			return false;
+		} else {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool copyNodes(treeNode* rt, const vector<treeNode*>& src, double curTime, int dep) {
+	if (src.empty()) return true;
+
+	const int sz = src.size();
+	bool flag = false;
+
+	for (int i=0; i<sz; ++i) {
+		treeNode* srcNode = src[i];
+		if (!feasible(rt, srcNode->val, curTime))
+			continue;
+
+		treeNode *child = new treeNode(srcNode->val);
+		double newCurTime = calcTime(rt, srcNode->val, curTime);
+		if (copyNodes(child, srcNode->children, newCurTime, dep+1)) {
+			flag = true;
+			rt->push_back(child);
+		}
+	}
+
+	if (!flag) {
+		deleteTree(rt);
+		return false;
+	} else {
+		return true;	
+	}
+}
+
+bool feasible(treeNode* rt, const node_t& node, double curTime) {
+	double newCurTime = calcTime(rt, node, curTime);
+
+	return checkConstraint(newCurTime, node);
+}
+
+void findBestSchedule(treeNode* rt, int dep) {
+	if (dep >= 0)
+		curRoute[dep] = rt;
+
+	const int sz = rt->size();
+	for (int i=0; i<sz; ++i) {
+		findBestSchedule(rt->children[i], dep+1);
+	}
+	if (rt->isEmpty())
+		updateRoute();
 }
