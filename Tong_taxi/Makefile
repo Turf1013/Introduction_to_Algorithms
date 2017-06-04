@@ -20,12 +20,15 @@ genD: genData.cpp
 tshare: input.h output.h monitor.h TShare.cpp
 	$(CXX) $(CFLAGS) -o tshare TShare.cpp $(LIBS)
 
-.PHONY: clean test
+bb: input.h output.h monitor.h BB.cpp
+	$(CXX) $(CFLAGS) -o bb BB.cpp $(LIBS)
+
+.PHONY: clean 
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm greedy greedy.g* 2> /dev/null || true	
 		-@rm base base.g* 2> /dev/null || true	
 		-@rm genD genD.g* 2> /dev/null || true	
 		-@rm tshare tshare.g* 2> /dev/null || true	
-
+		-@rm bb bb.g* 2> /dev/null || true
 

@@ -114,7 +114,6 @@ vector<driver_t> drivers;
 vector<vector<move_t> > moves;
 vector<bool> visit;
 vector<vector<double> > R2D, R2R, D2D;
-vector<grid_t> grids;
 int R, D, M, C, N;
 
 vector<int> driverPosIds;
@@ -268,6 +267,26 @@ query_t orderToQuery(const order_t& order) {
 	return ret;
 }
 
+bool checkConstraint(double curTime, const node_t& nd) {
+	const int placeId = nd.placeId;
+	const int orderId = nd.orderId;
+
+	double l, e;
+
+	if (placeId < R) {// pickup 
+		e = vOrder[orderId].tid;
+		l = e + waitTime;
+	} else {// dropoff
+		e = vOrder[orderId].tid;
+		l = inf;
+	}
+
+	if (e<=curTime && curTime<=l)
+		return true;
+	else
+		return false;
+}
+
 void updateMove(const int driverId) {
 	driver_t& driver = drivers[driverId];
 	const int placeId = driver.route.begin()->placeId;
@@ -318,11 +337,11 @@ void updateIndex(const int driverId, const double orderTid) {
 }
 
 double calcUnfinishedCost(const int driverId) {
-	driver_t& driver = driverId;
+	driver_t& driver = drivers[driverId];
 	vector<node_t>& route = driver.route;
 	const int sz = route.size();
 	position_t curLoc = driver.pos, nextLoc;
-	double curTime = driver.curTime, tmp;
+	double curTime = driver.curTime;
 
 	for (int i=0; i<sz; ++i) {
 		const int placeId = route[i].placeId;
@@ -345,7 +364,7 @@ double calcUnfinishedCost(const int driverId) {
 	return curTime;
 }
 
-vector<int> taxiSearching() {
+vector<int> taxiSearching(const int orderId) {
 	double bestCost = inf, cost;
 	vector<int> ret(1, -1);
 
@@ -393,7 +412,7 @@ void updateRoute(vector<node_t>& newRoute) {
 
 	for (int i=0; i<sz; ++i) {
 		const int placeId = newRoute[i].placeId;
-		const int orderId = newRoute[i].routeId;
+		const int orderId = newRoute[i].orderId;
 		nextLoc = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
 		curTime += Length(curLoc, nextLoc);
 		if (placeId<R && curTime<vOrder[orderId].tid)
@@ -404,7 +423,7 @@ void updateRoute(vector<node_t>& newRoute) {
 			++cap;
 		} else {
 			riders[orderId].endTime = curTime;
-			inf = min(inf, riders[orderId].endTime-riders[orderId].begTime);
+			val = min(val, riders[orderId].endTime-riders[orderId].begTime);
 			--cap;
 		}
 		if (cap > C) return ;
@@ -418,13 +437,47 @@ void updateRoute(vector<node_t>& newRoute) {
 	}
 }
 
-void dfs(vector<node_t>& src, vector<node_t>& des, int idx, int n, double curTime) {
+void dfs(vector<node_t>& src, vector<node_t>& des, int idx, int n, double curTime, double curBound) {
 	if (n == 0) {
 		updateRoute(des);
 		return ;
 	}
 
+	double newCurTime, newCurBound;
+	position_t curLoc, nextLoc;
 
+	if (idx == 0) {
+		curLoc = drivers[curDriverId].pos;
+	} else {
+		const int placeId = des[idx].placeId;
+		if (placeId < R)
+			curLoc = vRest[placeId];
+		else
+			curLoc = vRest[placeId-R];
+	}
+
+	for (int i=0; i<n; ++i) {
+		des[idx] = src[i];
+
+		const int placeId = des[idx].placeId;
+		const int orderId = des[idx].orderId;
+		nextLoc = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
+		newCurTime = curTime + Length(curLoc, nextLoc);
+		if (placeId<R && vOrder[orderId].tid>newCurTime)
+			newCurTime = vOrder[orderId].tid;
+
+		if (!checkConstraint(newCurTime, des[idx]) || newCurTime>=bestVal)
+			continue;
+
+		newCurBound = curBound - curTime - minCost[i] + newCurTime;
+		if (newCurBound >= bestVal) continue;
+
+		swap(minCost[i], minCost[n-1]);
+		swap(src[i], src[n-1]);
+		dfs(src, des, idx+1, n-1, newCurTime, newCurBound);
+		swap(src[i], src[n-1]);
+		swap(minCost[i], minCost[n-1]);
+	}
 }
 
 vector<node_t> scheduling(const int driverId, const int orderId) {
@@ -440,18 +493,19 @@ vector<node_t> scheduling(const int driverId, const int orderId) {
 	init_minCost(src);
 	curDriverId = driverId;
 	curOrderId = orderId;
-	dfs(src, des, 0, src.size(), order.tid);
+	double curBound = accumulate(minCost.begin(), minCost.end(), (double)order.tid);
+	dfs(src, des, 0, src.size(), order.tid, curBound);
 
 	return bestRoute;
 }
 
 void responseDriver(const int driverId, const int orderId, vector<node_t>& newRoute) {
 	driver_t& driver = drivers[driverId];
-	order_t& order = vOrder[orderId];
+	//order_t& order = vOrder[orderId];
 	driver.route = newRoute;
 }
 
-void TShare() {
+void branchAndBound() {
 	for (int orderId=0; orderId<M; ++orderId) {
 		for (int driverId=0; driverId<N; ++driverId) {
 			updateIndex(driverId, vOrder[orderId].tid);
@@ -461,7 +515,8 @@ void TShare() {
 		if (canDrivers.empty() || canDrivers[0]<0)
 			continue;
 
-		vector<node_t> newRoute = scheduling(canDrivers[0], orderId);
+		int driverId = canDrivers[0];
+		vector<node_t> newRoute = scheduling(driverId, orderId);
 		if (!newRoute.empty())
 			responseDriver(driverId, orderId, newRoute);
 	}
@@ -484,7 +539,7 @@ void printAns() {
 void solve() {
 	init();
 
-	BB();
+	branchAndBound();
 	printAns();
 }
 
