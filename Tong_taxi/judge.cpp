@@ -1,6 +1,23 @@
 /**
 	\author: 	Trasier
 	\date: 		2017.6.5
+	\note:		`judge` is the program to check the feasibility of the routes. 
+				There are 7 check points for every driver:
+				1) check the capacity;
+				2) check the arrival time, it should less or equal to the student's value;
+				3) check the student's leave time, it should equal or great to the student's arrival time;
+				4) check the droped orders:
+					a) they are the orders in the pre-bucket but not in the current bucket;
+					b) current location should equal to the dropoff location;
+					c) the bucket should have picked by this worker.
+				5) check the piked orders:
+					a) they are the orders in the current bucket but not in the pre-bucket;
+					b) current location should equal to the pickup location;
+					c) the bucket should haven't picked by anyone else.
+				6) check the leaving time, it should less or equal to the student's value;
+				7) check the final bucket, it should be empty.
+				In the end, check if all the orders have been delivered.
+
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -214,7 +231,7 @@ bool simulateRouteByDriver(ifstream& fin, int driverId, int moveNum) {
 		if (dcmp(simArrive - stuArrive) > 0) {
 			return false;
 		}
-		// 2.1. check the leave time
+		// 2. check the leave time
 		if (dcmp(stuLeave - stuArrive) < 0) {
 			return false;
 		}
@@ -295,11 +312,11 @@ void simulateRoute(const string& routeFileName) {
 	double simAns = 0;
 
 	for (int i=0; i<N; ++i) {
-		if (taken[i] <= 0) {// means either no-pickup or no-dropoff
-			simAns = inf;
-		} else {
-			simAns = max(simAns, riders[i].endTime-orders[i].tid);
+		if (taken[i] != 1) {// this order hasn't been delivered yet
+			printf("route is invalid.\n");
+			return ;
 		}
+		simAns = max(simAns, riders[i].endTime-orders[i].tid);
 	}
 
 	double stuAns = inf;
