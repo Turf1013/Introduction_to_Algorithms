@@ -139,7 +139,7 @@ void initAll() {
 	tasks = new int[M];
 
 	for (int i=0; i<M; ++i)
-		orderQ.push_back(i);
+		driverQ.push_back(i);
 
 	for (int i=0; i<M; ++i) {
 		int placeId = rand() % R;
@@ -243,8 +243,8 @@ void assignTask(double curTime) {
 
 	for (int i=0; i<orderQ.size(); ++i) {
 		order_t& order = orders[orderQ[i]];
-		double wait = max(curTime, (double)order.tid) + Length(rests[order.sid], dists[order.eid]) - order.tid;
-		waitTimes.push_back(make_pair(wait, i));
+		double leastTime = max(curTime, order.tid+waitTime) + Length(rests[order.sid], dists[order.eid]) - order.tid;
+		waitTimes.push_back(make_pair(leastTime, i));
 	}
 	sort(waitTimes.begin(), waitTimes.end(), greater<pair<double,int> >() );
 
@@ -254,7 +254,7 @@ void assignTask(double curTime) {
 		double bestVal = inf, val;
 		for (int j=0; j<driverQ.size(); ++j) {
 			driver_t& driver = drivers[driverQ[j]];
-			double pickTime = max(curTime+Length(driver.pos, rests[order.sid]), (double)order.tid);
+			double pickTime = max(curTime+Length(driver.pos, rests[order.sid]), order.tid+waitTime);
 			val = pickTime + Length(rests[order.sid], dists[order.eid]);
 			if (val < bestVal) {
 				bestVal = val;
@@ -280,11 +280,11 @@ void printAns() {
 		printf("%d %d\n", driverId, sz);
 		dumpOutput(moves[driverId]);
 	}
+	printf("%.10lf\n", ans);
 }
 
 void solve() {
 	int orderId, driverId;
-	initAll();
 	double curTime = 0.0;
 
 	for (orderId=0; orderId<M; ++orderId) {
