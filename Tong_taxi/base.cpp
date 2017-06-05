@@ -10,7 +10,7 @@ using namespace std;
 
 #include "input.h"
 #include "output.h"
-#include "monitor.h"
+//#include "monitor.h"
 
 #define LOCAL_DEBUG
 
@@ -138,16 +138,7 @@ void initAll() {
 	// moves = new move_t[M];
 	tasks = new int[M];
 
-	for (int i=0; i<M; ++i)
-		driverQ.push_back(i);
-
-	for (int i=0; i<M; ++i) {
-		int placeId = rand() % R;
-		drivers[i].pos = rests[placeId];
-		moves.push_back(vector<move_t>());
-	}
-
-	ans = inf;
+	ans = -1;
 }
 
 void deleteAll() {
@@ -182,6 +173,17 @@ void readNetwork() {
 	for (int i=0,j=0; i<N; ++i,j+=3) {
 		orders[i] = order_t(vOrder_tmp[j], vOrder_tmp[j+1], vOrder_tmp[j+2]);
 	}
+
+
+	for (int i=0; i<M; ++i) {
+		driverQ.push_back(i);
+		int placeId = rand() % R;
+		drivers[i].pos = rests[placeId];
+		moves.push_back(vector<move_t>());
+#ifdef LOCAL_DEBUG
+		printf("Driver%d is located in (%.2lf, %.2lf) at first.\n", i, drivers[i].pos.x, drivers[i].pos.y);
+#endif
+	}
 }
 
 void updateTask(const double curTime) {
@@ -189,6 +191,9 @@ void updateTask(const double curTime) {
 		if (dcmp(taskQ.top().first - curTime) > 0)
 			break;
 		const int driverId = taskQ.top().second;
+#ifdef LOCAL_DEBUG
+		printf("At %.4lf Finished %d -> %d.\n", curTime, driverId, tasks[driverId]);
+#endif
 		driverQ.push_back(driverId);
 		drivers[driverId].pos = dists[orders[tasks[driverId]].eid];
 		tasks[driverId] = -1;
@@ -200,10 +205,15 @@ double finishTask(int taskNum) {
 	double ret = -1.0;
 
 	while (!taskQ.empty() && taskNum>0) {
-		driverQ.push_back(taskQ.top().second);
-		ret = taskQ.top().first;
+		const int driverId = taskQ.top().second;
+#ifdef LOCAL_DEBUG
+		printf("At %.4lf Finish %d -> %d.\n", taskQ.top().first, driverId, tasks[driverId]);
+#endif
+		driverQ.push_back(driverId);
+		drivers[driverId].pos = dists[orders[tasks[driverId]].eid];
+		tasks[driverId] = -1;
 		taskQ.pop();
-		--taskNum;	
+		--taskNum;
 	}
 
 	return ret;
@@ -217,7 +227,10 @@ void executeTask(const int driverId, const int orderId, double curTime) {
 
 	tasks[driverId] = orderId;
 	taskQ.push(make_pair(dropTime, driverId));
-	ans = min(ans, dropTime-order.tid);
+	ans = max(ans, dropTime-order.tid);
+#ifdef LOCAL_DEBUG
+	printf("At %.4lf Request %d -> %d.\n", curTime, driverId, orderId);
+#endif
 
 	move_t move;
 
@@ -229,6 +242,10 @@ void executeTask(const int driverId, const int orderId, double curTime) {
 	move.bucket.push_back(orderId);
 	moves[driverId].push_back(move);
 
+#ifdef LOCAL_DEBUG
+	printf("\tAt %.4lf Pick %d -> %d.\n", pickTime, driverId, orderId);
+	riders[orderId].begTime = pickTime;
+#endif
 
 	// dropoff
 	move.x = dists[order.eid].x;
@@ -236,6 +253,11 @@ void executeTask(const int driverId, const int orderId, double curTime) {
 	move.arrive = move.leave = dropTime;
 	move.bucket.clear();
 	moves[driverId].push_back(move);
+
+#ifdef LOCAL_DEBUG
+	printf("\tAt %.4lf Drop %d -> %d.\n", dropTime, driverId, orderId);
+	riders[orderId].endTime = dropTime;
+#endif
 }
 
 void assignTask(double curTime) {
@@ -272,10 +294,17 @@ void assignTask(double curTime) {
 		executeTask(driverId, orderQ[i], curTime);
 		orderQ[i] = -1;
 	}
+
+	for (int i=orderQ.size()-1; i>=0; --i) {
+		if (orderQ[i] == -1) {
+			orderQ[i] = *orderQ.rbegin();
+			orderQ.pop_back();
+		}
+	}
 }
 
 void printAns() {
-	for (int driverId=0; driverId<N; ++driverId) {
+	for (int driverId=0; driverId<M; ++driverId) {
 		const int sz = moves[driverId].size();
 		printf("%d %d\n", driverId, sz);
 		dumpOutput(moves[driverId]);
@@ -283,22 +312,32 @@ void printAns() {
 	printf("%.10lf\n", ans);
 }
 
+void printOrderResult() {
+	for (int orderId=0; orderId<N; ++orderId) {
+		printf("Order%d: %.4lf %.4lf\n", orderId, (double)orders[orderId].tid, riders[orderId].endTime);
+	}
+}
+
 void solve() {
 	int orderId, driverId;
 	double curTime = 0.0;
 
-	for (orderId=0; orderId<M; ++orderId) {
+	for (orderId=0; orderId<N; ++orderId) {
 		updateTask(orders[orderId].tid);
 		orderQ.push_back(orderId);
 		if (!driverQ.empty()) {
 			assignTask(orders[orderId].tid);
 		}
 	}
-	while (!taskQ.empty()) {
+	while (!orderQ.empty()) {
 		curTime = finishTask(1);
 		assignTask(curTime);
 	}
+	finishTask(taskQ.size());
 
+#ifdef LOCAL_DEBUG
+	printOrderResult();
+#endif
 	printAns();
 
 	deleteAll();
