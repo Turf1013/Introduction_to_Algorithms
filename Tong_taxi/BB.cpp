@@ -106,7 +106,7 @@ int R, D, M, C, N;
 
 
 inline double Length(const position_t& pa, const position_t& pb) {
-	return sqrt(1.0*(pa.x-pb.y)*(pa.x-pb.x) + 1.0*(pa.y-pb.y)*(pa.y-pb.y));
+	return sqrt((pa.x-pb.y)*(pa.x-pb.x) + (pa.y-pb.y)*(pa.y-pb.y));
 }
 
 void init_Dist() {

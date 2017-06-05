@@ -1,354 +1,351 @@
+/**
+	\author: 	Trasier
+	\date: 		2017.6.5
+*/
 #include <bits/stdc++.h>
 using namespace std;
 
 #define LOCAL_DEBUG
 
-struct place_t {
-	double x, y;
-	
-	place_t(double x=0., double y=0.):
-		x(x), y(y) {}
-		
-	bool operator< (const place_t& o) const {
-		if (x != o.x)
-			return x < o.x;
-		return y < o.y;
-	}
-	
-	bool operator< (const place_t& o) const {
-		return x==o.x && y==o.y;
-	}
-};
+#include "input.h"
 
-struct sender_t {
-	place_t p;		// place
-	double bt, et	// bt: begTime, et: endTime
-	int c;			// cap
-	vector<int> vo;	// vector of orderId
-	
-	sender_t(int C=0) {
-		bt = et = 0.;
-		c = C;
+const double eps = 1e-7;
+int dcmp(double x) {
+	if (fabs(x) < eps)
+		return 0;
+	return x<0 ? -1:1;
+}
+
+struct position_t {
+	double x, y;
+
+	position_t(double x=0., double y=0.):
+		x(x), y(y) {}
+
+	bool operator< (const position_t& oth) const {
+		if (x == oth.x)
+			return y < oth.y;
+		else
+			return x < oth.x;
+	}
+
+	bool operator==(const position_t& oth) const {
+		return dcmp(x-oth.x)==0 && dcmp(y-oth.y)==0;
+	}
+
+	bool operator!=(const position_t& oth) const {
+		return dcmp(x-oth.x)!=0 || dcmp(y-oth.y)!=0;
 	}
 };
 
 struct order_t {
-	int cid;		// index of cook places
-	int eid;		// index of eat places 
-	double bt, et	// bt: begTime, et: endTime
-	
-	order_t(int tid = 0, int cid = 0, int eid = 0):
-		cid(cid), eid(eid), bt(tid), et(tid) {}
+	int tid, sid, eid;
+
+	order_t(int tid=0, int sid=0, int eid=0):
+		tid(tid), sid(sid), eid(eid) {}
+
+	void print() {
+		printf("Order: At T%d from R%d to D%d.\n", tid, sid, eid);
+	}
 };
 
-vector<place_t> cookPlaces;
-map<place_t,int> cookPlacesMap;
-vector<place_t> eatPlaces;
-map<place_t,int> eatPlacesMap;
-vector<order_t> orders;
-vector<sender_t> senders;
-int R; 	// the number of send places
-int D; 	// the number of receive places
-int M;	// the number of senders
-int C;	// the capacity of every sender's box
-int N;	// the number of orders
+struct node_t {
+	int placeId, orderId;
 
-void readInFile(const string& fileName);
-int checkResult(const string& fileName);
-void calcScore(int status);
+	node_t(int placeId=0, int orderId=0):
+		placeId(placeId), orderId(orderId) {}
+};
 
-void init() {
-	cookPlaces.clear();
-	earPlaces.clear();
-	orders.clear();
-	senders.clear();
-}
+struct driver_t {
+	position_t pos;
+	double curTime;
+	vector<node_t> route;
 
-const double eps = 1e-8;
-bool dcmp(double x) {
-	if (fabs(x) < eps)
-		return 0;
-	return x>0 ? 1:-1;
-}
-
-void initPlaceMap(const vector<place_t&>& places, map<place_t&,int>& placeMap) {
-	const int sz = places.size();
-	
-	for (int i=0; i<sz; ++i) {
-		placeMap[places[i]] = i;
+	driver_t(double x=0., double y=0., double curTime=0.) {
+		pos.x = x;
+		pos.y = y;
+		this->curTime = curTime;
 	}
-}
 
-inline double Distance(const place_t& a, const place_t& b) {
-	return sqrt((a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y));
-}
-
-inline double Distance(const sender_t& a, const sender_t& b) {
-	return Distance(a.p, b.p);
-}
-
-inline int getEid(const place_t& plc) {
-	if (eatPlacesMap.count(plc))
-		return eatPlacesMap[plc];
-	return -1;
-}
-
-inline int getCid(const place_t& plc) {
-	if (cookPlacesMap.count(plc))
-		return cookPlacesMap[plc];
-	return -1;
-}
-
-void readInFile(const string& fileName){
-	ifstream fin(fileName.c_str(), ios::in);
-	
-	if (!fin.is_open()) {
-		printf("inFile %s not exists.", fileName.c_str());
-		exit(1);
+	bool isEmpty() const {
+		return route.size() == 0;
 	}
-	
-	init();
-	fin >> R >> D >> M >> C >> N;
-	place_t plc;
-	
-	// next R lines
-	for (int i=0; i<R; ++i) {
-		fin >> plc.x >> plc.y;
-		cookPlaces.push_back(plc);
-	}
-	
-	// next D lines
-	for (int i=0; i<D; ++i) {
-		fin >> plc.x >> plc.y;
-		eatPlaces.push_back(plc);
-	}
-	
-	// next M lines
-	int tid, cid, eid;
-	for (int i=0; i<N; ++i) {
-		fin >> tid >> cid >> eid;
-		orders.push_back(order_t(tid, cid, eid));
-	}
-	
-	// init places Map to get Id
-	initPlaceMap(cookPlaces, cookPlacesMap);
-	initPlaceMap(eatPlaces, eatPlacesMap);
-}
 
-template <class data>
-bool isDistinct(const vector<data>& vc) {
-	const int sz = vc.size();
-	
-	for (int i=0; i<sz; ++i) {
-		for (int j=i+1; j<sz; ++j) {
-			if (vc[i] == vc[j])
-				return false;
+	void push_back(int placeId, int orderId) {
+		route.push_back(node_t(placeId, orderId));
+	}
+
+	void pop_front() {
+		if (!route.empty())
+			route.erase(route.begin());
+	}
+
+	void clear() {
+		route.clear();
+	}
+
+	vector<int> getBucket() {
+		const int sz = route.size();
+		vector<int> ret;
+
+		for (int i=0; i<sz; ++i) {
+			ret.push_back(route[i].orderId);
 		}
+		sort(ret.begin(), ret.end());
+		ret.erase(unique(ret.begin(), ret.end()), ret.end());
+
+		return ret;
 	}
-	
+};
+
+struct rider_t {
+	double begTime, endTime;
+
+	rider_t(double begTime=0., double endTime=0.):
+		begTime(begTime), endTime(endTime) {}
+};
+
+const double waitTime = 0;
+const double inf = 1e20;
+int R, D, M, C, N;
+driver_t *drivers;
+position_t *rests;
+position_t *dists;
+order_t *orders;
+rider_t *riders;
+int *taken;
+
+double Length(const position_t& pa, const position_t& pb) {
+	return sqrt((pa.x-pb.x)*(pa.x-pb.x) + (pa.y-pb.y)*(pa.y-pb.y));
+}
+
+void initAll() {
+	drivers = new driver_t[M];
+	rests = new position_t[R];
+	dists = new position_t[D];
+	orders = new order_t[N];
+	riders = new rider_t[N];
+	taken = new int[N];
+	memset(taken, -1, sizeof(int)*N);
+}
+
+void deleteAll() {
+	delete[] drivers;
+	delete[] rests;
+	delete[] dists;
+	delete[] orders;
+	delete[] riders;
+	delete[] taken;
+}
+
+void readNetwork(const string& networkFileName) {
+	vector<double> vRest_tmp, vDist_tmp;
+	vector<int> vOrder_tmp;
+
+	readInput(networkFileName, R, D, M, C, N, vRest_tmp, vDist_tmp, vOrder_tmp);
+
+	initAll();
+	#ifdef LOCAL_DEBUG
+	assert(vRest_tmp.size() == R*2);
+	assert(vDist_tmp.size() == D*2);
+	assert(vOrder_tmp.size() == N*3);
+	#endif
+
+	for (int i=0,j=0; i<R; ++i,j+=2) {
+		rests[i] = position_t(vRest_tmp[j], vRest_tmp[j+1]);
+	}
+	for (int i=0,j=0; i<D; ++i,j+=2) {
+		dists[i] = position_t(vDist_tmp[j], vDist_tmp[j+1]);
+	}
+	for (int i=0,j=0; i<N; ++i,j+=3) {
+		orders[i] = order_t(vOrder_tmp[j], vOrder_tmp[j+1], vOrder_tmp[j+2]);
+	}
+}
+
+int findRest(const position_t& a) {
+	for (int i=0; i<R; ++i) {
+		if (rests[i] == a)
+			return i;
+	}
+	return -1;
+}
+
+int findDist(const position_t& a) {
+	for (int i=0; i<D; ++i) {
+		if (dists[i] == a)
+			return i;
+	}
+	return -1;
+}
+
+bool simulateRouteByDriver(ifstream& fin, int driverId, int moveNum) {
+	position_t curLoc, nextLoc;
+	double simArrive, simLeave = 0.0;
+	double stuArrive, stuLeave;
+	vector<int> curBucket, nextBucket;
+	set<int> curOrderSet, nextOrderSet;
+	int orderId, buckNum;
+
+	for (int i=0; i<moveNum; ++i) {
+		fin >> nextLoc.x >> nextLoc.y >> stuArrive >> stuLeave >> buckNum;
+		nextBucket.clear();
+		for (int j=0; j<buckNum; ++j) {
+			fin >> orderId;
+			nextBucket.push_back(orderId);
+		}
+
+		// 0. check the capactiy
+		if (buckNum > C) {
+			return false;
+		}
+
+		if (i == 0) {
+			simArrive = stuArrive;
+		} else {
+			simArrive = simLeave + Length(curLoc, nextLoc);
+		}
+		simLeave = simArrive;
+
+		// 1. check the arrive time.
+		if (dcmp(simArrive - stuArrive) != 0) {
+			return false;
+		}
+		// 2.1. check the leave time
+		if (dcmp(stuLeave - stuArrive) < 0) {
+			return false;
+		}
+		
+		nextOrderSet.clear();
+		nextOrderSet.insert(nextBucket.begin(), nextBucket.end());
+		// 3. \forall order in curOrderSet but not in nextOrderSet, the order must be dropef off
+		for (set<int>::iterator iter=curOrderSet.begin(); iter!=curOrderSet.end(); ++iter) {
+			if (nextOrderSet.count(*iter) == 0) {
+				orderId = *iter;
+				// 3.1. position not match
+				if (nextLoc != dists[orders[orderId].eid]) {
+					return false;
+				}
+				// 3.2. with no pickup
+				if (taken[orderId] != 0) {
+					return false;
+				}
+				taken[orderId] = 1;
+				riders[orderId].endTime = stuArrive;
+			}
+		}
+		// 4. \forall order in nextOrderSet but not in curOrderSet, the order must be picked up
+		for (set<int>::iterator iter=nextOrderSet.begin(); iter!=nextOrderSet.end(); ++iter) {
+			if (curOrderSet.count(*iter) == 0) {
+				orderId = *iter;
+				// 4.1. position not match
+				if (nextLoc != rests[orders[orderId].sid]) {
+					return false;
+				}
+				// 4.2. with no pickup
+				if (taken[orderId] != -1) {
+					return false;
+				}
+				taken[orderId] = 0;
+				riders[orderId].begTime = max(stuArrive, orders[orderId].tid+waitTime);
+
+				// update the leave time, make sure to pickup the order
+				simLeave = max(simLeave, orders[orderId].tid+waitTime);
+			}
+		}
+
+		// 5. check the leave time
+		if (dcmp(stuLeave - simLeave) < 0)
+			return false;
+		simLeave = stuLeave;
+
+		curLoc = nextLoc;
+		curBucket = nextBucket;
+		curOrderSet = nextOrderSet;
+	}
+
+	// 6. check the final bucket
+	if (!curOrderSet.empty())
+		return false;
+
 	return true;
 }
 
-int updateOrders(sender_t& pre, const sender_t& cur, const vector<int>& vecTaken, const vector<int>& vecReceive,
-					vector<int>& orderTakenAt, vector<int>& orderReceiveAt) {
-	
-	// vecTaken & vecReceive should be distince
-	if (!isDistinct(vecTaken) || !isDistinct(vecReceive))
-		return -1;
-	
-	
-	// the best strategry to deliver is deliver as fast as possible
-	/**
-		\forall orderId \in vecReceive, it must satisfy:
-		1) orderId \in pre.vo
-		2) orderId \in vecTaken and we can find enough capacity to store it.
-	*/
-	
-	const int sz_vecReceive = vecReceive.size();
-	const int sz_vecTaken = vecTaken.size();
-	
-	// check out the orders taken from other places.
-	for (int i=0; i<sz_vecReceive; ++i) {
-		const int orderId = vecReceive[i];
-		
-		for (vector<int>::iterator iter=pre.vo.begin(); iter!=pre.vo.end(); ++iter) {
-			if (*iter == orderId) {
-				inPre = true;
-				++pre.c;
-				pre.vo.erase(iter);
-				// obviously, this order can be delivered at cur.bt, because we want GAP as small as possible.
-				orderReceiveAt[orderId] = cur.bt;
-				break;
-			}
-		}
-	}
-	
-	// check out the orders taken from this place.
-	for (int i=0; i<sz_vecReceive; ++i) {
-		const int orderId = vecReceive[i];
-		
-		for (int j=0; j<sz_vecTaken; ++j) {
-			if (orderId == vecTaken[j]) {
-				// if the current capacity is zero, then this operation is invalid no matter what.
-				if (pre.c == 0) {
-					return -1;
-				}
-				
-				// obviously, this order should be delivered orders[orderId].bt exactly, because we want GAP as small as possible.
-				orderReceiveAt[orderId] = orders[orderId].bt;
-				break;
-			}
-		}
-		
-		// if this order is not delivered, then the operation must be wrong
-		if (orderReceiveAt[orderId] < 0) {
-			return -1;
-		}
-	}
-	
-	// add waiting delivered orders
-	for (int i=0; i<sz_vecReceive; ++i) {
-		const int orderId = vecReceive[i];
-		
-		if (orderReceiveAt[orderId] >= 0)
-			continue;
-		
-		pre.vo.push_back(orderId);
-		// check the valid capacity.
-		if (--pre.c < 0) {
-			return -1;
-		}
-	}
-	
-	pre.p = cur.p;
-	pre.bt = cur.bt;
-	pre.et = cur.et;
-	
-	return 0;
-}
+void simulateRoute(const string& routeFileName) {
+	ifstream fin(routeFileName.c_str(), ios::in);
 
-int checkResult(const string& fileName) {
-	ifstream fin(fileName.c_str(), ios::in);
-	
 	if (!fin.is_open()) {
-		printf("outFile %s not exists.", fileName.c_str());
+		fprintf(stderr, "FILE %s is invalid.", routeFileName.c_str());
 		exit(1);
-	}	
-	
-	vector<double> orderTakenAt(N+5, -1.0);
-	vector<double> orderReceiveAt(N+5, -1.0);
-	int numVer, senderN = 0;
-	
-	while (fin >> numVer) {
-		// sender constrict 
-		if (++senderN > M) {
-			printf("The number of sender is beyond %d.\n", M);
-			return -1;
-		}
-		
-		sender_t cur, pre;
-		int num1, num2;
-		
-		for (int i=0; i<numVer; ++i) {
-			fin >> cur.p.x >> cur.p.y >> cur.bt >> cur.et;
-			if (i == 0) {
-				pre.p = cur.p;
-				pre.c = C;
-			}
-			
-			// the time between adjacent places should above DISTANCE.
-			if (i>0 && dcmp(pre.et+Distance(cur, pre) - cur.bt)>0) {
-				printf("No.%d sender\'s time is wrong.\n", i);
-				return -1;
-			}
-			
-			fin >> num1;
-			// check whether this position is the real restaurant
-			if (num1>0 && getCid(cur.p)<0) {
-				printf("(%.3lf, %.3lf) is not a cook place.\n", cur.p.x, cur.p.y);
-				return -1;
-			}
-			vector<int> vecTaken(num1, -1);
-			for (int j=0; j<num1; ++j) {
-				fin >> vecTaken[j];
-				const int orderId = vecTaken[j];
-				
-				// Nobody has picked up this order before.
-				if (orderTakenAt[orderId] >= 0) {
-					printf("Order %d has picked up by someone else.\n", orderId);
-					return -1;
-				}
-				
-				// the time of this order should earlier than endTime
-				if (dcmp(orders[orderId] - cur.et) > 0) {
-					printf("Order %d has not arrived yet.\n", orderId);
-					return -1;
-				}
-			}
-			
-			fin >> num2;
-			if (num2>0 && getEid(cur.p)<0) {
-				printf("(%.3lf, %.3lf) is not a eat place.\n", cur.p.x, cur.p.y);
-				return -1;
-			}
-			vector<int> vecReceive(num2, -1);
-			for (int j=0; j<num2; ++j) {
-				fin >> vecReceive[j];
-				const int orderId = vecReceive[j];
-				
-				// This is the first time to receive this order.
-				if (orderReceiveAt[orderId] >= 0) {
-					printf("Order %d has received before.\n", orderId);
-					return -1;
-				}
-				
-				// the time of this order should later than begTime
-				if (dcmp(orders[orderId] - cur.et) > 0) {
-					printf("Order %d has not arrived yet.\n", orderId);
-					return -1;
-				}
-			}
-			
-			int status = updateOrders(pre, cur, vecTaken, vecReceive, orderTakenAt, orderReceiveAt);
-			if (status < 0) {
-				printf("No.%d sender at place (%.3lf, %.3lf) has invalid operations.\n", i, cur.p.x, cur.p.y);
-				exit(1);
-			}
-		}
-		
-		double result = -1;
-		
-		// check whether all order is taken & receive
-		for (int i=0; i<N; ++i) {
-			if (orderTakenAt[i]<0 || orderReceiveAt[i]<0) {
-				printf("Order %s is not taken or received.\n", i);
-				return -1;
-			}
-			double tmp = orderReceiveAt[i] - orderTakenAt[i];
-			result = max(result, tmp);
+	}
+
+	int driverId, moveNum;
+
+	for (int i=0; i<M; ++i) {
+		fin >> driverId >> moveNum;
+		if (!simulateRouteByDriver(fin, driverId, moveNum)) {
+			printf("route is invalid.\n");
+			return ;
 		}
 	}
+
+	double simAns = 0;
+
+	for (int i=0; i<M; ++i) {
+		if (taken[i] <= 0) {// means either no-pickup or no-dropoff
+			simAns = inf;
+		} else {
+			simAns = max(simAns, riders[i].endTime-riders[i].begTime);
+		}
+	}
+
+	double stuAns = inf;
+	fin >> stuAns;
+	if (dcmp(simAns-stuAns) != 0) {
+		printf("route is invalid.\n");
+		return ;
+	}
+
+	printf("Right! ans = %.6lf\n", stuAns);
 }
 
-void calcScore(int status) {
-	puts("0.0");
+void checkRoute(const string& networkFileName, const string& routeFileName) {
+	if (networkFileName.empty() || routeFileName.empty()) {
+		fprintf(stderr, "srcfileName is missing.\n");
+		exit(1);
+	}
+
+	/**
+		\step1: construct the network
+	*/
+	readNetwork(networkFileName);
+
+	/**
+		\step2: initial riders & drivers
+	*/
+	//init();
+
+	/**
+		\step3: simulate the route
+	*/
+	simulateRoute(routeFileName);
+
+	/**
+		\step4: delete all
+	*/
+	deleteAll();
 }
 
 int main(int argc, char **argv) {
-	string infileName;
-	string outfileName;
-	
-	if (argc > 2) {
-		inFileName = string(argv[1]);
-		outFileName = string(argv[2]);
-	} else {
-		inFileName = "data.in";
-		outFileName = "data.out";
-	}
-	
-	readInFile(inFileName);
-	int status = checkResult(outFileName);
-	calcScore(status);
-	
+	string networkFileName, routeFileName, outFileName;
+
+	if (argc > 1)
+		networkFileName = string(argv[1]);
+	if (argc > 2)
+		routeFileName = string(argv[2]);
+	if (argc > 3)
+		freopen(argv[3], "w", stdout);
+
+	checkRoute(networkFileName, routeFileName);
+
 	return 0;
 }

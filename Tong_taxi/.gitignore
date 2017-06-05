@@ -10,8 +10,8 @@
 *.gcno
 *.jar
 *.class
-SmallTestCase/
-LargeTestCase/
+smallDataSet/
+largeDataSet/
 greedy
 base
 raw
@@ -19,3 +19,5 @@ main
 tshare
 bb
 kit
+judge
+
