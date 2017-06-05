@@ -1,7 +1,8 @@
 /**
-	\author: Trasier
-	\date: 2017.6.1
-	\source: ICDE13 T-share: A Large-Scale Dynamic Taxi Ridesharing Service
+	\author: 	Trasier
+	\date:   	2017.6.1
+	\source: 	ICDE13 T-share: A Large-Scale Dynamic Taxi Ridesharing Service
+	\note: 		2016.6.5 updateMove is not fixed yet.
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -9,6 +10,13 @@ using namespace std;
 #include "input.h"
 #include "output.h"
 #include "monitor.h"
+
+const double eps = 1e-6;
+int dcmp(double x) {
+	if (fabs(x) < eps)
+		return 0;
+	return x<0 ? -1:1;
+}
 
 struct position_t {
 	double x, y;
@@ -21,6 +29,14 @@ struct position_t {
 			return y < oth.y;
 		else
 			return x < oth.x;
+	}
+
+	bool operator==(const position_t& oth) const {
+		return dcmp(x-oth.x)==0 && dcmp(y-oth.y)==0;
+	}
+
+	bool operator!=(const position_t& oth) const {
+		return dcmp(x-oth.x)!=0 || dcmp(y-oth.y)!=0;
 	}
 };
 
@@ -116,15 +132,12 @@ vector<order_t> vOrder;
 vector<rider_t> riders;
 vector<driver_t> drivers;
 vector<vector<move_t> > moves;
-vector<bool> visit;
 vector<vector<double> > R2D, R2R, D2D;
 vector<grid_t> grids;
 int R, D, M, C, N;
 
-vector<int> driverPosIds;
-
 inline double Length(const position_t& pa, const position_t& pb) {
-	return sqrt(1.0*(pa.x-pb.y)*(pa.x-pb.x) + 1.0*(pa.y-pb.y)*(pa.y-pb.y));
+	return sqrt((pa.x-pb.y)*(pa.x-pb.x) + (pa.y-pb.y)*(pa.y-pb.y));
 }
 
 void init_Dist() {
@@ -207,8 +220,6 @@ void initDriver() {
 	for (int i=0; i<M; ++i) {
 		drivers.push_back(driver_t());
 	}
-	driverPosIds.clear();
-	driverPosIds.resize(M, -1);
 }
 
 void initMove() {
@@ -216,11 +227,6 @@ void initMove() {
 	for (int i=0; i<M; ++i) {
 		moves.push_back(vector<move_t>());
 	}
-}
-
-void initVisit() {
-	visit.clear();
-	visit.resize(N, false);
 }
 
 int gridNumPerRow, gridNumPerCol;
@@ -299,7 +305,6 @@ void init() {
 	initDriver();
 	initRider();
 	initMove();
-	initVisit();
 	initGrid();
 }
 
@@ -321,7 +326,7 @@ void insertIntoGrid(const int gridId, const int driverId) {
 	lv.push_back(driverId);
 }
 
-const double waitTime = 5;
+const double waitTime = 0.0;
 query_t orderToQuery(const order_t& order) {
 	query_t ret;
 
@@ -373,11 +378,37 @@ void updateMove(const int driverId) {
 	insertIntoGrid(newGridId, driverId);
 }
 
+void updateDriverPosition(const int driverId, const double orderTid) {
+	driver_t& driver = drivers[driverId];
+	if (driver.isEmpty())
+		return ;
+
+	if (dcmp(driver.curTime-orderTid) == 0)
+		return ;
+
+	position_t src = driver.pos;
+	const int placeId = driver.route[0].placeId;
+	position_t des = (placeId<R) ? vRest[placeId] : vDist[placeId-R];
+	if (src == des)
+		return ;
+
+	double t = Length(src, des);
+	double dx = (des.x - src.x) / 
+
+	position_t pos = 
+
+	move_t move;
+
+	move.x = 
+
+	moves[driverId].push_back(move);
+}
+
 void updateIndex(const int driverId, const double orderTid) {
 	driver_t& driver = drivers[driverId];
 	while (!driver.isEmpty()) {
-		const int placeId = driver.route.begin()->placeId;
-		const int orderId = driver.route.begin()->orderId;
+		const int placeId = driver.route[0].placeId;
+		const int orderId = driver.route[0].orderId;
 		position_t& nextPos = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
 		double t = Length(driver.pos, nextPos);
 		double driverTid = (placeId < R) ? max(driver.curTime+t, vOrder[orderId].tid+waitTime) : (driver.curTime+t);
@@ -388,7 +419,7 @@ void updateIndex(const int driverId, const double orderTid) {
 
 		updateMove(driverId);
 	}
-
+	updateDriverPosition(driverId, orderTid);
 }
 vector<int> searchByPick(const int orderId) {
 	const order_t& order = vOrder[orderId];
@@ -397,15 +428,14 @@ vector<int> searchByPick(const int orderId) {
 	vector<int> ret;
 
 	ret.push_back(pickGridId);
-	vector<int> tlg = grids[pickGridId].tlg;
+	vector<int>& tlg = grids[pickGridId].tlg;
 	const int tlgSz = tlg.size();
 	for (int i=0; i<tlgSz; ++i) {
 		double t = Length_grid(pickGridId, tlg[i]);
 		if (t+order.tid > Q.wp.l)
 			break;	
 
-		const int sid = tlg[i];
-		ret.push_back(sid);
+		ret.push_back(tlg[i]);
 	}
 
 	return ret;
@@ -418,15 +448,14 @@ vector<int> searchByDeliver(const int orderId) {
 	vector<int> ret;
 
 	ret.push_back(deliverGridId);
-	vector<int> tlg = grids[deliverGridId].tlg;
+	vector<int>& tlg = grids[deliverGridId].tlg;
 	const int tlgSz = tlg.size();
 	for (int i=0; i<tlgSz; ++i) {
 		double t = Length_grid(deliverGridId, tlg[i]);
 		if (t+order.tid > Q.wd.l)
 			break;	
 
-		const int sid = tlg[i];
-		ret.push_back(sid);
+		ret.push_back(tlg[i]);
 	}
 
 	return ret;
@@ -469,6 +498,7 @@ vector<int> dualSearching(const int orderId) {
 			stopd = true;
 		}
 
+		// find the intersection set of So & Sd
 		set<int>::iterator so_iter = So.begin();
 		set<int>::iterator sd_iter = Sd.begin();
 		while (so_iter!=So.end() && sd_iter!=Sd.end()) {
@@ -655,18 +685,49 @@ void TShare() {
 }
 
 void printAns() {
-	double ans = inf;
-	for (int orderId=0; orderId<M; ++orderId)
-		ans = min(ans, riders[orderId].endTime-riders[orderId].begTime);
+	for (int driverId=0; driverId<M; ++driverId) {
+		const int sz = moves[driverId].size();
+		printf("%d %d\n", driverId, sz);
+		dumpOutput(moves[driverId]);
+	}
 
-	printf("tshare %.4lf\n", ans);
+	double ans = -1;
+	for (int orderId=0; orderId<M; ++orderId)
+		ans = max(ans, riders[orderId].endTime-vOrder[orderId].tid);
+
+	printf("%.10lf\n", ans);
 }
 
 void solve() {
 	init();
 
 	TShare();
+
 	printAns();
+}
+
+void readNetwork() {
+	vector<double> vRest_tmp;
+	vector<double> vDist_tmp;
+	vector<int> vOrder_tmp;
+
+	readInput(R, D, M, C, N, vRest_tmp, vDist_tmp, vOrder_tmp);
+
+	for (int i=0; i<vRest_tmp.size(); i+=2) {
+		vRest.push_back(position_t(vRest_tmp[i], vRest_tmp[i+1]));
+	}
+	for (int i=0; i<vDist_tmp.size(); i+=2) {
+		vDist.push_back(position_t(vDist_tmp[i], vDist_tmp[i+1]));
+	}
+	for (int i=0; i<vOrder_tmp.size(); i+=3) {
+		vOrder.push_back(order_t(vOrder_tmp[i], vOrder_tmp[i+1], vOrder_tmp[i+2]));
+	}
+
+	#ifdef LOCAL_DEBUG
+	assert(vRest.size() == R);
+	assert(vDist.size() == D);
+	assert(vOrder.size() == N);
+	#endif
 }
 
 int main(int argc, char **argv) {
@@ -680,24 +741,7 @@ int main(int argc, char **argv) {
 	/**
 		\step 1: read input
 	*/
-	vector<double> vRest_tmp;
-	vector<double> vDist_tmp;
-	vector<int> vOrder_tmp;
-	readInput(R, D, M, C, N, vRest_tmp, vDist_tmp, vOrder_tmp);
-	for (int i=0; i<vRest_tmp.size(); i+=2) {
-		vRest.push_back(position_t(vRest_tmp[i], vRest_tmp[i+1]));
-	}
-	for (int i=0; i<vDist_tmp.size(); i+=2) {
-		vDist.push_back(position_t(vDist_tmp[i], vDist_tmp[i+1]));
-	}
-	for (int i=0; i<vOrder_tmp.size(); i+=3) {
-		vOrder.push_back(order_t(vOrder_tmp[i], vOrder_tmp[i+1], vOrder_tmp[i+2]));
-	}
-	#ifdef LOCAL_DEBUG
-	assert(vRest.size() == R);
-	assert(vDist.size() == D);
-	assert(vOrder.size() == N);
-	#endif
+	readNetwork();
 
 	/**
 		\step 2: solve
