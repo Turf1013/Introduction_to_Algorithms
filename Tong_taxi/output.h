@@ -4,6 +4,9 @@
 #ifndef OUTPUT_H
 #define OUTPUT_H
 
+#include <bits/stdc++.h>
+using namespace std;
+
 struct move_t {
 	double x, y;
 	double arrive, leave;
@@ -11,7 +14,7 @@ struct move_t {
 
 	void print() const {
 		int nBucket = bucket.size();
-		printf("%.4lf %.4lf %.4lf %.4lf %d\n", x, y, arrive, leave, nBucket);
+		printf("%.8lf %.8lf %.8lf %.8lf %d\n", x, y, arrive, leave, nBucket);
 		for (int i=0; i<nBucket; ++i) {
 			if (i == nBucket-1)
 				printf("%d\n", bucket[i]);

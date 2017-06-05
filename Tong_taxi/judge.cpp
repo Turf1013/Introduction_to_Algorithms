@@ -9,7 +9,7 @@ using namespace std;
 
 #include "input.h"
 
-const double eps = 1e-7;
+const double eps = 1e-6;
 int dcmp(double x) {
 	if (fabs(x) < eps)
 		return 0;
@@ -201,13 +201,17 @@ bool simulateRouteByDriver(ifstream& fin, int driverId, int moveNum) {
 
 		if (i == 0) {
 			simArrive = stuArrive;
+//		} else if (i == 1) {
+//			if (dcmp(stuArrive - Length(curLoc, nextLoc)) < 0)
+//				return false;
+//			simArrive = stuArrive;
 		} else {
 			simArrive = simLeave + Length(curLoc, nextLoc);
 		}
 		simLeave = simArrive;
 
 		// 1. check the arrive time.
-		if (dcmp(simArrive - stuArrive) != 0) {
+		if (dcmp(simArrive - stuArrive) > 0) {
 			return false;
 		}
 		// 2.1. check the leave time
@@ -290,11 +294,11 @@ void simulateRoute(const string& routeFileName) {
 
 	double simAns = 0;
 
-	for (int i=0; i<M; ++i) {
+	for (int i=0; i<N; ++i) {
 		if (taken[i] <= 0) {// means either no-pickup or no-dropoff
 			simAns = inf;
 		} else {
-			simAns = max(simAns, riders[i].endTime-riders[i].begTime);
+			simAns = max(simAns, riders[i].endTime-orders[i].tid);
 		}
 	}
 
@@ -305,7 +309,7 @@ void simulateRoute(const string& routeFileName) {
 		return ;
 	}
 
-	printf("Right! ans = %.6lf\n", stuAns);
+	printf("Right! ans = %.10lf\n", stuAns);
 }
 
 void checkRoute(const string& networkFileName, const string& routeFileName) {
