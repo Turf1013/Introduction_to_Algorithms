@@ -222,7 +222,8 @@ double finishTask(int taskNum) {
 void executeTask(const int driverId, const int orderId, double curTime) {
 	driver_t& driver = drivers[driverId];
 	order_t& order = orders[orderId];
-	double pickTime = max(curTime + Length(driver.pos, rests[order.sid]), order.tid+waitTime);
+	double arriveTime = curTime + Length(driver.pos, rests[order.sid]);
+	double pickTime = max(arriveTime, order.tid+waitTime);
 	double dropTime = pickTime + Length(rests[order.sid], dists[order.eid]);
 
 	tasks[driverId] = orderId;
@@ -237,7 +238,8 @@ void executeTask(const int driverId, const int orderId, double curTime) {
 	// pickup
 	move.x = rests[order.sid].x;
 	move.y = rests[order.sid].y;
-	move.arrive = move.leave = pickTime;
+	move.arrive = arriveTime;
+	move.leave = pickTime;
 	move.bucket.clear();
 	move.bucket.push_back(orderId);
 	moves[driverId].push_back(move);

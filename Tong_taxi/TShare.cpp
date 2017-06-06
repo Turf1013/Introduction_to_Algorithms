@@ -11,6 +11,8 @@ using namespace std;
 #include "output.h"
 #include "monitor.h"
 
+
+int R, D, M, C, N;
 const double eps = 1e-6;
 int dcmp(double x) {
 	if (fabs(x) < eps)
@@ -70,7 +72,11 @@ struct driver_t {
 	}
 
 	bool isEmpty() const {
-		return route.size() == 0;
+		return route.empty();
+	}
+
+	bool empty() const {
+		return this->isEmpty();
 	}
 
 	void push_back(int placeId, int orderId) {
@@ -91,10 +97,11 @@ struct driver_t {
 		vector<int> ret;
 
 		for (int i=0; i<sz; ++i) {
-			ret.push_back(route[i].orderId);
+			if (route[i].placeId >= R)
+				ret.push_back(route[i].orderId);
 		}
-		sort(ret.begin(), ret.end());
-		ret.erase(unique(ret.begin(), ret.end()), ret.end());
+		// sort(ret.begin(), ret.end());
+		// ret.erase(unique(ret.begin(), ret.end()), ret.end());
 
 		return ret;
 	}
@@ -134,7 +141,6 @@ vector<driver_t> drivers;
 vector<vector<move_t> > moves;
 vector<vector<double> > R2D, R2R, D2D;
 vector<grid_t> grids;
-int R, D, M, C, N;
 
 inline double Length(const position_t& pa, const position_t& pb) {
 	return sqrt((pa.x-pb.y)*(pa.x-pb.x) + (pa.y-pb.y)*(pa.y-pb.y));
@@ -343,11 +349,14 @@ query_t orderToQuery(const order_t& order) {
 
 void updateMove(const int driverId) {
 	driver_t& driver = drivers[driverId];
-	const int placeId = driver.route.begin()->placeId;
-	const int orderId = driver.route.begin()->orderId;
+	if (driver.empty()) return ;
+	
+	const int placeId = driver.route[0].placeId;
+	const int orderId = driver.route[0].orderId;
+	query_t Q = orderToQuery(vOrder[orderId]);
 	position_t& nextPos = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
-	double t = Length(driver.pos, nextPos);
-	double driverTid = (placeId < R) ? max(driver.curTime+t, vOrder[orderId].tid+waitTime) : (driver.curTime + t);
+	double arriveTime = driver.curTime + Length(driver.pos, nextPos);
+	double driverTid = (placeId < R) ? max(arriveTime, Q.wp.e) : max(arriveTime, Q.wd.e);
 
 	// update the rider's record to evaluate the global answer
 	if (placeId < R) {
@@ -356,17 +365,15 @@ void updateMove(const int driverId) {
 		riders[orderId].endTime = driverTid;
 	}
 
-
-	vector<move_t>& schedule = moves[driverId];
 	move_t move;
 
 	move.x = nextPos.x;
 	move.y = nextPos.y;
-	move.arrive = driver.curTime + t;
-	move.leave = move.arrive;
+	move.arrive = arriveTime;
+	move.leave = driverTid;
 	driver.pop_front();
 	move.bucket = driver.getBucket();
-	schedule.push_back(move);
+	moves[driverId].push_back(move);
 
 	// update the driver: position, time, oldGrid -> newGrid
 	int oldGridId = getGridId(driver.pos);
@@ -549,6 +556,89 @@ double insertFeasibilityCheck(const int driverId, const int orderId, int pick, i
 	driver_t& driver = drivers[driverId];
 	order_t& order = vOrder[orderId];
 	vector<node_t>& route = driver.route;
+	int sz = route.size();
+
+	{// prune1: using triangle inequality
+		query_t Q = orderToQuery(order);
+		position_t driverLoc;
+		if (pick == 0) {
+			driverLoc = driver.pos;
+		} else {
+			const int placeId = route[pick-1].placeId;
+			driverLoc = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
+		}
+		if (order.tid+Length(driverLoc, vRest[order.sid]) > Q.wp.l) 
+			return inf;
+	}
+
+	// check the complete path
+	position_t curLoc = driver.pos, nextLoc;
+	double curTime = order.tid;
+	int cap = 0;
+	double ret = -1;
+
+	for (int i=0; i<=sz; ++i) {
+		if (i == pick) {
+			query_t Q = orderToQuery(order);
+
+			nextLoc = vRest[order.sid];
+			curTime = max(curTime+Length(curLoc, nextLoc), Q.wp.e);
+			if (curTime > Q.wp.l) return inf;
+			if (++cap > C) return inf;
+			riders[orderId].begTime = curTime;
+
+			curLoc = nextLoc;
+		}
+		if (i == deliver) {
+			query_t Q = orderToQuery(order);
+
+			nextLoc = vDist[order.eid];
+			curTime = max(curTime+Length(curLoc, nextLoc), Q.wd.e);
+			if (curTime > Q.wd.l) return inf;
+			--cap;
+			riders[orderId].endTime = curTime;
+			ret = max(ret, riders[orderId].endTime-order.tid);
+
+			curLoc = nextLoc;
+		}
+		if (i == sz) continue;
+
+		const int placeId_ = route[i].placeId;
+		const int orderId_ = route[i].orderId;
+		nextLoc = (placeId_ < R) ? vRest[placeId_] : vDist[placeId_-R];
+		curTime += Length(curLoc, nextLoc);
+		query_t Q = orderToQuery(vOrder[orderId_]);
+
+		if (placeId_ < R) {
+			curTime = max(curTime, Q.wp.e);
+			if (curTime > Q.wp.l) return inf;
+			if (++cap > C) return inf;
+
+			riders[orderId_].begTime = curTime;
+		} else {
+			curTime = max(curTime, Q.wd.e);
+			if (curTime > Q.wd.l) return inf;
+			--cap;
+
+			riders[orderId_].endTime = curTime;
+			ret = max(ret, riders[orderId_].endTime-vOrder[orderId_].tid);
+		}
+
+		curLoc = nextLoc;
+	}
+
+	#ifdef LOCAL_DEBUG
+	assert(ret >= 0);
+	#endif
+
+	return ret;
+}
+
+/*
+double insertFeasibilityCheck(const int driverId, const int orderId, int pick, int deliver) {
+	driver_t& driver = drivers[driverId];
+	order_t& order = vOrder[orderId];
+	vector<node_t>& route = driver.route;
 	query_t Q = orderToQuery(order);
 	int sz = route.size();
 
@@ -567,9 +657,11 @@ double insertFeasibilityCheck(const int driverId, const int orderId, int pick, i
 
 	if (pick == sz) {
 		// append in the end of the route, no detour, no need for checking capacity
-		double arrive = max(Q.wp.e, Length(driverLoc, vRest[order.sid]));
-		arrive += Length(vRest[order.sid], vRest[order.eid]);
-		return arrive;
+		double arrive = max(Q.wp.e, order.tid+Length(driverLoc, vRest[order.sid]));
+		arrive += Length(vRest[order.sid], vDist[order.eid]);
+		double ret = arrive - order.tid;
+		
+		return ret;
 	}
 
 	position_t curLoc, nextLoc;
@@ -621,6 +713,7 @@ double insertFeasibilityCheck(const int driverId, const int orderId, int pick, i
 
 	return ret;
 }
+*/
 
 void getBestPosition(const int driverId, const int orderId, int& pick, int& deliver, double& cost) {
 	driver_t& driver = drivers[driverId];
@@ -629,7 +722,7 @@ void getBestPosition(const int driverId, const int orderId, int& pick, int& deli
 	double tmp;
 
 	pick = deliver = -1;
-	cost = inf;
+	cost = inf - 1.0;
 	for (int i=0; i<=sz; ++i) {
 		for (int j=i; j<=sz; ++j) {
 			tmp = insertFeasibilityCheck(driverId, orderId, i, j);

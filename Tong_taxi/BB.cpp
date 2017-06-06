@@ -237,7 +237,7 @@ void init() {
 	initGrid();
 }
 
-const double waitTime = 5;
+const double waitTime = 0.0;
 
 bool checkConstraint(double curTime, const node_t& nd) {
 	const int placeId = nd.placeId;
