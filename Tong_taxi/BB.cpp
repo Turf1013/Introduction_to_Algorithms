@@ -63,6 +63,10 @@ struct node_t {
 
 	node_t(int placeId=0, int orderId=0):
 		placeId(placeId), orderId(orderId) {}
+
+	bool operator==(const node_t& oth) const {
+		return placeId==oth.placeId && orderId==oth.orderId;
+	}
 };
 
 struct driver_t {
