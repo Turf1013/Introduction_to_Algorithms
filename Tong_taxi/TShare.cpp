@@ -392,20 +392,35 @@ void updateDriverPosition(const int driverId, const double orderTid) {
 	if (src == des)
 		return ;
 
+	#ifdef LOCAL_DEBUG
+	assert(driver.curTime <= orderTid);
+	#endif
+
 	double t = Length(src, des);
-	double dx = (des.x - src.x) / 
+	double dx = (des.x - src.x) / t;
+	double dy = (des.y - src.y) / t;
 
-	position_t pos = 
-
+	// add a new move
 	move_t move;
 
-	move.x = 
+	move.x = src.x + dx * (orderTid - driver.curTime);
+	move.y = src.y + dy * (orderTid - driver.curTime);
+	move.arrive = move.leave = orderTid;
+	if (!moves[driverId].empty())
+		move.bucket = moves[driverId].rbegin()->bucket;
 
 	moves[driverId].push_back(move);
+
+	// update the driver's position
+	driver.pos.x = move.x;
+	driver.pos.y = move.y;
+	driver.curTime = orderTid;
 }
 
 void updateIndex(const int driverId, const double orderTid) {
 	driver_t& driver = drivers[driverId];
+	if (driver.curTime > orderTid) return ;
+	
 	while (!driver.isEmpty()) {
 		const int placeId = driver.route[0].placeId;
 		const int orderId = driver.route[0].orderId;
@@ -421,6 +436,7 @@ void updateIndex(const int driverId, const double orderTid) {
 	}
 	updateDriverPosition(driverId, orderTid);
 }
+
 vector<int> searchByPick(const int orderId) {
 	const order_t& order = vOrder[orderId];
 	const query_t Q = orderToQuery(order);
