@@ -775,8 +775,8 @@ void responseDriver(const int driverId, const int orderId) {
 }
 
 void TShare() {
-	for (int orderId=0; orderId<M; ++orderId) {
-		for (int driverId=0; driverId<N; ++driverId) {
+	for (int orderId=0; orderId<N; ++orderId) {
+		for (int driverId=0; driverId<M; ++driverId) {
 			updateIndex(driverId, vOrder[orderId].tid);
 		}
 
@@ -786,7 +786,7 @@ void TShare() {
 			responseDriver(driverId, orderId);
 	}
 
-	for (int driverId=0; driverId<N; ++driverId) {
+	for (int driverId=0; driverId<M; ++driverId) {
 		driver_t& driver = drivers[driverId];
 		while (!driver.isEmpty())
 			updateMove(driverId);
@@ -801,7 +801,7 @@ void printAns() {
 	}
 
 	double ans = -1;
-	for (int orderId=0; orderId<M; ++orderId)
+	for (int orderId=0; orderId<N; ++orderId)
 		ans = max(ans, riders[orderId].endTime-vOrder[orderId].tid);
 
 	printf("%.10lf\n", ans);

@@ -501,31 +501,28 @@ void branchAndBound() {
 }
 
 void printAns() {
-	double ans = inf;
-	for (int orderId=0; orderId<M; ++orderId)
-		ans = max(ans, riders[orderId].endTime-riders[orderId].begTime);
+	for (int driverId=0; driverId<N; ++driverId) {
+		const int sz = moves[driverId].size();
+		printf("%d %d\n", driverId, sz);
+		dumpOutput(moves[driverId]);
+	}
 
-	printf("BB %.4lf\n", ans);
+	double ans = -1;
+	for (int orderId=0; orderId<M; ++orderId)
+		ans = max(ans, riders[orderId].endTime-vOrder[orderId].tid);
+
+	printf("%.10lf\n", ans);
 }
 
 void solve() {
 	init();
 
 	branchAndBound();
+
 	printAns();
 }
 
-int main(int argc, char **argv) {
-	if (argc > 1) {
-		freopen(argv[1], "r", stdin);
-	}
-	if (argc > 2) {
-		freopen(argv[2], "w", stdout);
-	}
-
-	/**
-		\step 1: read input
-	*/
+void readNetwork() {
 	vector<double> vRest_tmp;
 	vector<double> vDist_tmp;
 	vector<int> vOrder_tmp;
@@ -544,6 +541,20 @@ int main(int argc, char **argv) {
 	assert(vDist.size() == D);
 	assert(vOrder.size() == N);
 	#endif
+}
+
+int main(int argc, char **argv) {
+	if (argc > 1) {
+		freopen(argv[1], "r", stdin);
+	}
+	if (argc > 2) {
+		freopen(argv[2], "w", stdout);
+	}
+
+	/**
+		\step 1: read input
+	*/
+	readNetwork();
 
 	/**
 		\step 2: solve

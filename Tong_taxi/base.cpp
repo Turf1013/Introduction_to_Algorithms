@@ -228,7 +228,7 @@ void executeTask(const int driverId, const int orderId, double curTime) {
 
 	tasks[driverId] = orderId;
 	taskQ.push(make_pair(dropTime, driverId));
-	ans = max(ans, dropTime-order.tid);
+	// ans = max(ans, dropTime-order.tid);
 #ifdef LOCAL_DEBUG
 	printf("At %.4lf Request %d -> %d.\n", curTime, driverId, orderId);
 #endif
@@ -311,6 +311,11 @@ void printAns() {
 		printf("%d %d\n", driverId, sz);
 		dumpOutput(moves[driverId]);
 	}
+
+	double ans = -1;
+	for (int orderId=0; orderId<N; ++orderId)
+		ans = max(ans, riders[orderId].endTime-orders[orderId].tid);
+
 	printf("%.10lf\n", ans);
 }
 
