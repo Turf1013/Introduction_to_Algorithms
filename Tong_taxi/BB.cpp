@@ -2,20 +2,24 @@
 	\author: 	Trasier
 	\date: 		2017.6.3
 	\source: 	VLDB14 Large Scale Real-time Ridesharing with Service Guarantee on Road Networks
-	\note: 		Branch and Bound
+	\method: 	Branch and Bound
+	\note:		1) The bound from the paper isn't suitable for the timing objection.	
+					Another replacement is to iterate the earliest time-stamp of remind orders.
+					Therefore, the bound becomes the result of current time minus that smallest value.
+					-- 2017.6.7
 */
 #include <bits/stdc++.h>
 using namespace std;
 
 #include "input.h"
 #include "output.h"
-#include "monitor.h"
+//#include "monitor.h"
 
 #define LOCAL_DEBUG
 
 const double waitTime = 0.0;
-int graphLength, graphWidth;
-int gridLength, gridWidth;
+int graphLength = 20, graphWidth = 20;
+int gridLength = 7, gridWidth = 7;
 int R, D, M, C, N;
 
 const double eps = 1e-6;
@@ -67,6 +71,10 @@ struct node_t {
 	bool operator==(const node_t& oth) const {
 		return placeId==oth.placeId && orderId==oth.orderId;
 	}
+
+	bool operator!=(const node_t& oth) const {
+		return placeId!=oth.placeId || orderId!=oth.orderId;
+	}
 };
 
 struct driver_t {
@@ -97,6 +105,10 @@ struct driver_t {
 			route.erase(route.begin());
 	}
 
+	void erase(vector<node_t>::iterator biter, vector<node_t>::iterator eiter) {
+		route.erase(biter, eiter);
+	}
+
 	void clear() {
 		route.clear();
 	}
@@ -104,9 +116,12 @@ struct driver_t {
 	vector<int> getBucket() {
 		const int sz = route.size();
 		vector<int> ret;
+		set<int> unpicked;
 
 		for (int i=0; i<sz; ++i) {
-			if (route[i].placeId >= R)
+			if (route[i].placeId < R)
+				unpicked.insert(route[i].orderId);
+			if (route[i].placeId>=R && unpicked.count(route[i].orderId)==0)
 				ret.push_back(route[i].orderId);
 		}
 		// sort(ret.begin(), ret.end());
@@ -124,16 +139,22 @@ struct rider_t {
 };
 
 const double inf = 1e20;
-vector<position_t> vRest, vDist;
-vector<order_t> vOrder;
-vector<rider_t> riders;
-vector<driver_t> drivers;
+position_t *rests;
+position_t *dists;
+order_t *orders;
+rider_t *riders;
+driver_t *drivers;
+int *taken;
+// vector<position_t> rests, dists;
+// vector<order_t> orders;
+// vector<rider_t> riders;
+// vector<driver_t> drivers;
 vector<vector<move_t> > moves;
 vector<vector<double> > R2D, R2R, D2D;
 
 
 inline double Length(const position_t& pa, const position_t& pb) {
-	return sqrt((pa.x-pb.y)*(pa.x-pb.x) + (pa.y-pb.y)*(pa.y-pb.y));
+	return sqrt((pa.x-pb.x)*(pa.x-pb.x) + (pa.y-pb.y)*(pa.y-pb.y));
 }
 
 void init_Dist() {
@@ -143,7 +164,7 @@ void init_Dist() {
 
 		for (int i=0; i<R; ++i) {
 			for (int j=0; j<R; ++j) {
-				vtmp[j] = Length(vRest[i], vRest[j]);
+				vtmp[j] = Length(rests[i], rests[j]);
 			}
 			vtmp[i] = 0.0;
 			R2R.push_back(vtmp);
@@ -156,7 +177,7 @@ void init_Dist() {
 
 		for (int i=0; i<D; ++i) {
 			for (int j=0; j<D; ++j) {
-				vtmp[j] = Length(vDist[i], vDist[j]);
+				vtmp[j] = Length(dists[i], dists[j]);
 			}
 			vtmp[i] = 0.0;
 			D2D.push_back(vtmp);
@@ -169,7 +190,7 @@ void init_Dist() {
 
 		for (int i=0; i<R; ++i) {
 			for (int j=0; j<D; ++j) {
-				vtmp[j] = Length(vRest[i], vDist[j]);
+				vtmp[j] = Length(rests[i], dists[j]);
 			}
 			R2D.push_back(vtmp);
 		}
@@ -205,17 +226,19 @@ inline double dist_R2R(const int rid1, const int rid2) {
 }
 
 void initRider() {
-	riders.clear();
-	for (int i=0; i<N; ++i) {
-		riders.push_back(rider_t());
-	}
+	// riders.clear();
+	// for (int i=0; i<N; ++i) {
+		// riders.push_back(rider_t());
+	// }
+	riders = new rider_t[N];
 }
 
 void initDriver() {
-	drivers.clear();
-	for (int i=0; i<M; ++i) {
-		drivers.push_back(driver_t());
-	}
+	// drivers.clear();
+	// for (int i=0; i<M; ++i) {
+		// drivers.push_back(driver_t());
+	// }
+	drivers = new driver_t[M];
 }
 
 void initMove() {
@@ -226,12 +249,15 @@ void initMove() {
 }
 
 
+// anchor should inside the graph, so consider the boundary.
 int gridNumPerRow, gridNumPerCol;
 position_t getGridAnchor(const int gridId) {
 	int rid = gridId / gridNumPerRow;
 	int cid = gridId % gridNumPerRow;
-	double x = (rid + 0.5) * gridWidth;
-	double y = (cid + 0.5) * gridLength;
+	double lx = rid * gridWidth, rx = min((double)graphWidth, lx+gridWidth);
+	double ly = cid * gridLength, ry = min((double)graphLength, ly+gridLength);
+	double x = (lx + rx) * 0.5;
+	double y = (ly + ry) * 0.5;
 
 	return position_t(x, y);
 }
@@ -250,13 +276,56 @@ int getGridId(const position_t& pos) {
 
 void initGrid() {
 	gridNumPerRow = (graphLength + gridLength - 1) / gridLength;
+	
+	for (int i=0; i<M; ++i) {
+		// random initialize the poisition of driver at the rid
+		int placeId = rand() % R;
+		drivers[i].pos = rests[placeId];
+		drivers[i].curTime = 0;
+#ifdef LOCAL_DEBUG
+		printf("Driver%d is located in (%.2lf, %.2lf) at first.\n", i, drivers[i].pos.x, drivers[i].pos.y);
+#endif
+		// update the initial move
+//		move_t move;
+//
+//		move.x = drivers[i].pos.x;
+//		move.y = drivers[i].pos.y;
+//		move.arrive = move.leave = 0;
+//		moves[i].push_back(move);
+	}
 }
 
-void init() {
+void initOrder() {
+	orders = new order_t[N];
+	taken = new int[N];
+	memset(taken, -1, sizeof(int)*N);
+}
+
+void initRest() {
+	rests = new position_t[R];
+}
+
+void initDist() {
+	dists = new position_t[D];
+}
+
+void initAll() {
+	initOrder();
+	initRest();
+	initDist();
 	initDriver();
 	initRider();
 	initMove();
-	initGrid();
+	//initGrid();
+}
+
+void deleteAll() {
+	delete[] orders;
+	delete[] taken;
+	delete[] rests;
+	delete[] dists;
+	delete[] drivers;
+	delete[] riders;
 }
 
 bool checkConstraint(double curTime, const node_t& nd) {
@@ -266,10 +335,10 @@ bool checkConstraint(double curTime, const node_t& nd) {
 	double l, r;
 
 	if (placeId < R) {// pickup 
-		l = vOrder[orderId].tid;
-		r = l + waitTime;
+		l = orders[orderId].tid + waitTime;
+		r = inf;
 	} else {// dropoff
-		l = vOrder[orderId].tid;
+		l = orders[orderId].tid;
 		r = inf;
 	}
 
@@ -285,10 +354,9 @@ void updateMove(const int driverId) {
 	
 	const int placeId = driver.route[0].placeId;
 	const int orderId = driver.route[0].orderId;
-	query_t Q = orderToQuery(vOrder[orderId]);
-	position_t& nextPos = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
+	position_t& nextPos = (placeId < R) ? rests[placeId] : dists[placeId-R];
 	double arriveTime = driver.curTime + Length(driver.pos, nextPos);
-	double driverTid = (placeId < R) ? max(arriveTime, vOrder[orderId].tid+waitTime) : arriveTime;
+	double driverTid = (placeId < R) ? max(arriveTime, orders[orderId].tid+waitTime) : arriveTime;
 
 	// update the rider's record to evaluate the global answer
 	if (placeId < R) {
@@ -303,9 +371,46 @@ void updateMove(const int driverId) {
 	move.y = nextPos.y;
 	move.arrive = arriveTime;
 	move.leave = driverTid;
-	driver.pop_front();
+#ifdef LOCAL_DEBUG
+	{
+		if (placeId < R) {
+			printf("At %.4lf Arrive %d -> R%d. PICK:", arriveTime, driverId, placeId);
+		} else {
+			printf("At %.4lf Arrive %d -> D%d. DROP:", arriveTime, driverId, placeId-R);
+		}
+		const int sz = driver.route.size();
+		for (int i=0; i<sz; ++i) {
+			if (driver.route[i].placeId == placeId)
+				printf(" %d", driver.route[i].orderId);
+			else
+				break;
+		}
+		putchar('\n');
+	}
+#endif
+	//!!!! THIS BLOCK IS IMPORTANT TO UPDATE THE BUCKET.
+	vector<node_t>::iterator iter = driver.route.begin();
+	if (placeId < R) {
+		while (iter!=driver.route.end() && iter->placeId==placeId) {
+			taken[iter->orderId] = 0;
+			++iter;
+		}
+	} else {
+		while (iter!=driver.route.end() && iter->placeId==placeId) {
+			taken[iter->orderId] = 1;
+			++iter;
+		}
+	}
+	driver.erase(driver.route.begin(), iter);
+	//----
 	move.bucket = driver.getBucket();
 	moves[driverId].push_back(move);
+#ifdef LOCAL_DEBUG
+	printf("\tBucket:");
+	for (int i=0; i<move.bucket.size(); ++i)
+		printf(" %d", move.bucket[i]);
+	putchar('\n');
+#endif
 
 	// update the driver: position, time
 	driver.pos = nextPos;
@@ -322,7 +427,7 @@ void updateDriverPosition(const int driverId, const double orderTid) {
 
 	position_t src = driver.pos;
 	const int placeId = driver.route[0].placeId;
-	position_t des = (placeId<R) ? vRest[placeId] : vDist[placeId-R];
+	position_t des = (placeId<R) ? rests[placeId] : dists[placeId-R];
 	if (src == des)
 		return ;
 
@@ -342,8 +447,12 @@ void updateDriverPosition(const int driverId, const double orderTid) {
 	move.arrive = move.leave = orderTid;
 	if (!moves[driverId].empty())
 		move.bucket = moves[driverId].rbegin()->bucket;
-
 	moves[driverId].push_back(move);
+
+#ifdef LOCAL_DEBUG
+	printf("At %.4lf Middle %d, (%.4lf, %.4lf) -> (%.4lf, %.4lf).\n",
+			move.arrive, driverId, src.x, src.y, move.x, move.y);
+#endif
 
 	// update the driver's position
 	driver.pos.x = move.x;
@@ -358,9 +467,9 @@ void updateIndex(const int driverId, const double orderTid) {
 	while (!driver.isEmpty()) {
 		const int placeId = driver.route[0].placeId;
 		const int orderId = driver.route[0].orderId;
-		position_t& nextPos = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
+		position_t& nextPos = (placeId < R) ? rests[placeId] : dists[placeId-R];
 		double arriveTime = driver.curTime + Length(driver.pos, nextPos);
-		double driverTid = (placeId < R) ? max(arriveTime, vOrder[orderId].tid+waitTime) : arriveTime;
+		double driverTid = (placeId < R) ? max(arriveTime, orders[orderId].tid+waitTime) : arriveTime;
 
 		if (driverTid > orderTid) {
 			break;
@@ -382,17 +491,17 @@ double calcUnfinishedCost(const int driverId) {
 	for (int i=0; i<sz; ++i) {
 		const int placeId = route[i].placeId;
 		const int orderId = route[i].orderId;
-		nextLoc = (placeId < R) ? vRest[orderId] : vDist[orderId-R];
+		nextLoc = (placeId < R) ? rests[orderId] : dists[orderId-R];
 		curTime += Length(curLoc, nextLoc);
 		if (placeId < R)
-			curTime = max(curTime, vOrder[orderId].tid+waitTime);
+			curTime = max(curTime, orders[orderId].tid+waitTime);
 
 		// maybe useless even using time as objective function.
 		if (placeId < R) {
 			riders[orderId].begTime = curTime;
 		} else {
 			riders[orderId].endTime = curTime;
-			ret = max(ret, riders[orderId].endTime-vOrder[orderId].tid);
+			ret = max(ret, riders[orderId].endTime-orders[orderId].tid);
 		}
 
 		curLoc = nextLoc;
@@ -427,10 +536,10 @@ void init_minCost(vector<node_t>& src) {
 	minCost.clear();
 	for (int i=0; i<sz; ++i) {
 		double mn = inf, tmp;
-		position_t& ap = (src[i].placeId < R) ? vRest[src[i].placeId] : vDist[src[i].placeId-R];
+		position_t& ap = (src[i].placeId < R) ? rests[src[i].placeId] : dists[src[i].placeId-R];
 		for (int j=0; j<sz; ++j) {
 			if (i == j) continue;
-			position_t& bp = (src[j].placeId < R) ? vRest[src[i].placeId] : vDist[src[j].placeId-R];
+			position_t& bp = (src[j].placeId < R) ? rests[src[j].placeId] : dists[src[j].placeId-R];
 			tmp = Length(ap, bp);
 			mn = min(mn, tmp);
 		}
@@ -440,7 +549,7 @@ void init_minCost(vector<node_t>& src) {
 
 void updateRoute(vector<node_t>& newRoute) {
 	driver_t& driver = drivers[curDriverId];
-	order_t& order = vOrder[curOrderId];
+	order_t& order = orders[curOrderId];
 	double curTime = order.tid;
 	position_t curLoc = driver.pos, nextLoc;
 	const int sz = newRoute.size();
@@ -450,20 +559,19 @@ void updateRoute(vector<node_t>& newRoute) {
 	for (int i=0; i<sz; ++i) {
 		const int placeId = newRoute[i].placeId;
 		const int orderId = newRoute[i].orderId;
-		nextLoc = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
+		nextLoc = (placeId < R) ? rests[placeId] : dists[placeId-R];
 		curTime += Length(curLoc, nextLoc);
 		if (placeId < R)
-			curTime = max(curTime, vOrder[orderId].tid+waitTime);
+			curTime = max(curTime, orders[orderId].tid+waitTime);
 
 		if (placeId < R) {
 			riders[orderId].begTime = curTime;
 			if (++cap > C) return ;
 		} else {
 			riders[orderId].endTime = curTime;
-			val = max(val, riders[orderId].endTime-vOrder[orderId].tid);
+			val = max(val, riders[orderId].endTime-orders[orderId].tid);
 			--cap;
 		}
-		if (cap > C) return ;
 
 		curLoc = nextLoc;
 	}
@@ -487,7 +595,7 @@ void dfs(vector<node_t>& des, vector<node_t>& src, int idx, int n, double curTim
 		curLoc = drivers[curDriverId].pos;
 	} else {
 		const int placeId = des[idx-1].placeId;
-		curLoc = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
+		curLoc = (placeId < R) ? rests[placeId] : dists[placeId-R];
 	}
 
 	for (int i=0; i<n; ++i) {
@@ -495,16 +603,26 @@ void dfs(vector<node_t>& des, vector<node_t>& src, int idx, int n, double curTim
 
 		const int placeId = des[idx].placeId;
 		const int orderId = des[idx].orderId;
-		nextLoc = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
+		if (placeId>=R && taken[orderId]!=0)
+			continue;
+		if (placeId<R && taken[orderId]!=-1)
+			continue;
+
+		nextLoc = (placeId < R) ? rests[placeId] : dists[placeId-R];
 		newCurTime = curTime + Length(curLoc, nextLoc);
 		if (placeId < R)
-			newCurTime = max(newCurTime, vOrder[orderId].tid+waitTime);
+			newCurTime = max(newCurTime, orders[orderId].tid+waitTime);
 
 		if (!checkConstraint(newCurTime, des[idx]) || newCurTime>=bestVal)
 			continue;
 
 		newCurBound = curBound - minCost[i] + newCurTime - curTime;
 		if (newCurBound >= bestVal) continue;
+
+		if (placeId < R)
+			taken[orderId] = 0;
+		else
+			taken[orderId] = 1;
 
 		swap(minCost[i], minCost[n-1]);
 		swap(src[i], src[n-1]);
@@ -513,12 +631,17 @@ void dfs(vector<node_t>& des, vector<node_t>& src, int idx, int n, double curTim
 
 		swap(src[i], src[n-1]);
 		swap(minCost[i], minCost[n-1]);
+
+		if (placeId < R)
+			taken[orderId] = -1;
+		else
+			taken[orderId] = 0;
 	}
 }
 
 vector<node_t> scheduling(const int driverId, const int orderId) {
 	driver_t& driver = drivers[driverId];
-	order_t& order = vOrder[orderId];
+	order_t& order = orders[orderId];
 	vector<node_t> src, des;
 	
 	src = driver.route;
@@ -538,14 +661,14 @@ vector<node_t> scheduling(const int driverId, const int orderId) {
 
 void responseDriver(const int driverId, const int orderId, vector<node_t>& newRoute) {
 	driver_t& driver = drivers[driverId];
-	//order_t& order = vOrder[orderId];
+	//order_t& order = orders[orderId];
 	driver.route = newRoute;
 }
 
 void branchAndBound() {
 	for (int orderId=0; orderId<M; ++orderId) {
 		for (int driverId=0; driverId<N; ++driverId) {
-			updateIndex(driverId, vOrder[orderId].tid);
+			updateIndex(driverId, orders[orderId].tid);
 		}
 
 		vector<int> canDrivers = taxiSearching(orderId);
@@ -574,41 +697,63 @@ void printAns() {
 
 	double ans = -1;
 	for (int orderId=0; orderId<M; ++orderId)
-		ans = max(ans, riders[orderId].endTime-vOrder[orderId].tid);
+		ans = max(ans, riders[orderId].endTime-orders[orderId].tid);
 
 	printf("%.10lf\n", ans);
 }
 
 void solve() {
-	init();
+//	initAll();
 
 	branchAndBound();
 
 	printAns();
+
+	deleteAll();
 }
 
 void readNetwork() {
-	vector<double> vRest_tmp;
-	vector<double> vDist_tmp;
-	vector<int> vOrder_tmp;
+	vector<double> rests_tmp;
+	vector<double> dists_tmp;
+	vector<int> orders_tmp;
 
-	readInput(R, D, M, C, N, vRest_tmp, vDist_tmp, vOrder_tmp);
+	readInput(R, D, M, C, N, rests_tmp, dists_tmp, orders_tmp);
 
-	for (int i=0; i<vRest_tmp.size(); i+=2) {
-		vRest.push_back(position_t(vRest_tmp[i], vRest_tmp[i+1]));
+	initAll();
+	// for (int i=0; i<rests_tmp.size(); i+=2) {
+		// rests.push_back(position_t(rests_tmp[i], rests_tmp[i+1]));
+	// }
+	// for (int i=0; i<dists_tmp.size(); i+=2) {
+		// dists.push_back(position_t(dists_tmp[i], dists_tmp[i+1]));
+	// }
+	// for (int i=0; i<orders_tmp.size(); i+=3) {
+		// orders.push_back(order_t(orders_tmp[i], orders_tmp[i+1], orders_tmp[i+2]));
+	// }
+
+	// #ifdef LOCAL_DEBUG
+	// assert(rests.size() == R);
+	// assert(dists.size() == D);
+	// assert(orders.size() == N);
+	// #endif
+
+	for (int i=0,j=0; j<R; i+=2,++j) {
+		rests[j] = position_t(rests_tmp[i], rests_tmp[i+1]);
 	}
-	for (int i=0; i<vDist_tmp.size(); i+=2) {
-		vDist.push_back(position_t(vDist_tmp[i], vDist_tmp[i+1]));
+	for (int i=0,j=0; j<D; i+=2,++j) {
+		dists[j] = position_t(dists_tmp[i], dists_tmp[i+1]);
 	}
-	for (int i=0; i<vOrder_tmp.size(); i+=3) {
-		vOrder.push_back(order_t(vOrder_tmp[i], vOrder_tmp[i+1], vOrder_tmp[i+2]));
+	for (int i=0,j=0; j<N; i+=3,++j) {
+		orders[j] = order_t(orders_tmp[i], orders_tmp[i+1], orders_tmp[i+2]);
 	}
 
-	#ifdef LOCAL_DEBUG
-	assert(vRest.size() == R);
-	assert(vDist.size() == D);
-	assert(vOrder.size() == N);
-	#endif
+	initGrid();
+//	for (int i=0; i<M; ++i) {
+//		int placeId = rand() % R;
+//		drivers[i].pos = rests[placeId];
+//#ifdef LOCAL_DEBUG
+//		printf("Driver%d is located in (%.2lf, %.2lf) at first.\n", i, drivers[i].pos.x, drivers[i].pos.y);
+//#endif
+//	}
 }
 
 int main(int argc, char **argv) {
