@@ -12,7 +12,11 @@ using namespace std;
 #include "monitor.h"
 
 
+const double waitTime = 0.0;
+int graphLength, graphWidth;
+int gridLength, gridWidth;
 int R, D, M, C, N;
+
 const double eps = 1e-6;
 int dcmp(double x) {
 	if (fabs(x) < eps)
@@ -131,8 +135,6 @@ struct query_t {
 	} wd;
 };
 
-int graphLength, graphWidth;
-int gridLength, gridWidth;
 const double inf = 1e20;
 vector<position_t> vRest, vDist;
 vector<order_t> vOrder;
@@ -332,7 +334,6 @@ void insertIntoGrid(const int gridId, const int driverId) {
 	lv.push_back(driverId);
 }
 
-const double waitTime = 0.0;
 query_t orderToQuery(const order_t& order) {
 	query_t ret;
 
@@ -432,8 +433,8 @@ void updateIndex(const int driverId, const double orderTid) {
 		const int placeId = driver.route[0].placeId;
 		const int orderId = driver.route[0].orderId;
 		position_t& nextPos = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
-		double t = Length(driver.pos, nextPos);
-		double driverTid = (placeId < R) ? max(driver.curTime+t, vOrder[orderId].tid+waitTime) : (driver.curTime+t);
+		double arriveTime = driver.curTime + Length(driver.pos, nextPos);
+		double driverTid = (placeId < R) ? max(arriveTime, vOrder[orderId].tid+waitTime) : arriveTime;
 
 		if (driverTid > orderTid) {
 			break;
