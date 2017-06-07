@@ -414,7 +414,7 @@ void updateMove(const int driverId) {
 
 	// update the driver: position, time
 	driver.pos = nextPos;
-	driver.curTime = driverTid;
+	driver.curTime = leaveTime;
 }
 
 void updateDriverPosition(const int driverId, const double orderTid) {
@@ -514,7 +514,7 @@ vector<int> taxiSearching(const int orderId) {
 	double bestCost = inf, cost;
 	vector<int> ret(1, -1);
 
-	for (int driverId=0; driverId<N; ++driverId) {
+	for (int driverId=0; driverId<M; ++driverId) {
 		cost = calcUnfinishedCost(driverId);
 		if (cost < bestCost) {
 			bestCost = cost;
@@ -661,8 +661,16 @@ void dfs(vector<node_t>& des, vector<node_t>& src, int idx, int n, double curTim
 		if (placeId < R)
 			newCurTime = max(newCurTime, orders[orderId].tid+waitTime);
 
+#if  	defined(MY_AVG_BOUND)
+		if (!checkConstraint(newCurTime, des[idx]))
+			continue;
+#elif 	defined(MY_MAX_BOUND)
+		if (!checkConstraint(newCurTime, des[idx]))
+			continue;
+#else
 		if (!checkConstraint(newCurTime, des[idx]) || newCurTime>=bestVal)
 			continue;
+#endif
 
 #if  	defined(MY_AVG_BOUND)
 		if (placeId >= R) {
@@ -671,7 +679,7 @@ void dfs(vector<node_t>& des, vector<node_t>& src, int idx, int n, double curTim
 		} else {
 			newCurBound = curBound;
 		}
-		if (newCurTime+newCurBound/orderNum >= bestVal) continue;
+		if (orderNum>0 && newCurTime+newCurBound/orderNum>=bestVal) continue;
 #elif	defined(MY_MAX_BOUND)
 		if (placeId >= R) {
 			newCurBound = curBound - boundSet.begin()->first;
@@ -742,8 +750,8 @@ void responseDriver(const int driverId, const int orderId, vector<node_t>& newRo
 }
 
 void branchAndBound() {
-	for (int orderId=0; orderId<M; ++orderId) {
-		for (int driverId=0; driverId<N; ++driverId) {
+	for (int orderId=0; orderId<N; ++orderId) {
+		for (int driverId=0; driverId<M; ++driverId) {
 			updateIndex(driverId, orders[orderId].tid);
 		}
 
@@ -757,7 +765,7 @@ void branchAndBound() {
 			responseDriver(driverId, orderId, newRoute);
 	}
 
-	for (int driverId=0; driverId<N; ++driverId) {
+	for (int driverId=0; driverId<M; ++driverId) {
 		driver_t& driver = drivers[driverId];
 		while (!driver.isEmpty())
 			updateMove(driverId);
@@ -765,14 +773,14 @@ void branchAndBound() {
 }
 
 void printAns() {
-	for (int driverId=0; driverId<N; ++driverId) {
+	for (int driverId=0; driverId<M; ++driverId) {
 		const int sz = moves[driverId].size();
 		printf("%d %d\n", driverId, sz);
 		dumpOutput(moves[driverId]);
 	}
 
 	double ans = -1;
-	for (int orderId=0; orderId<M; ++orderId)
+	for (int orderId=0; orderId<N; ++orderId)
 		ans = max(ans, riders[orderId].endTime-orders[orderId].tid);
 
 	printf("%.10lf\n", ans);
