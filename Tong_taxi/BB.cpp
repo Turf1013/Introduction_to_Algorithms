@@ -745,7 +745,8 @@ vector<node_t> scheduling(const int driverId, const int orderId) {
 
 void responseDriver(const int driverId, const int orderId, vector<node_t>& newRoute) {
 	driver_t& driver = drivers[driverId];
-	//order_t& order = orders[orderId];
+	order_t& order = orders[orderId];
+	driver.curTime = order.tid;
 	driver.route = newRoute;
 }
 

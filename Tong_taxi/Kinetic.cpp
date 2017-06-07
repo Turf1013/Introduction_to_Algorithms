@@ -2,29 +2,34 @@
 	\author: 	Trasier
 	\date: 		2017.6.4
 	\source: 	VLDB14 Large Scale Real-time Ridesharing with Service Guarantee on Road Networks
-	\note: 		Kinetic Tree
-			The main difference between Kinetic-Tree and Branch-and-Bound is
-			1) there are always multiple routes in the tree, while driver still chooses the best route;
-			2) As soon as the driver reaches some key locations, the tree needs to be pruned since some routes are out of date.
-			In summary, both `taxiScheduling` and `updateMove` need to be coded.
-	\readme:	1) During the process of insertNode, supposed that there is no valid route at last, 
+	\describ: 	Kinetic Tree
+				The main difference between Kinetic-Tree and Branch-and-Bound is
+				1) there are always multiple routes in the tree, while driver still chooses the best route;
+				2) As soon as the driver reaches some key locations, the tree needs to be pruned since some routes are out of date.
+				In summary, both `taxiScheduling` and `updateMove` need to be coded.
+	\note:		1) During the process of insertNode, supposed that there is no valid route at last,
 					the original route is still deleted due to `If insert failed, delete(l,c)`.
 					But driver should stick to his original route.
 					My replacement is rebuild a whole tree, if there is some valid route, then use the new one to replace the old.
+						-- 2017.6.4
+				2) Since at one movement, many orders could be picked up or dropped off,
+					// the function `updateMove` should iterate remove the subtree of kinetic.
+				3) Since VLDB14 only selects one candidate driver, using unfinished cost without considering TIME is not a good option.
+					Naturally, the result of kinetic is not as good as paper's.
 */
 #include <bits/stdc++.h>
 using namespace std;
 
 #include "input.h"
 #include "output.h"
-#include "monitor.h"
+//#include "monitor.h"
 #include "treeNode.h"
 
 #define LOCAL_DEBUG
 
 const double waitTime = 0.0;
-int graphLength, graphWidth;
-int gridLength, gridWidth;
+int graphLength = 20, graphWidth = 20;
+int gridLength = 7, gridWidth = 7;
 int R, D, M, C, N;
 
 const double eps = 1e-6;
@@ -76,6 +81,10 @@ struct node_t {
 	bool operator==(const node_t& oth) const {
 		return placeId==oth.placeId && orderId==oth.orderId;
 	}
+
+	bool operator!=(const node_t& oth) const {
+		return placeId!=oth.placeId || orderId!=oth.orderId;
+	}
 };
 
 typedef treeNode_t<node_t> treeNode;
@@ -108,6 +117,10 @@ struct driver_t {
 			route.erase(route.begin());
 	}
 
+	void erase(vector<node_t>::iterator biter, vector<node_t>::iterator eiter) {
+		route.erase(biter, eiter);
+	}
+
 	void clear() {
 		route.clear();
 	}
@@ -115,9 +128,12 @@ struct driver_t {
 	vector<int> getBucket() {
 		const int sz = route.size();
 		vector<int> ret;
+		set<int> unpicked;
 
 		for (int i=0; i<sz; ++i) {
-			if (route[i].placeId >= R)
+			if (route[i].placeId < R)
+				unpicked.insert(route[i].orderId);
+			if (route[i].placeId>=R && unpicked.count(route[i].orderId)==0)
 				ret.push_back(route[i].orderId);
 		}
 		// sort(ret.begin(), ret.end());
@@ -136,17 +152,17 @@ struct rider_t {
 
 
 const double inf = 1e20;
-vector<position_t> vRest, vDist;
-vector<order_t> vOrder;
-vector<rider_t> riders;
-vector<driver_t> drivers;
-vector<treeNode*> kineticRoots;
+position_t *rests;
+position_t *dists;
+order_t *orders;
+rider_t *riders;
+driver_t *drivers;
+treeNode** kineticRoots;
 vector<vector<move_t> > moves;
 vector<vector<double> > R2D, R2R, D2D;
 
-
 inline double Length(const position_t& pa, const position_t& pb) {
-	return sqrt((pa.x-pb.y)*(pa.x-pb.x) + (pa.y-pb.y)*(pa.y-pb.y));
+	return sqrt((pa.x-pb.x)*(pa.x-pb.x) + (pa.y-pb.y)*(pa.y-pb.y));
 }
 
 void init_Dist() {
@@ -156,7 +172,7 @@ void init_Dist() {
 
 		for (int i=0; i<R; ++i) {
 			for (int j=0; j<R; ++j) {
-				vtmp[j] = Length(vRest[i], vRest[j]);
+				vtmp[j] = Length(rests[i], rests[j]);
 			}
 			vtmp[i] = 0.0;
 			R2R.push_back(vtmp);
@@ -169,7 +185,7 @@ void init_Dist() {
 
 		for (int i=0; i<D; ++i) {
 			for (int j=0; j<D; ++j) {
-				vtmp[j] = Length(vDist[i], vDist[j]);
+				vtmp[j] = Length(dists[i], dists[j]);
 			}
 			vtmp[i] = 0.0;
 			D2D.push_back(vtmp);
@@ -182,7 +198,7 @@ void init_Dist() {
 
 		for (int i=0; i<R; ++i) {
 			for (int j=0; j<D; ++j) {
-				vtmp[j] = Length(vRest[i], vDist[j]);
+				vtmp[j] = Length(rests[i], dists[j]);
 			}
 			R2D.push_back(vtmp);
 		}
@@ -218,20 +234,26 @@ inline double dist_R2R(const int rid1, const int rid2) {
 }
 
 void initRider() {
-	riders.clear();
-	for (int i=0; i<N; ++i) {
-		riders.push_back(rider_t());
+	// riders.clear();
+	// for (int i=0; i<N; ++i) {
+		// riders.push_back(rider_t());
+	// }
+	riders = new rider_t[N];
+}
+
+void initRoot() {
+	kineticRoots = new treeNode*[M];
+	for (int i=0; i<M; ++i) {
+		kineticRoots[i] = new treeNode(node_t(-1, -1));
 	}
 }
 
 void initDriver() {
-	drivers.clear();
-	kineticRoots.clear();
-	for (int i=0; i<M; ++i) {
-		drivers.push_back(driver_t());
-		treeNode* rt = new treeNode(node_t(-1, -1));
-		kineticRoots.push_back(rt);
-	}
+	// drivers.clear();
+	// for (int i=0; i<M; ++i) {
+		// drivers.push_back(driver_t());
+	// }
+	drivers = new driver_t[M];
 }
 
 void initMove() {
@@ -241,13 +263,27 @@ void initMove() {
 	}
 }
 
+void initOrder() {
+	orders = new order_t[N];
+}
+
+void initRest() {
+	rests = new position_t[R];
+}
+
+void initDist() {
+	dists = new position_t[D];
+}
+
 
 int gridNumPerRow, gridNumPerCol;
 position_t getGridAnchor(const int gridId) {
 	int rid = gridId / gridNumPerRow;
 	int cid = gridId % gridNumPerRow;
-	double x = (rid + 0.5) * gridWidth;
-	double y = (cid + 0.5) * gridLength;
+	double lx = rid * gridWidth, rx = min((double)graphWidth, lx+gridWidth);
+	double ly = cid * gridLength, ry = min((double)graphLength, ly+gridLength);
+	double x = (lx + rx) * 0.5;
+	double y = (ly + ry) * 0.5;
 
 	return position_t(x, y);
 }
@@ -266,13 +302,45 @@ int getGridId(const position_t& pos) {
 
 void initGrid() {
 	gridNumPerRow = (graphLength + gridLength - 1) / gridLength;
+	
+	for (int i=0; i<M; ++i) {
+		// random initialize the poisition of driver at the rid
+		int placeId = rand() % R;
+		drivers[i].pos = rests[placeId];
+		drivers[i].curTime = 0;
+#ifdef LOCAL_DEBUG
+		printf("Driver%d is located in (%.2lf, %.2lf) at first.\n", i, drivers[i].pos.x, drivers[i].pos.y);
+#endif
+		// update the initial move
+//		move_t move;
+//
+//		move.x = drivers[i].pos.x;
+//		move.y = drivers[i].pos.y;
+//		move.arrive = move.leave = 0;
+//		moves[i].push_back(move);
+	}
 }
 
-void init() {
+void initAll() {
+	initOrder();
+	initRest();
+	initDist();
 	initDriver();
 	initRider();
 	initMove();
-	initGrid();
+	initRoot();
+}
+
+void deleteAll() {
+	delete[] orders;
+	delete[] rests;
+	delete[] dists;
+	delete[] drivers;
+	delete[] riders;
+	for (int i=0; i<M; ++i) {
+		deleteTree(kineticRoots[i]);
+	}
+	delete[] kineticRoots;
 }
 
 bool checkConstraint(double curTime, const node_t& nd) {
@@ -282,10 +350,10 @@ bool checkConstraint(double curTime, const node_t& nd) {
 	double l, r;
 
 	if (placeId < R) {// pickup 
-		l = vOrder[orderId].tid;
-		r = l + waitTime;
+		l = orders[orderId].tid + waitTime;
+		r = inf;
 	} else {// dropoff
-		l = vOrder[orderId].tid;
+		l = orders[orderId].tid;
 		r = inf;
 	}
 
@@ -295,42 +363,11 @@ bool checkConstraint(double curTime, const node_t& nd) {
 		return false;
 }
 
-void updateMove(const int driverId) {
-	driver_t& driver = drivers[driverId];
-	if (driver.empty()) return ;
-
-	node_t node = driver.route[0];
-	const int placeId = driver.route[0].placeId;
-	const int orderId = driver.route[0].orderId;
-	position_t& nextPos = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
-	double arriveTime = driver.curTime + Length(driver.pos, nextPos);
-	double driverTid = (placeId < R) ? max(arriveTime, vOrder[orderId].tid+waitTime) : arriveTime;
-
-	// update the rider's record to evaluate the global answer
-	if (placeId < R) {
-		riders[orderId].begTime = driverTid;
-	} else {
-		riders[orderId].endTime = driverTid;
-	}
-
-	move_t move;
-
-	move.x = nextPos.x;
-	move.y = nextPos.y;
-	move.arrive = arriveTime;
-	move.leave = driverTid;
-	driver.pop_front();
-	move.bucket = driver.getBucket();
-	moves[driverId].push_back(move);
-
-	// update the driver: position, time
-	driver.pos = nextPos;
-	driver.curTime = driverTid;
-
+void deleteSubtree(const int driverId, const node_t& node) {
 	// update the kinetic tree
 	treeNode *rt = kineticRoots[driverId], *nrt = NULL;
 	const int childSz = rt->size();
-	
+
 	for (int i=0; i<childSz; ++i) {
 		if (rt->children[i]->val == node) {
 			#ifdef LOCAL_DEBUG
@@ -349,6 +386,71 @@ void updateMove(const int driverId) {
 	delete nrt;
 }
 
+void updateMove(const int driverId) {
+	driver_t& driver = drivers[driverId];
+	if (driver.empty()) return ;
+	
+	const int placeId = driver.route[0].placeId;
+	const int orderId = driver.route[0].orderId;
+	position_t& nextPos = (placeId < R) ? rests[placeId] : dists[placeId-R];
+	double arriveTime = driver.curTime + Length(driver.pos, nextPos);
+
+	// add the movement of the driver
+	move_t move;
+
+	move.x = nextPos.x;
+	move.y = nextPos.y;
+	move.arrive = arriveTime;
+	double& leaveTime = move.leave;
+	leaveTime = arriveTime;
+#ifdef LOCAL_DEBUG
+	{
+		if (placeId < R) {
+			printf("At %.4lf Arrive %d -> R%d. PICK:", arriveTime, driverId, placeId);
+		} else {
+			printf("At %.4lf Arrive %d -> D%d. DROP:", arriveTime, driverId, placeId-R);
+		}
+		const int sz = driver.route.size();
+		for (int i=0; i<sz; ++i) {
+			if (driver.route[i].placeId == placeId)
+				printf(" %d", driver.route[i].orderId);
+			else
+				break;
+		}
+		putchar('\n');
+	}
+#endif
+	//!!!! THIS BLOCK IS IMPORTANT TO UPDATE THE BUCKET.
+	vector<node_t>::iterator iter = driver.route.begin();
+	double driverTid;
+	while (iter!=driver.route.end() && iter->placeId==placeId) {
+		if (placeId < R) {
+			driverTid = max(arriveTime, orders[iter->orderId].tid+waitTime);
+			riders[iter->orderId].begTime = driverTid;
+		} else {
+			driverTid = arriveTime;
+			riders[iter->orderId].endTime = driverTid;
+		}
+		leaveTime = max(leaveTime, driverTid);
+		deleteSubtree(driverId, *iter);
+		++iter;
+	}
+	driver.erase(driver.route.begin(), iter);
+	//----
+	move.bucket = driver.getBucket();
+	moves[driverId].push_back(move);
+#ifdef LOCAL_DEBUG
+	printf("\tBucket:");
+	for (int i=0; i<move.bucket.size(); ++i)
+		printf(" %d", move.bucket[i]);
+	putchar('\n');
+#endif
+
+	// update the driver: position, time
+	driver.pos = nextPos;
+	driver.curTime = leaveTime;
+}
+
 void updateDriverPosition(const int driverId, const double orderTid) {
 	driver_t& driver = drivers[driverId];
 	if (driver.isEmpty())
@@ -359,7 +461,7 @@ void updateDriverPosition(const int driverId, const double orderTid) {
 
 	position_t src = driver.pos;
 	const int placeId = driver.route[0].placeId;
-	position_t des = (placeId<R) ? vRest[placeId] : vDist[placeId-R];
+	position_t des = (placeId<R) ? rests[placeId] : dists[placeId-R];
 	if (src == des)
 		return ;
 
@@ -379,8 +481,12 @@ void updateDriverPosition(const int driverId, const double orderTid) {
 	move.arrive = move.leave = orderTid;
 	if (!moves[driverId].empty())
 		move.bucket = moves[driverId].rbegin()->bucket;
-
 	moves[driverId].push_back(move);
+
+#ifdef LOCAL_DEBUG
+	printf("At %.4lf Middle %d, (%.4lf, %.4lf) -> (%.4lf, %.4lf).\n",
+			move.arrive, driverId, src.x, src.y, move.x, move.y);
+#endif
 
 	// update the driver's position
 	driver.pos.x = move.x;
@@ -396,9 +502,9 @@ void updateIndex(const int driverId, const double orderTid) {
 	while (!driver.isEmpty()) {
 		const int placeId = driver.route[0].placeId;
 		const int orderId = driver.route[0].orderId;
-		position_t& nextPos = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
+		position_t& nextPos = (placeId < R) ? rests[placeId] : dists[placeId-R];
 		double arriveTime = driver.curTime + Length(driver.pos, nextPos);
-		double driverTid = (placeId < R) ? max(arriveTime, vOrder[orderId].tid+waitTime) : arriveTime;
+		double driverTid = (placeId < R) ? max(arriveTime, orders[orderId].tid+waitTime) : arriveTime;
 
 		if (driverTid > orderTid) {
 			break;
@@ -420,17 +526,17 @@ double calcUnfinishedCost(const int driverId) {
 	for (int i=0; i<sz; ++i) {
 		const int placeId = route[i].placeId;
 		const int orderId = route[i].orderId;
-		nextLoc = (placeId < R) ? vRest[orderId] : vDist[orderId-R];
+		nextLoc = (placeId < R) ? rests[orderId] : dists[orderId-R];
 		curTime += Length(curLoc, nextLoc);
 		if (placeId < R)
-			curTime = max(curTime, vOrder[orderId].tid+waitTime);
+			curTime = max(curTime, orders[orderId].tid+waitTime);
 
 		// maybe useless even using time as objective function.
 		if (placeId < R) {
 			riders[orderId].begTime = curTime;
 		} else {
 			riders[orderId].endTime = curTime;
-			ret = max(ret, riders[orderId].endTime-vOrder[orderId].tid);
+			ret = max(ret, riders[orderId].endTime-orders[orderId].tid);
 		}
 
 		curLoc = nextLoc;
@@ -443,7 +549,7 @@ vector<int> taxiSearching(const int orderId) {
 	double bestCost = inf, cost;
 	vector<int> ret(1, -1);
 
-	for (int driverId=0; driverId<N; ++driverId) {
+	for (int driverId=0; driverId<M; ++driverId) {
 		cost = calcUnfinishedCost(driverId);
 		if (cost < bestCost) {
 			bestCost = cost;
@@ -456,7 +562,7 @@ vector<int> taxiSearching(const int orderId) {
 
 vector<node_t> directAssign(const int driverId, const int orderId) {
 	driver_t& driver = drivers[driverId];
-	order_t& order = vOrder[orderId];
+	order_t& order = orders[orderId];
 	vector<node_t> route;
 
 	route.push_back(node_t(order.sid, orderId));
@@ -469,10 +575,10 @@ vector<node_t> directAssign(const int driverId, const int orderId) {
 	for (int i=0; i<sz; ++i) {
 		const int placeId = route[i].placeId;
 		const int orderId = route[i].orderId;
-		nextLoc = (placeId<R) ? vRest[placeId] : vDist[placeId-R];
+		nextLoc = (placeId<R) ? rests[placeId] : dists[placeId-R];
 		curTime += Length(curLoc, nextLoc);
 		if (placeId < R)
-			curTime = max(curTime, (double)vOrder[orderId].tid);
+			curTime = max(curTime, orders[orderId].tid+waitTime);
 
 		if (!checkConstraint(curTime, route[i]))
 			return vector<node_t>();
@@ -499,7 +605,7 @@ void updateRoute() {
 	#endif
 
 	driver_t& driver = drivers[curDriverId];
-	order_t& order = vOrder[curOrderId];
+	order_t& order = orders[curOrderId];
 	position_t curLoc = driver.pos, nextLoc;
 	double val = -1;
 	const int sz = curRoute.size();
@@ -509,17 +615,17 @@ void updateRoute() {
 	for (int i=0; i<sz; ++i) {
 		const int placeId = curRoute[i]->val.placeId;
 		const int orderId = curRoute[i]->val.orderId;
-		nextLoc = (placeId < R) ? vRest[placeId] : vDist[placeId-R];
+		nextLoc = (placeId < R) ? rests[placeId] : dists[placeId-R];
 		curTime += Length(curLoc, nextLoc);
 		if (placeId < R)
-			curTime = max(curTime, vOrder[orderId].tid+waitTime);
+			curTime = max(curTime, orders[orderId].tid+waitTime);
 
 		if (placeId < R) {
 			riders[orderId].begTime = curTime;
 			if (++cap > C) return ;
 		} else {
 			riders[orderId].endTime = curTime;
-			val = max(val, riders[orderId].endTime-vOrder[orderId].tid);
+			val = max(val, riders[orderId].endTime-orders[orderId].tid);
 			--cap;
 		}
 
@@ -534,7 +640,7 @@ void updateRoute() {
 
 vector<node_t> scheduling(const int driverId, const int orderId) {
 	driver_t& driver = drivers[driverId];
-	order_t& order = vOrder[orderId];
+	order_t& order = orders[orderId];
 	vector<node_t>& route = driver.route;
 	treeNode* root = kineticRoots[driverId];
 	
@@ -548,9 +654,20 @@ vector<node_t> scheduling(const int driverId, const int orderId) {
 	bestRoute.resize(route.size()+2, NULL);
 	curRoute.resize(route.size()+2, NULL);
 
-	if (root == NULL) {
+	if (root->children.empty()) {
 		// if there is no valid route for the driver, then we can just assign the task immediately.
-		return directAssign(driverId, orderId);;
+		vector<node_t> ret = directAssign(driverId, orderId);
+		// update the tree
+		if (!ret.empty()) {
+#ifdef LOCAL_DEBUG
+		assert(ret.size() == 2);
+#endif
+			treeNode *distNode = new treeNode(ret[1]);
+			treeNode *restNode = new treeNode(ret[0]);
+			restNode->push_back(distNode);
+			root->push_back(restNode);
+		}
+		return ret;
 	}
 	treeNode* newTreeRoot;
 	copyTree(newTreeRoot, root);
@@ -580,14 +697,18 @@ vector<node_t> scheduling(const int driverId, const int orderId) {
 
 void responseDriver(const int driverId, const int orderId, vector<node_t>& newRoute) {
 	driver_t& driver = drivers[driverId];
-	//order_t& order = vOrder[orderId];
+	order_t& order = orders[orderId];
+	driver.curTime = order.tid;
 	driver.route = newRoute;
 }
 
 void Kinetic() {
-	for (int orderId=0; orderId<M; ++orderId) {
-		for (int driverId=0; driverId<N; ++driverId) {
-			updateIndex(driverId, vOrder[orderId].tid);
+	for (int orderId=0; orderId<N; ++orderId) {
+		for (int driverId=0; driverId<M; ++driverId) {
+			updateIndex(driverId, orders[orderId].tid);
+#ifdef LOCAL_DEBUG
+			fflush(stdout);
+#endif
 		}
 
 		vector<int> canDrivers = taxiSearching(orderId);
@@ -600,57 +721,59 @@ void Kinetic() {
 			responseDriver(driverId, orderId, newRoute);
 	}
 
-	for (int driverId=0; driverId<N; ++driverId) {
+	for (int driverId=0; driverId<M; ++driverId) {
 		driver_t& driver = drivers[driverId];
 		while (!driver.isEmpty())
 			updateMove(driverId);
+#ifdef LOCAL_DEBUG
+		assert(kineticRoots[driverId]->empty());
+#endif
 	}
 }
 
 void printAns() {
-	for (int driverId=0; driverId<N; ++driverId) {
+	for (int driverId=0; driverId<M; ++driverId) {
 		const int sz = moves[driverId].size();
 		printf("%d %d\n", driverId, sz);
 		dumpOutput(moves[driverId]);
 	}
 
 	double ans = -1;
-	for (int orderId=0; orderId<M; ++orderId)
-		ans = max(ans, riders[orderId].endTime-vOrder[orderId].tid);
+	for (int orderId=0; orderId<N; ++orderId)
+		ans = max(ans, riders[orderId].endTime-orders[orderId].tid);
 
 	printf("%.10lf\n", ans);
 }
 
 void solve() {
-	init();
+	// init();
 
 	Kinetic();
 
 	printAns();
+	
+	deleteAll();
 }
 
 void readNetwork() {
-	vector<double> vRest_tmp;
-	vector<double> vDist_tmp;
-	vector<int> vOrder_tmp;
+	vector<double> rests_tmp;
+	vector<double> dists_tmp;
+	vector<int> orders_tmp;
 
-	readInput(R, D, M, C, N, vRest_tmp, vDist_tmp, vOrder_tmp);
-
-	for (int i=0; i<vRest_tmp.size(); i+=2) {
-		vRest.push_back(position_t(vRest_tmp[i], vRest_tmp[i+1]));
+	readInput(R, D, M, C, N, rests_tmp, dists_tmp, orders_tmp);
+	
+	initAll();
+	for (int i=0,j=0; j<R; i+=2,++j) {
+		rests[j] = position_t(rests_tmp[i], rests_tmp[i+1]);
 	}
-	for (int i=0; i<vDist_tmp.size(); i+=2) {
-		vDist.push_back(position_t(vDist_tmp[i], vDist_tmp[i+1]));
+	for (int i=0,j=0; j<D; i+=2,++j) {
+		dists[j] = position_t(dists_tmp[i], dists_tmp[i+1]);
 	}
-	for (int i=0; i<vOrder_tmp.size(); i+=3) {
-		vOrder.push_back(order_t(vOrder_tmp[i], vOrder_tmp[i+1], vOrder_tmp[i+2]));
+	for (int i=0,j=0; j<N; i+=3,++j) {
+		orders[j] = order_t(orders_tmp[i], orders_tmp[i+1], orders_tmp[i+2]);
 	}
-
-	#ifdef LOCAL_DEBUG
-	assert(vRest.size() == R);
-	assert(vDist.size() == D);
-	assert(vOrder.size() == N);
-	#endif
+	
+	initGrid();
 }
 
 int main(int argc, char **argv) {
@@ -686,13 +809,13 @@ double calcTime(const treeNode* rt, const node_t& node, double curTime) {
 	if (fnode.orderId < 0) {
 		curLoc = drivers[curDriverId].pos;
 	} else {
-		curLoc = (fnode.placeId<R) ? vRest[fnode.placeId] : vDist[fnode.placeId-R];
+		curLoc = (fnode.placeId<R) ? rests[fnode.placeId] : dists[fnode.placeId-R];
 	}
-	nextLoc = (node.placeId<R) ? vRest[node.placeId] : vDist[node.placeId-R];
+	nextLoc = (node.placeId<R) ? rests[node.placeId] : dists[node.placeId-R];
 
 	double newCurTime = curTime + Length(curLoc, nextLoc);
 	if (node.placeId < R)
-		newCurTime = max(newCurTime, vOrder[node.orderId].tid+waitTime);
+		newCurTime = max(newCurTime, orders[node.orderId].tid+waitTime);
 
 	return newCurTime;
 }
@@ -749,9 +872,11 @@ bool insertNode(treeNode*& rt, const vector<node_t>& src, double curTime, int de
 		} else {
 			return true;
 		}
+	} else {
+		deleteTree(rt);
+		rt = NULL;
+		return false;
 	}
-
-	return false;
 }
 
 bool copyNodes(treeNode*& rt, const vector<treeNode*>& src, double curTime, int dep) {
