@@ -2,11 +2,7 @@
 	\author: 	Trasier
 	\date: 		2017.6.3
 	\source: 	VLDB14 Large Scale Real-time Ridesharing with Service Guarantee on Road Networks
-	\method: 	Branch and Bound
-	\note:		1) The bound from the paper isn't suitable for the timing objection.	
-					Another replacement is to iterate the earliest time-stamp of remind orders.
-					Therefore, the bound becomes the result of current time minus that smallest value.
-					-- 2017.6.7
+	\note: 		Branch and Bound
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -16,6 +12,9 @@ using namespace std;
 //#include "monitor.h"
 
 #define LOCAL_DEBUG
+#define USE_PAPER_BOUND
+#define MY_AVG_BOUND
+#define MY_MAX_BOUND
 
 const double waitTime = 0.0;
 int graphLength = 20, graphWidth = 20;
@@ -356,21 +355,15 @@ void updateMove(const int driverId) {
 	const int orderId = driver.route[0].orderId;
 	position_t& nextPos = (placeId < R) ? rests[placeId] : dists[placeId-R];
 	double arriveTime = driver.curTime + Length(driver.pos, nextPos);
-	double driverTid = (placeId < R) ? max(arriveTime, orders[orderId].tid+waitTime) : arriveTime;
 
-	// update the rider's record to evaluate the global answer
-	if (placeId < R) {
-		riders[orderId].begTime = driverTid;
-	} else {
-		riders[orderId].endTime = driverTid;
-	}
-
+	// add the movement of the driver
 	move_t move;
 
 	move.x = nextPos.x;
 	move.y = nextPos.y;
 	move.arrive = arriveTime;
-	move.leave = driverTid;
+	double& leaveTime = move.leave;
+	leaveTime = arriveTime;
 #ifdef LOCAL_DEBUG
 	{
 		if (placeId < R) {
@@ -390,13 +383,20 @@ void updateMove(const int driverId) {
 #endif
 	//!!!! THIS BLOCK IS IMPORTANT TO UPDATE THE BUCKET.
 	vector<node_t>::iterator iter = driver.route.begin();
+	double driverTid;
 	if (placeId < R) {
 		while (iter!=driver.route.end() && iter->placeId==placeId) {
+			driverTid = max(arriveTime, orders[iter->orderId].tid+waitTime);
+			riders[iter->orderId].begTime = driverTid;
+			leaveTime = max(leaveTime, driverTid);
 			taken[iter->orderId] = 0;
 			++iter;
 		}
 	} else {
 		while (iter!=driver.route.end() && iter->placeId==placeId) {
+			driverTid = arriveTime;
+			riders[iter->orderId].endTime = driverTid;
+			leaveTime = max(leaveTime, driverTid);
 			taken[iter->orderId] = 1;
 			++iter;
 		}
@@ -529,6 +529,11 @@ vector<node_t> bestRoute;
 vector<double> minCost;
 double bestVal;
 int curOrderId, curDriverId;
+#if defined(MY_AVG_BOUND)
+int orderNum;
+#elif defined(MY_MAX_BOUND)
+set<pair<double,int>, greater<pair<double,int> > > boundSet;
+#endif
 
 void init_minCost(vector<node_t>& src) {
 	const int sz = src.size();
@@ -545,6 +550,22 @@ void init_minCost(vector<node_t>& src) {
 		}
 		minCost.push_back(mn);
 	}
+#if defined(MY_AVG_BOUND)
+	for (int i=0; i<sz; ++i) {
+		const int placeId = src[i].placeId;
+		const int orderId = src[i].orderId;
+		minCost[i] -= orders[orderId].tid;
+	}
+#elif defined(MY_MAX_BOUND)
+	boundSet.clear();
+	for (int i=0; i<sz; ++i) {
+		const int placeId = src[i].placeId;
+		const int orderid = src[i].orderId;
+		minCost[i] -= orders[orderId].tid;
+		if (placeId >= R)
+			boundSet.insert(make_pair(minCost[i], i));
+	}
+#endif
 }
 
 void updateRoute(vector<node_t>& newRoute) {
@@ -582,6 +603,33 @@ void updateRoute(vector<node_t>& newRoute) {
 	}
 }
 
+double calcInitBound(const vector<node_t>& src, const double curTime) {
+	double ret;
+	const int sz = minCost.size();
+
+#if defined(MY_AVG_BOUND)
+	orderNum = 0;
+	for (int i=0; i<sz; ++i) {
+		if (src[i].placeId >= R) {
+			ret += minCost[i];
+			++orderNum;
+		}
+	}
+#elif  defined(MY_MAX_BOUND)
+	ret = -1;
+	for (int i=0; i<sz; ++i) {
+		if (src[i].placeId >= R) {
+			ret = max(ret, minCost[i]);
+		}
+	}
+#else
+	ret = accumlate(minCost.begin(), minCost.end(), 0.0);
+	ret += curTime;
+#endif
+
+	return ret;
+}
+
 void dfs(vector<node_t>& des, vector<node_t>& src, int idx, int n, double curTime, double curBound) {
 	if (n == 0) {
 		updateRoute(des);
@@ -616,8 +664,27 @@ void dfs(vector<node_t>& des, vector<node_t>& src, int idx, int n, double curTim
 		if (!checkConstraint(newCurTime, des[idx]) || newCurTime>=bestVal)
 			continue;
 
+#if  	defined(MY_AVG_BOUND)
+		if (placeId >= R) {
+			--orderNum;
+			newCurBound = curBound - minCost[i];
+		} else {
+			newCurBound = curBound;
+		}
+		if (newCurTime+newCurBound/orderNum >= bestVal) continue;
+#elif	defined(MY_MAX_BOUND)
+		if (placeId >= R) {
+			newCurBound = curBound - boundSet.begin()->first;
+			boundSet.erase(make_pair(minCost[i], i));
+			newCurBound = curBound + boundSet.begin()->first;
+		} else {
+			newCurBound = curBound;
+		}
+		if (newCurTime+newCurBound >= bestVal) continue;
+#else
 		newCurBound = curBound - minCost[i] + newCurTime - curTime;
 		if (newCurBound >= bestVal) continue;
+#endif
 
 		if (placeId < R)
 			taken[orderId] = 0;
@@ -636,6 +703,15 @@ void dfs(vector<node_t>& des, vector<node_t>& src, int idx, int n, double curTim
 			taken[orderId] = -1;
 		else
 			taken[orderId] = 0;
+#if 	defined(MY_AVG_BOUND)
+		if (placeId >= R) {
+			++orderNum;
+		}
+#elif 	defined(MY_MAX_BOUND)
+		if (placeId >= R) {
+			boundSet.insert(make_pair(minCost[i], i));
+		}
+#endif
 	}
 }
 
@@ -652,9 +728,9 @@ vector<node_t> scheduling(const int driverId, const int orderId) {
 	init_minCost(src);
 	curDriverId = driverId;
 	curOrderId = orderId;
-	double minSum = accumulate(minCost.begin(), minCost.end(), 0.0);
+	double initBound = calcInitBound(src, order.tid);
 
-	dfs(des, src, 0, src.size(), order.tid, minSum+order.tid);
+	dfs(des, src, 0, src.size(), order.tid, initBound);
 
 	return bestRoute;
 }

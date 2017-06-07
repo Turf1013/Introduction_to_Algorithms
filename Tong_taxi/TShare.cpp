@@ -2,8 +2,10 @@
 	\author: 	Trasier
 	\date:   	2017.6.1
 	\source: 	ICDE13 T-share: A Large-Scale Dynamic Taxi Ridesharing Service
-	\note: 		1) 2016.6.5 updateMove is not fixed yet.
-				2) 2016.6.6 There could be some bugs in updateMove, since at one place(aRest or aDist), more than one riders can be pickedup or delivered.
+	\note: 		1) 2017.6.5 updateMove is not fixed yet.
+				2) 2017.6.6 There could be some bugs in updateMove, since at one place(aRest or aDist), more than one riders can be pickedup or delivered.
+				3) 2017.6.7 Because of previous bugs, leaveTime of each movement should also be updated, the begTime/endTime for all the places are not the same.
+								But the maximum value is the leaveTime.
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -419,24 +421,17 @@ void updateMove(const int driverId) {
 	
 	const int placeId = driver.route[0].placeId;
 	const int orderId = driver.route[0].orderId;
-	query_t Q = orderToQuery(orders[orderId]);
 	position_t& nextPos = (placeId < R) ? rests[placeId] : dists[placeId-R];
 	double arriveTime = driver.curTime + Length(driver.pos, nextPos);
-	double driverTid = (placeId < R) ? max(arriveTime, Q.wp.e) : max(arriveTime, Q.wd.e);
-
-	// update the rider's record to evaluate the global answer
-	if (placeId < R) {
-		riders[orderId].begTime = driverTid;
-	} else {
-		riders[orderId].endTime = driverTid;
-	}
-
+	
+	// add the movement of the driver
 	move_t move;
 
 	move.x = nextPos.x;
 	move.y = nextPos.y;
 	move.arrive = arriveTime;
-	move.leave = driverTid;
+	double& leaveTime = move.leave;
+	leaveTime = arriveTime;
 #ifdef LOCAL_DEBUG
 	{
 		if (placeId < R) {
@@ -456,8 +451,21 @@ void updateMove(const int driverId) {
 #endif
 	//!!!! THIS BLOCK IS IMPORTANT TO UPDATE THE BUCKET.
 	vector<node_t>::iterator iter = driver.route.begin();
-	while (iter!=driver.route.end() && iter->placeId==placeId)
+	while (iter!=driver.route.end() && iter->placeId==placeId) {
+		/** 
+			update the rider's record to evaluate the global answer
+				-- 2017.6.7 more than once.
+		*/
+		query_t Q = orderToQuery(orders[iter->orderId]);
+		double driverTid = (placeId < R) ? max(arriveTime, Q.wp.e) : max(arriveTime, Q.wd.e);
+		if (placeId < R) {
+			riders[iter->orderId].begTime = driverTid;
+		} else {
+			riders[iter->orderId].endTime = driverTid;
+		}
+		leaveTime = max(leaveTime, driverTid);
 		++iter;
+	}
 	driver.erase(driver.route.begin(), iter);
 	//----
 	move.bucket = driver.getBucket();
@@ -473,7 +481,7 @@ void updateMove(const int driverId) {
 	int oldGridId = getGridId(driver.pos);
 	int newGridId = getGridId(nextPos);
 	driver.pos = nextPos;
-	driver.curTime = driverTid;
+	driver.curTime = leaveTime;
 
 	removeFromGrid(oldGridId, driverId);
 	insertIntoGrid(newGridId, driverId);
