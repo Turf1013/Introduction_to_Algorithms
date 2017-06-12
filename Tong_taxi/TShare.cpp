@@ -548,6 +548,26 @@ void updateDriverPosition(const int driverId, const double orderTid) {
 // #endif
 }
 
+void goBack(const int driverId, const double orderTid) {
+	driver_t& driver = drivers[driverId];
+	if (driver.curTime > orderTid) return ;
+
+	double mnl = inf, tmp;
+	int v = -1;
+
+	for (int i=0; i<R; ++i) {
+		if (rests[i] == driver.pos) return ;
+
+		tmp = Length(driver.pos, rests[i]);
+		if (tmp < mnl) {
+			mnl = tmp;
+			v = i;
+		}
+	}
+
+	return ;
+}
+
 void updateIndex(const int driverId, const double orderTid) {
 	driver_t& driver = drivers[driverId];
 	if (driver.curTime > orderTid) return ;
@@ -565,6 +585,9 @@ void updateIndex(const int driverId, const double orderTid) {
 
 		updateMove(driverId);
 	}
+	// if (driver.isEmpty()) {
+	// 	goBack(driverId, orderTid);
+	// }
 	updateDriverPosition(driverId, orderTid);
 }
 
