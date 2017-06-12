@@ -14,13 +14,14 @@ struct move_t {
 
 	void print() const {
 		int nBucket = bucket.size();
-		printf("%.8lf %.8lf %.8lf %.8lf %d\n", x, y, arrive, leave, nBucket);
+		printf("%.8lf %.8lf %.8lf %.8lf %d", x, y, arrive, leave, nBucket);
 		for (int i=0; i<nBucket; ++i) {
-			if (i == nBucket-1)
-				printf("%d\n", bucket[i]);
-			else
-				printf("%d ", bucket[i]);
+			// if (i == nBucket-1)
+			// 	printf("%d\n", bucket[i]);
+			// else
+			printf(" %d", bucket[i]);
 		}
+		putchar('\n');	
 	}
 };
 

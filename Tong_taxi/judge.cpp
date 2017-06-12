@@ -213,6 +213,8 @@ bool simulateRouteByDriver(ifstream& fin, int driverId, int moveNum) {
 
 		// 0. check the capactiy
 		if (buckNum > C) {
+			printf("driverId = %d, moveId = %d, buckNum = %d\n",
+					driverId, i, buckNum);
 			puts("cond 0");
 			return false;
 		}
@@ -318,6 +320,7 @@ void simulateRoute(const string& routeFileName) {
 
 	for (int i=0; i<M; ++i) {
 		fin >> driverId >> moveNum;
+		//printf("driverId = %d, moveNum = %d\n", driverId, moveNum);
 		if (!simulateRouteByDriver(fin, driverId, moveNum)) {
 			printf("route is invalid.\n");
 			return ;
