@@ -42,6 +42,7 @@ void readInput(int& R, int& D, int& M, int& C, int& N,
 	int tid, rid, did;
 	for (int i=0; i<N; ++i) {
 		scanf("%d %d %d", &tid, &rid, &did);
+		--rid; --did;
 		vOrder.push_back(tid);
 		vOrder.push_back(rid);
 		vOrder.push_back(did);
@@ -72,6 +73,7 @@ void readInput(ifstream& fin, int& R, int& D, int& M, int& C, int& N,
 	int tid, rid, did;
 	for (int i=0; i<N; ++i) {
 		fin >> tid >> rid >> did;
+		--rid; --did;
 		vOrder.push_back(tid);
 		vOrder.push_back(rid);
 		vOrder.push_back(did);
@@ -102,6 +104,7 @@ void readInput(int& R, int& D, int& M, int& C, int& N,
 	int tid, rid, did;
 	for (int i=0; i<N; ++i) {
 		scanf("%d %d %d", &tid, &rid, &did);
+		--rid; --did;
 		vOrder.push_back(tid);
 		vOrder.push_back(rid);
 		vOrder.push_back(did);
@@ -132,6 +135,7 @@ void readInput(ifstream& fin, int& R, int& D, int& M, int& C, int& N,
 	int tid, rid, did;
 	for (int i=0; i<N; ++i) {
 		fin >> tid >> rid >> did;
+		--rid; --did;
 		vOrder.push_back(tid);
 		vOrder.push_back(rid);
 		vOrder.push_back(did);

@@ -26,7 +26,7 @@ using namespace std;
 
 #include "input.h"
 
-const double eps = 1e-6;
+const double eps = 1e-4;
 int dcmp(double x) {
 	if (fabs(x) < eps)
 		return 0;
@@ -213,6 +213,7 @@ bool simulateRouteByDriver(ifstream& fin, int driverId, int moveNum) {
 
 		// 0. check the capactiy
 		if (buckNum > C) {
+			puts("cond 0");
 			return false;
 		}
 
@@ -229,10 +230,14 @@ bool simulateRouteByDriver(ifstream& fin, int driverId, int moveNum) {
 
 		// 1. check the arrive time.
 		if (dcmp(simArrive - stuArrive) > 0) {
+			printf("driverId = %d, moveId = %d, simArrive = %.6lf, stuArrive = %.6lf",
+					driverId, i, simArrive, stuArrive);
+			puts("cond 1");
 			return false;
 		}
 		// 2. check the leave time
 		if (dcmp(stuLeave - stuArrive) < 0) {
+			puts("cond 2");
 			return false;
 		}
 		
@@ -244,10 +249,12 @@ bool simulateRouteByDriver(ifstream& fin, int driverId, int moveNum) {
 				orderId = *iter;
 				// 3.1. position not match
 				if (nextLoc != dists[orders[orderId].eid]) {
+					puts("cond 3.1");
 					return false;
 				}
 				// 3.2. with no pickup
 				if (taken[orderId] != 0) {
+					puts("cond 3.2");
 					return false;
 				}
 				taken[orderId] = 1;
@@ -260,10 +267,14 @@ bool simulateRouteByDriver(ifstream& fin, int driverId, int moveNum) {
 				orderId = *iter;
 				// 4.1. position not match
 				if (nextLoc != rests[orders[orderId].sid]) {
+					printf("driverId = %d, moveId = %d, nextLoc = (%.4lf,%.4lf), rest = (%.4lf, %.4lf)\n", 
+							driverId, i, nextLoc.x, nextLoc.y, rests[orders[orderId].sid].x, rests[orders[orderId].sid].y);
+					puts("cond 4.1");
 					return false;
 				}
 				// 4.2. with no pickup
 				if (taken[orderId] != -1) {
+					puts("cond 4.2");
 					return false;
 				}
 				taken[orderId] = 0;
@@ -275,8 +286,10 @@ bool simulateRouteByDriver(ifstream& fin, int driverId, int moveNum) {
 		}
 
 		// 5. check the leave time
-		if (dcmp(stuLeave - simLeave) < 0)
+		if (dcmp(stuLeave - simLeave) < 0) {
+			puts("cond 5");
 			return false;
+		}
 		simLeave = stuLeave;
 
 		curLoc = nextLoc;
@@ -285,8 +298,10 @@ bool simulateRouteByDriver(ifstream& fin, int driverId, int moveNum) {
 	}
 
 	// 6. check the final bucket
-	if (!curOrderSet.empty())
+	if (!curOrderSet.empty()) {
+		puts("cond 6");
 		return false;
+	}
 
 	return true;
 }
