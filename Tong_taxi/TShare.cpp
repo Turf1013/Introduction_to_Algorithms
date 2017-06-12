@@ -371,6 +371,7 @@ void deleteAll() {
 	delete[] dists;
 	delete[] drivers;
 	delete[] riders;
+	delete[] taken;
 }
 
 void removeFromGrid(const int gridId, const int driverId) {

@@ -12,13 +12,13 @@ using namespace std;
 //#include "monitor.h"
 
 #define LOCAL_DEBUG
-#define USE_PAPER_BOUND
+//#define USE_PAPER_BOUND
 #define MY_AVG_BOUND
-#define MY_MAX_BOUND
+//#define MY_MAX_BOUND
 
 const double waitTime = 0.0;
-int graphLength = 20, graphWidth = 20;
-int gridLength = 7, gridWidth = 7;
+int graphLength = 100, graphWidth = 100;
+int gridLength = 10, gridWidth = 10;
 int R, D, M, C, N;
 
 const double eps = 1e-6;
@@ -281,9 +281,9 @@ void initGrid() {
 		int placeId = rand() % R;
 		drivers[i].pos = rests[placeId];
 		drivers[i].curTime = 0;
-#ifdef LOCAL_DEBUG
-		printf("Driver%d is located in (%.2lf, %.2lf) at first.\n", i, drivers[i].pos.x, drivers[i].pos.y);
-#endif
+// #ifdef LOCAL_DEBUG
+// 		printf("Driver%d is located in (%.2lf, %.2lf) at first.\n", i, drivers[i].pos.x, drivers[i].pos.y);
+// #endif
 		// update the initial move
 //		move_t move;
 //
@@ -325,6 +325,7 @@ void deleteAll() {
 	delete[] dists;
 	delete[] drivers;
 	delete[] riders;
+	delete[] taken
 }
 
 bool checkConstraint(double curTime, const node_t& nd) {
@@ -364,23 +365,23 @@ void updateMove(const int driverId) {
 	move.arrive = arriveTime;
 	double& leaveTime = move.leave;
 	leaveTime = arriveTime;
-#ifdef LOCAL_DEBUG
-	{
-		if (placeId < R) {
-			printf("At %.4lf Arrive %d -> R%d. PICK:", arriveTime, driverId, placeId);
-		} else {
-			printf("At %.4lf Arrive %d -> D%d. DROP:", arriveTime, driverId, placeId-R);
-		}
-		const int sz = driver.route.size();
-		for (int i=0; i<sz; ++i) {
-			if (driver.route[i].placeId == placeId)
-				printf(" %d", driver.route[i].orderId);
-			else
-				break;
-		}
-		putchar('\n');
-	}
-#endif
+// #ifdef LOCAL_DEBUG
+// 	{
+// 		if (placeId < R) {
+// 			printf("At %.4lf Arrive %d -> R%d. PICK:", arriveTime, driverId, placeId);
+// 		} else {
+// 			printf("At %.4lf Arrive %d -> D%d. DROP:", arriveTime, driverId, placeId-R);
+// 		}
+// 		const int sz = driver.route.size();
+// 		for (int i=0; i<sz; ++i) {
+// 			if (driver.route[i].placeId == placeId)
+// 				printf(" %d", driver.route[i].orderId);
+// 			else
+// 				break;
+// 		}
+// 		putchar('\n');
+// 	}
+// #endif
 	//!!!! THIS BLOCK IS IMPORTANT TO UPDATE THE BUCKET.
 	vector<node_t>::iterator iter = driver.route.begin();
 	double driverTid;
@@ -405,12 +406,12 @@ void updateMove(const int driverId) {
 	//----
 	move.bucket = driver.getBucket();
 	moves[driverId].push_back(move);
-#ifdef LOCAL_DEBUG
-	printf("\tBucket:");
-	for (int i=0; i<move.bucket.size(); ++i)
-		printf(" %d", move.bucket[i]);
-	putchar('\n');
-#endif
+// #ifdef LOCAL_DEBUG
+// 	printf("\tBucket:");
+// 	for (int i=0; i<move.bucket.size(); ++i)
+// 		printf(" %d", move.bucket[i]);
+// 	putchar('\n');
+// #endif
 
 	// update the driver: position, time
 	driver.pos = nextPos;
@@ -449,10 +450,10 @@ void updateDriverPosition(const int driverId, const double orderTid) {
 		move.bucket = moves[driverId].rbegin()->bucket;
 	moves[driverId].push_back(move);
 
-#ifdef LOCAL_DEBUG
-	printf("At %.4lf Middle %d, (%.4lf, %.4lf) -> (%.4lf, %.4lf).\n",
-			move.arrive, driverId, src.x, src.y, move.x, move.y);
-#endif
+// #ifdef LOCAL_DEBUG
+// 	printf("At %.4lf Middle %d, (%.4lf, %.4lf) -> (%.4lf, %.4lf).\n",
+// 			move.arrive, driverId, src.x, src.y, move.x, move.y);
+// #endif
 
 	// update the driver's position
 	driver.pos.x = move.x;
@@ -507,7 +508,7 @@ double calcUnfinishedCost(const int driverId) {
 		curLoc = nextLoc;
 	}
 
-	return ret;
+	return curTime;
 }
 
 vector<int> taxiSearching(const int orderId) {
@@ -520,6 +521,8 @@ vector<int> taxiSearching(const int orderId) {
 			bestCost = cost;
 			ret[0] = driverId;
 		}
+		// if (orderId==2037)
+		// 	printf("driverId = %d, cost = %.4lf\n", driverId, cost);
 	}
 
 	return ret;
@@ -560,12 +563,26 @@ void init_minCost(vector<node_t>& src) {
 	boundSet.clear();
 	for (int i=0; i<sz; ++i) {
 		const int placeId = src[i].placeId;
-		const int orderid = src[i].orderId;
+		const int orderId = src[i].orderId;
 		minCost[i] -= orders[orderId].tid;
 		if (placeId >= R)
 			boundSet.insert(make_pair(minCost[i], i));
 	}
 #endif
+}
+
+int calcCap(const int driverId) {
+	driver_t& driver = drivers[driverId];
+	vector<node_t>& route = driver.route;
+	const int sz = route.size();
+	int ret = 0;
+
+	for (int i=0; i<sz; ++i) {
+		if (route[i].placeId>=R && taken[route[i].orderId]==0)
+			++ret;
+	}
+
+	return ret;
 }
 
 void updateRoute(vector<node_t>& newRoute) {
@@ -575,7 +592,7 @@ void updateRoute(vector<node_t>& newRoute) {
 	position_t curLoc = driver.pos, nextLoc;
 	const int sz = newRoute.size();
 	double val = -1;
-	int cap = 0;
+	int cap = calcCap(curDriverId);
 
 	for (int i=0; i<sz; ++i) {
 		const int placeId = newRoute[i].placeId;
@@ -604,7 +621,7 @@ void updateRoute(vector<node_t>& newRoute) {
 }
 
 double calcInitBound(const vector<node_t>& src, const double curTime) {
-	double ret;
+	double ret = 0.0;
 	const int sz = minCost.size();
 
 #if defined(MY_AVG_BOUND)
@@ -731,6 +748,7 @@ vector<node_t> scheduling(const int driverId, const int orderId) {
 	src = driver.route;
 	src.push_back(node_t(order.sid, orderId));
 	src.push_back(node_t(order.eid+R, orderId));
+	//printf("orderId = %d, driverId = %d, src.size() = %d\n", orderId, driverId, src.size());
 	des = src;
 	bestVal = inf;
 	init_minCost(src);
@@ -738,7 +756,10 @@ vector<node_t> scheduling(const int driverId, const int orderId) {
 	curOrderId = orderId;
 	double initBound = calcInitBound(src, order.tid);
 
-	dfs(des, src, 0, src.size(), order.tid, initBound);
+	if (src.size() <= 10)
+		dfs(des, src, 0, src.size(), order.tid, initBound);
+	else
+		updateRoute(src);
 
 	return bestRoute;
 }
@@ -760,7 +781,18 @@ void branchAndBound() {
 		if (canDrivers.empty() || canDrivers[0]<0)
 			continue;
 
-		int driverId = canDrivers[0];
+		double best = inf;
+		int bestId = -1;
+		for (int driverId=0; driverId<M; ++driverId) {
+			scheduling(driverId, orderId);
+			if (bestVal < best) {
+				best = bestVal;
+				bestId = driverId;
+			}
+		}
+
+		//int driverId = canDrivers[0];
+		int driverId = bestId;
 		vector<node_t> newRoute = scheduling(driverId, orderId);
 		if (bestVal < inf)
 			responseDriver(driverId, orderId, newRoute);
@@ -803,6 +835,7 @@ void readNetwork() {
 	vector<int> orders_tmp;
 
 	readInput(R, D, M, C, N, rests_tmp, dists_tmp, orders_tmp);
+	//C = min(C, 3);
 
 	initAll();
 	// for (int i=0; i<rests_tmp.size(); i+=2) {

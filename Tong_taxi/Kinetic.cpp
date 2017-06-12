@@ -158,6 +158,7 @@ order_t *orders;
 rider_t *riders;
 driver_t *drivers;
 treeNode** kineticRoots;
+int *taken;
 vector<vector<move_t> > moves;
 vector<vector<double> > R2D, R2R, D2D;
 
@@ -265,6 +266,8 @@ void initMove() {
 
 void initOrder() {
 	orders = new order_t[N];
+	taken = new int[N];
+	memset(taken, -1, sizeof(int)*N);
 }
 
 void initRest() {
@@ -308,9 +311,9 @@ void initGrid() {
 		int placeId = rand() % R;
 		drivers[i].pos = rests[placeId];
 		drivers[i].curTime = 0;
-#ifdef LOCAL_DEBUG
-		printf("Driver%d is located in (%.2lf, %.2lf) at first.\n", i, drivers[i].pos.x, drivers[i].pos.y);
-#endif
+// #ifdef LOCAL_DEBUG
+// 		printf("Driver%d is located in (%.2lf, %.2lf) at first.\n", i, drivers[i].pos.x, drivers[i].pos.y);
+// #endif
 		// update the initial move
 //		move_t move;
 //
@@ -341,6 +344,7 @@ void deleteAll() {
 		deleteTree(kineticRoots[i]);
 	}
 	delete[] kineticRoots;
+	delete[] taken;
 }
 
 bool checkConstraint(double curTime, const node_t& nd) {
@@ -403,23 +407,23 @@ void updateMove(const int driverId) {
 	move.arrive = arriveTime;
 	double& leaveTime = move.leave;
 	leaveTime = arriveTime;
-#ifdef LOCAL_DEBUG
-	{
-		if (placeId < R) {
-			printf("At %.4lf Arrive %d -> R%d. PICK:", arriveTime, driverId, placeId);
-		} else {
-			printf("At %.4lf Arrive %d -> D%d. DROP:", arriveTime, driverId, placeId-R);
-		}
-		const int sz = driver.route.size();
-		for (int i=0; i<sz; ++i) {
-			if (driver.route[i].placeId == placeId)
-				printf(" %d", driver.route[i].orderId);
-			else
-				break;
-		}
-		putchar('\n');
-	}
-#endif
+// #ifdef LOCAL_DEBUG
+// 	{
+// 		if (placeId < R) {
+// 			printf("At %.4lf Arrive %d -> R%d. PICK:", arriveTime, driverId, placeId);
+// 		} else {
+// 			printf("At %.4lf Arrive %d -> D%d. DROP:", arriveTime, driverId, placeId-R);
+// 		}
+// 		const int sz = driver.route.size();
+// 		for (int i=0; i<sz; ++i) {
+// 			if (driver.route[i].placeId == placeId)
+// 				printf(" %d", driver.route[i].orderId);
+// 			else
+// 				break;
+// 		}
+// 		putchar('\n');
+// 	}
+// #endif
 	//!!!! THIS BLOCK IS IMPORTANT TO UPDATE THE BUCKET.
 	vector<node_t>::iterator iter = driver.route.begin();
 	double driverTid;
@@ -427,9 +431,11 @@ void updateMove(const int driverId) {
 		if (placeId < R) {
 			driverTid = max(arriveTime, orders[iter->orderId].tid+waitTime);
 			riders[iter->orderId].begTime = driverTid;
+			taken[iter->orderId] = 0;
 		} else {
 			driverTid = arriveTime;
 			riders[iter->orderId].endTime = driverTid;
+			taken[iter->orderId] = 1;
 		}
 		leaveTime = max(leaveTime, driverTid);
 		deleteSubtree(driverId, *iter);
@@ -439,12 +445,12 @@ void updateMove(const int driverId) {
 	//----
 	move.bucket = driver.getBucket();
 	moves[driverId].push_back(move);
-#ifdef LOCAL_DEBUG
-	printf("\tBucket:");
-	for (int i=0; i<move.bucket.size(); ++i)
-		printf(" %d", move.bucket[i]);
-	putchar('\n');
-#endif
+// #ifdef LOCAL_DEBUG
+// 	printf("\tBucket:");
+// 	for (int i=0; i<move.bucket.size(); ++i)
+// 		printf(" %d", move.bucket[i]);
+// 	putchar('\n');
+// #endif
 
 	// update the driver: position, time
 	driver.pos = nextPos;
@@ -483,10 +489,10 @@ void updateDriverPosition(const int driverId, const double orderTid) {
 		move.bucket = moves[driverId].rbegin()->bucket;
 	moves[driverId].push_back(move);
 
-#ifdef LOCAL_DEBUG
-	printf("At %.4lf Middle %d, (%.4lf, %.4lf) -> (%.4lf, %.4lf).\n",
-			move.arrive, driverId, src.x, src.y, move.x, move.y);
-#endif
+// #ifdef LOCAL_DEBUG
+// 	printf("At %.4lf Middle %d, (%.4lf, %.4lf) -> (%.4lf, %.4lf).\n",
+// 			move.arrive, driverId, src.x, src.y, move.x, move.y);
+// #endif
 
 	// update the driver's position
 	driver.pos.x = move.x;
@@ -599,6 +605,20 @@ bool insertNode(treeNode*& rt, const vector<node_t>& src, double detour, int dep
 bool feasible(treeNode* rt, const node_t& node, double detour);
 void findBestSchedule(treeNode* rt, int dep);
 
+int calcCap(const int driverId) {
+	driver_t& driver = drivers[driverId];
+	vector<node_t>& route = driver.route;
+	const int sz = route.size();
+	int ret = 0;
+
+	for (int i=0; i<sz; ++i) {
+		if (route[i].placeId>=R && taken[route[i].orderId]==0)
+			++ret;
+	}
+
+	return ret;
+}
+
 void updateRoute() {
 	#ifdef LOCAL_DEBUG
 	assert(bestRoute.size() == curRoute.size());
@@ -610,7 +630,7 @@ void updateRoute() {
 	double val = -1;
 	const int sz = curRoute.size();
 	double curTime = order.tid;
-	int cap = 0;
+	int cap = calcCap(curDriverId);
 	
 	for (int i=0; i<sz; ++i) {
 		const int placeId = curRoute[i]->val.placeId;
