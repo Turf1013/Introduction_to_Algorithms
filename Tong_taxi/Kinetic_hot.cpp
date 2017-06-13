@@ -78,29 +78,22 @@ struct node_t {
 
 struct hotspot_t {
 	int spotId;
-	//int delta;
-	vector<node_t> nodes;
+	node_t node;
 	
 	hotspot_t(int spotId = -1) {
 		this->spotId = spotId;
-	//	delta = 0;
 	}
 	hotspot_t(const node_t& a, int spotId = -1) {
-	//	delta = 0;
 		this->spotId = spotId;
-		nodes.push_back(a);
+		node = a;
 	}
 	
-	void push_back(const node_t& a) {
-		nodes.push_back(a);
+	bool operator==(const hotspot_t& oth) const {
+		return spotId==oth.spotId && node==oth.node;
 	}
 	
-	bool empty() const {
-		return nodes.empty();
-	}
-	
-	size_t size() const {
-		return nodes.size();
+	bool operator!=(const hotspot_t& oth) const {
+		return spotId!=oth.spotId || node!=oth.node;
 	}
 };
 
@@ -738,17 +731,83 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
-int calcCap(treeNode *rt, int curCap) {
-	hotspot_t& spot = rt->val;
-	vector<node_t>& nodes = spot.nodes;
-	const int sz = nodes.size();
+bool makeCluster(treeNode *rt, const node_t& node) {
+	treeNode* p = rt;
+	const int spotId = rt->val.spotId;
+	position_t apos = (node.placeId < R) ? rests[node.placeId] : dists[node.placeId-R];
+	position_t bpos;
 	
-	for (int i=0; i<sz; ++i) {
-		if (nodes[i].placeId < R)
-			++curCap;
-		else
+	while (p->children()==1 && p->children[0]->val.spotId==spotId) {
+		hotspot_t& spot = p->children[0]->val;
+		node_t& node = spot.node;
+		bpos = (node.placeId < R) ? rests[node.placeId] : dists[node.placeId-R];
+		if (Length(apos, bpos) > theta)
+			return false;
+		p = p->children[0];
+	}
+	
+	return true;
+}
+
+bool makeCluster(const node_t& a, const node_t& b) {
+	position_t apos = (a.placeId < R) ? rests[a.placeId] : dists[a.placeId-R];
+	position_t bpos = (b.placeId < R) ? rests[b.placeId] : dists[b.placeId-R];
+	return Length(apos, bpos) <= theta;
+} 
+
+treeNode *endOfCluster(treeNode* rt) {
+	const int spotId = rt->val.spotId;
+	treeNode* p = rt;
+	
+	while (p->children()==1 && p->children[0]->val.spotId==spotId)
+		p = p->children[0];
+	
+	return p;
+}
+
+treeNode *endOfCluster(treeNode* rt,  int initCap, int& curCap) {
+	const int spotId = rt->val.spotId;
+	treeNode* p = rt;
+	bool flag = false;
+	
+	curCap = initCap;
+	while (p->children()==1 && p->children[0]->val.spotId==spotId) {
+		if (p->val.node.placeId < R) {
+			if (++curCap > C)
+				flag = true;
+		} else {
 			--curCap;
-		if (curCap > C) return INT_MAX;
+		}
+		p = p->children[0];
+	}
+	if (flag) curCap = INT_MAX;
+	
+	return p;
+}
+
+int calcCup_Cluster(treeNode* rt, int curCap) {
+	const int spotId = rt->val.spotId;
+	treeNode* p = rt;
+	
+	while (p->size()==1 && p->children[0]->val.spotId==spotId) {
+		if (p->val.node.placeId < R) {
+			if (++curCap > C)
+				return INT_MAX;
+		} else {
+			--curCap;
+		}
+		p = p->children[0];
+	}
+	
+	return curCap;
+}
+
+int calcCap(treeNode *rt, int curCap) {
+	if (rt->val.node.placeId < R) {
+		if (++curCap > C)
+			return INT_MAX;
+	} else {
+		--curCap;
 	}
 	
 	return curCap;
@@ -796,7 +855,7 @@ void findBestSchedule(treeNode* rt, int dep) {
 }
 
 bool insertNode(treeNode*& rt, const vector<node_t>& src, int curCap) {
-	treeNode *frt = rt, *trt = rt;
+	treeNode *ert = endOfCluster(rt);
 	treeNode *nd = NULL;
 	treeNode *nrt;
 	int newCurCap;
@@ -804,10 +863,11 @@ bool insertNode(treeNode*& rt, const vector<node_t>& src, int curCap) {
 	
 	int delta = (src.size() > 1) ? -1 : 1;
 	
-	for (i=rt->children.size()-1; i>=0; --i) {
+	for (int i=rt->children.size()-1; i>=0; --i) {
 		nrt = rt->children[i];
-		newCurCap = (delta==1) ? (calcCup(nrt, curCap)+1) : (calcCup(nrt, curCap-1));
-		if (newCurCap<=C && findCluster(nrt, src[0])) {
+		// pickup makes it at last, drop makes it at first
+		newCurCap = (delta==1) ? (calcCup_Cluster(nrt, curCap)+1) : (calcCup_Cluster(nrt, curCap-1));
+		if (newCurCap<=C && makeCluster(nrt, src[0])) {
 			validNodes.push_back(nrt);
 			// remove hotspot from the kinetic temporialy
 			rt->children[i] = *(rt->children.rbegin());
@@ -815,32 +875,45 @@ bool insertNode(treeNode*& rt, const vector<node_t>& src, int curCap) {
 		}
 	}
 	int fail = 1;
-	if (!rt->children.empty() && curCap+delta<=C) {
-		int spotId = rt->children[0]->spotId ^ 1;
-		nd = new treeNode(hotspot_t(src[0]), spotId);
-		if (copyNodes(nd, rt->children, curCap+delta)) {
+	if (!rt->children.empty()) {
+		int spotId = rt->children[0]->val.spotId ^ 1;
+		nd = new treeNode(hotspot_t(src[0], spotId));
+		
+		if (delta == 1) {
+			if (makeCluster(nd, src[1])) {
+				treeNode *nd2 = new treeNode(hotspot_t(src[1], spotId));
+				nd->children.push_back(nd2);
+				if (copyNodes(nd2, rt->chidren, curCap))
+					fail = 0;
+				#ifdef LOCAL_DEBUG
+				assert(fail == 0);
+				#endif
+			}
+		}
+		
+		if (fail && copyNodes(nd, rt->children, curCap+delta)) {
 			fail = 0;
-		} else {
+		} else if (fail) {
 			deleteTree(nd);
 		}
 	}
 	if (fail==0 && delta==1) {
 		vector<node_t> vtmp(1, src[1]);
 		if (!insertNode(nd, vtmp, curCap+1)) {
+			fail = 0;
+		} else {
 			fail = 1;
 			deleteTree(nd);
 		}
 	}
 	{// insert the other locations
 		for (int i=rt->children.size()-1; i>=0; --i) {
-			treeNode* nrt = rt->children[i];
-			newCurCap = calcCup(nrt, curCap);
-			if (newCurCap<=C && insertNode(nrt, src, newCurCap)) {
+			nrt = rt->children[i];
+			ert = endOfCluster(nrt, curCap, newCurCap);
+			if (newCurCap<=C && insertNode(ert, src, newCurCap)) {
 				/* do nothing */;
 			} else {
 				deleteTree(nrt);
-				rt->children[i] = *(rt->children.rbegin());
-				rt->children.pop_back();
 			}
 		}
 	}
@@ -851,14 +924,39 @@ bool insertNode(treeNode*& rt, const vector<node_t>& src, int curCap) {
 	if (!validNodes.empty()) {
 		if (delta == 1) {
 			int sz = validNodes.size();
+			bool pairCluster = makeCluster(src[0], src[1]);
+			vector<node_t> vtmp(1, src[1]);
+			
 			for (int i=0; i<sz; ++i) {
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! not finished.	
-			rt->children.insert(rt->children.end(), validNodes.begin(), validNodes.end());
+				nrt = validNoes[i];
+				ert = endOfCluster(nrt, curCap, newCurCap);
+				if (++newCurCap > C) {
+					deleteTree(nrt);
+					continue;
+				}
+				
+				if (pairCluster && makeCluster(nrt, src[1])) {
+					treeNode* nd2 = new treeNode(hotspot_t(src[1], nrt->val.spotId));
+					treeNode* nd = new treeNode(hotspot_t(src[0], nrt->val.spotId));
+					nd2 = ert->children;
+					nd->children.push_back(nd2);
+					ert->children.clear();
+					ert->children.push_back(nd);
+					rt->children.push_back(nrt);
+				} else if (insertNode(ert, vtmp, newCurCap)) {
+					treeNode* nd = new treeNode(hotspot_t(src[0], nrt->val.spotId));
+					nd->children = ert->children;
+					ert->children.clear();
+					ert->children.push_back(nd);
+					rt->children.push_back(nrt);
+				} else {
+					deleteTree(nrt);
+				}
 			}
 		} else {
-			treeNode* nd = new treeNode(hotspot_t(src[0]), validNodes[0]->spotId);
-			rt->children.push_back(nd);
+			treeNode* nd = new treeNode(hotspot_t(src[0], validNodes[0]->spotId));
 			nd->children = validNodes;
+			rt->children.push_back(nd);
 		}
 	}
 	
