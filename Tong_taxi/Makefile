@@ -25,6 +25,9 @@ bb: input.h output.h monitor.h BB.cpp
 
 kit: input.h output.h monitor.h treeNode.h Kinetic.cpp
 	$(CXX) $(CFLAGS) -o kit Kinetic.cpp $(LIBS)
+	
+hot: input.h output.h monitor.h treeNode.h Kinetic.cpp
+	$(CXX) $(CFLAGS) -o hot Kinetic_hot.cpp $(LIBS)
 
 judge: input.h judge.cpp
 	$(CXX) $(CFLAGS) -o judge judge.cpp $(LIBS)
