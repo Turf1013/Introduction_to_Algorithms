@@ -102,7 +102,7 @@ typedef treeNode_t<hotspot_t> treeNode;
 struct driver_t {
 	position_t pos;
 	double curTime;
-	vector<node_t> route;
+	vector<treeNode*> route;
 
 	driver_t(double x=0., double y=0., double curTime=0.) {
 		pos.x = x;
@@ -118,8 +118,12 @@ struct driver_t {
 		return this->isEmpty();
 	}
 
-	void push_back(int placeId, int orderId) {
-		route.push_back(node_t(placeId, orderId));
+	// void push_back(int placeId, int orderId) {
+		// route.push_back(node_t(placeId, orderId));
+	// }
+
+	void push_back(treeNode* p) {
+		route.push_back(p);
 	}
 
 	void pop_front() {
@@ -127,7 +131,7 @@ struct driver_t {
 			route.erase(route.begin());
 	}
 
-	void erase(vector<node_t>::iterator biter, vector<node_t>::iterator eiter) {
+	void erase(vector<treeNode*>::iterator biter, vector<treeNode*>::iterator eiter) {
 		route.erase(biter, eiter);
 	}
 
@@ -141,13 +145,12 @@ struct driver_t {
 		set<int> unpicked;
 
 		for (int i=0; i<sz; ++i) {
-			if (route[i].placeId < R)
-				unpicked.insert(route[i].orderId);
-			if (route[i].placeId>=R && unpicked.count(route[i].orderId)==0)
-				ret.push_back(route[i].orderId);
+			node_t& node = route[i]->val.node;
+			if (node.placeId < R)
+				unpicked.insert(node.orderId);
+			if (node.placeId>=R && unpicked.count(node.orderId)==0)
+				ret.push_back(node.orderId);
 		}
-		// sort(ret.begin(), ret.end());
-		// ret.erase(unique(ret.begin(), ret.end()), ret.end());
 
 		return ret;
 	}
@@ -289,13 +292,13 @@ void deleteAll() {
 	delete[] taken;
 }
 
-void deleteSubtree(const int driverId, const node_t& node) {
+void deleteSubtree(const int driverId, const treeNode* node) {
 	// update the kinetic tree
 	treeNode *rt = kineticRoots[driverId], *nrt = NULL;
 	const int childSz = rt->size();
 
 	for (int i=0; i<childSz; ++i) {
-		if (rt->children[i]->val == node) {
+		if (rt->children[i] == node) {
 			#ifdef LOCAL_DEBUG
 			assert(nrt == NULL);
 			#endif
@@ -316,8 +319,8 @@ void updateMove(const int driverId) {
 	driver_t& driver = drivers[driverId];
 	if (driver.empty()) return ;
 	
-	const int placeId = driver.route[0].placeId;
-	const int orderId = driver.route[0].orderId;
+	const int placeId = driver.route[0]->val.node.placeId;
+	const int orderId = driver.route[0]->val.node.orderId;
 	position_t& nextPos = (placeId < R) ? rests[placeId] : dists[placeId-R];
 	double arriveTime = driver.curTime + Length(driver.pos, nextPos);
 
@@ -347,17 +350,19 @@ void updateMove(const int driverId) {
 // 	}
 // #endif
 	//!!!! THIS BLOCK IS IMPORTANT TO UPDATE THE BUCKET.
-	vector<node_t>::iterator iter = driver.route.begin();
+	vector<treeNode*>::iterator iter = driver.route.begin();
 	double driverTid;
-	while (iter!=driver.route.end() && iter->placeId==placeId) {
+	while (iter!=driver.route.end()) {
+		node_t node = (*iter)->val.node;
+		if (node.placeId != placeId) break;
 		if (placeId < R) {
-			driverTid = max(arriveTime, orders[iter->orderId].tid+waitTime);
-			riders[iter->orderId].begTime = driverTid;
-			taken[iter->orderId] = 0;
+			driverTid = max(arriveTime, orders[node.orderId].tid+waitTime);
+			riders[node.orderId].begTime = driverTid;
+			taken[node.orderId] = 0;
 		} else {
 			driverTid = arriveTime;
-			riders[iter->orderId].endTime = driverTid;
-			taken[iter->orderId] = 1;
+			riders[node.orderId].endTime = driverTid;
+			taken[node.orderId] = 1;
 		}
 		leaveTime = max(leaveTime, driverTid);
 		deleteSubtree(driverId, *iter);
@@ -388,7 +393,7 @@ void updateDriverPosition(const int driverId, const double orderTid) {
 		return ;
 
 	position_t src = driver.pos;
-	const int placeId = driver.route[0].placeId;
+	const int placeId = driver.route[0]->val.node.placeId;
 	position_t des = (placeId<R) ? rests[placeId] : dists[placeId-R];
 	if (src == des)
 		return ;
@@ -423,8 +428,8 @@ void updateIndex(const int driverId, const double orderTid) {
 	if (driver.curTime > orderTid) return ;
 	
 	while (!driver.isEmpty()) {
-		const int placeId = driver.route[0].placeId;
-		const int orderId = driver.route[0].orderId;
+		const int placeId = driver.route[0]->val.node.placeId;
+		const int orderId = driver.route[0]->val.node.orderId;
 		position_t& nextPos = (placeId < R) ? rests[placeId] : dists[placeId-R];
 		double arriveTime = driver.curTime + Length(driver.pos, nextPos);
 		double driverTid = (placeId < R) ? max(arriveTime, orders[orderId].tid+waitTime) : arriveTime;
@@ -435,20 +440,54 @@ void updateIndex(const int driverId, const double orderTid) {
 
 		updateMove(driverId);
 	}
-	updateDriverPosition(driverId, orderTid);
+	//updateDriverPosition(driverId, orderTid);
 }
 
-double calcUnfinishedCost(const int driverId) {
+void driverUseCurTime(const int driverId, double orderTid) {
 	driver_t& driver = drivers[driverId];
-	vector<node_t>& route = driver.route;
+	if (driver.isEmpty())
+		return ;
+
+	if (dcmp(driver.curTime-orderTid) == 0)
+		return ;
+
+	position_t src = driver.pos;
+	const int placeId = driver.route[0]->val.node.placeId;
+	position_t des = (placeId<R) ? rests[placeId] : dists[placeId-R];
+	if (src == des)
+		return ;
+
+	#ifdef LOCAL_DEBUG
+	assert(driver.curTime <= orderTid);
+	#endif
+
+	double t = Length(src, des);
+	double dx = (des.x - src.x) / t;
+	double dy = (des.y - src.y) / t;
+
+	// update the driver's position
+	driver.pos.x = move.x;
+	driver.pos.y = move.y;
+	driver.curTime = orderTid;
+}
+
+double calcUnfinishedCost(const int driverId, double orderTid) {
+	// update the status of driver to now
+	driver_t& driver = drivers[driverId];
+	position_t preLoc = driver.pos;
+	double preTime = driver.curTime;
+	driverUseCurTime(driverId, Tid);
+	
+	vector<treeNode*>& route = driver.route;
 	const int sz = route.size();
+	
 	position_t curLoc = driver.pos, nextLoc;
 	double curTime = driver.curTime;
 	double ret = -1;
 
 	for (int i=0; i<sz; ++i) {
-		const int placeId = route[i].placeId;
-		const int orderId = route[i].orderId;
+		const int placeId = route[i]->val.node.placeId;
+		const int orderId = route[i]->val.node.orderId;
 		nextLoc = (placeId < R) ? rests[orderId] : dists[orderId-R];
 		curTime += Length(curLoc, nextLoc);
 		if (placeId < R)
@@ -464,7 +503,10 @@ double calcUnfinishedCost(const int driverId) {
 
 		curLoc = nextLoc;
 	}
-
+	// restore the status of driver
+	driver.pos = preLoc;
+	driver.curTime = preTime;
+	
 	return ret;
 }
 
@@ -473,7 +515,7 @@ vector<int> taxiSearching(const int orderId) {
 	vector<int> ret(1, -1);
 
 	for (int driverId=0; driverId<M; ++driverId) {
-		cost = calcUnfinishedCost(driverId);
+		cost = calcUnfinishedCost(driverId, orders[orderId].tid);
 		if (cost < bestCost) {
 			bestCost = cost;
 			ret[0] = driverId;
@@ -481,31 +523,6 @@ vector<int> taxiSearching(const int orderId) {
 	}
 
 	return ret;
-}
-
-vector<node_t> directAssign(const int driverId, const int orderId) {
-	driver_t& driver = drivers[driverId];
-	order_t& order = orders[orderId];
-	vector<node_t> route;
-
-	route.push_back(node_t(order.sid, orderId));
-	route.push_back(node_t(order.eid+R, orderId));
-
-	position_t curLoc = driver.pos, nextLoc;
-	double curTime = order.tid;
-	const int sz = route.size();
-
-	for (int i=0; i<sz; ++i) {
-		const int placeId = route[i].placeId;
-		const int orderId = route[i].orderId;
-		nextLoc = (placeId<R) ? rests[placeId] : dists[placeId-R];
-		curTime += Length(curLoc, nextLoc);
-		if (placeId < R)
-			curTime = max(curTime, orders[orderId].tid+waitTime);
-		curLoc = nextLoc;
-	}
-
-	return route;
 }
 
 vector<treeNode*> bestRoute, curRoute;
@@ -521,12 +538,13 @@ void findBestSchedule(treeNode* rt, int dep);
 
 int calcCap(const int driverId) {
 	driver_t& driver = drivers[driverId];
-	vector<node_t>& route = driver.route;
+	vector<treeNode*>& route = driver.route;
 	const int sz = route.size();
 	int ret = 0;
 
 	for (int i=0; i<sz; ++i) {
-		if (route[i].placeId>=R && taken[route[i].orderId]==0)
+		node_t& node = route[i]->val.node;
+		if (node.placeId>=R && taken[node.orderId]==0)
 			++ret;
 	}
 
@@ -575,7 +593,7 @@ void updateRoute() {
 void appendTree(treeNode* root) {
 	driver_t& driver = drivers[curDriverId];
 	order_t& order = orders[curOrderId];
-	vector<node_t>& route = driver.route;
+	vector<treeNode*>& route = driver.route;
 	int sz = route.size();
 	treeNode *p, *np;
 	treeNode *nd, *nd2;
@@ -583,7 +601,10 @@ void appendTree(treeNode* root) {
 	for (int i=0; i<sz; ++i) {
 		np = NULL;
 		for (int j=p->size()-1; j>=0; --j) {
-			if (p->children[j]->val.node == route[i]) {
+			if (p->children[j] == route[i]) {
+				#ifdef LOCAL_DEBUG
+				assert(np == NULL);
+				#endif
 				np = p->children[j];
 			} else {
 				deleteTree(p->children[j]);
@@ -612,10 +633,10 @@ void appendTree(treeNode* root) {
 	p->children.push_back(nd);
 }
 
-vector<node_t> scheduling(const int driverId, const int orderId) {
+void scheduling(const int driverId, const int orderId) {
+	// update the status of driver to now
 	driver_t& driver = drivers[driverId];
 	order_t& order = orders[orderId];
-	vector<node_t>& route = driver.route;
 	treeNode* root = kineticRoots[driverId];
 	int initCap = calcCap(driverId);
 	
@@ -626,8 +647,8 @@ vector<node_t> scheduling(const int driverId, const int orderId) {
 
 	bestRoute.clear();
 	curRoute.clear();
-	bestRoute.resize(route.size()+2, NULL);
-	curRoute.resize(route.size()+2, NULL);
+	bestRoute.resize(driver.route.size()+2, NULL);
+	curRoute.resize(bestRoute.size(), NULL);
 	vector<node_t> pairs;
 
 	pairs.push_back(node_t(order.sid, orderId));
@@ -645,8 +666,8 @@ vector<node_t> scheduling(const int driverId, const int orderId) {
 		}
 		restNode->children.push_back(distNode);
 		root->children.push_back(restNode);
-
-		return pairs;
+		
+		return ;
 	}
 	treeNode* newTreeRoot;
 	copyTree(newTreeRoot, root);
@@ -661,20 +682,20 @@ vector<node_t> scheduling(const int driverId, const int orderId) {
 		findBestSchedule(newTreeRoot, -1);
 	}
 
-	vector<node_t> ret;
-	for (int i=0; i<bestRoute.size(); ++i) {
-		hotspot_t& spot = bestRoute[i]->val;
-		ret.push_back(spot.node);
-	}
+	// vector<node_t> ret;
+	// for (int i=0; i<bestRoute.size(); ++i) {
+		// hotspot_t& spot = bestRoute[i]->val;
+		// ret.push_back(spot.node);
+	// }
 
-	return ret;
+	// return ret;
 }
 
-void responseDriver(const int driverId, const int orderId, vector<node_t>& newRoute) {
+void responseDriver(const int driverId, const int orderId) {
 	driver_t& driver = drivers[driverId];
 	order_t& order = orders[orderId];
 	driver.curTime = order.tid;
-	driver.route = newRoute;
+	driver.route = bestRoute;
 }
 
 void Kinetic() {
@@ -688,9 +709,9 @@ void Kinetic() {
 			continue;
 
 		int driverId = canDrivers[0];
-		vector<node_t> newRoute = scheduling(driverId, orderId);
-		if (!newRoute.empty())
-			responseDriver(driverId, orderId, newRoute);
+		updateDriverPosition(driverId, orders[orderId].tid);
+		scheduling(driverId, orderId);
+		responseDriver(driverId, orderId);
 	}
 
 	for (int driverId=0; driverId<M; ++driverId) {
@@ -924,7 +945,7 @@ bool insertNode(treeNode*& rt, const vector<node_t>& src, int curCap) {
 	int newCurCap;
 	vector<treeNode*> validNodes;
 	
-	int delta = (src.size() > 1) ? -1 : 1;
+	int delta = (src.size() > 1) ? 1 : -1;
 	int nxtSpotId = (rt->val.spotId==0) ? 1 : 0;
 	
 	for (int i=rt->children.size()-1; i>=0; --i) {
@@ -942,33 +963,39 @@ bool insertNode(treeNode*& rt, const vector<node_t>& src, int curCap) {
 	if (!rt->children.empty()) {
 		nd = new treeNode(hotspot_t(src[0], nxtSpotId));
 		
-		if (delta == 1) {
-			if (makeCluster(nd, src[1])) {
-				treeNode *nd2 = new treeNode(hotspot_t(src[1], nxtSpotId));
+		// pickup & deliver can form a cluster directly
+		if (delta==1 && makeCluster(nd, src[1])) {
+			treeNode *nd2 = new treeNode(hotspot_t(src[1], nxtSpotId));
+			if (copyNodes_inverse(nd2, rt->children, curCap)) {
 				nd->children.push_back(nd2);
-				if (copyNodes_inverse(nd2, rt->children, curCap))
-					fail = 0;
-				#ifdef LOCAL_DEBUG
-				assert(fail == 0);
-				#endif
+				fail = 0;
+			} else {
+				if (nd2) delete nd2;
 			}
+			#ifdef LOCAL_DEBUG
+			assert(fail == 0);
+			#endif
 		}
 		
 		if (fail && copyNodes_inverse(nd, rt->children, curCap+delta)) {
 			fail = 0;
-		} else if (fail) {
-			deleteTree(nd);
+
+			// if deliver hasn't been inserted yet.
+			if (delta == 1) {
+				vector<node_t> vtmp(1, src[1]);
+				if (insertNode(nd, vtmp, curCap+delta)) {
+					fail = 0;
+				} else {
+					fail = 1;
+					deleteTree(nd);
+				}
+			}
 		}
+
+		if (fail && nd!=NULL)
+			delete nd;
 	}
-	if (fail==0 && delta==1) {
-		vector<node_t> vtmp(1, src[1]);
-		if (!insertNode(nd, vtmp, curCap+1)) {
-			fail = 0;
-		} else {
-			fail = 1;
-			deleteTree(nd);
-		}
-	}
+
 	{// insert the other locations
 		for (int i=rt->children.size()-1; i>=0; --i) {
 			nrt = rt->children[i];
@@ -977,12 +1004,19 @@ bool insertNode(treeNode*& rt, const vector<node_t>& src, int curCap) {
 				/* do nothing */;
 			} else {
 				deleteTree(nrt);
+				rt->children[i] = *(rt->children.rbegin());
+				rt->children.pop_back();
 			}
 		}
 	}
+
 	if (fail == 0) {
+		#ifdef LOCAL_DEBUG
+		assert(nd != NULL);
+		#endif
 		rt->children.push_back(nd);
 	}
+
 	// insert validNodes, remove at first
 	if (!validNodes.empty()) {
 		if (delta == 1) {
@@ -1017,9 +1051,13 @@ bool insertNode(treeNode*& rt, const vector<node_t>& src, int curCap) {
 				}
 			}
 		} else {
-			treeNode* nd = new treeNode(hotspot_t(src[0], nxtSpotId));
-			nd->children = validNodes;
-			rt->children.push_back(nd);
+			int sz = validNodes.size();
+
+			for (int i=0; i<sz; ++i) {
+				treeNode* nd = new treeNode(hotspot_t(src[0], nxtSpotId));
+				nd->children.push_back(validNodes[i]);
+				rt->children.push_back(nd);
+			}
 		}
 	}
 	
