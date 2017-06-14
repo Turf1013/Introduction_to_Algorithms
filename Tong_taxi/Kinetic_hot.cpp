@@ -18,7 +18,7 @@ using namespace std;
 const double waitTime = 0.0;
 int graphLength = 100, graphWidth = 100;
 int gridLength = 10, gridWidth = 10;
-int theta = 7;
+int theta = 50;
 int R, D, M, C, N;
 
 const double eps = 1e-6;
@@ -571,18 +571,18 @@ void updateRoute() {
 	const int sz = curRoute.size();
 	double curTime = order.tid;
 	int cap = curInitCap;
-	#ifdef LOCAL_DEBUG
-	printf("Route_%d: ", routeIdx);
-	#endif
+//	#ifdef LOCAL_DEBUG
+//	printf("Route_%d: ", routeIdx);
+//	#endif
 	
 	for (int i=0; i<sz; ++i) {
 		const int placeId = curRoute[i]->val.node.placeId;
 		const int orderId = curRoute[i]->val.node.orderId;
-		#ifdef LOCAL_DEBUG
-		if (i)
-			printf(" -> ");
-		printf("(%d,%d,%d)", placeId, orderId, curRoute[i]->val.spotId);
-		#endif
+//		#ifdef LOCAL_DEBUG
+//		if (i)
+//			printf(" -> ");
+//		printf("(%d,%d,%d)", placeId, orderId, curRoute[i]->val.spotId);
+//		#endif
 		nextLoc = (placeId < R) ? rests[placeId] : dists[placeId-R];
 		curTime += Length(curLoc, nextLoc);
 		if (placeId < R)
@@ -599,10 +599,10 @@ void updateRoute() {
 
 		curLoc = nextLoc;
 	}
-	#ifdef LOCAL_DEBUG
-	putchar('\n');
-	++routeIdx;
-	#endif
+//	#ifdef LOCAL_DEBUG
+//	putchar('\n');
+//	++routeIdx;
+//	#endif
 
 	if (val < bestVal) {
 		bestVal = val;
