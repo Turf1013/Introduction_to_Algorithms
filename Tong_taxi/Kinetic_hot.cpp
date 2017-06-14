@@ -18,7 +18,7 @@ using namespace std;
 const double waitTime = 0.0;
 int graphLength = 100, graphWidth = 100;
 int gridLength = 10, gridWidth = 10;
-int theta = 28;
+int theta = 7;
 int R, D, M, C, N;
 
 const double eps = 1e-6;
@@ -47,6 +47,10 @@ struct position_t {
 
 	bool operator!=(const position_t& oth) const {
 		return dcmp(x-oth.x)!=0 || dcmp(y-oth.y)!=0;
+	}
+
+	void print() const {
+		printf("%.2lf %.2lf\n", x, y);
 	}
 };
 
@@ -188,7 +192,7 @@ void initRider() {
 
 void initRoot() {
 	kineticRoots = new treeNode*[M];
-	hotspot_t hotspot;
+	hotspot_t hotspot(node_t(-1,-1), -1);
 	for (int i=0; i<M; ++i) {
 		kineticRoots[i] = new treeNode(hotspot);
 	}
@@ -255,6 +259,9 @@ void initGrid() {
 		// random initialize the poisition of driver at the rid
 		int placeId = rand() % R;
 		drivers[i].pos = rests[placeId];
+#ifdef LOCAL_DEBUG
+		drivers[i].pos = position_t(10.0, 10.0);
+#endif
 		drivers[i].curTime = 0;
 // #ifdef LOCAL_DEBUG
 // 		printf("Driver%d is located in (%.2lf, %.2lf) at first.\n", i, drivers[i].pos.x, drivers[i].pos.y);
@@ -320,7 +327,7 @@ void updateMove(const int driverId) {
 	if (driver.empty()) return ;
 	
 	const int placeId = driver.route[0]->val.node.placeId;
-	const int orderId = driver.route[0]->val.node.orderId;
+	//const int orderId = driver.route[0]->val.node.orderId;
 	position_t& nextPos = (placeId < R) ? rests[placeId] : dists[placeId-R];
 	double arriveTime = driver.curTime + Length(driver.pos, nextPos);
 
@@ -466,8 +473,8 @@ void driverUseCurTime(const int driverId, double orderTid) {
 	double dy = (des.y - src.y) / t;
 
 	// update the driver's position
-	driver.pos.x = move.x;
-	driver.pos.y = move.y;
+	driver.pos.x = src.x + dx * (orderTid - driver.curTime);
+	driver.pos.y = src.y + dy * (orderTid - driver.curTime);
 	driver.curTime = orderTid;
 }
 
@@ -476,11 +483,11 @@ double calcUnfinishedCost(const int driverId, double orderTid) {
 	driver_t& driver = drivers[driverId];
 	position_t preLoc = driver.pos;
 	double preTime = driver.curTime;
-	driverUseCurTime(driverId, Tid);
-	
+	driverUseCurTime(driverId, orderTid);
+
 	vector<treeNode*>& route = driver.route;
 	const int sz = route.size();
-	
+
 	position_t curLoc = driver.pos, nextLoc;
 	double curTime = driver.curTime;
 	double ret = -1;
@@ -506,7 +513,7 @@ double calcUnfinishedCost(const int driverId, double orderTid) {
 	// restore the status of driver
 	driver.pos = preLoc;
 	driver.curTime = preTime;
-	
+
 	return ret;
 }
 
@@ -527,8 +534,9 @@ vector<int> taxiSearching(const int orderId) {
 
 vector<treeNode*> bestRoute, curRoute;
 double bestVal;
-int curOrderId, curDriverId;
+int curOrderId, curDriverId, curInitCap;
 bool validRoute;
+int routeIdx;
 
 bool makeCluster(treeNode* rt, const node_t& a);
 bool makeCluster(const node_t& a, const node_t& b);
@@ -562,11 +570,19 @@ void updateRoute() {
 	double val = -1;
 	const int sz = curRoute.size();
 	double curTime = order.tid;
-	int cap = calcCap(curDriverId);
+	int cap = curInitCap;
+	#ifdef LOCAL_DEBUG
+	printf("Route_%d: ", routeIdx);
+	#endif
 	
 	for (int i=0; i<sz; ++i) {
 		const int placeId = curRoute[i]->val.node.placeId;
 		const int orderId = curRoute[i]->val.node.orderId;
+		#ifdef LOCAL_DEBUG
+		if (i)
+			printf(" -> ");
+		printf("(%d,%d,%d)", placeId, orderId, curRoute[i]->val.spotId);
+		#endif
 		nextLoc = (placeId < R) ? rests[placeId] : dists[placeId-R];
 		curTime += Length(curLoc, nextLoc);
 		if (placeId < R)
@@ -583,6 +599,10 @@ void updateRoute() {
 
 		curLoc = nextLoc;
 	}
+	#ifdef LOCAL_DEBUG
+	putchar('\n');
+	++routeIdx;
+	#endif
 
 	if (val < bestVal) {
 		bestVal = val;
@@ -595,7 +615,7 @@ void appendTree(treeNode* root) {
 	order_t& order = orders[curOrderId];
 	vector<treeNode*>& route = driver.route;
 	int sz = route.size();
-	treeNode *p, *np;
+	treeNode *p = root, *np;
 	treeNode *nd, *nd2;
 	
 	for (int i=0; i<sz; ++i) {
@@ -638,7 +658,7 @@ void scheduling(const int driverId, const int orderId) {
 	driver_t& driver = drivers[driverId];
 	order_t& order = orders[orderId];
 	treeNode* root = kineticRoots[driverId];
-	int initCap = calcCap(driverId);
+	curInitCap = calcCap(driverId);
 	
 	bestVal = inf;
 	curDriverId = driverId;
@@ -654,25 +674,31 @@ void scheduling(const int driverId, const int orderId) {
 	pairs.push_back(node_t(order.sid, orderId));
 	pairs.push_back(node_t(order.eid+R, orderId));
 
+	#ifdef LOCAL_DEBUG
+	printf("\n\n\norder%d:\n", orderId);
+	routeIdx = 0;
+	#endif
+
 	if (root->children.empty()) {
 		// update the tree
 		treeNode *distNode, *restNode;
 		if (makeCluster(pairs[0], pairs[1])) {
-			distNode = new treeNode(hotspot_t(pairs[1], 1));
+			distNode = new treeNode(hotspot_t(pairs[1], 0));
 			restNode = new treeNode(hotspot_t(pairs[0], 0));
 		} else {// one hotspot
-			distNode = new treeNode(hotspot_t(pairs[1], 0));
+			distNode = new treeNode(hotspot_t(pairs[1], 1));
 			restNode = new treeNode(hotspot_t(pairs[0], 0));
 		}
 		restNode->children.push_back(distNode);
 		root->children.push_back(restNode);
-		
+		findBestSchedule(root, -1);
+
 		return ;
 	}
 	treeNode* newTreeRoot;
 	copyTree(newTreeRoot, root);
 
-	if (!insertNode(newTreeRoot, pairs, initCap)) {
+	if (!insertNode(newTreeRoot, pairs, curInitCap)) {
 		// if still no valid, keep the main route and append two points at the tail
 		appendTree(root);
 		findBestSchedule(root, -1);
@@ -711,7 +737,8 @@ void Kinetic() {
 		int driverId = canDrivers[0];
 		updateDriverPosition(driverId, orders[orderId].tid);
 		scheduling(driverId, orderId);
-		responseDriver(driverId, orderId);
+		if (bestVal < inf)
+			responseDriver(driverId, orderId);
 	}
 
 	for (int driverId=0; driverId<M; ++driverId) {
@@ -753,14 +780,26 @@ void readNetwork() {
 	initAll();
 	for (int i=0,j=0; j<R; i+=2,++j) {
 		rests[j] = position_t(rests_tmp[i], rests_tmp[i+1]);
+#ifdef LOCAL_DEBUG
+		printf("rests[%d]: %.2lf, %.2lf\n", j, rests[j].x, rests[j].y);
+#endif
 	}
 	for (int i=0,j=0; j<D; i+=2,++j) {
 		dists[j] = position_t(dists_tmp[i], dists_tmp[i+1]);
+#ifdef LOCAL_DEBUG
+		printf("dists[%d]: %.2lf, %.2lf\n", j, dists[j].x, dists[j].y);
+#endif
 	}
 	for (int i=0,j=0; j<N; i+=3,++j) {
 		orders[j] = order_t(orders_tmp[i], orders_tmp[i+1], orders_tmp[i+2]);
+#ifdef LOCAL_DEBUG
+		printf("orders[%d]: %d, %d, %d\n", j, orders[j].tid, orders[j].sid, orders[j].eid);
+#endif
 	}
-	
+#ifdef LOCAL_DEBUG
+	fflush(stdout);
+#endif
+
 	initGrid();
 }
 
@@ -792,15 +831,23 @@ bool makeCluster(treeNode *rt, const node_t& node) {
 	position_t bpos;
 	
 	while (p->size()==1 && p->children[0]->val.spotId==spotId) {
-		hotspot_t& spot = p->children[0]->val;
+		hotspot_t& spot = p->val;
 		node_t& node = spot.node;
 		bpos = (node.placeId < R) ? rests[node.placeId] : dists[node.placeId-R];
 		if (Length(apos, bpos) > theta)
 			return false;
 		p = p->children[0];
 	}
+//	printf("%d\n", p->size());
+//	fflush(stdout);
 	
-	return true;
+	hotspot_t& spot = p->val;
+	node_t& anode = spot.node;
+	bpos = (anode.placeId < R) ? rests[anode.placeId] : dists[anode.placeId-R];
+	if (Length(apos, bpos) > theta)
+		return false;
+	else
+		return true;
 }
 
 bool makeCluster(const node_t& a, const node_t& b) {
@@ -834,6 +881,12 @@ treeNode *endOfCluster(treeNode* rt,  int initCap, int& curCap) {
 		}
 		p = p->children[0];
 	}
+	if (p->val.node.placeId < R) {
+		if (++curCap > C)
+			flag = true;
+	} else {
+		--curCap;
+	}
 	if (flag) curCap = INT_MAX;
 	
 	return p;
@@ -851,6 +904,12 @@ int calcCup_Cluster(treeNode* rt, int curCap) {
 			--curCap;
 		}
 		p = p->children[0];
+	}
+	if (p->val.node.placeId < R) {
+		if (++curCap > C)
+			return INT_MAX;
+	} else {
+		--curCap;
 	}
 	
 	return curCap;
@@ -944,6 +1003,7 @@ bool insertNode(treeNode*& rt, const vector<node_t>& src, int curCap) {
 	treeNode *nrt;
 	int newCurCap;
 	vector<treeNode*> validNodes;
+	bool reachLeaf = rt->empty();
 	
 	int delta = (src.size() > 1) ? 1 : -1;
 	int nxtSpotId = (rt->val.spotId==0) ? 1 : 0;
@@ -952,15 +1012,16 @@ bool insertNode(treeNode*& rt, const vector<node_t>& src, int curCap) {
 		nrt = rt->children[i];
 		// pickup makes it at last, drop makes it at first
 		newCurCap = (delta==1) ? (calcCup_Cluster(nrt, curCap)+1) : (calcCup_Cluster(nrt, curCap-1));
-		if (newCurCap<=C && makeCluster(nrt, src[0])) {
-			validNodes.push_back(nrt);
+		if (makeCluster(nrt, src[0])) {
+			if (newCurCap <= C)
+				validNodes.push_back(nrt);
 			// remove hotspot from the kinetic temporialy
 			rt->children[i] = *(rt->children.rbegin());
 			rt->children.pop_back();
 		}
 	}
 	int fail = 1;
-	if (!rt->children.empty()) {
+	if (reachLeaf || !rt->empty()) {
 		nd = new treeNode(hotspot_t(src[0], nxtSpotId));
 		
 		// pickup & deliver can form a cluster directly
@@ -1060,6 +1121,10 @@ bool insertNode(treeNode*& rt, const vector<node_t>& src, int curCap) {
 			}
 		}
 	}
+	// #ifdef LOCAL_DEBUG
+	// printf("rt=(%d,%d), size=%d\n", rt->val.node.placeId, rt->val.node.orderId, rt->size());
+	// fflush(stdout);
+	// #endif
 	
 	if (rt->isEmpty()) {
 		deleteTree(rt);
