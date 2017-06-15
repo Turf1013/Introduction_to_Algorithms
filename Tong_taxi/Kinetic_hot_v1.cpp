@@ -18,7 +18,7 @@ using namespace std;
 const double waitTime = 0.0;
 int graphLength = 100, graphWidth = 100;
 int gridLength = 10, gridWidth = 10;
-int theta = 5;
+int theta = 10;
 int R, D, M, C, N;
 
 const double eps = 1e-6;
@@ -516,7 +516,7 @@ double calcUnfinishedCost(const int driverId, double orderTid) {
 	driver.pos = preLoc;
 	driver.curTime = preTime;
 
-	return ret;
+	return curTime;
 }
 
 vector<int> taxiSearching(const int orderId) {

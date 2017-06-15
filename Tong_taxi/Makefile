@@ -26,8 +26,11 @@ bb: input.h output.h monitor.h BB.cpp
 kit: input.h output.h monitor.h treeNode.h Kinetic.cpp
 	$(CXX) $(CFLAGS) -o kit Kinetic.cpp $(LIBS)
 	
-hot: input.h output.h monitor.h treeNode.h Kinetic.cpp
+hot: input.h output.h monitor.h treeNode.h Kinetic_hot.cpp
 	$(CXX) $(CFLAGS) -o hot Kinetic_hot.cpp $(LIBS)
+
+hotp: input.h output.h monitor.h treeNode.h Kinetic_hot_v1.cpp
+	$(CXX) $(CFLAGS) -o hotp Kinetic_hot_v1.cpp $(LIBS)
 
 judge: input.h judge.cpp
 	$(CXX) $(CFLAGS) -o judge judge.cpp $(LIBS)
@@ -43,4 +46,4 @@ clean:
 		-@rm bb bb.g* 2> /dev/null || true
 		-@rm kit kit.g* 2> /dev/null || true
 		-@rm judge judge.g* 2> /dev/null || true
-
+		-@rm hot hotp hotp.g* hot.g* 2> /dev/null || true
