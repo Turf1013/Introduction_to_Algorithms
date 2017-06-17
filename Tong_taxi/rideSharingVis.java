@@ -1,4 +1,4 @@
-/**
+/*
 	\author: 	Trasier
 	\date:		2017.6.16
 	\log：		
@@ -17,6 +17,7 @@ import java.lang.*;
 
 // ------------- class Point ------------------------------
 class Pnt {
+    public static final double eps = 1e-4;
     public double x,y;
 	
     public Pnt() {};
@@ -26,7 +27,17 @@ class Pnt {
     }
 	
     public boolean equals(Pnt other) {
-        return (x == other.x && y == other.y);
+        return dcmp(x-other.x)==0 && dcmp(y-other.y)==0;
+    }
+
+    public double toLength(Pnth other) {
+        return Math.sqrt((x-other.x)*(x-other.x) + (y-other.y)*(y-other.y));
+    }
+
+    private int dcmp(double x) {
+        if (Math.fabs(x) < eps)
+            return 0;
+        return x>0 ? 1 : -1;
     }
 }
 
@@ -64,7 +75,7 @@ class Node {
 
 class Hop {
 	public double arriveTime, leaveTime;
-	public double x, y;
+	public Pnt pos;
 	public int buckNum;
 	ArrayList<Integer> bucks;
 	
@@ -75,8 +86,7 @@ class Hop {
 	public Driver(double arrive, double leave, double x1, double y1, int buckNum1) {
 		arriveTime = arrive;
 		leaveTime = leave;
-		x = x1;
-		y = y1;
+		pos = new Pnt(x1, y1);
 		buckNum = buckNum1;
 		bucks = new ArrayList<Integer>();
 	}
@@ -133,19 +143,30 @@ class Route {
 public class rideSharingVis {
 	final int GRAPH_WIDTH = 100;
 	final int GRAPH_HEIGHT = 100;
+    public static final double waitTime = 0.0;
+    public static final double eps = 1e-4;
+    public static final double inf = 1e20;
+    String networkFileName, routeFileName;
     int NRest, NDist, NOrder, NDriver, CAP;
 	Pnt[] rests;
 	Pnt[] dists;
 	Order[] orders;
 	Route[] routes;
+    int[] taken;
+    double[] delverTime;
     public static int delay = 100;
     public static boolean startPaused = true;
+    ArrayList<Pnt> progress = new ArrayList<Pnt>();
     final Object worldLock = new Object();
     SecureRandom rnd = null;
-	double curTime;
+	double totTime, stuResult;
 	
 	// ---------------------------------------------------
 	void readNetwork(string fileName) {
+        if (fileName == null) {
+            addFatalError("networkFileName is invalid");
+            System.exit(1);
+        }
 		MyFileReader in = new FileReader(fileName);
 		
 		// constant variable
@@ -160,6 +181,10 @@ public class rideSharingVis {
 		dists = new Ont[NDist];
 		routes = new Route[NDriver];
 		orders = new Order[NOrder];
+        taken = new int[NOrder];
+        deliverTime = new double[NOrder];
+        Arrays.fill(taken, -1);
+        Arrays.fill(deliveTime, inf);
 		
 		// read array
 		double x, y;
@@ -187,6 +212,10 @@ public class rideSharingVis {
 	
 	// ---------------------------------------------------
 	void readRoute(string fileName) {
+        if (fileName == null) {
+            addFatalError("routeFileName is invalid");
+            System.exit(1);
+        }
 		MyFileReader in = new MyFileReader(fileName);
 		int driverId, hopNum;
 		double arriveTime, leaveTime, x, y;
@@ -210,135 +239,132 @@ public class rideSharingVis {
 				routes[i].add(hop);
 			}
 		}
+
+        stuResult = in.nextDouble();
 	}
+
+    double Length(Pnt a, Pnt b) {
+        return Math.sqrt((a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y));
+    }
+
+    private int dcmp(double x) {
+        if (Math.fabs(x) < eps)
+            return 0;
+        return x>0 ? 1 : -1;
+    }
+
+    TreeSet<Integer> getOrderSet(Hop hop) {
+        return new TreeSet<Integer>(hop.bucks);
+    }
+
+    int getRestId(Pnt p) {
+        for (int i=0; i<NRest; ++i)
+            if (rests[i].equals(p))
+                return i;
+        return -1;
+    }
+
+    int getDistId(Pnt p) {
+        for (int i=0; i<NDist; ++i)
+            if (dists[i].equals(p))
+                return i;
+        return -1;
+    }
 	
     // ---------------------------------------------------
-    void calculateNextStar(int idx)
-    {
-        for (int i=0;i<NUfo;i++)
-        {
-            int from = ufoParm[i*3+idx-1];
-            int bdst = 1<<30;
-            int bj = rnd.nextInt(NStar);
-            // Pick [range] random stars and select the nearest one to travel to.
-            for (int j=0;j<ufoRange[i];j++)
-            {
-                int p = rnd.nextInt(NStar);
-                int dst = (star[p].x-star[from].x)*(star[p].x-star[from].x) + (star[p].y-star[from].y)*(star[p].y-star[from].y);
-                if (dst<bdst && dst>0)
-                {
-                    bdst = dst;
-                    bj = p;
-                }
-            }
-            ufoParm[i*3+idx] = bj;
+    void generate(string seed) {
+        try {
+            /*dp nothing*/
+        } catch (Exception e) {
+            addFatalError("An exception occurred while generating test case.");
+            e.printStackTrace(); 
         }
     }
+
     // ---------------------------------------------------
-    void generate(String seed)
-    {
-      try {
-        rnd = SecureRandom.getInstance("SHA1PRNG");
-        rnd.setSeed(Long.parseLong(seed));
+    boolean judgeHop(Hop preHop, Hop curHop) {
+        if (curHop.buckNum > CAP) return false;
 
-        int NG;
-        if (seed.equals("1"))
-        {
-            NStar = 20;
-            NShip = 1;
-            NUfo = 4;
-            NG = 3;
-        } else {
-            NStar = 100 + rnd.nextInt(1901);
-            NShip = 1 + rnd.nextInt(10);
-            NUfo = rnd.nextInt(NStar/100);
-            NG = 1 + rnd.nextInt(16);
+        double simArrive = preHop.leaveTime + Length(preHop.pos, curHop.pos);
+        double simLeave = simArrive;
+
+        if (dcmp(curHop.arriveTime - curHop.leaveTime) > 0)
+            return false;
+        if (dcmp(simArrive - curHop.arriveTime) > 0)
+            return false;
+        if (dcmp(simLeave - curHop.arriveTime) < 0)
+            return false;
+
+        Pnt curPos = curHop.pos;
+        TreeSet<Integer> preSet = getOrderSet(preHop);
+        TreeSet<Integer> curSet = getOrderSet(curHop);
+
+        Iterator<Integer> iter;
+        Integer orderId;
+
+        // Iterate preSet;
+        iter = preSet.iterator();
+        while (iter.hasNext()) {
+            orderId = iter.next();
+            if (!curSet.contains(orderId)) {
+                // this order should be droped off here
+                if (!curPos.equals(dists[orders[orderId].eid]))
+                    return false;
+                if (taken[orderId] != 0) return false;
+                taken[orderId] = 1;
+                deliverTime[orderId] = curHop.arriveTime;
+            }
         }
 
-        star = new Pnt[NStar];
-        ship = new int[NShip];
-        ufoParm = new int[3 * NUfo];
-        starParm = new int[2 * NStar];
+        // Iterate curSet;
+        iter = curSet.iterator();
+        while (iter.hasNext()) {
+            orderId = iter.next();
+            if (!preSet.contains(orderId)) {
+                if (!curPos.equals(rests[orders[orderId].sid]))
+                    return false;
+                if (taken[orderId] != -1) return false;
+                taken[orderId] = 0;
 
-        System.out.println("NStar = " + NStar + " NShip = " + NShip + " NUfo = " + NUfo + " NGalaxy = "+NG);
+                simLeave = Math.max(simLeave, orders[orderId].tid+waitTime);
+            }
+        }
 
-        // Generate stars
-        // Generate galaxy center positions
-        Pnt[] galaxy = new Pnt[NG];
-        for (int i=0;i<NG;i++)
-        {
-            galaxy[i] = new Pnt(rnd.nextInt(SZ), rnd.nextInt(SZ));
-        }
-        // Generate star locations
-        for (int i=0;i<NStar;i++)
-        {
-            // Pick a random gaussian location centered at a random galaxy
-            int x = 0, y = 0;
-            int g = rnd.nextInt(NG);
-            do
-            {
-                x = (int)(rnd.nextGaussian()*100) + galaxy[g].x;
-                y = (int)(rnd.nextGaussian()*100) + galaxy[g].y;
-            } while (x<0 || y<0 || x>=SZ || y>=SZ);
-            star[i] = new Pnt(x,y);
-        }
-        // Assign initial space ship locations
-        for (int i=0;i<NShip;i++)
-        {
-            ship[i] = rnd.nextInt(NStar);
-        }
-        // Generate UFO
-        ufoRange = new int[NUfo];
-        for (int i=0;i<NUfo;i++)
-        {
-            ufoRange[i] = 10+rnd.nextInt(NStar/10);
-            ufoParm[i*3] = rnd.nextInt(NStar);
-        }
-        calculateNextStar(1);
-        calculateNextStar(2);
+        if (dcmp(curPos.leaveTime-simLeave) < 0)
+            return false;
 
-        // convert to parameter array
-        for (int i=0;i<NStar;i++)
-        {
-            starParm[i*2] = star[i].x;
-            starParm[i*2+1] = star[i].y;
-        }
-        energy = 0;
-        visited = 0;
-		curTime = 0;
-      }
-      catch (Exception e) { 
-        addFatalError("An exception occurred while generating test case.");
-        e.printStackTrace(); 
-      }
+        return true;
     }
+
+    void updateHop(Hop hop) {
+        progress.add(hop.pos);
+    }
+
+    double calcResult() {
+        double ret = 0.0;
+
+        for (int i=0; i<NOrder; ++i) {
+            if (taken[i] != -1) return -1.0;
+            ret = max(ret, deliverTime[i]-orders[i].tid);
+        }
+
+        return ret;
+    }
+
     // ---------------------------------------------------
-    public double runTest(String seed)
-    {
-      try {
-        generate(seed);
-        double score = -1;
-        int turns = 0;
-        if (proc != null)
-        {
-            int iret;
-            try
+    public double runTest(string seed) {
+        try {
+            generate(seed);
             {
-				double begTime = System.currentTimeMillis();
-                iret  = init(starParm);
-				double endTime = System.currentTimeMillis();
-				curTime += endTime - begTime;
-            }
-            catch (Exception e)
-            {
-                addFatalError("Failed to get result from init.");
-                return -1.0;
+                double begTime = System.currentTimeMillis();
+                double endTime = System.currentTimeMillis();    
             }
 
-            if (vis)
-            {
+            readNetwork(networkFileName);
+
+            if (vis) {
                 // draw the image
-                jf.setSize(SZX,SZY);
+                jf.setSize(GRAPH_WIDTH, GRAPH_HEIGHT);
                 jf.setVisible(true);
                 draw();
                 if (startPaused)
@@ -348,114 +374,73 @@ public class rideSharingVis {
                 v.processPause();
             }
 
-            // Perform moves until all stars visited or number of maximum turns reached.
-            while (turns<NStar*4 && visited<NStar)
-            {
-                int[] ret;
-                try
-                {	
-					double begTime = System.currentTimeMillis();
-                    ret = makeMoves(ufoParm, ship);
-					double endTime = System.currentTimeMillis();
-					curTime += endTime - begTime;
+            if (exec != null) {
+                try {
+                    Runtime rt = Runtime.getRuntime();
+                    cmdLine = exec + " " + networkFileName + " " + routeFileName;
+                    proc = rt.exec(cmdLine);
+                    //os = proc.getOutputStream();
+                    //is = proc.getInputStream();
+                    //br = new BufferedReader(new InputStreamReader(is));
+                    new ErrorReader(proc.getErrorStream()).start();
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                catch (Exception e)
-                {
-                    addFatalError("Move #"+turns+": Failed to get result from makeMoves.");
-                    return -1.0;
+            }
+
+            synchronized (worldLock) {
+                readRoute(routeFileName);
+            }
+
+            for (int i=0; i<NDriver; ++i) {
+                int hopNum = routes[i].hopNum;
+                if (hopNum == 0) continue;
+                Hop preHop = routes[i].get(0), curHop;
+                synchronized (worldLock) {
+                    updateHop(preHop);
                 }
-                // move ship
-                if (ret.length!=NShip)
-                {
-                    addFatalError("Move #"+turns+": Return should have one move for each ship. Length is "+ret.length+" and should be "+NShip+".");
-                    return -1.0;
-                }
-                for (int i=0;i<NShip;i++)
-                {
-                    if (ret[i]<0 || ret[i]>=NStar)
-                    {
-                        addFatalError("Move #"+turns+": Return values should in the range of [0,"+(NStar-1)+"]. Your value was "+ret[i]+".");
+                for (int j=1; j<hopNum; ++j) {
+                    curHop = routes[i].get(j);
+                    if (!judgeHop(preHop, curHop)) {
+                        addFatalError("Route of Driver_" + i + "at step_" + j + " is invalid.");
+                        endTest();
                         return -1.0;
                     }
-                    synchronized (worldLock)
-                    {
-                        // only add energy if the ship actually moved in space
-                        if (star[ship[i]].x!=star[ret[i]].x || star[ship[i]].y!=star[ret[i]].y)
-                        {
-                            double dst = (double)(star[ship[i]].x - star[ret[i]].x)*(star[ship[i]].x - star[ret[i]].x);
-                            dst += (double)(star[ship[i]].y - star[ret[i]].y)*(star[ship[i]].y - star[ret[i]].y);
-                            dst = Math.sqrt(dst);
-                            progress.add(ship[i]); // for visualization only
-                            progress.add(ret[i]); // for visualization only
-                            // Flying with ufo ?
-                            int withUFO = 0;
-                            for (int j=0;j<NUfo;j++)
-                            {
-                                // Reduce the energy when travelling with UFO's
-                                if (ufoParm[j*3]==ship[i] && ufoParm[j*3+1]==ret[i])
-                                {
-                                    dst *= 0.001;
-                                    withUFO = 1;
-                                }
-                            }
-                            progress.add(withUFO); // for visualization only
-                            energy += dst;
-                        }
-                        ship[i] = ret[i];
-                        if (!star[ship[i]].visited)
-                        {
-                            star[ship[i]].visited = true;
-                            visited++;
-                        }
-                     }
-                }
-                // move UFO's
-                for (int i=0;i<NUfo*3;i+=3)
-                {
-                    ufoParm[i] = ufoParm[i+1];
-                    ufoParm[i+1] = ufoParm[i+2];
-                }
-                calculateNextStar(2);
 
-                turns++;
-                if (vis)
-                {
-                    // update vis
-                    draw();
-                    v.processPause();
-                    try {
-                        Thread.sleep(delay);
-                    } catch (Exception e) {
-                        // do nothing
+                    // update route
+                    synchronized (worldLock) {
+                        updateHop(curHop);
                     }
+                    preHop = curHop;
+                }
+                if (preHop.buckNum != 0)
+                    return -1.0;
+            }
+            
+            if (vis) {
+                // update vis
+                draw();
+                v.processPause();
+                try {
+                    Thread.sleep(delay);
+                } catch (Exception e) {
+                    // do nothing
                 }
             }
-            signalEnd();
-            if (visited!=NStar)
-            {
-                addFatalError("All stars not visited after "+(NStar*4)+" turns.");
-                return -1.0;
-            }
-        }
-        if (vis) {
-            // draw the image
-            jf.setSize(SZX,SZY);
-            jf.setVisible(true);
-            draw();
-        }
 
-        if (saveFile!=null)
-            saveCase(saveFile);
+            return calcResult();
 
-        System.out.println("Ended at turn "+turns+" out of a maximum of "+(NStar*4)+".");
-        return energy;
-      }
-      catch (Exception e) { 
-        addFatalError("An exception occurred while trying to process your program's results.");
-        e.printStackTrace(); 
-        return -1.0;
-      }
+        } catch (Exception e) { 
+            addFatalError("An exception occurred while trying to process your program's results.");
+            e.printStackTrace(); 
+            return -1.0;
+        }
     }
+
+    void endTest() {
+
+    }
+    
 // ------------- visualization part ----------------------
     static String exec;
     static boolean vis;
@@ -467,62 +452,19 @@ public class rideSharingVis {
     OutputStream os;
     BufferedReader br;
     // problem-specific drawing params
-    final int SZX = SZ+2,SZY=SZ+2;
+    final int SZX = GRAPH_WIDTH+2, SZY=GRAPH_HEIGHT+2;
     volatile boolean ready;
     volatile int Ncur;
     volatile int[] Pcur;
-    int[][] coordToPoint;
-    // ---------------------------------------------------
-    int init(int[] stars_) throws IOException
-    {
-        StringBuffer sb = new StringBuffer();
-        sb.append(stars_.length).append('\n');
-        for (int i=0; i<stars_.length; i++)
-            sb.append(stars_[i]).append('\n');
-        os.write(sb.toString().getBytes());
-        os.flush();
-        // get the return
-        int ret = Integer.parseInt(br.readLine());
-        //System.out.println(ret);
-        return ret;
-    }
-    // ---------------------------------------------------
-    int[] makeMoves(int[] ufos_, int[] ships_) throws IOException
-    {
-        StringBuffer sb = new StringBuffer();
-        sb.append(ufos_.length).append('\n');
-        for (int i = 0; i < ufos_.length; ++i)
-            sb.append(ufos_[i]).append('\n');
-        sb.append(ships_.length).append('\n');
-        for (int i = 0; i < ships_.length; ++i)
-            sb.append(ships_[i]).append('\n');
-        os.write(sb.toString().getBytes());
-        os.flush();
-        // get the return - an array of ints
-        int nret = Integer.parseInt(br.readLine());
-        //System.out.println(nret);
-        int[] ret = new int[nret];
-        for (int i = 0; i < nret; ++i)
-            ret[i] = Integer.parseInt(br.readLine());
-        return ret;
-    }
-    // ---------------------------------------------------
-    void signalEnd() throws IOException
-    {
-        StringBuffer sb = new StringBuffer();
-        sb.append("-1").append('\n');
-        os.write(sb.toString().getBytes());
-        os.flush();
-    }
+    
     // ---------------------------------------------------
     void draw() {
         if (!vis) return;
         v.repaint();
     }
     // ---------------------------------------------------
-    BufferedImage drawCase(boolean showUfo)
-    {
-        BufferedImage bi = new BufferedImage(SZX+10,SZY+10,BufferedImage.TYPE_INT_RGB);
+    BufferedImage drawRoute() {
+        BufferedImage bi = new BufferedImage(SZX+10,SZY+10, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2 = (Graphics2D)bi.getGraphics();
         synchronized (worldLock)
         {
@@ -530,53 +472,33 @@ public class rideSharingVis {
             g2.setColor(new Color(0xD3D3D3));
             g2.fillRect(0,0,SZX+10,SZY+10);
             g2.setColor(Color.BLACK);
-            g2.fillRect(0,0,SZ+1,SZ+1);
+            g2.fillRect(0,0,GRAPH_WIDTH+2,GRAPH_HEIGHT+2);
             //frame
             g2.setColor(Color.WHITE);
-            g2.drawRect(0,0,SZ+1,SZ+1);
+            g2.drawRect(0,0,GRAPH_WIDTH+2,GRAPH_HEIGHT+2);
 
-            // draw flown paths
-            for (int i=0;i<progress.size();i+=3)
-            {
-                g2.setColor(progress.get(i+2)==0 ? Color.GRAY : Color.GREEN);
-                int v1 = progress.get(i);
-                int v2 = progress.get(i+1);
-                g2.drawLine(star[v1].x, star[v1].y, star[v2].x, star[v2].y);
-            }
-            // draw stars
-            for (int i=0;i<NStar;i++)
-            {
-                if (star[i].visited)
+            // draw paths
+            if (!progress.isEmpty()) {
+                int sz = progress.size();
+                Pnt pre = progress.get(0), cur;
+                for (int i=1; i<sz; ++i)
                 {
+                    cur = progress.get(i);
                     g2.setColor(Color.GREEN);
-                    g2.fillOval(star[i].x-1, star[i].y-1, 3, 3);
-                } else
-                {
-                    g2.setColor(Color.WHITE);
-                    g2.fillOval(star[i].x-2, star[i].y-2, 5, 5);
+                    g2.drawLine(pre.x, pre.y, cur.x, cur.y);
                 }
             }
-            // draw ufos
-            if (showUfo)
-            {
-                for (int i=0;i<NUfo;i++)
-                {
-                    g2.setColor(new Color(1.f, 1.f, 0));
-                    g2.fillOval(star[ufoParm[i*3]].x-3, star[ufoParm[i*3]].y-3, 7, 7);
-                    g2.drawLine(star[ufoParm[i*3]].x, star[ufoParm[i*3]].y, star[ufoParm[i*3+1]].x, star[ufoParm[i*3+1]].y);
-                    g2.setColor(new Color(0.5f, 0.5f, 0));
-                    g2.drawLine(star[ufoParm[i*3+1]].x, star[ufoParm[i*3+1]].y, star[ufoParm[i*3+2]].x, star[ufoParm[i*3+2]].y);
-                }
+            // draw rests
+            for (int i=0; i<NRest; ++i) {
+                g2.setColor(Color.BLUE);
+                g2.fillRect(rests[i].x-1.5, rests[i].y-1.5, 3, 3);
             }
-            // draw ships
-            for (int i=0;i<NShip;i++)
-            {
-                float hue = (float)(i) / NShip;
-                g2.setColor(Color.getHSBColor(hue, 0.9f, 1.0f));
-                g2.drawOval(star[ship[i]].x-5, star[ship[i]].y-5, 11, 11);
-                g2.setColor(Color.RED);
-                g2.drawOval(star[ship[i]].x-3, star[ship[i]].y-3, 7, 7);
+            // draw dists
+            for (int i=0; i<NDist; ++i) {
+                g2.setColor(Color.BLUE);
+                g2.fillOval(dists[i].x-1.5, dists[i].y-1.5, 3, 3);
             }
+            
         }
         return bi;
     }
@@ -613,7 +535,7 @@ public class rideSharingVis {
         public void paint(Graphics g)
         {
           try {
-            BufferedImage bi = drawCase(drawUfo);
+            BufferedImage bi = drawCase();
             g.drawImage(bi,0,0,SZX+10,SZY+10,null);
           }
           catch (Exception e) { e.printStackTrace(); }
@@ -659,6 +581,7 @@ public class rideSharingVis {
     }
     // ---------------------------------------------------
     public StarTravellerVis(String seed) {
+        totTime = 0.0;
         //interface for runTest
         if (vis)
         {
@@ -666,22 +589,15 @@ public class rideSharingVis {
             v = new Vis();
             jf.getContentPane().add(v);
         }
-        if (exec != null) {
-            try {
-                Runtime rt = Runtime.getRuntime();
-                proc = rt.exec(exec);
-                os = proc.getOutputStream();
-                is = proc.getInputStream();
-                br = new BufferedReader(new InputStreamReader(is));
-                new ErrorReader(proc.getErrorStream()).start();
-            } catch (Exception e) {
-                e.printStackTrace();
+        double ans = runTest(seed);
+        System.out.println("Score = " + ans + ", time = " + totTime + "ms.");
+        if (proc != null) {
+            try { 
+                proc.destroy(); 
+            } catch (Exception e) { 
+                e.printStackTrace(); 
             }
         }
-        System.out.println("Score = "+runTest(seed) + ", time = " + curTime + "ms.");
-        if (proc != null)
-            try { proc.destroy(); } 
-            catch (Exception e) { e.printStackTrace(); }
     }
     // ---------------------------------------------------
     public static void main(String[] args) {
@@ -699,16 +615,18 @@ public class rideSharingVis {
                 vis = true;
             if (args[i].equals("-delay"))
                 delay = Integer.parseInt(args[++i]);
-            if (args[i].equals("-noufo"))
-                drawUfo = false;
+            if (args[i].equals("-network"))
+                networkFileName = args[++i];
 			if (args[i].equals("-route"))
 				routeFileName = args[++i];
         }
         rideSharingVis f = new rideSharingVis(seed);
     }
+
     // ---------------------------------------------------
     void addFatalError(String message) {
         System.out.println(message);
+        System.out.flush();
     }
 }
 
