@@ -1,7 +1,7 @@
 /*
 	\author: 	Trasier
 	\date:		2017.6.16
-	\log：		
+	\log锛�		
 */
 
 
@@ -11,8 +11,10 @@ import java.awt.image.*;
 import java.io.*;
 import java.util.*;
 import java.security.*;
+
 import javax.swing.*;
 import javax.imageio.ImageIO;
+
 import java.lang.*;
 
 // ------------- class Point ------------------------------
@@ -30,12 +32,12 @@ class Pnt {
         return dcmp(x-other.x)==0 && dcmp(y-other.y)==0;
     }
 
-    public double toLength(Pnth other) {
+    public double toLength(Pnt other) {
         return Math.sqrt((x-other.x)*(x-other.x) + (y-other.y)*(y-other.y));
     }
 
     private int dcmp(double x) {
-        if (Math.fabs(x) < eps)
+        if (Math.abs(x) < eps)
             return 0;
         return x>0 ? 1 : -1;
     }
@@ -63,9 +65,9 @@ class Node {
 	
 	public Node() {}
 	
-	public Node(int placeId1, int orderid1) {
-		placeId = placeId1;
-		orderId = orderId1;
+	public Node(int placeId_, int orderId_) {
+		placeId = placeId_;
+		orderId = orderId_;
 	}
 	
 	public boolean equals(Node other) {
@@ -79,11 +81,11 @@ class Hop {
 	public int buckNum;
 	ArrayList<Integer> bucks;
 	
-	public Driver() {
+	public Hop() {
 		bucks = new ArrayList<Integer>();
 	}
 	
-	public Driver(double arrive, double leave, double x1, double y1, int buckNum1) {
+	public Hop(double arrive, double leave, double x1, double y1, int buckNum1) {
 		arriveTime = arrive;
 		leaveTime = leave;
 		pos = new Pnt(x1, y1);
@@ -146,14 +148,14 @@ public class rideSharingVis {
     public static final double waitTime = 0.0;
     public static final double eps = 1e-4;
     public static final double inf = 1e20;
-    String networkFileName, routeFileName;
+    public static String networkFileName, routeFileName;
     int NRest, NDist, NOrder, NDriver, CAP;
 	Pnt[] rests;
 	Pnt[] dists;
 	Order[] orders;
 	Route[] routes;
     int[] taken;
-    double[] delverTime;
+    double[] deliverTime;
     public static int delay = 100;
     public static boolean startPaused = true;
     ArrayList<Pnt> progress = new ArrayList<Pnt>();
@@ -162,12 +164,12 @@ public class rideSharingVis {
 	double totTime, stuResult;
 	
 	// ---------------------------------------------------
-	void readNetwork(string fileName) {
+	void readNetwork(String fileName) {
         if (fileName == null) {
             addFatalError("networkFileName is invalid");
             System.exit(1);
         }
-		MyFileReader in = new FileReader(fileName);
+		MyFileReader in = new MyFileReader(fileName);
 		
 		// constant variable
 		NRest = in.nextInt();
@@ -178,13 +180,13 @@ public class rideSharingVis {
 		
 		// init array
 		rests = new Pnt[NRest];
-		dists = new Ont[NDist];
+		dists = new Pnt[NDist];
 		routes = new Route[NDriver];
 		orders = new Order[NOrder];
         taken = new int[NOrder];
         deliverTime = new double[NOrder];
         Arrays.fill(taken, -1);
-        Arrays.fill(deliveTime, inf);
+        Arrays.fill(deliverTime, inf);
 		
 		// read array
 		double x, y;
@@ -211,7 +213,7 @@ public class rideSharingVis {
 	}
 	
 	// ---------------------------------------------------
-	void readRoute(string fileName) {
+	void readRoute(String fileName) {
         if (fileName == null) {
             addFatalError("routeFileName is invalid");
             System.exit(1);
@@ -248,7 +250,7 @@ public class rideSharingVis {
     }
 
     private int dcmp(double x) {
-        if (Math.fabs(x) < eps)
+        if (Math.abs(x) < eps)
             return 0;
         return x>0 ? 1 : -1;
     }
@@ -272,7 +274,7 @@ public class rideSharingVis {
     }
 	
     // ---------------------------------------------------
-    void generate(string seed) {
+    void generate(String seed) {
         try {
             /*dp nothing*/
         } catch (Exception e) {
@@ -326,11 +328,11 @@ public class rideSharingVis {
                 if (taken[orderId] != -1) return false;
                 taken[orderId] = 0;
 
-                simLeave = Math.max(simLeave, orders[orderId].tid+waitTime);
+                simLeave = Math.max(simLeave, orders[orderId].t+waitTime);
             }
         }
 
-        if (dcmp(curPos.leaveTime-simLeave) < 0)
+        if (dcmp(curHop.leaveTime-simLeave) < 0)
             return false;
 
         return true;
@@ -345,14 +347,14 @@ public class rideSharingVis {
 
         for (int i=0; i<NOrder; ++i) {
             if (taken[i] != -1) return -1.0;
-            ret = max(ret, deliverTime[i]-orders[i].tid);
+            ret = Math.max(ret, deliverTime[i]-orders[i].t);
         }
-
+        
         return ret;
     }
 
     // ---------------------------------------------------
-    public double runTest(string seed) {
+    public double runTest(String seed) {
         try {
             generate(seed);
             {
@@ -377,7 +379,7 @@ public class rideSharingVis {
             if (exec != null) {
                 try {
                     Runtime rt = Runtime.getRuntime();
-                    cmdLine = exec + " " + networkFileName + " " + routeFileName;
+                    String cmdLine = exec + " " + networkFileName + " " + routeFileName;
                     proc = rt.exec(cmdLine);
                     //os = proc.getOutputStream();
                     //is = proc.getInputStream();
@@ -428,7 +430,11 @@ public class rideSharingVis {
                 }
             }
 
-            return calcResult();
+            double simResult = calcResult();
+            if (dcmp(simResult - stuResult) != 0)
+            	return -1.0;
+            else
+            	return stuResult;
 
         } catch (Exception e) { 
             addFatalError("An exception occurred while trying to process your program's results.");
@@ -485,28 +491,28 @@ public class rideSharingVis {
                 {
                     cur = progress.get(i);
                     g2.setColor(Color.GREEN);
-                    g2.drawLine(pre.x, pre.y, cur.x, cur.y);
+                    g2.drawLine((int)pre.x, (int)pre.y, (int)cur.x, (int)cur.y);
                 }
             }
             // draw rests
             for (int i=0; i<NRest; ++i) {
                 g2.setColor(Color.BLUE);
-                g2.fillRect(rests[i].x-1.5, rests[i].y-1.5, 3, 3);
+                g2.fillRect((int)rests[i].x-2, (int)rests[i].y-2, 4, 4);
             }
             // draw dists
             for (int i=0; i<NDist; ++i) {
                 g2.setColor(Color.BLUE);
-                g2.fillOval(dists[i].x-1.5, dists[i].y-1.5, 3, 3);
+                g2.fillOval((int)dists[i].x-2, (int)dists[i].y-2, 4, 4);
             }
             
         }
         return bi;
     }
     // ---------------------------------------------------
-    void saveCase(String filename)
+    void saveRoute(String filename)
     {
         try {
-            BufferedImage bi = drawCase(false);
+            BufferedImage bi = drawRoute();
             File outputfile = new File(filename);
             ImageIO.write(bi, "png", outputfile);
         } catch (IOException e) {
@@ -535,7 +541,7 @@ public class rideSharingVis {
         public void paint(Graphics g)
         {
           try {
-            BufferedImage bi = drawCase();
+            BufferedImage bi = drawRoute();
             g.drawImage(bi,0,0,SZX+10,SZY+10,null);
           }
           catch (Exception e) { e.printStackTrace(); }
@@ -580,7 +586,7 @@ public class rideSharingVis {
         public void windowDeiconified(WindowEvent e) { }
     }
     // ---------------------------------------------------
-    public StarTravellerVis(String seed) {
+    public rideSharingVis(String seed) {
         totTime = 0.0;
         //interface for runTest
         if (vis)
@@ -652,8 +658,13 @@ class MyFileReader {
 	private BufferedReader reader;
 	private StringTokenizer tokenizer;
 	
-	public MyFileReader(string fileName) {
-		reader = new BufferedReader(new FileReader(fileName));
+	public MyFileReader(String fileName) {
+		try {
+			reader = new BufferedReader(new FileReader(fileName));
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
 		tokenizer = null;
 	}
 	
