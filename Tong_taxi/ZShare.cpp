@@ -17,7 +17,7 @@ const double waitTime = 0.0;
 const double inf = 1e20;
 int graphLength = 100, graphWidth = 100;
 int gridLength = 10, gridWidth = 10;
-int R, D, M, C, N;
+int R, D, M, CAP, N;
 double bound;
 
 const double eps = 1e-6;
@@ -201,7 +201,7 @@ void deleteAll() {
 void distributeDrivers() {
 	for (int i=0; i<M; ++i) {
 		int idx = rand() % R;
-		drivers[i].status = idx + 1;
+		drivers[i].status = 0;
 		drivers[i].pos = rests[idx];
 	}
 }
@@ -285,7 +285,7 @@ void updateDriverPosition(const int driverId, const double orderTid, bool toMove
 		return ;
 
 	position_t srcPos = driver.pos;
-	const int placeId = driver.route[0].placeId;
+	const int placeId = (driver.isEmpty()) ? (driver.status-1) : driver.route[0].placeId;
 	position_t desPos = (placeId<R) ? rests[placeId] : dists[placeId-R];
 
 	double t = Length(srcPos, desPos);
@@ -326,7 +326,7 @@ void updateIndex(const int driverId, const double orderTid) {
 		const int orderId = driver.route[0].orderId;
 		position_t& nextPos = (placeId<R) ? rests[placeId] : dists[placeId-R];
 		double arriveTime = driver.curTime + Length(driver.pos, nextPos);
-		double tmpTime = (placeId<R) ? max(arriveTime, orderTid+waitTime) : arriveTime;
+		double tmpTime = (placeId<R) ? max(arriveTime, orders[orderId].tid+waitTime) : arriveTime;
 
 		if (tmpTime > orderTid) break;
 
@@ -367,8 +367,8 @@ void getBestPosition(int driverId, int orderId, int& bestPick, int& bestDrop, do
 	
 	if (sz == 0) {
 		bestPick = bestDrop = 0;
-		bestVal = max(Length(driver.pos,rests[order.sid]), order.tid+waitTime) + Length(rests[order.sid], dists[order.eid]) - order.tid;
-		bestCost = 0.0;
+		bestCost = max(Length(driver.pos,rests[order.sid]), order.tid+waitTime) + Length(rests[order.sid], dists[order.eid]) - order.tid;
+		bestVal = max(bestCost, bound);
 		return ;
 	}
 	
@@ -401,6 +401,8 @@ void getBestPosition(int driverId, int orderId, int& bestPick, int& bestDrop, do
 			F[i] = false;
 		else
 			F[i] = true;
+
+		curPos = nextPos;
 	}
 	#ifdef LOCAL_DEBUG
 	assert(F[sz]);
@@ -422,13 +424,13 @@ void getBestPosition(int driverId, int orderId, int& bestPick, int& bestDrop, do
 	
 	for (int i=sz; i>=0; --i) {
 		if (i == 0) {
-			position_t apos = driver.pos, bpos = (route[i].placeId < R) ? rests[route[i].placeId] : dists[route[i].placeId];
+			position_t apos = driver.pos, bpos = (route[i].placeId < R) ? rests[route[i].placeId] : dists[route[i].placeId-R];
 			Ddelta[i] = Length(apos, dropPos) + Length(dropPos, bpos) - Length(apos, bpos);
 		} else if (i == sz) {
 			Ddelta[i] = 0;
 		} else {
-			position_t apos = (route[i].placeId < R) ? rests[route[i].placeId] : dists[route[i].placeId];
-			position_t bpos = (route[i+1].placeId < R) ? rests[route[i+1].placeId] : dists[route[i+1].placeId];
+			position_t apos = (route[i].placeId < R) ? rests[route[i].placeId] : dists[route[i].placeId-R];
+			position_t bpos = (route[i+1].placeId < R) ? rests[route[i+1].placeId] : dists[route[i+1].placeId-R];
 			Ddelta[i] = Length(apos, dropPos) + Length(dropPos, bpos) - Length(apos, bpos);
 		}
 		
@@ -453,6 +455,7 @@ void getBestPosition(int driverId, int orderId, int& bestPick, int& bestDrop, do
 	double l0 = Length(pickPos, dropPos);
 	
 	for (int i=0; i<=sz; ++i) {
+		if (C[i] >= CAP)continue;
 		/**
 			two case needs to be considered, 1)[i,sz); 2) after sz.
 			The frist case is calculated by DP.
@@ -529,9 +532,7 @@ void getBestPosition(int driverId, int orderId, int& bestPick, int& bestDrop, do
 	delete[] F;
 	delete[] C;
 	delete[] T;
-	delete[] D;
 	delete[] slack;
-	delete[] delta;
 }
 
 pair<int,pair<int,int> > scheduling(const vector<int>& canDrivers, const int orderId) {
@@ -582,9 +583,31 @@ void responseDriver(const int driverId, const int orderId, int pickLoc, int drop
 	for (int i=0; i<=routeNum; ++i) {
 		if (pickLoc == i) driver.route.push_back(node_t(order.sid, orderId));
 		if (dropLoc == i) driver.route.push_back(node_t(order.eid+R, orderId));
-		driver.route.push_back(route[i]);
+		if (i < routeNum)
+			driver.route.push_back(route[i]);
 	}
 	driver.status = -1;
+}
+
+void updateBound(const int driverId) {
+	driver_t& driver = drivers[driverId];
+	if (driver.isEmpty()) return ;
+
+	vector<node_t>& route = driver.route;
+	const int sz = route.size();
+	double curTime = driver.curTime;
+	position_t curPos = driver.pos, nextPos;
+
+	for (int i=0; i<sz; ++i) {
+		const int placeId = route[i].placeId;
+		const int orderId = route[i].orderId;
+		nextPos = (placeId<R) ? rests[placeId] : dists[placeId-R];
+		curTime += Length(curPos, nextPos);
+		if (placeId < R)
+			curTime = max(curTime, orders[orderId].tid+waitTime);
+		else
+			bound = max(bound, curTime-orders[orderId].tid);
+	}
 }
 
 void ZShare() {
@@ -600,13 +623,14 @@ void ZShare() {
 		assert(driverId>=0 && pickLoc>=0 && dropLoc>=0);
 		#endif		
 		responseDriver(driverId, orderId, pickLoc, dropLoc);
+		updateBound(driverId);
 	}
-}
 
-void solve() {
-	ZShare();
-	printAns();
-	deleteAll();
+	for (int driverId=0; driverId<M; ++driverId) {
+		driver_t& driver = drivers[driverId];
+		while (!driver.isEmpty())
+			moveForward(driverId);
+	}
 }
 
 void printAns() {
@@ -623,12 +647,18 @@ void printAns() {
 	printf("%.10lf\n", ans);
 }
 
+void solve() {
+	ZShare();
+	printAns();
+	deleteAll();
+}
+
 void readNetwork() {
 	vector<double> rests_tmp;
 	vector<double> dists_tmp;
 	vector<int> orders_tmp;
 
-	readInput(R, D, M, C, N, rests_tmp, dists_tmp, orders_tmp);
+	readInput(R, D, M, CAP, N, rests_tmp, dists_tmp, orders_tmp);
 
 	initAll();
 
@@ -642,7 +672,7 @@ void readNetwork() {
 		orders[j] = order_t(orders_tmp[i], orders_tmp[i+1], orders_tmp[i+2]);
 	}
 
-	distributeDrivers();
+ 	distributeDrivers();
 }
 
 
