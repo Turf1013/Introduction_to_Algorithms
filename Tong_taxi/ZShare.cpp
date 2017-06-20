@@ -332,6 +332,25 @@ void updateIndex(const int driverId, const double orderTid) {
 
 		moveForward(driverId);
 	}
+	if (driver.isEmpty()) {
+		if (driver.status < 0) {
+			driver.status = rand() % R + 1;
+		}
+		if (driver.status > 0) {
+			const int placeId =	driver.status - 1;
+			position_t nextPos = (placeId < R) ? rests[placeId] : dists[placeId-R];
+			double arriveTime = driver.curTime + Length(driver.pos, nextPos);
+			if (arriveTime <= orderTid) {
+				moveForward(driverId);
+				#ifdef LOCAL_DEBUG
+				assert(driver.status == 0);
+				#endif
+			}
+		}
+		#ifdef LOCAL_DEBUG
+			assert(driver.status >= 0);
+		#endif
+	}
 }
 
 vector<int> taxiSearching(const int orderId) {
@@ -429,8 +448,8 @@ void getBestPosition(int driverId, int orderId, int& bestPick, int& bestDrop, do
 		} else if (i == sz) {
 			Ddelta[i] = 0;
 		} else {
-			position_t apos = (route[i].placeId < R) ? rests[route[i].placeId] : dists[route[i].placeId-R];
-			position_t bpos = (route[i+1].placeId < R) ? rests[route[i+1].placeId] : dists[route[i+1].placeId-R];
+			position_t apos = (route[i-1].placeId < R) ? rests[route[i-1].placeId] : dists[route[i-1].placeId-R];
+			position_t bpos = (route[i].placeId < R) ? rests[route[i].placeId] : dists[route[i].placeId-R];
 			Ddelta[i] = Length(apos, dropPos) + Length(dropPos, bpos) - Length(apos, bpos);
 		}
 		
@@ -504,11 +523,11 @@ void getBestPosition(int driverId, int orderId, int& bestPick, int& bestDrop, do
 			if (tmpVal < val) {
 				val = tmpVal;
 				cost = tmpCost;
-				pickLoc = Dpos[i+1];
+				dropLoc = Dpos[i+1];
 			} else if (tmpVal==val && tmpCost<cost) {
 				val = tmpVal;
 				cost = tmpCost;
-				pickLoc = Dpos[i+1];
+				dropLoc = Dpos[i+1];
 			}
 		}
 		
@@ -533,6 +552,11 @@ void getBestPosition(int driverId, int orderId, int& bestPick, int& bestDrop, do
 	delete[] C;
 	delete[] T;
 	delete[] slack;
+
+	#ifdef LOCAL_DEBUG
+	assert(bestVal < inf);
+	assert(bestPick <= bestDrop);
+	#endif
 }
 
 pair<int,pair<int,int> > scheduling(const vector<int>& canDrivers, const int orderId) {
@@ -557,7 +581,7 @@ pair<int,pair<int,int> > scheduling(const vector<int>& canDrivers, const int ord
 			bestPick = pick;
 			bestDrop = drop;
 			bestDelta = delta;
-		} else if (dcmp(val-bestVal)==0 && delta<bestDelta) {
+		} else if (val==bestVal && delta<bestDelta) {
 			bestVal = val;
 			bestDriver = driverId;
 			bestPick = pick;
@@ -607,6 +631,7 @@ void updateBound(const int driverId) {
 			curTime = max(curTime, orders[orderId].tid+waitTime);
 		else
 			bound = max(bound, curTime-orders[orderId].tid);
+		curPos = nextPos;
 	}
 }
 
@@ -620,7 +645,7 @@ void ZShare() {
 		int driverId = tmp.first;
 		int pickLoc = tmp.second.first, dropLoc = tmp.second.second;
 		#ifdef LOCAL_DEBUG
-		assert(driverId>=0 && pickLoc>=0 && dropLoc>=0);
+		assert(driverId>=0 && pickLoc>=0 && dropLoc>=0 && pickLoc<=dropLoc);
 		#endif		
 		responseDriver(driverId, orderId, pickLoc, dropLoc);
 		updateBound(driverId);
@@ -645,6 +670,7 @@ void printAns() {
 		ans = max(ans, riders[orderId].endTime-orders[orderId].tid);
 
 	printf("%.10lf\n", ans);
+	fflush(stdout);
 }
 
 void solve() {
