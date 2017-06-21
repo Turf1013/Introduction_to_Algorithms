@@ -196,8 +196,8 @@ Schedule工具的主要功能是用来观察订单请求和路线规划的关系
 	\item 实现表示正在行进的路线
 	\item 每隔设定秒数刷新一次图片
 	\item 不同的driver采用不同的颜色显示图片
-	\item 以progressbar显示以餐馆为目标的尚未pickup的订单数
-	\item 以progressbar显示以订单为目标的尚未dropoff的订单数
+	\item 以progressbar显示以餐馆为目标的尚未pickup 的订单数
+	\item 以progressbar显示以订单为目标的尚未dropoff 的订单数
 \end{enumerate}
 
 \section{Thought}
@@ -221,7 +221,7 @@ Schedule工具的主要功能是用来观察订单请求和路线规划的关系
 \subsection{Baseline}
 \label{subsec:baseline}
 	
-考虑最原始的配送情况，根据订单的先后顺序，选择当前Free的Driver配送，如果当前没有Free的Driver，则加入等待队列中。
+考虑最原始的配送情况，根据订单的先后顺序，选择当前Free 的Driver配送，如果当前没有Free的Driver，则加入等待队列中。
 即任何时候，每个配送员仅有一个单。	
 
 \subsection{贪心}
@@ -237,7 +237,7 @@ Schedule工具的主要功能是用来观察订单请求和路线规划的关系
 每隔一定时间窗口，对这些订单重新洗牌。在洗牌时，保持原有的已经pickup尚未deliver的订单。
 问题，转化为如何规划一堆订单的配送路线。将未pickup的结点聚成cluster，然后插入到已有路线后。
 
-\subsection{基于tshare的优化}
+\subsection{基于tshare的优化(错误版)}
 
 贪心的策略几乎都类似于tshare。
 目前仅仅想到了优化策略，优化的主要目标是时间复杂度，
@@ -253,7 +253,7 @@ tshare算法的计算量都主要集中在枚举两个插入结点，然后形�
 当前路线包含$n$个结点，
 不妨使用$0 \rightarrow 1 \rightarrow 2 \cdots \rightarrow (n-1)$。
 使用$T[i]$表示到达结点$i$的时间。
-使用$C[i]$表示到达结点$i$的容量（执行pickup或者dropoff后）。
+使用$C[i]$表示到达结点$i$的容量（执行pickup或者dropoff 后）。
 使用$F[i]$表示当前结点是否为dropoff位置。
 使用$Slack[i]$表示结点$i$的时间剩余量。
 使用$bound$表示当前的最大等待时间。
@@ -281,6 +281,139 @@ $\forall j>i$，有$T'[j] = T[j] + \delta$。
 作为最新的路线。
 对于多种$bound$不增长的策略，选择插入结点靠后的方式。
 
+\newpage
+\subsection{基于tshare的优化(最新版)}
+
+使用$Pos[i]$表示结点$i$对应的坐标。
+使用$Oid[i]$表示结点$i$对应的订单编号，使用$Tid[i]$表示结点$i$对应的订单的起始时间。从而有
+\[
+    Tid[i] = Orders[Oid[i]].tid
+\]
+使用$Br[i]$表示区间$[i,sz]$内的最大bound值，使用$Bl[i]$表示区间$[0,i]$内的最大bound值。
+\begin{align*}
+    Br[i] &= \max\{\forall j\in[i,sz], F[j]*(T[j] - Tid[j])\} \\
+    Bl[i] &= \max\{\forall j\in[0,i], F[j]*(T[j] - Tid[j])\}
+\end{align*}
+插入两个结点$p,d$，$p$表示pickup位置，$d$表示dropoff位置。并且满足$p \in [0,sz], d \in [p,sz]$。
+使用$dval[i]$表示在$i$后插入结点$d$后的新bound值（当前路线的bound），使用$dcost[i]$表示在$i$后插入结点$d$的路线最小增量。
+使用$dpos[i]$表示在$i$后插入结点$d$的最佳位置。\\
+当在$i-1$和$i$间插入结点$d$后，可以计算$d$结点导致的路线增量$delta$。
+\[
+    delta = Length(Pos[i-1], d.pos) + Length(d.pos, Pos[i]) - Length(Pos[i-1], Pos[i]) \ge 0
+\]
+从而可以计算新路线$0 \rightarrow 1 \cdots \rightarrow (i-1) \rightarrow d \rightarrow i \cdots \rightarrow sz$的总开销为
+$T[sz] + delta$。\\
+进一步，可以得到
+\begin{align*}
+    dval[i] &= \min_{\forall j\in[i,sz]}
+        \max \left\{
+            \begin{aligned}
+                F[k]*(T[k]-Tid[k]), &\text{ if } k \in [i,j) \\
+                F[k]*(T[k]-Tid[k]+delta[k]), &\text{if } k \in [j, sz]
+            \end{aligned}
+        \right .    \\
+            &= \min_{\forall j\in[i,sz]}
+		\max \left\{
+            \begin{aligned}
+                F[k]*(T[k]-Tid[k]), &\text{ if } k \in [i,sz] \\
+                F[k]*(T[k]-Tid[k]+delta[k]), &\text{if } k \in [j, sz]
+            \end{aligned}
+        \right .    \\
+			&= \min_{\forall j\in[i,sz]}
+		\max \left\{
+			\begin{aligned}
+				&\max \{\forall k\in[i,sz], F[k]*(T[k]-Tid[k])\} \\
+				&\max \{\forall k\in[j,sz], F[k]*(T[k]-Tid[k]+delta[k])\}
+			\end{aligned}
+		\right . 	\\
+			&= \min \{dval[i+1], \max\{Br[i], F[i]*(T[i]-Tid[i]+delta[i])\} \} \\
+			&= \min \{dval[i+1], F[i]*(T[i]-Tid[i]+delta[i])\} \\
+\end{align*}
+从而可以计算$dcost$和$dpos$。
+\begin{align*}
+	dcost[i] &= \left\{
+		\begin{aligned}
+			dcost[i+1], &\text{ if } dval[i+1] \le F[i]*(T[i]-Tid[i]+delta[i]) \\
+			delta[i], &\text{ if }	dval[i+1] > F[i]*(T[i]-Tid[i]+delta[i])
+		\end{aligned}
+	\right . \\
+	dpos[i] &= \left\{
+		\begin{aligned}
+			dpos[i+1], &\text{ if } dval[i+1] \le F[i]*(T[i]-Tid[i]+delta[i]) \\
+			i, &\text{ if }	dval[i+1] > F[i]*(T[i]-Tid[i]+delta[i])
+		\end{aligned}
+	\right .
+\end{align*}
+当插入$p$点时，可以利用$dval, dcost, dpos$加快计算，使用$t_0$表示新订单的起始时间。
+使用$val[i]$表示在$i$位置插入点$p$后，可能的最优路线bound，
+使用$cost[i]$表示该路线对应的时间开销，使用$dropLoc$表示最优的$d$点位置。\\
+同理，插入结点$p$后的$delta$为
+\[
+	delta_p = Length(Pos[i-1], p.pos) + Length(p.pos, Pos[i]) - Length(Pos[i-1], Pos[i]) \ge 0
+\]
+使用$j$表示结点$d$的插入位置，使用$delta_d$表示插入结点$d$的路线增量。此时，可以分三种情况讨论：
+\begin{enumerate}[(1)]
+	\item $i == j$ \\
+	此时路径的增量为
+	\[
+		delta = Length(Pos[i-1], p.pos) + Length(p.pos, d.pos) + Length(d.pos, Pos[i]) - Length(Pos[i-1], Pos[i])
+	\]
+	先计算辅助变量$tmp$，
+	\begin{align*}
+		tmp &= \max_{\forall k\in[0,n]} \left \{
+			\begin{aligned}
+				F[k] * (T[k]-Tid[k]), &\text{ if } k\in[0,i) \\
+				F[k] * (T[k]-Tid[k]+delta), &\text{ if } k\in[i,sz]
+			\end{aligned}
+		\right . \\
+			&= \max \{Br[0], Br[i]+delta\} \\
+	\end{align*}
+	从而可以计算$val, cost$。
+	\begin{align*}
+		val &= \max\{tmp, T[i-1]+Length(Pos[i-1], p.pos) + Length(p.pos, d.pos) + Length(d.pos, Pos[i])-t_0\} \\
+		cost &= T[sz] + delta
+	\end{align*}
+	
+	\item $j == sz$ \\
+	此时路径的增量为
+	\[
+		delta = Length(Pos[sz-1], p.pos) + Length(p.pos, d.pos)
+	\]
+	从而，可以较容易得求得
+	\begin{align*}
+		val &= \max\{Br[0], T[sz]+delta-t_0\} \\
+		cost &= T[sz] + delta
+	\end{align*}
+	
+	\item $j \in (i, sz)$ \\
+	此时路径的增量为
+	\begin{align*}
+		delta_p &= Length(Pos[i-1], p.pos) + Length(p.pos, Pos[i]) - Length(Pos[i-1], Pos[i]) \\
+		delta_d &= Length(Pos[j-1], d.pos) + Length(d.pos, Pos[j]) - Length(Pos[j-1], Pos[j]) \\
+		delta   &= delta_p + delta_d
+	\end{align*}
+	先计算辅助变量$tmp$
+	\begin{align*}
+	tmp = \min_{\forall j\in(i,sz)}
+		\max \left\{
+			\begin{aligned}
+				F[k]*(T[k]-Tid[k]+delta_d), 		&\text{ if } k \in (i,j) \\
+				F[k]*(T[k]-Tid[k]+delta_d+delta_p), &\text{ if } k \in [j,sz) \\
+				T[j-1]+delta_d+delta_p-t_0, 		&\text{ } \\
+			\end{aligned}
+		\right .
+	\end{align*}
+	从而，可以容易求得
+	\begin{align*}
+		val &= \max\{Bl[i-1], tmp\} \\
+		cost &= T[sz] + delta_p \\
+		pos &= dpos[i] \\
+	\end{align*}
+
+	
+\end{enumerate}
+
+\newpage
 \section{总结}
 	
 	
