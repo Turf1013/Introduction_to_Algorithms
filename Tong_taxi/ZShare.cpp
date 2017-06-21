@@ -548,7 +548,7 @@ void getBestPosition(int driverId, int orderId, int& bestPick, int& bestDrop, do
 	int pickLoc, dropLoc;
 
 	for (int i=sz; i>=0; --i) {
-		if (i>0 && C[i]==CAP) {
+		if (i==sz || C[i]==CAP) {
 			dval[i] = dcost[i] = inf;
 			dpos[i] = i;
 			continue;
@@ -568,12 +568,13 @@ void getBestPosition(int driverId, int orderId, int& bestPick, int& bestDrop, do
 			nextPos = (route[i].placeId<R) ? rests[route[i].placeId] : dists[route[i].placeId-R];
 			delta = Length(curPos, dropPos) + Length(dropPos, nextPos) - Length(curPos, nextPos);
 			dval[i] = max(Br[i+1]+delta, T[i]+delta-t0);
+			dval[i] = max(Br[i], dval[i]);
 			dcost[i] = delta;
 			dpos[i] = i;
 		}
 		if (i < sz) {
-			tmp = max(Br[i+1], dval[i+1]);
-			if (tmp<dval[i] || (tmp==dval[i] && dcost[i+1]<=dcost[i])) {
+			tmp = max(Br[i], dval[i+1]);
+			if (tmp<dval[i] || (tmp==dval[i] && dcost[i+1]<dcost[i])) {
 				dval[i] = tmp;
 				dcost[i] = dcost[i+1];
 				dpos[i] = dpos[i+1];
@@ -607,7 +608,10 @@ void getBestPosition(int driverId, int orderId, int& bestPick, int& bestDrop, do
 			}
 			updateResult(bestVal, bestCost, bestPick, bestDrop, tmpVal, tmpCost, pickLoc, dropLoc);
 		}
-		if (i < sz) {// case2:
+		if (i == sz) continue;
+
+		{// case2: j==sz
+			dropLoc = sz;
 			if (i == 0) {
 				curPos = driver.pos;
 			} else {
@@ -615,13 +619,85 @@ void getBestPosition(int driverId, int orderId, int& bestPick, int& bestDrop, do
 			}
 			nextPos = (route[i].placeId<R) ? rests[route[i].placeId] : dists[route[i].placeId-R];
 			double delta_d = Length(curPos, pickPos) + Length(pickPos, nextPos) - Length(curPos, nextPos);
-			tmp = delta_d + max(Br[i+1], dval[i+1]);
+			double delta_p = Length(endPos, dropPos);
+			tmp = max(Bl[i], Br[i+1]+delta_d);
+			tmpVal = max(tmp, T[sz]+delta_d+delta_p-t0);
+			tmpCost = T[sz]+delta_d+delta_p;
+			updateResult(bestVal, bestCost, bestPick, bestDrop, tmpVal, tmpCost, pickLoc, dropLoc);
+		}
+		{// case3: j \in (i,sz)
+			if (i == 0) {
+				curPos = driver.pos;
+			} else {
+				curPos = (route[i-1].placeId<R) ? rests[route[i-1].placeId] : dists[route[i-1].placeId-R];
+			}
+			nextPos = (route[i].placeId<R) ? rests[route[i].placeId] : dists[route[i].placeId-R];
+			double delta_d = Length(curPos, pickPos) + Length(pickPos, nextPos) - Length(curPos, nextPos);
+			// tmp = delta_d + max(Br[i+1], dval[i+1]);
+			tmp = delta_d + dval[i+1];
 			tmpVal = max(Bl[i], tmp);
 			tmpCost = T[sz] + delta_d + dcost[i+1];
 			dropLoc = dpos[i+1];
 			updateResult(bestVal, bestCost, bestPick, bestDrop, tmpVal, tmpCost, pickLoc, dropLoc);
 		}
 	}
+
+	#ifndef LOCAL_DEBUG
+	if (driverId==16 && orderId==94) {
+		printf("C:");
+		for (int i=0; i<=sz; ++i)
+			printf(" %d", C[i]);
+		putchar('\n');
+
+		printf("T:");
+		for (int i=0; i<=sz; ++i)
+			printf(" %.2lf", T[i]);
+		putchar('\n');
+
+		printf("Tid:");
+		for (int i=0; i<=sz; ++i)
+			printf(" %.2lf", Tid[i]);
+		putchar('\n');
+
+		printf("Bl:");
+		for (int i=0; i<=sz; ++i)
+			printf(" %.2lf", Bl[i]);
+		putchar('\n');
+
+		printf("Br:");
+		for (int i=0; i<=sz; ++i)
+			printf(" %.2lf", Br[i]);
+		putchar('\n');
+
+		printf("dval:");
+		for (int i=0; i<=sz; ++i)
+			printf(" %.2lf", dval[i]);
+		putchar('\n');
+
+		printf("dcost:");
+		for (int i=0; i<=sz; ++i)
+			printf(" %.2lf", dcost[i]);
+		putchar('\n');
+
+		printf("dpos:");
+		for (int i=0; i<=sz; ++i)
+			printf(" %d", dpos[i]);
+		putchar('\n');
+
+		printf("pos:");
+		for (int i=0; i<=sz; ++i) {
+			if (i == 0)
+				curPos = driver.pos;
+			else
+				curPos = (route[i-1].placeId<R) ? rests[route[i-1].placeId] : dists[route[i-1].placeId-R];
+			printf(" (%.6lf, %.6lf)", curPos.x, curPos.y);
+		}
+		putchar('\n');
+
+		printf("%.4lf (%.6lf,%.6lf) -> (%.6lf,%.6lf)\n",
+			(double)order.tid, rests[order.sid].x, rests[order.sid].y, dists[order.eid].x, dists[order.eid].y);
+	}
+	#endif
 
 	delete[] dcost;
 	delete[] dval;
