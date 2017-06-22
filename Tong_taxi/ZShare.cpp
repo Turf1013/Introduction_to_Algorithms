@@ -202,7 +202,7 @@ void distributeDrivers() {
 	for (int i=0; i<M; ++i) {
 		int idx = rand() % R;
 		drivers[i].status = 0;
-		drivers[i].pos = rests[0];
+		drivers[i].pos = rests[idx];
 #ifdef LOCAL_DEBUG
 		//drivers[i].pos = position_t(0.0, 0.0);
 #endif
@@ -273,7 +273,7 @@ void moveForward(const int driverId) {
 
 	if (driver.empty() && driver.status<0) {
 		int idx = rand() % R;
-		driver.status = 1;
+		driver.status = idx + 1;
 	}
 }
 

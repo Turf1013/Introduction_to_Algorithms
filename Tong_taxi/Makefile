@@ -7,7 +7,7 @@ LIBS = -lrt
 CFLAGS = --std=c++11 -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: base judge tshare bb kit
+all: base judge tshare bb kit zshare
 base: input.h output.h base.cpp monitor.h
 	$(CXX) $(CFLAGS) -o base base.cpp $(LIBS)
 
@@ -19,6 +19,9 @@ genD: genData.cpp
 
 tshare: input.h output.h monitor.h TShare.cpp
 	$(CXX) $(CFLAGS) -o tshare TShare.cpp $(LIBS)
+
+zshare: input.h output.h monitor.h ZShare.cpp
+	$(CXX) $(CFLAGS) -o zshare ZShare.cpp $(LIBS)
 
 bb: input.h output.h monitor.h BB.cpp
 	$(CXX) $(CFLAGS) -o bb BB.cpp $(LIBS)
@@ -47,3 +50,4 @@ clean:
 		-@rm kit kit.g* 2> /dev/null || true
 		-@rm judge judge.g* 2> /dev/null || true
 		-@rm hot hotp hotp.g* hot.g* 2> /dev/null || true
+		-@rm zshare zshare.g* 2> /dev/null || true
