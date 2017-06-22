@@ -294,13 +294,14 @@ $\forall j>i$，有$T'[j] = T[j] + \delta$。
     Br[i] &= \max\{\forall j\in[i,sz], F[j]*(T[j] - Tid[j])\} \\
     Bl[i] &= \max\{\forall j\in[0,i], F[j]*(T[j] - Tid[j])\}
 \end{align*}
-插入两个结点$p,d$，$p$表示pickup位置，$d$表示dropoff位置。并且满足$p \in [0,sz], d \in [p,sz]$。
+插入两个结点$p,d$，$p$表示pickup位置，$d$表示dropoff位置，$t_0$表示下单时间。并且满足$p \in [0,sz], d \in [p,sz]$。
 使用$dval[i]$表示在$i$后插入结点$d$后的新bound值（当前路线的bound），使用$dcost[i]$表示在$i$后插入结点$d$的路线最小增量。
 使用$dpos[i]$表示在$i$后插入结点$d$的最佳位置。\\
 当在$i-1$和$i$间插入结点$d$后，可以计算$d$结点导致的路线增量$delta$。
-\[
-    delta = Length(Pos[i-1], d.pos) + Length(d.pos, Pos[i]) - Length(Pos[i-1], Pos[i]) \ge 0
-\]
+\begin{align*}
+    delta &= Length(Pos[i-1], d.pos) + Length(d.pos, Pos[i]) - Length(Pos[i-1], Pos[i]) \ge 0 \\
+    arrive &= T[i-1] + Length(Pos[i-1], d.pos)
+\end{align*}
 从而可以计算新路线$0 \rightarrow 1 \cdots \rightarrow (i-1) \rightarrow d \rightarrow i \cdots \rightarrow sz$的总开销为
 $T[sz] + delta$。\\
 进一步，可以得到
@@ -309,38 +310,42 @@ $T[sz] + delta$。\\
         \max \left\{
             \begin{aligned}
                 F[k]*(T[k]-Tid[k]), &\text{ if } k \in [i,j) \\
-                F[k]*(T[k]-Tid[k]+delta[k]), &\text{if } k \in [j, sz]
+                F[k]*(T[k]-Tid[k]+delta[j]), &\text{ if } k \in [j, sz] \\
+				T[j] + arrive[j] - t_0, &\text{ }
             \end{aligned}
         \right .    \\
             &= \min_{\forall j\in[i,sz]}
 		\max \left\{
             \begin{aligned}
                 F[k]*(T[k]-Tid[k]), &\text{ if } k \in [i,sz] \\
-                F[k]*(T[k]-Tid[k]+delta[k]), &\text{if } k \in [j, sz]
+                F[k]*(T[k]-Tid[k]+delta[j]), &\text{ if } k \in [j, sz] \\
+				T[j] + arrive[j] - t_0, &\text{ }
             \end{aligned}
         \right .    \\
 			&= \min_{\forall j\in[i,sz]}
 		\max \left\{
 			\begin{aligned}
 				&\max \{\forall k\in[i,sz], F[k]*(T[k]-Tid[k])\} \\
-				&\max \{\forall k\in[j,sz], F[k]*(T[k]-Tid[k]+delta[k])\}
+				&\max \{\forall k\in[j,sz], F[k]*(T[k]-Tid[k]+delta[j])\} \\
+				&T[j] + arrive[j] - t_0
 			\end{aligned}
 		\right . 	\\
-			&= \min \{dval[i+1], \max\{Br[i], F[i]*(T[i]-Tid[i]+delta[i])\} \} \\
-			&= \min \{dval[i+1], F[i]*(T[i]-Tid[i]+delta[i])\} \\
+			&= \min \{dval[i+1], \max\{Br[i], F[i]*(T[i]-Tid[i]+delta[i], T[i]+arrive[i]-t_0)\} \} \\
+			&= \min \{dval[i+1], \max\{F[i]*(T[i]-Tid[i]+delta[i]), T[i]+arrive[i]-t_0\}\} \\
 \end{align*}
+不妨令$B = \max\{F[i]*(T[i]-Tid[i]+delta[i]), T[i]+arrive[i]-t_0\}$
 从而可以计算$dcost$和$dpos$。
 \begin{align*}
 	dcost[i] &= \left\{
 		\begin{aligned}
-			dcost[i+1], &\text{ if } dval[i+1] \le F[i]*(T[i]-Tid[i]+delta[i]) \\
-			delta[i], &\text{ if }	dval[i+1] > F[i]*(T[i]-Tid[i]+delta[i])
+			dcost[i+1], &\text{ if } dval[i+1] \le B \\
+			delta[i], &\text{ if }	dval[i+1] > B
 		\end{aligned}
 	\right . \\
 	dpos[i] &= \left\{
 		\begin{aligned}
-			dpos[i+1], &\text{ if } dval[i+1] \le F[i]*(T[i]-Tid[i]+delta[i]) \\
-			i, &\text{ if }	dval[i+1] > F[i]*(T[i]-Tid[i]+delta[i])
+			dpos[i+1], &\text{ if } dval[i+1] \le B \\
+			i, &\text{ if }	dval[i+1] > B
 		\end{aligned}
 	\right .
 \end{align*}
@@ -388,25 +393,35 @@ $T[sz] + delta$。\\
 	\item $j \in (i, sz)$ \\
 	此时路径的增量为
 	\begin{align*}
+        arrive_d &= T[j-1] + Length(Pos[j-1], d.pos) \\
 		delta_p &= Length(Pos[i-1], p.pos) + Length(p.pos, Pos[i]) - Length(Pos[i-1], Pos[i]) \\
 		delta_d &= Length(Pos[j-1], d.pos) + Length(d.pos, Pos[j]) - Length(Pos[j-1], Pos[j]) \\
 		delta   &= delta_p + delta_d
 	\end{align*}
 	先计算辅助变量$tmp$
 	\begin{align*}
-	tmp = \min_{\forall j\in(i,sz)}
-		\max \left\{
-			\begin{aligned}
-				F[k]*(T[k]-Tid[k]+delta_d), 		&\text{ if } k \in (i,j) \\
-				F[k]*(T[k]-Tid[k]+delta_d+delta_p), &\text{ if } k \in [j,sz) \\
-				T[j-1]+delta_d+delta_p-t_0, 		&\text{ } \\
-			\end{aligned}
-		\right .
+		tmp &= \min_{\forall j\in(i,sz)}
+			\max \left\{
+				\begin{aligned}
+					F[k]*(T[k]-Tid[k]+delta_d), 		&\text{ if } k \in (i,j) \\
+					F[k]*(T[k]-Tid[k]+delta_d+delta_p), &\text{ if } k \in [j,sz) \\
+					T[j]+delta_p+arrive_d-t_0, 		&\text{ }
+				\end{aligned}
+			\right . 	\\
+			&= delta_d + \min_{\forall j\in(i,sz)}
+			\max \left\{
+				\begin{aligned}
+					F[k]*(T[k]-Tid[k]), 		&\text{ if } k \in (i,j) \\
+					F[k]*(T[k]-Tid[k]+delta_p), &\text{ if } k \in [j,sz) \\
+					T[j]+arrive_d-t_0, 		&\text{ }
+				\end{aligned}
+			\right . 	\\
+			&= delta_d + dval[i+1]
 	\end{align*}
 	从而，可以容易求得
 	\begin{align*}
 		val &= \max\{Bl[i-1], tmp\} \\
-		cost &= T[sz] + delta_p \\
+		cost &= T[sz] + delta_d + dcost[i+1] \\
 		pos &= dpos[i] \\
 	\end{align*}
 
