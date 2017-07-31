@@ -1,7 +1,7 @@
 /**
 	\author: 	Trasier
-	\date:   	2017.7.30
-	\source: 	SIGMOD17 Utility-Aware Ridesharing on Road Networks, `Bilateral Arrangement`
+	\date:   	2017.7.31
+	\source: 	SIGMOD17 Utility-Aware Ridesharing on Road Networks, `EfficientGreedy`
 	\note: 		
 */
 #include <bits/stdc++.h>
@@ -395,7 +395,7 @@ bool judgeRoute(int driverId, int orderId, int pickLoc, int dropLoc) {
 	#ifdef LOCAL_DEBUG
 	assert(cap <= CAP);
 	#endif
-	val = 0.0;
+
 	for (int i=0; i<=sz; ++i) {
 		if (pickLoc == i) {
 			if (++cap > CAP) return false;
@@ -405,7 +405,6 @@ bool judgeRoute(int driverId, int orderId, int pickLoc, int dropLoc) {
 		}
 		if (i < sz) {
 			const int placeId = route[i].placeId;
-			const int orderId = route[i].orderId;
 			if (placeId < R) {
 				if (++cap > CAP) return false;
 			} else {
@@ -423,7 +422,7 @@ double calcDetour(int driverId, int orderId, int pickLoc, int dropLoc) {
 	vector<node_t>& route = driver.route;
 	const int sz = route.size();
 	double ret = 0.0;
-	int placeId, orderId;
+	int placeId;
 	position_t curPos, nextPos, midPos;
 	
 	if (pickLoc == dropLoc) {
@@ -432,7 +431,7 @@ double calcDetour(int driverId, int orderId, int pickLoc, int dropLoc) {
 		} else {
 			placeId = route[pickLoc-1].placeId;			
 			#ifdef LOCAL_DEBUG
-			assert(placeId >= R)
+			assert(placeId >= R);
 			#endif
 			curPos = dists[placeId-R];
 		}
@@ -485,37 +484,110 @@ double calcDetour(int driverId, int orderId, int pickLoc, int dropLoc) {
 	return ret;
 }
 
+double calcMut(double real, double val) {
+	double alpha = real / val;
+	double ret = 2.0 / (1.0 + exp(alpha - 1.0));
+	return ret;
+}
+
+// \sum_{r_i \in R} \mu(r_i, c)
+double calcMu(int driverId) {
+	driver_t& driver = drivers[driverId];
+	vector<node_t>& route = driver.route;
+	const int sz = route.size();
+	position_t curPos = driver.pos, nextPos;
+	double cost = driver.curTime;
+	int placeId;
+
+	for (int i=0; i<sz; ++i) {
+		const int placeId = route[i].placeId;
+		const int orderId = route[i].orderId;
+		nextPos = (placeId<R) ? rests[placeId] : dists[placeId-R];
+		cost += Length(curPos, nextPos);
+		if (placeId < R)
+			riders[orderId].begTime = cost;
+		else
+			riders[orderId].endTime = cost;
+		curPos = nextPos;
+	}
+
+	double ret = 0.0;
+
+	for (int i=0; i<sz; ++i) {
+		const int placeId = route[i].placeId;
+		const int orderId = route[i].orderId;
+		if (placeId >= R) {
+			ret += calcMut(riders[orderId].endTime-riders[orderId].begTime, Length(rests[orders[orderId].sid], dists[orders[orderId].eid]));
+		}
+	}
+
+	return ret;
+}
+
 double calcMu(int driverId, int orderId, int pickLoc, int dropLoc) {
 	driver_t& driver = drivers[driverId];
 	order_t& order = orders[orderId];
 	vector<node_t>& route = driver.route;
 	const int sz = route.size();
 	position_t curPos = driver.pos, nextPos;
-	int placeId, orderId;
-	double fm = 0.0, fz = Length(rests[order.sid], dists[order.eid]);
+	int placeId;
+	double cost = driver.curTime;
 	
 	for (int i=0; i<=sz; ++i) {
 		if (pickLoc == i) {
-			curPos = rests[order.sid];
+			nextPos = rests[order.sid];
+			cost += Length(curPos, nextPos);
+			riders[orderId].begTime = cost;
+			curPos = nextPos;
 		}
 		if (dropLoc == i) {
 			nextPos = dists[order.eid];
-			fm += Length(curPos, nextPos);
-			break;
+			cost += Length(curPos, nextPos);
+			riders[orderId].endTime = cost;
+			curPos = nextPos;
 		}
 		if (i < sz) {
 			const int placeId = route[i].placeId;
 			const int orderId = route[i].orderId;
 			nextPos = (placeId<R) ? rests[placeId] : dists[placeId-R];
-			if (i>=pickLoc && i<dropLoc)
-				fm += Length(curPos, nextPos);
+			cost += Length(curPos, nextPos);
+			if (placeId < R)
+				riders[orderId].begTime = cost;
+			else
+				riders[orderId].endTime = cost;
 			curPos = nextPos;
 		}
 	}
 	
-	double alpha = fm / fz;
-	double ret = 2.0 / (1.0 + exp(alpha - 1.0));
+	double ret = calcMut(riders[orderId].endTime-riders[orderId].begTime, Length(rests[orders[orderId].sid], dists[orders[orderId].eid]));;
+
+	for (int i=0; i<sz; ++i) {
+		const int placeId = route[i].placeId;
+		const int orderId = route[i].orderId;
+		if (placeId >= R) {
+			ret += calcMut(riders[orderId].endTime-riders[orderId].begTime, Length(rests[orders[orderId].sid], dists[orders[orderId].eid]));
+		}
+	}
 	
+	return ret;
+}
+
+double calcCost(int driverId) {
+	driver_t& driver = drivers[driverId];
+	vector<node_t>& route = driver.route;
+	const int sz = route.size();
+	position_t curPos = driver.pos, nextPos;
+	int placeId;
+	double ret = driver.curTime;
+
+	for (int i=0; i<sz; ++i) {
+		const int placeId = route[i].placeId;
+		const int orderId = route[i].orderId;
+		nextPos = (placeId<R) ? rests[placeId] : dists[placeId-R];
+		ret += Length(curPos, nextPos);
+		curPos = nextPos;
+	}
+
 	return ret;
 }
 
@@ -525,8 +597,8 @@ double calcCost(int driverId, int orderId, int pickLoc, int dropLoc) {
 	vector<node_t>& route = driver.route;
 	const int sz = route.size();
 	position_t curPos = driver.pos, nextPos;
-	int placeId, orderId;
-	double ret = 0.0;
+	int placeId;
+	double ret = driver.curTime;
 	
 	for (int i=0; i<=sz; ++i) {
 		if (pickLoc == i) {
@@ -566,6 +638,7 @@ vector<int> validEvent(int driverId) {
 		if (cap+1 <= CAP)
 			ret.push_back(i);
 	}
+	ret.push_back(sz);
 
 	return ret;
 }
@@ -626,10 +699,10 @@ double calcEfficiency(int driverId, int orderId) {
 	
 	mu_ = calcMu(driverId, orderId, pickLoc, dropLoc);
 	cost_ = calcCost(driverId, orderId, pickLoc, dropLoc);
-	mu = calcMu(driverId, orderId, -1, -1);
-	cost = calcCost(driverId, orderId, -1, -1);
+	mu = calcMu(driverId);
+	cost = calcCost(driverId);
 	
-	return (mu_ - mu) / (cost_ - cost);
+	return (mu_ - mu) / (cost_ - cost + eps);
 }
 
 void efficientGreedy(vector<int>& driverIds, vector<int>& orderIds) {
@@ -642,7 +715,7 @@ void efficientGreedy(vector<int>& driverIds, vector<int>& orderIds) {
 		for (int j=0; j<driverIds.size(); ++j) {
 			const int driverId = driverIds[j];
 			double eff = calcEfficiency(driverId, orderId);
-			st.push_back(make_pair(-eff, j));
+			st.insert(make_pair(-eff, j));
 		}
 		vec.push_back(st);
 	}
@@ -652,7 +725,7 @@ void efficientGreedy(vector<int>& driverIds, vector<int>& orderIds) {
 		int v = -1;
 		for (int i=0; i<vec.size(); ++i) {
 			if (vec[i].empty()) continue;
-			tmp = -vec[i].begin()->first.
+			tmp = -vec[i].begin()->first;
 			if (tmp > mxVal) {
 				mxVal = tmp;
 				v = i;
@@ -677,7 +750,7 @@ void efficientGreedy(vector<int>& driverIds, vector<int>& orderIds) {
 		for (int i=0; i<vec.size(); ++i) {
 			if (!mark[i]) continue;
 			double eff = calcEfficiency(driverId, orderIds[i]);
-			vec[i].erase(make_pair(-eff, driverId));
+			vec[i].insert(make_pair(-eff, driverId));
 			mark[i] = false;
 		}
 	}
@@ -699,7 +772,7 @@ void Peng(const double timeWindowSize = 25) {
 		driverIds.clear();
 		for (int driverId=0; driverId<M; ++driverId) {
 			updateIndex(driverId, curTime);
-			updateDriverPosition(driverId, order.tid, true);
+			updateDriverPosition(driverId, curTime, true);
 			driverIds.push_back(driverId);
 		}
 		
