@@ -7,7 +7,7 @@ LIBS = -lrt
 CFLAGS = --std=c++11 -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: base judge tshare bb kit zshare
+all: base judge tshare bb kit zshare bila effg
 base: input.h output.h base.cpp monitor.h
 	$(CXX) $(CFLAGS) -o base base.cpp $(LIBS)
 
@@ -39,6 +39,12 @@ judge: input.h judge.cpp
 	$(CXX) $(CFLAGS) -o judge judge.cpp $(LIBS)
 
 
+bila: input.h output.h monitor.h peng_Bilateral.cpp
+	$(CXX) $(CFALGS) -o bila peng_Bilateral.cpp $(LIBS)
+
+effg: input.h output.h monitor.h peng_EfficientGreedy.cpp
+	$(CXX) $(CFLAGS) -o effg peng_EfficientGreedy.cpp $(LIBS)
+
 .PHONY: clean 
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
@@ -51,3 +57,5 @@ clean:
 		-@rm judge judge.g* 2> /dev/null || true
 		-@rm hot hotp hotp.g* hot.g* 2> /dev/null || true
 		-@rm zshare zshare.g* 2> /dev/null || true
+		-@rm bila effg 2> /dev/null || true
+
