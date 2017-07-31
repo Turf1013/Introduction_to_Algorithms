@@ -1,6 +1,6 @@
 /**
 	\author: 	Trasier
-	\date:   	2017.7.31
+	\date:   	2017.7.30
 	\source: 	SIGMOD17 Utility-Aware Ridesharing on Road Networks, `EfficientGreedy`
 	\note: 		
 */
@@ -145,6 +145,7 @@ rider_t *riders;
 driver_t *drivers;
 int *taken;
 vector<vector<move_t> > moves;
+double ans;
 
 double Length(const position_t& pa, const position_t& pb) {
 	return sqrt((pa.x-pb.x)*(pa.x-pb.x) + (pa.y-pb.y)*(pa.y-pb.y));
@@ -187,6 +188,7 @@ void initAll() {
 	initRider();
 	initMove();
 	bound = 0.0;
+	ans = 0.0;
 }
 
 void deleteAll() {
@@ -206,6 +208,11 @@ void distributeDrivers() {
 #ifdef LOCAL_DEBUG
 		//drivers[i].pos = position_t(0.0, 0.0);
 #endif
+		move_t move;
+		move.x = rests[idx].x;
+		move.y = rests[idx].y;
+		move.arrive = move.leave = 0;
+		moves[i].push_back(move);
 	}
 }
 
@@ -221,6 +228,7 @@ void moveForward(const int driverId) {
 		const int placeId = driver.status -1;
 		driver.status = 0;
 		driver.curTime += Length(driver.pos, rests[placeId]);
+		ans += Length(driver.pos, rests[placeId]);
 		driver.pos = rests[placeId];
 		// add the movement to the driver
 		move_t move;
@@ -236,6 +244,7 @@ void moveForward(const int driverId) {
 	const int orderId = driver.route[0].orderId;
 	position_t nextPos = (placeId < R) ? rests[placeId] : dists[placeId-R];
 	double arriveTime = driver.curTime + Length(driver.pos, nextPos);
+	ans += Length(driver.pos, nextPos);
 
 	// add the movement to the driver
 	move_t move;
@@ -304,6 +313,7 @@ void updateDriverPosition(const int driverId, const double orderTid, bool toMove
 	double y = srcPos.y + dy * (orderTid - driver.curTime);
 
 	if (toMove) {
+		ans += (orderTid - driver.curTime);
 		// add a new move
 		move_t move;
 		move.x = x;
@@ -795,9 +805,9 @@ void printAns() {
 		dumpOutput(moves[driverId]);
 	}
 
-	double ans = -1;
-	for (int orderId=0; orderId<N; ++orderId)
-		ans = max(ans, riders[orderId].endTime-orders[orderId].tid);
+	// double ans = -1;
+	// for (int orderId=0; orderId<N; ++orderId)
+		// ans = max(ans, riders[orderId].endTime-orders[orderId].tid);
 
 	printf("%.10lf\n", ans);
 	fflush(stdout);
