@@ -1,7 +1,7 @@
 /**
 	\author: 	Trasier
-	\date:   	2017.7.31
-	\source: 	SIGMOD17 Utility-Aware Ridesharing on Road Networks, `Bilateral Arrangement`
+	\date:   	2017.7.30
+	\source: 	SIGMOD17 Utility-Aware Ridesharing on Road Networks, `EfficientGreedy`
 	\note: 		
 */
 #include <bits/stdc++.h>
@@ -579,6 +579,8 @@ double calcMu(int driverId, int orderId, int pickLoc, int dropLoc) {
 		}
 	}
 	
+	ret -= calcMu(driverId);
+	
 	return ret;
 }
 
@@ -704,55 +706,69 @@ double calcEfficiency(int driverId, int orderId) {
 	int pickLoc, dropLoc;
 	double mu, mu_;
 	double cost, cost_;
-
+	
 	arrangeSingleRider(driverId, orderId, pickLoc, dropLoc);
-
+	
 	mu_ = calcMu(driverId, orderId, pickLoc, dropLoc);
 	cost_ = calcCost(driverId, orderId, pickLoc, dropLoc);
 	mu = calcMu(driverId);
 	cost = calcCost(driverId);
-
+	
 	return (mu_ - mu) / (cost_ - cost + eps);
 }
 
-void bilateralArrangement(vector<int>& driverIds, vector<int>& orderIds) {
-	vector<vector<int> > validDrivers;
-	int orderSz = orderIds.size();
-	int baseOrderId = *orderIds.begin();
-	int pickLoc, dropLoc;
+void efficientGreedy(vector<int>& driverIds, vector<int>& orderIds) {
+	vector<set<pair<double,int> > > vec;
+	vector<bool> mark(orderIds.size(), false);
 	
 	for (int i=0; i<orderIds.size(); ++i) {
-		validDrivers.push_back(driverIds);
+		const int orderId = orderIds[i];
+		set<pair<double,int> > st;
+		for (int j=0; j<driverIds.size(); ++j) {
+			const int driverId = driverIds[j];
+			double eff = calcEfficiency(driverId, orderId);
+			st.insert(make_pair(-eff, j));
+		}
+		vec.push_back(st);
 	}
 	
-	while (orderSz > 0) {
-		int idx = rand() % orderSz, orderId = orderIds[idx];
-		swap(orderIds[idx], orderIds[orderSz-1]);
-		--orderSz;
-		double utility = -inf, tmp;
-		int v = -1, k = orderId - baseOrderId;
-		for (int j=0; j<validDrivers[k].size(); ++j) {
-			tmp = arrangeSingleRider(validDrivers[k][j], orderId, pickLoc, dropLoc);
-			if (tmp > utility) {
-				utility = tmp;
-				v = j;
+	while (true) {
+		double mxVal = -inf, tmp;
+		int v = -1;
+		for (int i=0; i<vec.size(); ++i) {
+			if (vec[i].empty()) continue;
+			tmp = -vec[i].begin()->first;
+			if (tmp > mxVal) {
+				mxVal = tmp;
+				v = i;
 			}
 		}
+		if (v < 0) break;
 		
-		#ifdef LOCAL_DEBUG
-		assert(v != -1);
-		#endif
-		int driverId = validDrivers[k][v];
+		const int orderId = orderIds[v];
+		const int driverId = vec[v].begin()->second;
+		int pickLoc, dropLoc;
 		
-		// since rider r_i can always be arranged in c_j, we donnot need replace here.
 		arrangeSingleRider(driverId, orderId, pickLoc, dropLoc);
+		vec[v].clear();
+		for (int i=0; i<vec.size(); ++i) {
+			if (vec[i].empty()) continue;
+			double eff = calcEfficiency(driverId, orderIds[i]);
+			vec[i].erase(make_pair(-eff, driverId));
+			mark[i] = true;
+		}
+		
 		updateRouteInBila(driverId, orderId, pickLoc, dropLoc);
-		validDrivers[k][v] = *validDrivers[k].rbegin();
-		validDrivers[k].pop_back();
+		for (int i=0; i<vec.size(); ++i) {
+			if (!mark[i]) continue;
+			double eff = calcEfficiency(driverId, orderIds[i]);
+			vec[i].insert(make_pair(-eff, driverId));
+			mark[i] = false;
+		}
 	}
 }
 
-void Peng(const double timeWindowSize = 25) {
+void Peng(const double timeWindowSize = 100) {
 	double preTime = 0, curTime;
 	int orderId = 0;
 	vector<int> orderIds, driverIds;
@@ -764,6 +780,12 @@ void Peng(const double timeWindowSize = 25) {
 			curTime = orders[orderId].tid;
 			++orderId;
 		}
+		if (orderIds.empty()) {
+			preTime = orders[orderId].tid;
+			printf("orderId = %d, tid = %d, preTime = %.0lf\n", orderId, orders[orderId].tid, preTime);
+			fflush(stdout);
+			continue;
+		}
 		
 		driverIds.clear();
 		for (int driverId=0; driverId<M; ++driverId) {
@@ -772,9 +794,11 @@ void Peng(const double timeWindowSize = 25) {
 			driverIds.push_back(driverId);
 		}
 		
-		bilateralArrangement(driverIds, orderIds);
+		efficientGreedy(driverIds, orderIds);
 		
-		preTime = curTime;
+		preTime += timeWindowSize;
+		printf("orderId = %d, tid = %d, preTime = %.0lf\n", orderId, orders[orderId-1].tid, preTime);
+		fflush(stdout);
 	}
 	
 	for (int driverId=0; driverId<M; ++driverId) {
@@ -836,10 +860,10 @@ int main(int argc, char **argv) {
 		freopen("data.in", "r", stdin);
 	}
 	if (argc > 2) {
-		freopen(argv[2], "w", stdout);
+		//freopen(argv[2], "w", stdout);
 	}
 	else {
-		freopen("data.out", "w", stdout);
+		//freopen("data.out", "w", stdout);
 	}
 
 	readNetwork();

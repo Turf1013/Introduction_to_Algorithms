@@ -778,6 +778,10 @@ void Peng(const double timeWindowSize = 25) {
 			curTime = orders[orderId].tid;
 			++orderId;
 		}
+		if (orderIds.empty()) {
+			preTime = orders[orderId].tid;
+			continue;
+		}
 		
 		driverIds.clear();
 		for (int driverId=0; driverId<M; ++driverId) {
