@@ -527,7 +527,7 @@ double calcMu(int driverId) {
 		const int placeId = route[i].placeId;
 		const int orderId = route[i].orderId;
 		if (placeId >= R) {
-			ret += calcMut(riders[orderId].endTime-riders[orderId].begTime, Length(rests[orders[orderId].sid], dists[orders[orderId].eid]));
+			ret += calcMut(riders[orderId].endTime-orders[orderId].tid, Length(rests[orders[orderId].sid], dists[orders[orderId].eid]));
 		}
 	}
 
@@ -569,17 +569,17 @@ double calcMu(int driverId, int orderId, int pickLoc, int dropLoc) {
 		}
 	}
 	
-	double ret = calcMut(riders[orderId].endTime-riders[orderId].begTime, Length(rests[orders[orderId].sid], dists[orders[orderId].eid]));;
+	double ret = calcMut(riders[orderId].endTime-orders[orderId].tid, Length(rests[orders[orderId].sid], dists[orders[orderId].eid]));;
 
 	for (int i=0; i<sz; ++i) {
 		const int placeId = route[i].placeId;
 		const int orderId = route[i].orderId;
 		if (placeId >= R) {
-			ret += calcMut(riders[orderId].endTime-riders[orderId].begTime, Length(rests[orders[orderId].sid], dists[orders[orderId].eid]));
+			ret += calcMut(riders[orderId].endTime-orders[orderId].tid, Length(rests[orders[orderId].sid], dists[orders[orderId].eid]));
 		}
 	}
 	
-	ret -= calcMu(driverId);
+	// ret -= calcMu(driverId);
 
 	return ret;
 }
@@ -675,7 +675,7 @@ double arrangeSingleRider(int driverId, int orderId, int& bestPick, int& bestDro
 			if (!judgeRoute(driverId, orderId, pickLoc, dropLoc))
 				continue;
 			
-			tmp = calcMu(driverId, orderId, pickLoc, dropLoc);
+			tmp = calcMu(driverId, orderId, pickLoc, dropLoc) - calcMu(driverId);
 			if (tmp > ret) {
 				ret = tmp;
 				bestPick = pickLoc;

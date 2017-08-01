@@ -527,7 +527,7 @@ double calcMu(int driverId) {
 		const int placeId = route[i].placeId;
 		const int orderId = route[i].orderId;
 		if (placeId >= R) {
-			ret += calcMut(riders[orderId].endTime-riders[orderId].begTime, Length(rests[orders[orderId].sid], dists[orders[orderId].eid]));
+			ret += calcMut(riders[orderId].endTime-orders[orderId].tid, Length(rests[orders[orderId].sid], dists[orders[orderId].eid]));
 		}
 	}
 
@@ -569,13 +569,13 @@ double calcMu(int driverId, int orderId, int pickLoc, int dropLoc) {
 		}
 	}
 	
-	double ret = calcMut(riders[orderId].endTime-riders[orderId].begTime, Length(rests[orders[orderId].sid], dists[orders[orderId].eid]));;
+	double ret = calcMut(riders[orderId].endTime-orders[orderId].tid, Length(rests[orders[orderId].sid], dists[orders[orderId].eid]));;
 
 	for (int i=0; i<sz; ++i) {
 		const int placeId = route[i].placeId;
 		const int orderId = route[i].orderId;
 		if (placeId >= R) {
-			ret += calcMut(riders[orderId].endTime-riders[orderId].begTime, Length(rests[orders[orderId].sid], dists[orders[orderId].eid]));
+			ret += calcMut(riders[orderId].endTime-orders[orderId].tid, Length(rests[orders[orderId].sid], dists[orders[orderId].eid]));
 		}
 	}
 	
@@ -729,12 +729,12 @@ void bilateralArrangement(vector<int>& driverIds, vector<int>& orderIds) {
 		int idx = rand() % orderSz, orderId = orderIds[idx];
 		swap(orderIds[idx], orderIds[orderSz-1]);
 		--orderSz;
-		double utility = -inf, tmp;
+		double mx = -inf, tmp;
 		int v = -1, k = orderId - baseOrderId;
 		for (int j=0; j<validDrivers[k].size(); ++j) {
 			tmp = arrangeSingleRider(validDrivers[k][j], orderId, pickLoc, dropLoc);
-			if (tmp > utility) {
-				utility = tmp;
+			if (tmp > mx) {
+				mx = tmp;
 				v = j;
 			}
 		}
@@ -743,6 +743,8 @@ void bilateralArrangement(vector<int>& driverIds, vector<int>& orderIds) {
 		assert(v != -1);
 		#endif
 		int driverId = validDrivers[k][v];
+		printf("orderId = %d, driverId = %d\n", orderId, driverId);
+		fflush(stdout);
 		
 		// since rider r_i can always be arranged in c_j, we donnot need replace here.
 		arrangeSingleRider(driverId, orderId, pickLoc, dropLoc);
@@ -844,10 +846,10 @@ int main(int argc, char **argv) {
 		freopen("data.in", "r", stdin);
 	}
 	if (argc > 2) {
-		freopen(argv[2], "w", stdout);
+		//freopen(argv[2], "w", stdout);
 	}
 	else {
-		freopen("data.out", "w", stdout);
+		//freopen("data.out", "w", stdout);
 	}
 
 	readNetwork();
