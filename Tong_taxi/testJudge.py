@@ -3,25 +3,38 @@ import commands
 import os
 
 def testJudge(execFileName, judgeFileName, dataFilePath):
+	ret = []
+	execName = execFileName[execFileName.rindex('/')+1:]
 	fileNames = os.listdir(dataFilePath)
 	for fileName in fileNames:
 		if not fileName.endswith(".in"):
 			continue
 		srcFileName = os.path.join(dataFilePath, fileName)
-		desFileName = "/home/turf/Code/Code_today/result.txt"
+		desFileName = "/home/turf/Code/Code_today/%s_%s_result.txt" % (execName, fileName[:-3])
 		cmdLine = "%s %s %s" % (execFileName, srcFileName, desFileName)
 		print cmdLine
 		line = commands.getoutput(cmdLine)
 		print line
+		ret.append(cmdLine)
+		ret.append(line)
 		
 		cmdLine = "%s %s %s" % (judgeFileName, srcFileName, desFileName)
 		print cmdLine
 		line = commands.getoutput(cmdLine)
 		print line
+		ret.append(cmdLine)
+		ret.append(line)
+	return ret
 	
 
 if __name__ == "__main__":
-	execFilePath = "/home/turf/Code/Introduction_to_Algorithms/Tong_taxi/hotp"
-	dataFilePath = "/home/turf/Code/Introduction_to_Algorithms/Tong_taxi/smallDataSet"
-	judgeFilePath = "/home/turf/Code/Introduction_to_Algorithms/Tong_taxi/judge"
-	testJudge(execFilePath, judgeFilePath, dataFilePath)
+	execNames = [
+		"tshare_dist",
+		"bila",
+		"effg",
+	]
+	for execName in execNames:
+		execFilePath = "/home/turf/Code/Introduction_to_Algorithms/Tong_taxi/%s" % (execName)
+		dataFilePath = "/home/turf/Code/Introduction_to_Algorithms/Tong_taxi/smallDataSet"
+		judgeFilePath = "/home/turf/Code/Introduction_to_Algorithms/Tong_taxi/judges"
+		testJudge(execFilePath, judgeFilePath, dataFilePath)

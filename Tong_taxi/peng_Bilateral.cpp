@@ -13,8 +13,8 @@ using namespace std;
 
 #define LOCAL_DEBUG
 
-const double waitTime = 0.0;
 const double inf = 1e20;
+const double waitTime = inf;
 int graphLength = 100, graphWidth = 100;
 int gridLength = 10, gridWidth = 10;
 int R, D, M, CAP, N;
@@ -260,7 +260,7 @@ void moveForward(const int driverId) {
 	vector<node_t>::iterator iter = driver.route.begin();
 	while (iter!=driver.route.end() && iter->placeId==placeId) {
 		if (placeId < R) {
-			tmpTime = max(arriveTime, orders[iter->orderId].tid+waitTime);
+			tmpTime = max(arriveTime, (double)orders[iter->orderId].tid);
 			riders[iter->orderId].begTime = tmpTime;
 			taken[iter->orderId] = 0;
 		} else {
@@ -345,7 +345,7 @@ void updateIndex(const int driverId, const double orderTid) {
 		const int orderId = driver.route[0].orderId;
 		position_t& nextPos = (placeId<R) ? rests[placeId] : dists[placeId-R];
 		double arriveTime = driver.curTime + Length(driver.pos, nextPos);
-		double tmpTime = (placeId<R) ? max(arriveTime, orders[orderId].tid+waitTime) : arriveTime;
+		double tmpTime = (placeId<R) ? max(arriveTime, (double)orders[orderId].tid) : arriveTime;
 
 		if (tmpTime > orderTid) break;
 
@@ -401,6 +401,8 @@ bool judgeRoute(int driverId, int orderId, int pickLoc, int dropLoc) {
 	vector<node_t>& route = driver.route;
 	const int sz = route.size();
 	int cap = calcInitCap(driverId);
+	double curTime = driver.curTime;
+	position_t curPos = driver.pos, nextPos;
 
 	#ifdef LOCAL_DEBUG
 	assert(cap <= CAP);
@@ -409,17 +411,29 @@ bool judgeRoute(int driverId, int orderId, int pickLoc, int dropLoc) {
 	for (int i=0; i<=sz; ++i) {
 		if (pickLoc == i) {
 			if (++cap > CAP) return false;
+			nextPos = rests[order.sid];
+			curTime += Length(curPos, nextPos);
+			if (curTime > order.tid+waitTime) return false;
+			curPos = nextPos;
 		}
 		if (dropLoc == i) {
 			--cap;
+			nextPos = dists[order.eid];
+			curTime += Length(curPos, nextPos);
+			curPos = nextPos;
 		}
 		if (i < sz) {
 			const int placeId = route[i].placeId;
+			const int orderId = route[i].orderId;
+			nextPos = (placeId<R) ? rests[placeId] : dists[placeId-R];
+			curTime += Length(curPos, nextPos);
 			if (placeId < R) {
 				if (++cap > CAP) return false;
+				if (curTime > orders[orderId].tid+waitTime) return false;
 			} else {
 				--cap;
 			}
+			curPos = nextPos;
 		}
 	}
 
@@ -434,28 +448,25 @@ double calcDetour(int driverId, int orderId, int pickLoc, int dropLoc) {
 	double ret = 0.0;
 	int placeId;
 	position_t curPos, nextPos, midPos;
-	
+
 	if (pickLoc == dropLoc) {
 		if (pickLoc == 0) {
 			curPos = driver.pos;
 		} else {
-			placeId = route[pickLoc-1].placeId;			
-			#ifdef LOCAL_DEBUG
-			assert(placeId >= R);
-			#endif
-			curPos = dists[placeId-R];
+			placeId = route[pickLoc-1].placeId;
+			curPos = (placeId<R) ? rests[placeId] : dists[placeId-R];
 		}
 		nextPos = rests[order.sid];
 		ret += Length(curPos, nextPos);
-		
+
 		ret += Length(rests[order.sid], dists[order.eid]);
-		
+
 		if (pickLoc < sz) {
 			placeId = route[pickLoc].placeId;
 			nextPos = (placeId<R) ? rests[placeId] : dists[placeId-R];
 			ret -= Length(curPos, nextPos);
 		}
-		
+
 	} else {
 		if (pickLoc == 0) {
 			curPos = driver.pos;
@@ -472,7 +483,7 @@ double calcDetour(int driverId, int orderId, int pickLoc, int dropLoc) {
 			nextPos = (placeId<R) ? rests[placeId] : dists[placeId-R];
 		}
 		ret += Length(curPos, midPos) + Length(midPos, nextPos) - Length(curPos, nextPos);
-		
+
 		{
 			#ifdef LOCAL_DEBUG
 			assert(dropLoc != 0);
@@ -481,7 +492,7 @@ double calcDetour(int driverId, int orderId, int pickLoc, int dropLoc) {
 			curPos = (placeId<R) ? rests[placeId] : dists[placeId-R];
 		}
 		midPos = dists[order.eid];
-		
+
 		if (dropLoc < sz) {
 			placeId = route[dropLoc].placeId;
 			nextPos = (placeId<R) ? rests[placeId] : dists[placeId-R];
@@ -490,7 +501,7 @@ double calcDetour(int driverId, int orderId, int pickLoc, int dropLoc) {
 			ret += Length(curPos, midPos);
 		}
 	}
-	
+
 	return ret;
 }
 
@@ -743,8 +754,8 @@ void bilateralArrangement(vector<int>& driverIds, vector<int>& orderIds) {
 		assert(v != -1);
 		#endif
 		int driverId = validDrivers[k][v];
-		printf("orderId = %d, driverId = %d\n", orderId, driverId);
-		fflush(stdout);
+		// printf("orderId = %d, driverId = %d\n", orderId, driverId);
+		// fflush(stdout);
 		
 		// since rider r_i can always be arranged in c_j, we donnot need replace here.
 		arrangeSingleRider(driverId, orderId, pickLoc, dropLoc);
@@ -768,8 +779,8 @@ void Peng(const double timeWindowSize = 100) {
 		}
 		if (orderIds.empty()) {
 			preTime = orders[orderId].tid;
-			printf("orderId = %d, tid = %d, preTime = %.0lf\n", orderId, orders[orderId].tid, preTime);
-			fflush(stdout);
+			// printf("orderId = %d, tid = %d, preTime = %.0lf\n", orderId, orders[orderId].tid, preTime);
+			// fflush(stdout);
 			continue;
 		}
 		
@@ -783,8 +794,8 @@ void Peng(const double timeWindowSize = 100) {
 		bilateralArrangement(driverIds, orderIds);
 		
 		preTime += timeWindowSize;
-		printf("orderId = %d, tid = %d, preTime = %.0lf\n", orderId, orders[orderId-1].tid, preTime);
-		fflush(stdout);
+		// printf("orderId = %d, tid = %d, preTime = %.0lf\n", orderId, orders[orderId-1].tid, preTime);
+		// fflush(stdout);
 	}
 	
 	for (int driverId=0; driverId<M; ++driverId) {
@@ -846,10 +857,10 @@ int main(int argc, char **argv) {
 		freopen("data.in", "r", stdin);
 	}
 	if (argc > 2) {
-		//freopen(argv[2], "w", stdout);
+		freopen(argv[2], "w", stdout);
 	}
 	else {
-		//freopen("data.out", "w", stdout);
+		freopen("data.out", "w", stdout);
 	}
 
 	readNetwork();
