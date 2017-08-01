@@ -38,6 +38,8 @@ hotp: input.h output.h monitor.h treeNode.h Kinetic_hot_v1.cpp
 judge: input.h judge.cpp
 	$(CXX) $(CFLAGS) -o judge judge.cpp $(LIBS)
 
+judges: input.h judge_sumDist.cpp
+	$(CXX) $(CFALGS) -o judges judge_sumDist.cpp $(LIBS)
 
 bila: input.h output.h monitor.h peng_Bilateral.cpp
 	$(CXX) $(CFALGS) -o bila peng_Bilateral.cpp $(LIBS)
