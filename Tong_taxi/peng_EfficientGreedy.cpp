@@ -579,6 +579,8 @@ double calcMu(int driverId, int orderId, int pickLoc, int dropLoc) {
 		}
 	}
 	
+	ret -= calcMu(driverId);
+
 	return ret;
 }
 
@@ -766,7 +768,7 @@ void efficientGreedy(vector<int>& driverIds, vector<int>& orderIds) {
 	}
 }
 
-void Peng(const double timeWindowSize = 25) {
+void Peng(const double timeWindowSize = 100) {
 	double preTime = 0, curTime;
 	int orderId = 0;
 	vector<int> orderIds, driverIds;
@@ -780,6 +782,8 @@ void Peng(const double timeWindowSize = 25) {
 		}
 		if (orderIds.empty()) {
 			preTime = orders[orderId].tid;
+			printf("orderId = %d, tid = %d, preTime = %.0lf\n", orderId, orders[orderId].tid, preTime);
+			fflush(stdout);
 			continue;
 		}
 		
@@ -792,7 +796,9 @@ void Peng(const double timeWindowSize = 25) {
 		
 		efficientGreedy(driverIds, orderIds);
 		
-		preTime = curTime;
+		preTime += timeWindowSize;
+		printf("orderId = %d, tid = %d, preTime = %.0lf\n", orderId, orders[orderId-1].tid, preTime);
+		fflush(stdout);
 	}
 	
 	for (int driverId=0; driverId<M; ++driverId) {

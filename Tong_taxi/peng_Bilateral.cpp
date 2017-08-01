@@ -579,8 +579,6 @@ double calcMu(int driverId, int orderId, int pickLoc, int dropLoc) {
 		}
 	}
 	
-	ret -= calcMu(driverId);
-	
 	return ret;
 }
 
@@ -661,7 +659,7 @@ double arrangeSingleRider(int driverId, int orderId, int& bestPick, int& bestDro
 	vector<node_t>& route = driver.route;
 	const int sz = route.size();
 	int pickLoc, dropLoc;
-	double ret = -1, tmp;
+	double ret = -inf, tmp;
 	
 	vector<int> pickVec = validEvent(driverId);
 	vector<int> dropVec = validEvent(driverId);
@@ -675,7 +673,7 @@ double arrangeSingleRider(int driverId, int orderId, int& bestPick, int& bestDro
 			if (!judgeRoute(driverId, orderId, pickLoc, dropLoc))
 				continue;
 			
-			tmp = calcMu(driverId, orderId, pickLoc, dropLoc);
+			tmp = calcMu(driverId, orderId, pickLoc, dropLoc) - calcMu(driverId);
 			if (tmp > ret) {
 				ret = tmp;
 				bestPick = pickLoc;
@@ -706,65 +704,51 @@ double calcEfficiency(int driverId, int orderId) {
 	int pickLoc, dropLoc;
 	double mu, mu_;
 	double cost, cost_;
-	
+
 	arrangeSingleRider(driverId, orderId, pickLoc, dropLoc);
-	
+
 	mu_ = calcMu(driverId, orderId, pickLoc, dropLoc);
 	cost_ = calcCost(driverId, orderId, pickLoc, dropLoc);
 	mu = calcMu(driverId);
 	cost = calcCost(driverId);
-	
+
 	return (mu_ - mu) / (cost_ - cost + eps);
 }
 
-void efficientGreedy(vector<int>& driverIds, vector<int>& orderIds) {
-	vector<set<pair<double,int> > > vec;
-	vector<bool> mark(orderIds.size(), false);
+void bilateralArrangement(vector<int>& driverIds, vector<int>& orderIds) {
+	vector<vector<int> > validDrivers;
+	int orderSz = orderIds.size();
+	int baseOrderId = *orderIds.begin();
+	int pickLoc, dropLoc;
 	
 	for (int i=0; i<orderIds.size(); ++i) {
-		const int orderId = orderIds[i];
-		set<pair<double,int> > st;
-		for (int j=0; j<driverIds.size(); ++j) {
-			const int driverId = driverIds[j];
-			double eff = calcEfficiency(driverId, orderId);
-			st.insert(make_pair(-eff, j));
-		}
-		vec.push_back(st);
+		validDrivers.push_back(driverIds);
 	}
 	
-	while (true) {
-		double mxVal = -inf, tmp;
-		int v = -1;
-		for (int i=0; i<vec.size(); ++i) {
-			if (vec[i].empty()) continue;
-			tmp = -vec[i].begin()->first;
-			if (tmp > mxVal) {
-				mxVal = tmp;
-				v = i;
+	while (orderSz > 0) {
+		int idx = rand() % orderSz, orderId = orderIds[idx];
+		swap(orderIds[idx], orderIds[orderSz-1]);
+		--orderSz;
+		double utility = -inf, tmp;
+		int v = -1, k = orderId - baseOrderId;
+		for (int j=0; j<validDrivers[k].size(); ++j) {
+			tmp = arrangeSingleRider(validDrivers[k][j], orderId, pickLoc, dropLoc);
+			if (tmp > utility) {
+				utility = tmp;
+				v = j;
 			}
 		}
-		if (v < 0) break;
 		
-		const int orderId = orderIds[v];
-		const int driverId = vec[v].begin()->second;
-		int pickLoc, dropLoc;
+		#ifdef LOCAL_DEBUG
+		assert(v != -1);
+		#endif
+		int driverId = validDrivers[k][v];
 		
+		// since rider r_i can always be arranged in c_j, we donnot need replace here.
 		arrangeSingleRider(driverId, orderId, pickLoc, dropLoc);
-		vec[v].clear();
-		for (int i=0; i<vec.size(); ++i) {
-			if (vec[i].empty()) continue;
-			double eff = calcEfficiency(driverId, orderIds[i]);
-			vec[i].erase(make_pair(-eff, driverId));
-			mark[i] = true;
-		}
-		
 		updateRouteInBila(driverId, orderId, pickLoc, dropLoc);
-		for (int i=0; i<vec.size(); ++i) {
-			if (!mark[i]) continue;
-			double eff = calcEfficiency(driverId, orderIds[i]);
-			vec[i].insert(make_pair(-eff, driverId));
-			mark[i] = false;
-		}
+		validDrivers[k][v] = *validDrivers[k].rbegin();
+		validDrivers[k].pop_back();
 	}
 }
 
@@ -794,7 +778,7 @@ void Peng(const double timeWindowSize = 100) {
 			driverIds.push_back(driverId);
 		}
 		
-		efficientGreedy(driverIds, orderIds);
+		bilateralArrangement(driverIds, orderIds);
 		
 		preTime += timeWindowSize;
 		printf("orderId = %d, tid = %d, preTime = %.0lf\n", orderId, orders[orderId-1].tid, preTime);
@@ -860,10 +844,10 @@ int main(int argc, char **argv) {
 		freopen("data.in", "r", stdin);
 	}
 	if (argc > 2) {
-		//freopen(argv[2], "w", stdout);
+		freopen(argv[2], "w", stdout);
 	}
 	else {
-		//freopen("data.out", "w", stdout);
+		freopen("data.out", "w", stdout);
 	}
 
 	readNetwork();
