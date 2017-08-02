@@ -720,7 +720,7 @@ void scheduleAndMatch(vector<int>& driverIds, vector<int>& orderIds, double curT
 	}
 }
 
-void Tshare_Dist_KM(const double timeWindowSize = 25) {
+void Tshare_Dist_KM(const double timeWindowSize = 30) {
 	double preTime = 0, curTime;
 	int orderId = 0;
 	vector<int> orderIds, driverIds;
@@ -734,8 +734,8 @@ void Tshare_Dist_KM(const double timeWindowSize = 25) {
 		}
 		if (orderIds.empty()) {
 			preTime = orders[orderId].tid;
-			printf("orderId = %d, tid = %d, preTime = %.0lf\n", orderId, orders[orderId].tid, preTime);
-			fflush(stdout);
+			//printf("orderId = %d, tid = %d, preTime = %.0lf\n", orderId, orders[orderId].tid, preTime);
+			//fflush(stdout);
 			continue;
 		}
 
@@ -749,8 +749,8 @@ void Tshare_Dist_KM(const double timeWindowSize = 25) {
 		scheduleAndMatch(driverIds, orderIds, curTime);
 
 		preTime += timeWindowSize;
-		printf("orderId = %d, tid = %d, preTime = %.0lf\n", orderId, orders[orderId-1].tid, preTime);
-		fflush(stdout);
+		//printf("orderId = %d, tid = %d, preTime = %.0lf\n", orderId, orders[orderId-1].tid, preTime);
+		//fflush(stdout);
 	}
 
 	for (int driverId=0; driverId<M; ++driverId) {
