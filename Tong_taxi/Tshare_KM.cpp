@@ -610,16 +610,16 @@ pair<int,pair<int,int> > scheduling(const vector<int>& canDrivers, const int ord
 	return make_pair(bestDriver, make_pair(bestPick, bestDrop));
 }
 
-void responseDriver(const int driverId, const int orderId, int pickLoc, int dropLoc) {
+void responseDriver(const int driverId, const int orderId, int pickLoc, int dropLoc, double curTime) {
 	driver_t& driver = drivers[driverId];
 	order_t& order = orders[orderId];
 
-	updateDriverPosition(driverId, order.tid, true);
+	updateDriverPosition(driverId, curTime, true);
 
 	vector<node_t> route = driver.route;
 	int routeNum = route.size();
 
-	driver.curTime = order.tid;
+	driver.curTime = curTime;
 	driver.route.clear();
 	for (int i=0; i<=routeNum; ++i) {
 		if (pickLoc == i) driver.route.push_back(node_t(order.sid, orderId));
@@ -690,9 +690,9 @@ void scheduleAndMatch(vector<int>& driverIds, vector<int>& orderIds, double curT
 				const int driverId = driverIds[x];
 				const int orderId = orderIds[y];
 
-				updateDriverPosition(driverId, curTime, true);
+				//updateDriverPosition(driverId, curTime, true);
 				getBestPosition(driverId, orderId, pickLoc, dropLoc, delta);
-				responseDriver(driverId, orderId, pickLoc, dropLoc);
+				responseDriver(driverId, orderId, pickLoc, dropLoc, curTime);
 
 				orderIds[y] = -1;
 			}
@@ -704,14 +704,14 @@ void scheduleAndMatch(vector<int>& driverIds, vector<int>& orderIds, double curT
 				}
 			}
 		} else {
-			for (int y=0; y<driverSz; ++y) {
+			for (int y=0; y<orderSz; ++y) {
 				int x = hung.xy[y];
 				const int driverId = driverIds[x];
 				const int orderId = orderIds[y];
 
-				updateDriverPosition(driverId, curTime, true);
+				//updateDriverPosition(driverId, curTime, true);
 				getBestPosition(driverId, orderId, pickLoc, dropLoc, delta);
-				responseDriver(driverId, orderId, pickLoc, dropLoc);
+				responseDriver(driverId, orderId, pickLoc, dropLoc, curTime);
 			}
 			orderIds.clear();
 		}
@@ -720,7 +720,7 @@ void scheduleAndMatch(vector<int>& driverIds, vector<int>& orderIds, double curT
 	}
 }
 
-void Tshare_Dist_KM(const double timeWindowSize = 30) {
+void Tshare_Dist_KM(const double timeWindowSize = 25) {
 	double preTime = 0, curTime;
 	int orderId = 0;
 	vector<int> orderIds, driverIds;

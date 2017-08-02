@@ -1,7 +1,7 @@
 /**
 	\author: 	Trasier
 	\date:   	2017.8.1
-	\source: 	Tshare with KM
+	\source: 	Tshare with sum dist as objection
 	\note:
 */
 #include <bits/stdc++.h>
