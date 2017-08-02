@@ -575,8 +575,8 @@ void getBestPosition(int driverId, int orderId, int& bestPick, int& bestDrop, do
 	for (int pickLoc=0; pickLoc<=sz; ++pickLoc) {
 		for (int dropLoc=pickLoc; dropLoc<=sz; ++dropLoc) {
 			if (!judgeRoute(driverId, orderId, pickLoc, dropLoc)) continue;
-			tmpCost = calcCost(driverId, orderId, pickLoc, dropLoc) - calcCost(driverId);
 			//tmpCost = calcCost(driverId, orderId, pickLoc, dropLoc) - calcCost(driverId);
+			tmpCost = calcCost(driverId, orderId, pickLoc, dropLoc);
 			updateResult(bestCost, bestPick, bestDrop, tmpCost, pickLoc, dropLoc);
 		}
 	}
@@ -653,30 +653,6 @@ void updateBound(const int driverId, const int orderId) {
 	}
 }
 
-void Tshare_Dist() {
-	for (int orderId=0; orderId<N; ++orderId) {
-		for (int driverId=0; driverId<M; ++driverId) {
-			updateIndex(driverId, orders[orderId].tid);
-		}
-		vector<int> canDrivers = taxiSearching(orderId);
-		pair<int,pair<int,int> > tmp = scheduling(canDrivers, orderId);
-		int driverId = tmp.first;
-		int pickLoc = tmp.second.first, dropLoc = tmp.second.second;
-		#ifdef LOCAL_DEBUG
-		assert(driverId>=0 && pickLoc>=0 && dropLoc>=0 && pickLoc<=dropLoc);
-		// printf("orderId = %d, driverId = %d\n", orderId, driverId);
-		#endif
-		responseDriver(driverId, orderId, pickLoc, dropLoc);
-		//updateBound(driverId, orderId);
-	}
-
-	for (int driverId=0; driverId<M; ++driverId) {
-		driver_t& driver = drivers[driverId];
-		while (!driver.isEmpty())
-			moveForward(driverId);
-	}
-}
-
 void scheduleAndMatch(vector<int>& driverIds, vector<int>& orderIds, double curTime) {
 	int pickLoc, dropLoc;
 	double delta;
@@ -744,7 +720,7 @@ void scheduleAndMatch(vector<int>& driverIds, vector<int>& orderIds, double curT
 	}
 }
 
-void Tshare_Dist_KM(const double timeWindowSize = 100) {
+void Tshare_Dist_KM(const double timeWindowSize = 30) {
 	double preTime = 0, curTime;
 	int orderId = 0;
 	vector<int> orderIds, driverIds;
@@ -796,7 +772,7 @@ void printAns() {
 }
 
 void solve() {
-	Tshare_Dist();
+	Tshare_Dist_KM();
 	printAns();
 	deleteAll();
 }
@@ -835,7 +811,7 @@ int main(int argc, char **argv) {
 		freopen(argv[2], "w", stdout);
 	}
 	else {
-		freopen("data.out", "w", stdout);
+		//freopen("data.out", "w", stdout);
 	}
 
 	readNetwork();

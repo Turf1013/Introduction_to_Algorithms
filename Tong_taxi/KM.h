@@ -7,9 +7,9 @@
 #ifndef KM_H
 #define KM_H
 
-static const double INF = 1e18;
-static const double eps = 1e-6;
 struct Hungarian_t {
+	const double INF = 1e18;
+	const double eps = 1e-6;
 	int *xy, *yx;
 	double *lx, *ly;
 	bool *S, *T;
@@ -71,7 +71,7 @@ struct Hungarian_t {
 	}
 	
 	void addEdge(int u, int v, double w) {
-		assert(ux<nx && v<ny);
+		assert(u<nx && v<ny);
 		g[u][v] = w;
 	}
 	

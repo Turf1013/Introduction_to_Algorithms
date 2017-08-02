@@ -860,7 +860,7 @@ int main(int argc, char **argv) {
 		freopen(argv[2], "w", stdout);
 	}
 	else {
-		freopen("data.out", "w", stdout);
+	//	freopen("data.out", "w", stdout);
 	}
 
 	readNetwork();

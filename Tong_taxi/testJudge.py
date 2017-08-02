@@ -33,8 +33,12 @@ if __name__ == "__main__":
 		"bila",
 		"effg",
 	]
+	lines = []
 	for execName in execNames:
 		execFilePath = "/home/turf/Code/Introduction_to_Algorithms/Tong_taxi/%s" % (execName)
-		dataFilePath = "/home/turf/Code/Introduction_to_Algorithms/Tong_taxi/smallDataSet"
+		dataFilePath = "/home/turf/Code/Introduction_to_Algorithms/Tong_taxi/testDataSet"
 		judgeFilePath = "/home/turf/Code/Introduction_to_Algorithms/Tong_taxi/judges"
-		testJudge(execFilePath, judgeFilePath, dataFilePath)
+		lines += testJudge(execFilePath, judgeFilePath, dataFilePath)
+	with open("share.log", "w") as fout:
+		for line in lines:
+			fout.write(line + "\n")

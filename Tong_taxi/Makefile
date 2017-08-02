@@ -20,6 +20,12 @@ genD: genData.cpp
 tshare: input.h output.h monitor.h TShare.cpp
 	$(CXX) $(CFLAGS) -o tshare TShare.cpp $(LIBS)
 
+tshare_dist: input.h output.h monitor.h Tshare_dist.cpp
+	$(CXX) $(CFLAGS) -o tshare_dist Tshare_dist.cpp $(LIBS)
+
+tshare_km: input.h output.h monitor.h KM.h Tshare_KM.cpp
+	$(CXX) $(CFLAGS) -o tshare_km Tshare_KM.cpp $(LIBS)
+
 zshare: input.h output.h monitor.h ZShare.cpp
 	$(CXX) $(CFLAGS) -o zshare ZShare.cpp $(LIBS)
 
@@ -39,10 +45,10 @@ judge: input.h judge.cpp
 	$(CXX) $(CFLAGS) -o judge judge.cpp $(LIBS)
 
 judges: input.h judge_sumDist.cpp
-	$(CXX) $(CFALGS) -o judges judge_sumDist.cpp $(LIBS)
+	$(CXX) $(CFLAGS) -o judges judge_sumDist.cpp $(LIBS)
 
 bila: input.h output.h monitor.h peng_Bilateral.cpp
-	$(CXX) $(CFALGS) -o bila peng_Bilateral.cpp $(LIBS)
+	$(CXX) $(CFLAGS) -o bila peng_Bilateral.cpp $(LIBS)
 
 effg: input.h output.h monitor.h peng_EfficientGreedy.cpp
 	$(CXX) $(CFLAGS) -o effg peng_EfficientGreedy.cpp $(LIBS)
@@ -56,8 +62,8 @@ clean:
 		-@rm tshare tshare.g* 2> /dev/null || true	
 		-@rm bb bb.g* 2> /dev/null || true
 		-@rm kit kit.g* 2> /dev/null || true
-		-@rm judge judge.g* 2> /dev/null || true
+		-@rm judge judge.g* judges 2> /dev/null || true
 		-@rm hot hotp hotp.g* hot.g* 2> /dev/null || true
 		-@rm zshare zshare.g* 2> /dev/null || true
-		-@rm bila effg 2> /dev/null || true
+		-@rm bila effg tshare_dist tshare_km 2> /dev/null || true
 
