@@ -8,8 +8,10 @@
 #define KM_H
 
 struct Hungarian_t {
-	const double INF = 1e18;
-	const double eps = 1e-6;
+	//const double INF = 1e18;
+	//const double eps = 1e-6;
+	static const double INF;
+	static const double eps;
 	int *xy, *yx;
 	double *lx, *ly;
 	bool *S, *T;
@@ -138,5 +140,8 @@ struct Hungarian_t {
 		}
 	}
 };
+
+const double Hungarian_t::INF = 1e18;
+const double Hungarian_t::eps = 1e-6;
 
 #endif

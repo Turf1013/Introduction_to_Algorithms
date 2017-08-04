@@ -672,7 +672,7 @@ double arrangeSingleRider(int driverId, int orderId, int& bestPick, int& bestDro
 	vector<node_t>& route = driver.route;
 	const int sz = route.size();
 	int pickLoc, dropLoc;
-	double ret = -1, tmp;
+	double ret = -inf, tmp;
 	
 	vector<int> pickVec = validEvent(driverId);
 	vector<int> dropVec = validEvent(driverId);
@@ -686,7 +686,7 @@ double arrangeSingleRider(int driverId, int orderId, int& bestPick, int& bestDro
 			if (!judgeRoute(driverId, orderId, pickLoc, dropLoc))
 				continue;
 			
-			tmp = calcMu(driverId, orderId, pickLoc, dropLoc);
+			tmp = calcMu(driverId, orderId, pickLoc, dropLoc) - calcMu(driverId);
 			if (tmp > ret) {
 				ret = tmp;
 				bestPick = pickLoc;
@@ -791,12 +791,12 @@ void efficientGreedy(vector<int>& driverIds, vector<int>& orderIds) {
 		
 		updateRouteInBila(driverId, orderId, pickLoc, dropLoc);
 
-		// for (int i=0; i<vec.size(); ++i) {
-		// 	if (!mark[i]) continue;
-		// 	double eff = calcEfficiency(driverId, orderIds[i]);
-		// 	vec[i].insert(make_pair(eff, driverId));
-		// 	mark[i] = false;
-		// }
+		for (int i=0; i<vec.size(); ++i) {
+			if (!mark[i]) continue;
+			double eff = calcEfficiency(driverId, orderIds[i]);
+			vec[i].insert(make_pair(eff, driverId));
+			mark[i] = false;
+		}
 
 		// #ifdef LOCAL_DEBUG
 		// printf("orderId = %d, driverId = %d\n", orderId, driverId);

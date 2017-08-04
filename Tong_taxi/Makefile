@@ -4,7 +4,7 @@
 CC = gcc
 CXX = g++
 LIBS = -lrt
-CFLAGS = --std=c++11 -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
+CFLAGS = -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
 all: base judge tshare bb kit zshare bila effg

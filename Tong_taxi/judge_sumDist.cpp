@@ -189,12 +189,13 @@ bool simulateRouteByDriver(ifstream& fin, int driverId, int moveNum) {
 	set<int> curOrderSet, nextOrderSet;
 	int orderId, buckNum;
 
-	fin >> curLoc.x >> curLoc.y >> stuArrive >> stuLeave >> buckNum;
-	for (int i=0; i<moveNum-1; ++i) {
+	//fin >> curLoc.x >> curLoc.y >> stuArrive >> stuLeave >> buckNum;
+	for (int i=0; i<moveNum; ++i) {
 		fin >> nextLoc.x >> nextLoc.y >> stuArrive >> stuLeave >> buckNum;
 		nextBucket.clear();
 		for (int j=0; j<buckNum; ++j) {
 			fin >> orderId;
+			--orderId;
 			nextBucket.push_back(orderId);
 		}
 
@@ -311,6 +312,7 @@ void simulateRoute(const string& routeFileName) {
 	for (int i=0; i<M; ++i) {
 		fin >> driverId >> moveNum;
 		//printf("driverId = %d, moveNum = %d\n", driverId, moveNum);
+		--driverId;
 		if (!simulateRouteByDriver(fin, driverId, moveNum)) {
 			printf("route is invalid.\n");
 			return ;
@@ -318,20 +320,26 @@ void simulateRoute(const string& routeFileName) {
 	}
 
 	// double simAns = 0;
+	bool allDelivered = true;
 
-	// for (int i=0; i<N; ++i) {
-		// if (taken[i] != 1) {// this order hasn't been delivered yet
-			// printf("route is invalid.\n");
-			// return ;
-		// }
+	for (int i=0; i<N; ++i) {
+		if (taken[i] != 1) {// this order hasn't been delivered yet
+			if (taken[i] == 0)
+				printf("order %d is not delivered\n", i+1);
+			else
+				printf("order %d is not picked\n", i+1);
+			allDelivered = false;
+		}
 		// simAns = max(simAns, riders[i].endTime-orders[i].tid);
-	// }
+	}
+	if (!allDelivered) return ;
+
 	double simAns = ans;
 
 	double stuAns = inf;
 	fin >> stuAns;
 	if (dcmp(simAns-stuAns) != 0) {
-		printf("route is invalid.\n");
+		printf("route is invalid. simAns = %.2lf, stuAns = %.2lf\n", simAns, stuAns);
 		return ;
 	}
 

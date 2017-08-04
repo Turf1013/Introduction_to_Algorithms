@@ -575,8 +575,8 @@ void getBestPosition(int driverId, int orderId, int& bestPick, int& bestDrop, do
 	for (int pickLoc=0; pickLoc<=sz; ++pickLoc) {
 		for (int dropLoc=pickLoc; dropLoc<=sz; ++dropLoc) {
 			if (!judgeRoute(driverId, orderId, pickLoc, dropLoc)) continue;
-			//tmpCost = calcCost(driverId, orderId, pickLoc, dropLoc) - calcCost(driverId);
-			tmpCost = calcCost(driverId, orderId, pickLoc, dropLoc);
+			tmpCost = calcCost(driverId, orderId, pickLoc, dropLoc) - calcCost(driverId);
+			//tmpCost = calcCost(driverId, orderId, pickLoc, dropLoc);
 			updateResult(bestCost, bestPick, bestDrop, tmpCost, pickLoc, dropLoc);
 		}
 	}
@@ -719,8 +719,8 @@ void scheduleAndMatch(vector<int>& driverIds, vector<int>& orderIds, double curT
 		hung.clear();
 	}
 }
-
-void Tshare_Dist_KM(const double timeWindowSize = 30) {
+// 10, 30, 50, 100, 200, 500
+void Tshare_Dist_KM(const double timeWindowSize = 500) {
 	double preTime = 0, curTime;
 	int orderId = 0;
 	vector<int> orderIds, driverIds;

@@ -573,8 +573,8 @@ void getBestPosition(int driverId, int orderId, int& bestPick, int& bestDrop, do
 	for (int pickLoc=0; pickLoc<=sz; ++pickLoc) {
 		for (int dropLoc=pickLoc; dropLoc<=sz; ++dropLoc) {
 			if (!judgeRoute(driverId, orderId, pickLoc, dropLoc)) continue;
-			//tmpCost = calcCost(driverId, orderId, pickLoc, dropLoc) - calcCost(driverId);
-			tmpCost = calcCost(driverId, orderId, pickLoc, dropLoc);
+			tmpCost = calcCost(driverId, orderId, pickLoc, dropLoc) - calcCost(driverId);
+			//tmpCost = calcCost(driverId, orderId, pickLoc, dropLoc);
 			updateResult(bestCost, bestPick, bestDrop, tmpCost, pickLoc, dropLoc);
 		}
 	}
