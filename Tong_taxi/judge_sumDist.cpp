@@ -201,8 +201,8 @@ bool simulateRouteByDriver(ifstream& fin, int driverId, int moveNum) {
 
 		// 0. check the capactiy
 		if (buckNum > C) {
-			printf("driverId = %d, moveId = %d, buckNum = %d\n",
-					driverId, i, buckNum);
+			printf("driverId = %d, moveId = %d, buckNum = %d out of capacity = %d\n",
+					driverId, i, buckNum, C);
 			puts("cond 0");
 			return false;
 		}
@@ -220,7 +220,7 @@ bool simulateRouteByDriver(ifstream& fin, int driverId, int moveNum) {
 
 		// 1. check the arrive time.
 		if (dcmp(simArrive - stuArrive) > 0) {
-			printf("driverId = %d, moveId = %d, simArrive = %.6lf, stuArrive = %.6lf",
+			printf("driverId = %d, moveId = %d, simArrive = %.6lf, stuArrive = %.6lf\n",
 					driverId, i, simArrive, stuArrive);
 			puts("cond 1");
 			return false;
