@@ -189,8 +189,8 @@ bool simulateRouteByDriver(ifstream& fin, int driverId, int moveNum) {
 	set<int> curOrderSet, nextOrderSet;
 	int orderId, buckNum;
 
-	//fin >> curLoc.x >> curLoc.y >> stuArrive >> stuLeave >> buckNum;
-	for (int i=0; i<moveNum; ++i) {
+	fin >> curLoc.x >> curLoc.y >> stuArrive >> stuLeave >> buckNum;
+	for (int i=0; i<moveNum-1; ++i) {
 		fin >> nextLoc.x >> nextLoc.y >> stuArrive >> stuLeave >> buckNum;
 		nextBucket.clear();
 		for (int j=0; j<buckNum; ++j) {
