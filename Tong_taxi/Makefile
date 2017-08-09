@@ -54,7 +54,7 @@ effg: input.h output.h monitor.h peng_EfficientGreedy.cpp
 	$(CXX) $(CFLAGS) -o effg peng_EfficientGreedy.cpp $(LIBS)
 	
 fang: fang_GIS15.c
-	$(CC) $(CFLAGS) -o fang fang_GIS15.c $(LIBS)
+	$(CC) $(CFLAGS) -o fang fang_GIS15.c -lm
 	
 ming: li_output.h li_treeNode.h li_hotTree.cpp
 	$(CXX) $(CFLAGS) -o ming li_hotTree.cpp $(LIBS)

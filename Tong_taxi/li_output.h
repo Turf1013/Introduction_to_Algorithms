@@ -1,8 +1,8 @@
 /**
 	\author: Trasier
 */
-#ifndef OUTPUT_H
-#define OUTPUT_H
+#ifndef LI_OUTPUT_H
+#define LI_OUTPUT_H
 
 #include <bits/stdc++.h>
 using namespace std;

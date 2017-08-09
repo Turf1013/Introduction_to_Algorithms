@@ -2569,11 +2569,18 @@ int umain(char *s)
 }
 
 
-int main()
-{
-    ff=fopen("result.txt","w");
+int main(int argc, char **argv)
+{	
+	if (argc > 2)
+		ff = fopen(argv[2], "w");
+	else
+    	ff=fopen("result.txt","w");
+	if (argc > 1)
+		umain(argv[1]);
+	else
+		umain("data2.txt");
     //umain("data1.txt");
-    umain("data2.txt");
+    
     /*umain("data00.txt");
     umain("data01.txt");
     umain("data02.txt");

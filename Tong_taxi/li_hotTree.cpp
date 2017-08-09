@@ -1,14 +1,14 @@
 #include <vector>
 #include <algorithm>
 #include <stdio.h>
-#include "treeNode.h"
-#include "output.h"
+#include "li_treeNode.h"
+#include "li_output.h"
 using namespace std;
 const double inf = 1e20;
 int R, D, M, C, N;
-double waittime =2500;
-double detour = 10;	//绕路系数 
-double theta = 100;	// hotspot 的系数 
+double waittime = 2000;
+double detour = 2000;	//绕路系数 
+double theta = 200;	// hotspot 的系数 
 const double eps = 1e-6;
 int taken=0;
 int dcmp(double x) {
@@ -29,11 +29,13 @@ position_t *dists;
 
 struct order_t {
 	int tid, sid, eid;
-	double takentime = -1;		//接单时间 
-	double droptime = -1;
+	double takentime;		//接单时间 
+	double droptime;
 
 	order_t(int tid = 0, int sid = 0, int eid = 0) :
-		tid(tid), sid(sid), eid(eid) {}
+		tid(tid), sid(sid), eid(eid) {
+		takentime = droptime = -1;
+	}
 };
 
 
@@ -42,8 +44,8 @@ struct node_t {
 	int placeId, orderId;
 	int cap;
 	int spotId;
-	double slackTime = inf;
-	double time = 0;
+	double slackTime;
+	double time;
 	double x;
 	double y;
 
@@ -55,6 +57,8 @@ struct node_t {
 		x = temp.x;
 		y = temp.y;
 		spotId = 0;
+		slackTime = inf;
+		time = 0;
 	}
 
 	bool operator==(const node_t& oth) const {
@@ -66,15 +70,17 @@ struct node_t {
 typedef treeNode_t<node_t> treeNode;
 struct driver_t {
 	position_t pos;
-	double curTime = 1.0;
+	double curTime;
 	vector<treeNode*> route;
-	int cap = 0;
-	double run = 0;
+	int cap;
+	double run;
 
 	driver_t(double x = 0., double y = 0.) {
 		pos.x = x;
 		pos.y = y;
 		this->curTime = curTime;
+		cap = 0;
+		run = 0;
 	}
 
 	bool isEmpty() {
@@ -1043,12 +1049,19 @@ void  printAns() {
 	printf("%lf",run);
 }
 
-int main() {
-	freopen("data2.txt", "r", stdin);
+int main(int argc, char **argv) {
+	if (argc > 1)
+		freopen(argv[1], "r", stdin);
+	else
+		freopen("data2.txt", "r", stdin);
+	if (argc > 2)
+		freopen(argv[2], "w", stdout);
+	
+
 	inputHandler();
 	Kinetic();
 	printAns();
 }
 
 // 现存的问题，插入以后可能会发现插入了很多次哦， 
-
+//inf

@@ -4,6 +4,9 @@
 	\source: 	VLDB14 Large Scale Real-time Ridesharing with Service Guarantee on Road Networks
 	\note: 		Kinetic Tree
 */
+#ifndef LI_TREENODE_H
+#define LI_TREENODE_H
+
 #include <bits/stdc++.h>
 using namespace std;
 template <class T>
@@ -151,3 +154,5 @@ double updateInfo(treeNode*&rt){
 	rt->val.slackTime=min(rt->val.slackTime,max);
 }
 */
+
+#endif
