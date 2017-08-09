@@ -52,7 +52,13 @@ bila: input.h output.h monitor.h peng_Bilateral.cpp
 
 effg: input.h output.h monitor.h peng_EfficientGreedy.cpp
 	$(CXX) $(CFLAGS) -o effg peng_EfficientGreedy.cpp $(LIBS)
-
+	
+fang: fang_GIS15.c
+	$(CC) $(CFLAGS) -o fang fang_GIS15.c $(LIBS)
+	
+ming: li_output.h li_treeNode.h li_hotTree.cpp
+	$(CXX) $(CFLAGS) -o ming li_hotTree.cpp $(LIBS)
+	
 .PHONY: clean 
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
@@ -66,4 +72,4 @@ clean:
 		-@rm hot hotp hotp.g* hot.g* 2> /dev/null || true
 		-@rm zshare zshare.g* 2> /dev/null || true
 		-@rm bila effg tshare_dist tshare_km 2> /dev/null || true
-
+		-@rm ming fang 2> /dev/null || true
