@@ -2,7 +2,7 @@
 using namespace std;
 typedef long long ll;
 typedef pair <int, int> PII;
-const int MAP_SZ = 100;
+const int MAP_SZ = 200;
 struct data_size {
     int N, M, R, C, D;
 }small, large, used;
@@ -16,11 +16,11 @@ void init() {
     small.M = 4;
     small.R = 4;
     small.C = 5;
-    large.N = 3000;
-    large.M = 50;
-    large.R = 600;
-    large.D = 1000;
-    large.C = 10;
+    large.N = 2000;
+    large.M = 100;
+    large.R = 2000;
+    large.D = 2000;
+    large.C = 3;
     used = large;
 }
 
@@ -39,7 +39,7 @@ struct Order {
     int t;
 } order[8192];
 
-PII rust[1024], dest[1024];
+PII rust[2024], dest[2024];
 
 double sqr(int x) {
     return x * x;
@@ -48,6 +48,7 @@ double sqr(int x) {
 double dist(int x, int y) {
     return sqrt(sqr(rust[x].first - dest[y].first) + sqr(rust[x].second - dest[y].second));
 } 
+
 int main(int argc, char **argv) {
 	int seed = 1024;
 
@@ -56,8 +57,8 @@ int main(int argc, char **argv) {
 	if (argc > 2)
 		sscanf(argv[2], "%d", &seed);
 	
-	printf("seed = %d\n", seed);
-    srand(seed);
+	//printf("seed = %d\n", seed);
+	srand(seed);
     init();
     int R = used.R;
     int M = used.M;
@@ -70,15 +71,15 @@ int main(int argc, char **argv) {
     for (int i = 0; i < D; ++ i) {
         dest[i] = next_pos();
     }
-    int t = 0;
+    int t = 1500;
     for (int i = 0; i < N; ++ i) {
-        t += rand() & 1;
-        tim[i] = t;
+        tim[i] = rand() % t;
     }
+    sort(tim, tim + N);
     for (int i = 0; i < N; ++ i) {
         order[i].s = rand() % R + 1;
         order[i].t = rand() % D + 1;
-        if (dist(order[i].s, order[i].t) > 100) -- i;
+        //if (dist(order[i].s, order[i].t) > 100) -- i;
     }
     
     int a[3000];

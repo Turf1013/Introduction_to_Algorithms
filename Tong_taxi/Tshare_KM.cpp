@@ -148,6 +148,7 @@ driver_t *drivers;
 int *taken;
 vector<vector<move_t> > moves;
 double ans;
+int windowSize = 20;
 
 double Length(const position_t& pa, const position_t& pb) {
 	return sqrt((pa.x-pb.x)*(pa.x-pb.x) + (pa.y-pb.y)*(pa.y-pb.y));
@@ -772,7 +773,7 @@ void printAns() {
 }
 
 void solve() {
-	Tshare_Dist_KM();
+	Tshare_Dist_KM(windowSize);
 	printAns();
 	deleteAll();
 }
@@ -813,6 +814,8 @@ int main(int argc, char **argv) {
 	else {
 		//freopen("data.out", "w", stdout);
 	}
+	if (argc > 3)
+		sscanf(argv[3], "%d", &windowSize);		
 
 	readNetwork();
 	solve();

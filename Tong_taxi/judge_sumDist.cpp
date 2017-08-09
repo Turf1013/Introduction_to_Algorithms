@@ -195,7 +195,7 @@ bool simulateRouteByDriver(ifstream& fin, int driverId, int moveNum) {
 		nextBucket.clear();
 		for (int j=0; j<buckNum; ++j) {
 			fin >> orderId;
-			--orderId;
+			//--orderId;
 			nextBucket.push_back(orderId);
 		}
 
@@ -312,7 +312,7 @@ void simulateRoute(const string& routeFileName) {
 	for (int i=0; i<M; ++i) {
 		fin >> driverId >> moveNum;
 		//printf("driverId = %d, moveNum = %d\n", driverId, moveNum);
-		--driverId;
+		//--driverId;
 		if (!simulateRouteByDriver(fin, driverId, moveNum)) {
 			printf("route is invalid.\n");
 			return ;

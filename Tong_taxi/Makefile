@@ -17,6 +17,9 @@ greedy: input.h output.h greedy.cpp monitor.h
 genD: genData.cpp
 	$(CXX) $(CFLAGS) -o genD genData.cpp $(LIBS)
 
+datas: dataSmall.cpp
+	$(CXX) $(CFLAGS) -o datas dataSmall.cpp $(LIBS)
+
 tshare: input.h output.h monitor.h TShare.cpp
 	$(CXX) $(CFLAGS) -o tshare TShare.cpp $(LIBS)
 
@@ -72,4 +75,4 @@ clean:
 		-@rm hot hotp hotp.g* hot.g* 2> /dev/null || true
 		-@rm zshare zshare.g* 2> /dev/null || true
 		-@rm bila effg tshare_dist tshare_km 2> /dev/null || true
-		-@rm ming fang 2> /dev/null || true
+		-@rm ming fang datas 2> /dev/null || true

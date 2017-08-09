@@ -12,6 +12,7 @@
 *.class
 smallDataSet/
 largeDataSet/
+zyxDataSet/
 greedy
 base
 raw
@@ -30,3 +31,5 @@ tshare_dist
 tshare_km
 fang
 ming
+datas
+datal
