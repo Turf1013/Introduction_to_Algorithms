@@ -6,7 +6,7 @@
 using namespace std;
 
 #include "input.h"
-#include "monitor.h"
+//#include "monitor.h"
 #include "output.h"
 
 //#define LOCAL_DEBUG
@@ -134,7 +134,7 @@ void readInput_predict(int& workerN, int& taskN, double& dw, double& dr,
 	int slotId, gridId;
 	predictItem_t item;
 	
-	items = new predictItem_t[gridN];
+	items = new predictItem_t[slotN*gridN];
 	for (int i=0; i<slotN; ++i) {
 		for (int j=0; j<gridN; ++j) {
 			cin >> slotId >> gridId >> item.workerN >> item.taskN;
@@ -282,6 +282,7 @@ void init_subgraph() {
 	for (int i=0; i<workerN+taskN; ++i) {
 		g[i] = new int[2];
 		g[i][0] = g[i][1] = -1;
+		neighbour[i] = new int[2];
 		neighbour[i][0] = neighbour[i][1] = -1;
 		visit[i] = false;
 	}
@@ -316,19 +317,28 @@ void addLink(int u, int v) {
 }
 
 void add_neighbour(int u, int v, int col) {
+#ifdef LOCAL_DEBUG
+//	if (neighbour[u][col] != -1 || neighbour[v][col] != -1) {
+//		printf("u = %d, v = %d, col = %d\n", u, v, col);
+//	}
+//	assert(neighbour[u][col] == -1);
+//	assert(neighbour[v][col] == -1);
+#endif
 	neighbour[u][col] = v;
 	neighbour[v][col] = u;
 }
 
 void dfs_bipartite(int u, int fa, int col) {
-	int v;
+	int v, c = col;
 	
 	visit[u] = true;
 	for (int i=0; i<2; ++i) {
 		v = g[u][i];
-		if (v==-1 || v==fa || visit[v]) continue;
-		add_neighbour(u, v, col);
-		dfs_bipartite(v, u, col^1);
+		if (v==-1 || v==fa) continue;
+		add_neighbour(u, v, c);
+		if (visit[v]) continue;
+		dfs_bipartite(v, u, c^1);
+		c ^= 1;
 	}
 }
 
@@ -340,10 +350,13 @@ void output_neighbour() {
 		if (neighbour[i][0] != -1) ++c[0];
 		if (neighbour[i][1] != -1) ++c[1];
 	}
+	//printf("|neighbour| = %d\n", (c[0]+c[1])/2);
 	
 	int idx = (c[0] >= c[1]) ? 0 : 1;
 	for (u=0; u<workerN+taskN; ++u) {
-		if (neighbour[u][idx] == -1) continue;
+		if (neighbour[u][0]==-1 && neighbour[u][1]==-1) continue;
+		printf("%d %d %d\n", u, neighbour[u][idx], neighbour[u][idx^1]);
+		continue;
 		
 		if (u < workerN)
 			printf("%d", u);
@@ -356,13 +369,13 @@ void output_neighbour() {
 		else
 			printf(" %d", v-workerN);
 		
-		if (neighbour[u][idx^1] != -1) {
+		//if (neighbour[u][idx^1] != -1) {
 			v = neighbour[u][idx^1];
 			if (v < workerN)
 				printf(" %d", v);
 			else
 				printf(" %d", v-workerN);
-		}
+		//}
 		
 		putchar('\n');
 	}	
@@ -380,7 +393,7 @@ void output_network(int maxFlow) {
 				/**
 					
 				*/
-				// fprintf(stderr, "%d %d\n", u, v-workerN);
+				//printf("%d %d\n", u, v-workerN);
 				addLink(u, v);
 			}
 		}
@@ -390,6 +403,10 @@ void output_network(int maxFlow) {
 		if (!visit[u])
 			dfs_bipartite(u, -1, 0);
 	}
+	for (v=workerN; v<workerN+taskN; ++v) {
+		if (g[v][0] == -1) continue;
+		assert(visit[v]);
+	}
 	output_neighbour();
 	del_subgraph();
 }
@@ -397,8 +414,9 @@ void output_network(int maxFlow) {
 void solve() {
 	init();
 	int maxFlow = Dinic();
+	//printf("maxFlow = %d\n", maxFlow);
 	output_network(maxFlow);
-	fprintf(stderr, "maxFlow = %d\n", maxFlow);
+	//fprintf(stderr, "maxFlow = %d\n", maxFlow);
 	del_ptr();
 }
 
@@ -410,7 +428,7 @@ int main(int argc, char **argv) {
 	if (argc > 1)
 		freopen(argv[1], "r", stdin);
 	if (argc > 2)
-		freopen(argv[2], "w", stderr);
+		freopen(argv[2], "w", stdout);
 
 	// save_time(begProg);
 	solve();
