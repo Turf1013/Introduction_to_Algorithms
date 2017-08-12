@@ -5,6 +5,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+#include "input.h"
 #include "monitor.h"
 #include "output.h"
 
@@ -43,7 +44,7 @@ task_t *tasks;
 bool *visit;
 int** g;
 int** neighbour;
-int workerN, taskN;
+int workerN, taskN, gridN, vertexN;
 double dw, dr, vw;
 int slotN, gridLength, gridWidth;
 int st, ed;
@@ -87,11 +88,11 @@ inline void addEdge(int u, int v, int c) {
 }
 
 void init_network() {
-	workerN = workers.size();
-	taskN = tasks.size();
+	//workerN = workers.size();
+	//taskN = tasks.size();
 	st = workerN + taskN;
 	ed = workerN + taskN + 1;
-	int vertexN = workerN + taskN + 2;
+	vertexN = workerN + taskN + 2;
 
 	memset(dis, 0, sizeof(int)*vertexN);
 	memset(head, -1, sizeof(int)*vertexN);
@@ -129,11 +130,11 @@ void readInput_predict(int& workerN, int& taskN, double& dw, double& dr,
 	
 	cin >> workerN >> taskN >> dw >> dr >> vw >> slotN >> gridLength >> gridWidth;
 
-	const int gridN = gridLength * gridWidth;
+	gridN = gridLength * gridWidth;
 	int slotId, gridId;
 	predictItem_t item;
 	
-	items = new predictItem_t[gridN]
+	items = new predictItem_t[gridN];
 	for (int i=0; i<slotN; ++i) {
 		for (int j=0; j<gridN; ++j) {
 			cin >> slotId >> gridId >> item.workerN >> item.taskN;
@@ -207,7 +208,8 @@ bool bfs() {
     queue<int> Q;
     
     Q.push(st);
-    fill(dis.begin(), dis.end(), 0);
+    //fill(dis.begin(), dis.end(), 0);
+	for (int i=0; i<vertexN; ++i) dis[i] = 0;
     dis[st] = 1;
     
     while (!Q.empty()) {
@@ -249,7 +251,7 @@ int dfs(int u, int val) {
 }
 
 int Dinic() {
-	const int vertexN = head.size();
+	const int vertexN = workerN + taskN + 2;
 	int k, u, v;
 	int maxFlow = 0, tmp;
 
@@ -274,8 +276,8 @@ int Dinic() {
 }
 
 void init_subgraph() {
-	g = new int[workerN+taskN];
-	neighbour = new int[workerN+taskN];
+	g = new int*[workerN+taskN];
+	neighbour = new int*[workerN+taskN];
 	visit = new bool[workerN+taskN];
 	for (int i=0; i<workerN+taskN; ++i) {
 		g[i] = new int[2];
@@ -333,6 +335,7 @@ void dfs_bipartite(int u, int fa, int col) {
 void output_neighbour() {
 	int c[2], u, v;
 	
+	c[0] = c[1] = 0;
 	for (int i=0; i<workerN+taskN; ++i) {
 		if (neighbour[i][0] != -1) ++c[0];
 		if (neighbour[i][1] != -1) ++c[1];
@@ -340,21 +343,21 @@ void output_neighbour() {
 	
 	int idx = (c[0] >= c[1]) ? 0 : 1;
 	for (u=0; u<workerN+taskN; ++u) {
-		if (neigbour[u][idx] == -1) continue;
+		if (neighbour[u][idx] == -1) continue;
 		
 		if (u < workerN)
 			printf("%d", u);
 		else
 			printf("%d", u-workerN);
 		
-		v = neighbour[i][idx];
+		v = neighbour[u][idx];
 		if (v < workerN)
 			printf(" %d", v);
 		else
 			printf(" %d", v-workerN);
 		
-		if (neighbour[i][idx^1] != -1) {
-			v = neighbour[i][idx^1];
+		if (neighbour[u][idx^1] != -1) {
+			v = neighbour[u][idx^1];
 			if (v < workerN)
 				printf(" %d", v);
 			else
@@ -395,6 +398,7 @@ void solve() {
 	init();
 	int maxFlow = Dinic();
 	output_network(maxFlow);
+	fprintf(stderr, "maxFlow = %d\n", maxFlow);
 	del_ptr();
 }
 

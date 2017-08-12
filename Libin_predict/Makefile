@@ -4,7 +4,7 @@
 CC = gcc
 CXX = g++
 LIBS = -lrt
-CFLAGS = --std=c++11 -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
+CFLAGS = -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
 all: Simple SimpleMem OPT OPTMem Guide Polar PolarMem Hung GuideH Dinic
@@ -37,6 +37,9 @@ OPTMem: monitor.h input.h output.h global.h OPT.cpp
 
 Guide: monitor.h input.h output.h global.h guide.cpp
 	$(CXX) $(CFLAGS) -o Guide guide.cpp $(LIBS)
+
+newg: monitor.h input.h output.h global.h newGuide.cpp
+	$(CXX) $(CFLAGS) -o newg newGuide.cpp $(LIBS)
 
 GuideH: monitor.h input.h output.h global.h guide_hung.cpp
 	$(CXX) $(CFLAGS) -o GuideH guide_hung.cpp $(LIBS)
