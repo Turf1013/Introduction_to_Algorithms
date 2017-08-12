@@ -148,6 +148,7 @@ driver_t *drivers;
 int *taken;
 vector<vector<move_t> > moves;
 double ans;
+int windowSize = 20;
 
 double Length(const position_t& pa, const position_t& pb) {
 	return sqrt((pa.x-pb.x)*(pa.x-pb.x) + (pa.y-pb.y)*(pa.y-pb.y));
@@ -657,85 +658,83 @@ void scheduleAndMatch(vector<int>& driverIds, vector<int>& orderIds, double curT
 	int pickLoc, dropLoc;
 	double delta;
 
-	const int driverSz = driverIds.size();
-	const int orderSz = orderIds.size();
-	if (driverSz < orderSz) {
-		hung.init(driverSz, orderSz);
-	} else {
-		hung.init(orderSz, driverSz);
-	}
-
-	for (int i=0; i<driverSz; ++i) {
-		const int driverId = driverIds[i];
-		for (int j=0; j<orderSz; ++j) {
-			const int orderId = orderIds[j];
-
-			updateDriverPosition(driverId, curTime);
-			getBestPosition(driverId, orderId, pickLoc, dropLoc, delta);
-			restoreDriverPosition(driverId);
-
-			if (driverSz < orderSz)
-				hung.addEdge(i, j, -delta);
-			else
-				hung.addEdge(j, i, -delta);
-		}
-	}
-
-	hung.match();
-
-	if (driverSz < orderSz) {
-		for (int x=0; x<driverSz; ++x) {
-			int y = hung.xy[x];
-			const int driverId = driverIds[x];
-			const int orderId = orderIds[y];
-
-			//updateDriverPosition(driverId, curTime, true);
-			getBestPosition(driverId, orderId, pickLoc, dropLoc, delta);
-			responseDriver(driverId, orderId, pickLoc, dropLoc, curTime);
-
-			orderIds[y] = -1;
-
-			printf("orderId = %d, driverId = %d\n", orderId, driverId);
+	while (!orderIds.empty()) {
+		const int driverSz = driverIds.size();
+		const int orderSz = orderIds.size();
+		if (driverSz < orderSz) {
+			hung.init(driverSz, orderSz);
+		} else {
+			hung.init(orderSz, driverSz);
 		}
 
-		for (int y=orderSz-1; y>=0; --y) {
-			if (orderIds[y] == -1) {
-				orderIds[y] = *orderIds.rbegin();
-				orderIds.pop_back();
+		for (int i=0; i<driverSz; ++i) {
+			const int driverId = driverIds[i];
+			for (int j=0; j<orderSz; ++j) {
+				const int orderId = orderIds[j];
+
+				updateDriverPosition(driverId, curTime);
+				getBestPosition(driverId, orderId, pickLoc, dropLoc, delta);
+				restoreDriverPosition(driverId);
+
+				if (driverSz < orderSz)
+					hung.addEdge(i, j, -delta);
+				else
+					hung.addEdge(j, i, -delta);
 			}
 		}
-	} else {
-		for (int y=0; y<orderSz; ++y) {
-			int x = hung.xy[y];
-			const int driverId = driverIds[x];
-			const int orderId = orderIds[y];
 
-			//updateDriverPosition(driverId, curTime, true);
-			getBestPosition(driverId, orderId, pickLoc, dropLoc, delta);
-			responseDriver(driverId, orderId, pickLoc, dropLoc, curTime);
+		hung.match();
 
-			printf("orderId = %d, driverId = %d\n", orderId, driverId);
+		if (driverSz < orderSz) {
+			for (int x=0; x<driverSz; ++x) {
+				int y = hung.xy[x];
+				const int driverId = driverIds[x];
+				const int orderId = orderIds[y];
+
+				//updateDriverPosition(driverId, curTime, true);
+				getBestPosition(driverId, orderId, pickLoc, dropLoc, delta);
+				responseDriver(driverId, orderId, pickLoc, dropLoc, curTime);
+
+				orderIds[y] = -1;
+			}
+
+			for (int y=orderSz-1; y>=0; --y) {
+				if (orderIds[y] == -1) {
+					orderIds[y] = *orderIds.rbegin();
+					orderIds.pop_back();
+				}
+			}
+		} else {
+			for (int y=0; y<orderSz; ++y) {
+				int x = hung.xy[y];
+				const int driverId = driverIds[x];
+				const int orderId = orderIds[y];
+
+				//updateDriverPosition(driverId, curTime, true);
+				getBestPosition(driverId, orderId, pickLoc, dropLoc, delta);
+				responseDriver(driverId, orderId, pickLoc, dropLoc, curTime);
+			}
+			orderIds.clear();
 		}
-		orderIds.clear();
+
+		hung.clear();
 	}
-
-	hung.clear();
 }
-
-void Tshare_Dist_KM(const double timeWindowSize = 30) {
+// 10, 30, 50, 100, 200, 500
+void Tshare_Dist_KM(const double timeWindowSize = 500) {
 	double preTime = 0, curTime;
 	int orderId = 0;
 	vector<int> orderIds, driverIds;
 
 	while (orderId < N) {
-		//orderIds.clear();
+		orderIds.clear();
 		while (orderId<N && orders[orderId].tid<preTime+timeWindowSize) {
 			orderIds.push_back(orderId);
+			curTime = orders[orderId].tid;
 			++orderId;
 		}
-		curTime = preTime + timeWindowSize - 1;
 		if (orderIds.empty()) {
-			preTime += timeWindowSize;
+			preTime = orders[orderId].tid;
 			//printf("orderId = %d, tid = %d, preTime = %.0lf\n", orderId, orders[orderId].tid, preTime);
 			//fflush(stdout);
 			continue;
@@ -753,19 +752,6 @@ void Tshare_Dist_KM(const double timeWindowSize = 30) {
 		preTime += timeWindowSize;
 		//printf("orderId = %d, tid = %d, preTime = %.0lf\n", orderId, orders[orderId-1].tid, preTime);
 		//fflush(stdout);
-	}
-
-	if (!orderIds.empty()) {
-		curTime = preTime;
-		driverIds.clear();
-		for (int driverId=0; driverId<M; ++driverId) {
-			updateIndex(driverId, curTime);
-			// updateDriverPosition(driverId, curTime, true);
-			driverIds.push_back(driverId);
-		}
-		while (!orderIds.empty()) {
-			scheduleAndMatch(driverIds, orderIds, curTime);
-		}
 	}
 
 	for (int driverId=0; driverId<M; ++driverId) {
@@ -787,7 +773,7 @@ void printAns() {
 }
 
 void solve() {
-	Tshare_Dist_KM();
+	Tshare_Dist_KM(windowSize);
 	printAns();
 	deleteAll();
 }
@@ -828,6 +814,8 @@ int main(int argc, char **argv) {
 	else {
 		//freopen("data.out", "w", stdout);
 	}
+	if (argc > 3)
+		sscanf(argv[3], "%d", &windowSize);		
 
 	readNetwork();
 	solve();
