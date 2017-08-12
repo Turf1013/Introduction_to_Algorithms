@@ -9,7 +9,7 @@ using namespace std;
 //#include "monitor.h"
 #include "output.h"
 
-//#define LOCAL_DEBUG
+#define LOCAL_DEBUG
 
 struct worker_t {
 	int gridId;
@@ -354,9 +354,9 @@ void output_neighbour() {
 	
 	int idx = (c[0] >= c[1]) ? 0 : 1;
 	for (u=0; u<workerN+taskN; ++u) {
-		if (neighbour[u][0]==-1 && neighbour[u][1]==-1) continue;
-		printf("%d %d %d\n", u, neighbour[u][idx], neighbour[u][idx^1]);
-		continue;
+		//if (neighbour[u][0]==-1 && neighbour[u][1]==-1) continue;
+//		printf("%d %d %d\n", u, neighbour[u][idx], neighbour[u][idx^1]);
+//		continue;
 		
 		if (u < workerN)
 			printf("%d", u);
