@@ -1,13 +1,15 @@
 /**
-	1. online version
+	1. online version - Largest Utility First
 	2. \author: Trasier
 	3. \date:   2017.9.14
+	4. \compexity: O(nmlogK)
 */
 #include <bits/stdc++.h>
 using namespace std;
 
 #include "input.h"
 #include "output.h"
+#include "global.h"
 
 const int inf = 1<<30;
 int K;

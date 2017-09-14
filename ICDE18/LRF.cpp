@@ -1,13 +1,15 @@
 /**
-	1. online version
+	1. online version - Largest Remain First
 	2. \author: Trasier
 	3. \date:   2017.9.14
+	4. \compexity: O(nmlogK)
 */
 #include <bits/stdc++.h>
 using namespace std;
 
 #include "input.h"
 #include "output.h"
+#include "global.h"
 
 const int inf = 1<<30;
 int K;
@@ -41,22 +43,20 @@ void Schedule() {
 		for (int j=0; j<taskN; ++j) {
 			if (tasks[j].s == 0)
 				continue;
-			double u = calcUtility(tasks[j], worker);
-			double r = min(u, tasks[j].s);
-			rQ.push(make_pair(r, j));
+			rQ.push(make_pair(tasks[j].s, j));
 			if (rQ.size() > K) rQ.pop();
 		}
 		while (!rQ.empty()) {
 			pdi tmp = rQ.top();
 			rQ.pop();
 			int taskId = tmp.second;
-			double r = tmp.first;
-			if (tasks[taskId].s <= r) {
+			double ut = calcUtility(tasks[taskId], workers[i]);
+			if (tasks[taskId].s <= ut) {
 				compTime[taskId] = i;
 				tasks[taskId].s = 0;
 				--leftNum;
 			} else{
-				tasks[taskId].s -= r;
+				tasks[taskId].s -= ut;
 			}
 		}
 	}

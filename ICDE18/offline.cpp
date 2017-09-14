@@ -1,15 +1,15 @@
 /**
-	1. online version
+	1. offline version - Minimum Cost Maximum Flow 
 	2. \author: Trasier
 	3. \date:   2017.9.14
-	4. \complexity: O(nm)
+	4. \complexity: O(n^3 U_max)
 */
 #include <bits/stdc++.h>
 using namespace std;
 
 #include "input.h"
 #include "output.h"
-#include "globa.h"
+#include "global.h"
 
 int Umax;
 int K, t0;
@@ -38,7 +38,7 @@ void FreeMem() {
 }
 
 int main(int argc, char **argv) {
-	string execName("RR");
+	string execName("offline");
 	
 	string srcFileName;
 	if (argc > 1) {

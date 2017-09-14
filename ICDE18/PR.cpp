@@ -1,5 +1,5 @@
 /**
-	1. online version - Round Robin
+	1. online version - Pure Random
 	2. \author: Trasier
 	3. \date:   2017.9.14
 	4. \complexity: O(nm)
@@ -36,27 +36,30 @@ void FreeMem() {
 
 void Schedule() {
 	int leftNum = taskN, cid = 0;
+	int* tid = new int[taskN];
 	
+	for (int j=0; j<taskN; ++j) tid[j] = j;
 	for (int i=0; leftNum>0&&i<workerN; ++i) {
-		for (int j=0; leftNum>0&&j<K; ++j) {
-			while (tasks[cid].s == 0) {
-				if (++cid == taskN) cid =0;
-			}
-			double u = calcUtility(tasks[cid], workers[i]);
-			if (tasks[cid].s <= u) {
-				compTime[cid] = i;
-				tasks[cid].s = 0;
+		shuffle(tid, tid+leftNum);
+		for (int j=min(K,leftNum); j>0; --j) {
+			int taskId = tid[j];
+			double ut = calcUtility(tasks[taskId], workers[i]);
+			if (tasks[taskId] <= ut) {
+				compTime[taskId] = i;
+				tasks[taskId].s = 0;
 				--leftNum;
+				tid[j] = tid[leftNum];
 			} else {
-				tasks[cid].s -= u;
+				tasks[taskId].s -= ut;
 			}
-			if (++cid == taskN) cid = 0;
 		}
 	}
+	
+	delete[] tid;
 }
 
 int main(int argc, char **argv) {
-	string execName("RR");
+	string execName("PR");
 	
 	string srcFileName;
 	if (argc > 1) {

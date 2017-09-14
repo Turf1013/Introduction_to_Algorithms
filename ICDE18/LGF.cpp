@@ -1,8 +1,8 @@
 /**
-	1. online version - Round Robin
+	1. online version - Largest Gain First
 	2. \author: Trasier
 	3. \date:   2017.9.14
-	4. \complexity: O(nm)
+	4. \compexity: O(nmlogK)
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -36,27 +36,36 @@ void FreeMem() {
 
 void Schedule() {
 	int leftNum = taskN, cid = 0;
+	priority_queu<pdi, vector<pdi>, greater<pdi> > rQ;
 	
 	for (int i=0; leftNum>0&&i<workerN; ++i) {
-		for (int j=0; leftNum>0&&j<K; ++j) {
-			while (tasks[cid].s == 0) {
-				if (++cid == taskN) cid =0;
-			}
-			double u = calcUtility(tasks[cid], workers[i]);
-			if (tasks[cid].s <= u) {
-				compTime[cid] = i;
-				tasks[cid].s = 0;
+		worker_t& worker = workers[i];
+		for (int j=0; j<taskN; ++j) {
+			if (tasks[j].s == 0)
+				continue;
+			double u = calcUtility(tasks[j], worker);
+			double r = min(u, tasks[j].s);
+			rQ.push(make_pair(r, j));
+			if (rQ.size() > K) rQ.pop();
+		}
+		while (!rQ.empty()) {
+			pdi tmp = rQ.top();
+			rQ.pop();
+			int taskId = tmp.second;
+			double r = tmp.first;
+			if (tasks[taskId].s <= r) {
+				compTime[taskId] = i;
+				tasks[taskId].s = 0;
 				--leftNum;
-			} else {
-				tasks[cid].s -= u;
+			} else{
+				tasks[taskId].s -= r;
 			}
-			if (++cid == taskN) cid = 0;
 		}
 	}
 }
 
 int main(int argc, char **argv) {
-	string execName("RR");
+	string execName("LGF");
 	
 	string srcFileName;
 	if (argc > 1) {
