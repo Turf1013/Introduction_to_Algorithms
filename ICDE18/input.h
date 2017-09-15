@@ -22,13 +22,13 @@ struct location_t {
 struct task_t {
 	int id;
 	location_t loc;
-	double arr[DEVC];
+	double arr[DVEC];
 	double s;
 	
 	istream& operator>>(istream& fin, task_t& t) {
-		fin >> loc.x >> loc.y;
-		for (int i=0; i<DEVC; ++i) {
-			fin >> arr[i];
+		fin >> t.loc.x >> t.loc.y;
+		for (int i=0; i<DVEC; ++i) {
+			fin >> t.arr[i];
 		}
 	}
 };
@@ -36,11 +36,11 @@ struct task_t {
 struct worker_t {
 	int id;
 	location_t loc;
-	double arr[DEVC];
+	double arr[DVEC];
 	
 	istream& operator>>(istream& fin, worker_t& w) {
 		fin >> loc.x >> loc.y;
-		for (int i=0; i<DEVC; ++i) {
+		for (int i=0; i<DVEC; ++i) {
 			fin >> arr[i];
 		}
 	}
