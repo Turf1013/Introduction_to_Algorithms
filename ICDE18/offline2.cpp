@@ -41,7 +41,7 @@ void FreeMem() {
 }
 
 int main(int argc, char **argv) {
-	string execName("offline");
+	string execName("offline2");
 	
 	string srcFileName;
 	if (argc > 1) {
@@ -220,50 +220,85 @@ pair<double,int> solve_Graph(int& flow, double& cost) {
 }
 
 void make_Assign(int& leftNum, int rid) {
+	double ut;
+	int workerId, taskId;
 	int uN = min(t0, workerN-t0*rid), vN = leftNum;
+	priority_queue<pair<double,pii>, vector<pair<double,pii> >, greater<pair<double,pii> > > Q;
 	
 	for (int u=0,j=t0*rid; u<uN; ++u,++j) {
 		for (int k=head[u]; k!=-1; k=E[k].f) {
 			if (k & 1) continue;
 			if (E[k].f) continue;
 			int v = E[k].v - uN;
-			double ut = calcUtility(tasks[v], workers[j]);
-			if (tasks[v].s <= ut) {
-				tasks[v].s = 0;
-				compTime[v] = j;
-			} else {
-				tasks[v].s -= ut;
-			}
+			ut = calcUtility(tasks[v], workers[j]);
+			Q.push(make_pair(ut, make_pair(v, j)));
+			// if (tasks[v].s <= ut) {
+				// tasks[v].s = 0;
+				// compTime[v] = j;
+			// } else {
+				// tasks[v].s -= ut;
+			// }
 		}
 	}
 	
-	priority_queue<pdi, vector<pdi>, greater<pdi> > Q;
+	set<pdi,greater<pdi> > *st = new set<pdi,greater<pdi> >[uN];
+	int* cnt = new int[uN];
+	for (int i=0; i<uN; ++i) {
+		st[i] = set<pdi,greater<pdi> >();
+		cnt[i] = K;
+	}
 	
-	for (int stk=head[st]; stk!=-1; stk=E[stk].nxt) {
-		if (stk & 1) continue;
-		int u = E[stk].v;
-		if (E[stk].f == 0) continue;
-		int szQ = E[stk].f;
-		for (int k=head[u]; k!=-1; k=E[k].f) {
-			if (k & 1) continue;
-			if (E[k].f == 0) continue;
-			int v = E[k].v - uN;
-			double ut = calcUtility(tasks[v], workers[u+t0*rid]);
-			// ut = min(ut, tasks[v].s);
-			Q.push(make_pair(ut, v));
-			if (Q.size() > szQ) Q.pop();
+	for (int u=0,j=t0*rid; u<uN; ++u,++j) {
+		for (int i=0; i<taskN; ++i) {
+			if (tasks[i].s == 0)
+				continue;
+			double ut = calcUtility(tasks[i], workers[j]);
+			st[u].insert(make_pair(ut, i));
 		}
+	}
+	
+	while (!Q.empty()) {
+		pair<double,pair<int,int> > p = Q.top();
+		Q.pop();
+		ut = p.first;
+		taskId = p.second.first, workerId = p.second.second - rid*t0;
+		if (st[workerId].begin()->first <= ut) {
+			st[workerId].erase(make_pair(ut, taskId));
+		} else {
+			ut = st[workerId].begin()->first;
+			taskId = st[workerId].begin()->second;
+			st[workerId].erase(st[workerId].begin());
+		}
+		while (!st[workerId].empty() && tasks[taskId].s==0) {
+			ut = st[workerId].begin()->first;
+			taskId = st[workerId].begin()->second;
+			st[workerId].erase(st[workerId].begin());
+		}
+		if (tasks[taskId].s == 0) continue;
 		
-		while (!Q.empty()) {
-			pdi p = Q.top();
-			Q.pop();
-			int v = p.second;
-			double ut = p.first;
-			if (tasks[v].s <= ut) {
-				tasks[v].s = 0;
-				compTime[v] = u + t0*rid;
-			} else {
-				tasks[v].s -= ut;
+		if (tasks[taskId].s <= ut) {
+			tasks[taskId].s = 0;
+			compTime[taskId] = workerId + t0*rid;
+		} else {
+			tasks[taskId].s -= ut;
+		}
+		--cnt[workerId];
+	}
+	
+	for (int u=0,j=t0*rid; u<uN; ++u,++j) {
+		workerId = u;
+		while (cnt[workerId]>0 && !st[workerId].empty()) {
+			ut = st[workerId].begin()->first;
+			taskId = st[workerId].begin()->second;
+			st[workerId].erase(st[workerId].begin());
+			if (tasks[taskId].s != 0) {			
+				if (tasks[taskId].s <= ut) {
+					tasks[taskId].s = 0;
+					compTime[taskId] = workerId + t0*rid;
+				} else {
+					tasks[taskId].s -= ut;
+				}
+				--cnt[workerId];
 			}
 		}
 	}

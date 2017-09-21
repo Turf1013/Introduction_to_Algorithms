@@ -8,6 +8,7 @@
 
 #include "input.h"
 
+typedef pair<int,int> pii;
 typedef pair<double,int> pdi;
 typedef pair<double,double> pdd;
 

@@ -25,11 +25,12 @@ struct task_t {
 	double arr[DVEC];
 	double s;
 	
-	istream& operator>>(istream& fin, task_t& t) {
+	friend istream& operator>>(istream& fin, task_t& t) {
 		fin >> t.loc.x >> t.loc.y;
 		for (int i=0; i<DVEC; ++i) {
 			fin >> t.arr[i];
 		}
+		return fin;
 	}
 };
 
@@ -38,32 +39,33 @@ struct worker_t {
 	location_t loc;
 	double arr[DVEC];
 	
-	istream& operator>>(istream& fin, worker_t& w) {
-		fin >> loc.x >> loc.y;
+	friend istream& operator>>(istream& fin, worker_t& w) {
+		fin >> w.loc.x >> w.loc.y;
 		for (int i=0; i<DVEC; ++i) {
-			fin >> arr[i];
+			fin >> w.arr[i];
 		}
+		return fin;
 	}
 };
 
-void readInput_Task(istream& fin, int& taskN, task_t*& tasks);
-void readInput_Task(const string& fileName, int& taskN, task_t*& tasks);
+void readInput_Tasks(istream& fin, int& taskN, task_t*& tasks);
+void readInput_Tasks(const string& fileName, int& taskN, task_t*& tasks);
 void readInput_Workers(istream& fin, int& workerN, worker_t*& workers);
 void readInput_Workers(const string& fileName, int& workerN, worker_t*& workers);
-void readInput_Worker(ifstream& fin, worker_t& worker, int id = 0);
+void readInput_Worker(istream& fin, worker_t& worker, int id = 0);
 
-void readInput_Task(const string& fileName, int& taskN, task_t*& tasks) {
+void readInput_Tasks(const string& fileName, int& taskN, task_t*& tasks) {
 	ifstream fin(fileName.c_str(), ios::in);
 	if (!fin.is_open()) {
 		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
 		exit(1);
 	}
 	
-	readInput_Task(fin, taskN, tasks);
+	readInput_Tasks(fin, taskN, tasks);
 	fin.close();
 }
 
-void readInput_Task(ifstream& fin, int& taskN, task_t*& tasks) {
+void readInput_Tasks(ifstream& fin, int& taskN, task_t*& tasks) {
 	if (taskN <= 0) {
 		fin >> taskN;
 		tasks = new task_t[taskN];
@@ -74,7 +76,7 @@ void readInput_Task(ifstream& fin, int& taskN, task_t*& tasks) {
 	}
 }
 
-void readInput_Workers(const string& fileName, int& workerN, workers*& workers) {
+void readInput_Workers(const string& fileName, int& workerN, worker_t*& workers) {
 	ifstream fin(fileName.c_str(), ios::in);
 	if (!fin.is_open()) {
 		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
@@ -85,7 +87,7 @@ void readInput_Workers(const string& fileName, int& workerN, workers*& workers) 
 	fin.close();
 }
 
-void readInput_Workers(ifstream& fin, int& workerN, workers*& workers) {
+void readInput_Workers(istream& fin, int& workerN, worker_t*& workers) {
 	if (workerN <= 0) {
 		fin >> workerN;
 		workers = new worker_t[workerN];
@@ -96,7 +98,7 @@ void readInput_Workers(ifstream& fin, int& workerN, workers*& workers) {
 	}
 }
 
-void readInput_Worker(ifstream& fin, worker_t& worker, int id = 0) {
+void readInput_Worker(istream& fin, worker_t& worker, int id/* = 0*/) {
 	worker.id = id;
 	fin >> worker;
 }

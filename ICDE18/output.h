@@ -25,13 +25,13 @@ int calcResult(int taskN, int* compTimes) {
 	return ret;
 }
 
-void dumpResult(const string& execName, int ans, double usedTime=-1.0, double usedMemory=-1.0) {
+void dumpResult(const string& execName, int ans, double usedTime/*=-1.0*/, double usedMemory/*=-1.0*/) {
 	printf("%s %d", execName.c_str(), ans);
 	if (usedTime >= 0)
 		printf(" %.2lf", usedTime);
 	if (usedMemory >= 0)
 		printf(" %.2lf", usedMemory);
-	putchar('\n')
+	putchar('\n');
 }
 
 #endif

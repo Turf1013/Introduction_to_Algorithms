@@ -20,10 +20,10 @@ int *visit;
 int taskN;
 int workerN;
 
-void readInput(ifstream& fin) {
+void readInput(istream& fin) {
 	fin >> K;
-	readInput_tasks(fin, taskN, tasks);
-	readInput_workers(fin, workerN, workers);
+	readInput_Tasks(fin, taskN, tasks);
+	readInput_Workers(fin, workerN, workers);
 	compTime = new int[taskN];
 	visit = new int[taskN];
 	
@@ -52,7 +52,7 @@ pdd calcValue2() {
 		sum += tasks[i].s;
 	}
 	
-	return (c==0) ? mp(0.,0.) : mp(sum/c, mx); 
+	return (c==0) ? make_pair(0.,0.) : make_pair(sum/c, mx);
 }
 
 double calcValue() {
@@ -71,7 +71,7 @@ double calcValue() {
 }
 
 double tryRemain(worker_t& worker) {
-	priority_queu<pdi, vector<pdi>, greater<pdi> > rQ;
+	priority_queue<pdi, vector<pdi>, greater<pdi> > rQ;
 	double sum = 0.0, mx = -inf;
 	int c = 0;
 	
@@ -108,7 +108,7 @@ double tryRemain(worker_t& worker) {
 }
 
 double tryMax(worker_t& worker) {
-	priority_queu<pdi, vector<pdi>, greater<pdi> > sQ;
+	priority_queue<pdi, vector<pdi>, greater<pdi> > sQ;
 	int c = 0;
 	double sum = 0., mx = 0.;
 	
@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
 	} else {
 		ifstream fin(srcFileName.c_str(), ios::in);
 		if (!fin.is_open()) {
-			fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
+			fprintf(stderr, "FILE %s is invalid.", srcFileName.c_str());
 			exit(1);
 		}	
 		

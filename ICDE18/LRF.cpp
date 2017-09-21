@@ -19,10 +19,10 @@ worker_t* workers;
 int taskN;
 int workerN;
 
-void readInput(ifstream& fin) {
+void readInput(istream& fin) {
 	fin >> K;
-	readInput_tasks(fin, taskN, tasks);
-	readInput_workers(fin, workerN, workers);
+	readInput_Tasks(fin, taskN, tasks);
+	readInput_Workers(fin, workerN, workers);
 	compTime = new int[taskN];
 	for (int i=0; i<taskN; ++i)
 		compTime[i] = inf;
@@ -36,7 +36,7 @@ void FreeMem() {
 
 void Schedule() {
 	int leftNum = taskN, cid = 0;
-	priority_queu<pdi, vector<pdi>, greater<pdi> > rQ;
+	priority_queue<pdi, vector<pdi>, greater<pdi> > rQ;
 	
 	for (int i=0; leftNum>0&&i<workerN; ++i) {
 		worker_t& worker = workers[i];
@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
 	} else {
 		ifstream fin(srcFileName.c_str(), ios::in);
 		if (!fin.is_open()) {
-			fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
+			fprintf(stderr, "FILE %s is invalid.", srcFileName.c_str());
 			exit(1);
 		}	
 		
