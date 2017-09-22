@@ -20,11 +20,16 @@ struct location_t {
 };
 
 struct task_t {
+	int id;
 	location_t loc;
+	double arr[DVEC];
 	double s;
 	
 	friend istream& operator>>(istream& fin, task_t& t) {
 		fin >> t.loc.x >> t.loc.y;
+		for (int i=0; i<DVEC; ++i) {
+			fin >> t.arr[i];
+		}
 		return fin;
 	}
 };
@@ -32,10 +37,13 @@ struct task_t {
 struct worker_t {
 	int id;
 	location_t loc;
-	double p;
+	double arr[DVEC];
 	
 	friend istream& operator>>(istream& fin, worker_t& w) {
-		fin >> w.loc.x >> w.loc.y >> w.p;
+		fin >> w.loc.x >> w.loc.y;
+		for (int i=0; i<DVEC; ++i) {
+			fin >> w.arr[i];
+		}
 		return fin;
 	}
 };
@@ -64,7 +72,7 @@ void readInput_Tasks(ifstream& fin, int& taskN, task_t*& tasks) {
 	}
 	for (int i=0; i<taskN; ++i) {
 		fin >> tasks[i];
-		tasks[i].s = 0;
+		tasks[i].s = SCORE;
 	}
 }
 

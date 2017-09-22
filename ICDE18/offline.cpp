@@ -10,34 +10,38 @@ using namespace std;
 #include "input.h"
 #include "output.h"
 #include "global.h"
+#define LOCAL_DEBUG
 
 const int inf = 1<<29;
-int Umax;
 int K, t0;
 int* compTime;
 task_t* tasks;
 worker_t* workers;
+int *vlabels;
 int taskN;
 int workerN;
-double delta;
+double delta, epsilon;
 
 void Schedule();
 void del_Graph();
 pair<double,int> solve_Graph();
 
 void readInput(istream& fin) {
-	fin >> K >> delta >> Umax;
+	fin >> K >> epsilon;
+	delta = calcDelta(epsilon);
 	readInput_Tasks(fin, taskN, tasks);
 	readInput_Workers(fin, workerN, workers);
 	compTime = new int[taskN];
 	for (int i=0; i<taskN; ++i)
 		compTime[i] = inf;
+	vlabels = new int[taskN];
 }
 
 void FreeMem() {
 	delete[] compTime;
 	delete[] tasks;
 	delete[] workers;
+	delete[] vlabels;
 }
 
 int main(int argc, char **argv) {
@@ -89,16 +93,16 @@ edge_t *E;
 bool *visit;
 double *dis;
 int *pre, *ID;
+double m;
 
-void init_Graph() {
+void init_Graph(int bid, int eid) {
 	int uN = 0, vN = 0;
 	
-	t0 = (int)ceil(taskN * floor(delta*1.0/Umax) / K);
-	uN = t0;
+	uN = eid - bid;
 	for (int j=0; j<taskN; ++j) {
-		if (tasks[j].s == 0)
+		if (tasks[j].s >= st)
 			continue;
-		++vN;
+		vlabels[vN++] = j;
 	}
 	
 	edgeN = 2 * (uN*vN + uN + vN);
@@ -112,6 +116,8 @@ void init_Graph() {
 	dis = new double[vertexN];
 	pre = new int[vertexN];
 	ID = new int[vertexN];
+
+	l = 0;
 }
 
 void del_Graph() {
@@ -137,23 +143,22 @@ void add_Edge(int u, int v, int f, int w) {
 	head[v] = l++;
 }
 
-void build_Graph(int leftNum, int rid) {
-	int uN = min(t0, workerN-t0*rid), vN = leftNum;
+void build_Graph(int leftNum, int bid, int eid) {
+	int uN = eid - bid, vN = leftNum;
 	l = 0;
 	
-	for (int i=t0*rid,j=0; j<uN; ++j,++i) {
+	for (int j=0; j<uN; ++j) {
 		add_Edge(st, j, K, 0);
 	}
-	for (int i=0; i<taskN; ++i) {
-		if (tasks[i].s == 0)
-			continue;
-		int c = (int)ceil(tasks[i].s / Umax);
+	for (int i=0; i<vN; ++i) {
+		int taskId = vlabels[i];
+		int c = (int)ceil(delta - tasks[taskId].s);
 		add_Edge(uN+i, ed, c, 0);
 		
-		for (int j=0,k=t0*rid; j<uN; ++j,++k) {
-			double u = calcUtility(tasks[i], workers[k]);
-			double r = min(u, tasks[i].s);
-			add_Edge(j, uN+i, 1, -r);
+		for (int j=0; j<uN; ++j) {
+			double ut = calcUtility(tasks[taskId], workers[bid+j]);
+			ut = min(ut, delta-tasks[taskId].s);
+			add_Edge(j, uN+i, 1, -ut);
 		}
 	}
 }
@@ -219,20 +224,19 @@ pair<double,int> solve_Graph(int& flow, double& cost) {
     return make_pair(cost, flow);
 }
 
-void make_Assign(int& leftNum, int rid) {
-	int uN = min(t0, workerN-t0*rid), vN = leftNum;
+void make_Assign(int& leftNum, int bid, int eid) {
+	int uN = eid - bid, vN = leftNum;
 	
-	for (int u=0,j=t0*rid; u<uN; ++u,++j) {
+	for (int u=0; u<uN; ++u) {
+		int workerId = bid + u;
 		for (int k=head[u]; k!=-1; k=E[k].f) {
 			if (k & 1) continue;
 			if (E[k].f) continue;
-			int v = E[k].v - uN;
-			double ut = calcUtility(tasks[v], workers[j]);
-			if (tasks[v].s <= ut) {
-				tasks[v].s = 0;
-				compTime[v] = j;
-			} else {
-				tasks[v].s -= ut;
+			int taskId = vlabels[E[k].v - uN];
+			double ut = calcUtility(tasks[taskId], workers[workerId]);
+			tasks[taskId].s += ut;
+			if (tasks[taskId].s >= ut) {
+				compTime[taskId] = workerId;
 			}
 		}
 	}
@@ -241,52 +245,59 @@ void make_Assign(int& leftNum, int rid) {
 	
 	for (int stk=head[st]; stk!=-1; stk=E[stk].nxt) {
 		if (stk & 1) continue;
-		int u = E[stk].v;
+		int u = E[stk].v, workerId = bid + u;
 		if (E[stk].f == 0) continue;
 		int szQ = E[stk].f;
+#ifdef LOCAL_DEBUG
+		assert(szQ <= K && szQ >= 0);
+#endif
 		for (int k=head[u]; k!=-1; k=E[k].f) {
 			if (k & 1) continue;
 			if (E[k].f == 0) continue;
-			int v = E[k].v - uN;
-			double ut = calcUtility(tasks[v], workers[u+t0*rid]);
+			int taskId = vlabels[E[k].v - uN];
+			if (tasks[taskId].s >= delta)
+				continue;
+			double ut = calcUtility(tasks[taskId], workers[workerId]);
 			// ut = min(ut, tasks[v].s);
-			Q.push(make_pair(ut, v));
+			Q.push(make_pair(ut, taskId));
 			if (Q.size() > szQ) Q.pop();
 		}
 		
 		while (!Q.empty()) {
 			pdi p = Q.top();
 			Q.pop();
-			int v = p.second;
+			int taskId = p.second;
 			double ut = p.first;
-			if (tasks[v].s <= ut) {
-				tasks[v].s = 0;
-				compTime[v] = u + t0*rid;
-			} else {
-				tasks[v].s -= ut;
+			tasks[taskId].s += ut;
+			if (tasks[taskId].s >= delta) {
+				compTime[taskId] = workerId;
 			}
 		}
 	}
 	
 	leftNum = 0;
 	for (int j=0; j<taskN; ++j) {
-		if (tasks[j].s == 0)
+		if (tasks[j].s >= delta)
 			continue;
 		++leftNum;
 	}
 }
 
 void Schedule() {
+	double m = taskN * ceil(delta) / K;
 	int leftNum = taskN, flow;
 	double cost;
-	
-	init_Graph();
-	
-	for (int rid=0; rid*t0<workerN; ++rid) {
-		build_Graph(leftNum, rid);
+
+	for (int rid=0,bid=0,eid; leftNum>0&&bid<workerN; ++rid,bid=eid) {
+		eid = bid + (rid==0 ? floor(2*m) : floor(m));
+		eid = min(workerN, eid);
+
+		init_Graph(bid, eid);
+
+		build_Graph(leftNum, bid, eid);
 		solve_Graph(flow, cost);
-		make_Assign(leftNum, rid);
+		make_Assign(leftNum, bid, eid);
+
+		del_Graph();
 	}
-	
-	del_Graph();
 }

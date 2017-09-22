@@ -18,9 +18,11 @@ task_t* tasks;
 worker_t* workers;
 int taskN;
 int workerN;
+double delta, epsilon;
 
 void readInput(istream& fin) {
-	fin >> K;
+	fin >> K >> epsilon;
+	delta = calcDelta(epsilon);
 	readInput_Tasks(fin, taskN, tasks);
 	readInput_Workers(fin, workerN, workers);
 	compTime = new int[taskN];
@@ -41,7 +43,7 @@ void Schedule() {
 	for (int i=0; leftNum>0&&i<workerN; ++i) {
 		worker_t& worker = workers[i];
 		for (int j=0; j<taskN; ++j) {
-			if (tasks[j].s == 0)
+			if (tasks[j].s >= delta)
 				continue;
 			double u = calcUtility(tasks[j], worker);
 			uQ.push(make_pair(u, j));
@@ -52,12 +54,10 @@ void Schedule() {
 			uQ.pop();
 			int taskId = tmp.second;
 			double u = tmp.first;
-			if (tasks[taskId].s <= u) {
+			tasks[taskId].s += u;
+			if (tasks[taskId].s >= delta) {
 				compTime[taskId] = i;
-				tasks[taskId].s = 0;
 				--leftNum;
-			} else{
-				tasks[taskId].s -= u;
 			}
 		}
 	}
