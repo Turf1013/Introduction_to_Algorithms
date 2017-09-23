@@ -7,7 +7,7 @@ LIBS = -lrt
 CFLAGS = -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: RR LRF OLRF offline PR
+all: LRF OLRF offline PR LAF LAFM AAM AAMM MCF MCFM RR RRM
 RR: monitor.h input.h output.h global.h RR.cpp
 	$(CXX) $(CFLAGS) -o RR RR.cpp $(LIBS)
 
@@ -18,10 +18,13 @@ PR: monitor.h input.h output.h global.h PR.cpp
 	$(CXX) $(CFLAGS) -o PR PR.cpp $(LIBS)
 
 PRM: monitor.h input.h output.h global.h PR.cpp
-	$(CXX) $(CFLAGS) -o PRM PR.cpp $(LIBS) -D WATCH_MEM	
-	
+	$(CXX) $(CFLAGS) -o PRM PR.cpp $(LIBS) -D WATCH_MEM
+
 LRF: monitor.h input.h output.h global.h LRF.cpp
 	$(CXX) $(CFLAGS) -o LRF LRF.cpp $(LIBS)
+
+LGF: monitor.h input.h output.h global.h LGF.cpp
+	$(CXX) $(CFLAGS) -o LGF LGF.cpp $(LIBS)
 
 LRFM: monitor.h input.h output.h global.h LRF.cpp
 	$(CXX) $(CFLAGS) -o LRFM LRF.cpp $(LIBS) -D WATCH_MEM
@@ -30,16 +33,35 @@ OLRF: monitor.h input.h output.h global.h OLRF.cpp
 	$(CXX) $(CFLAGS) -o OLRF OLRF.cpp $(LIBS)
 
 OLRFM: monitor.h input.h output.h global.h OLRF.cpp
-	$(CXX) $(CFLAGS) -o OLRFM OLRF.cpp $(LIBS) -D WATCH_MEM	
-	
+	$(CXX) $(CFLAGS) -o OLRFM OLRF.cpp $(LIBS) -D WATCH_MEM
+
 offline: monitor.h input.h output.h global.h offline.cpp
 	$(CXX) $(CFLAGS) -o offline offline.cpp $(LIBS)
 
 offlineM: monitor.h input.h output.h global.h offline.cpp
-	$(CXX) $(CFLAGS) -o offlineM offline.cpp $(LIBS) -D WATCH_MEM 	
+	$(CXX) $(CFLAGS) -o offlineM offline.cpp $(LIBS) -D WATCH_MEM
 
-.PHONY: clean 
+MCF: monitor.h input.h output.h global.h offline.cpp
+	$(CXX) $(CFLAGS) -o MCF offline.cpp $(LIBS)
+
+MCFM: monitor.h input.h output.h global.h offline.cpp
+	$(CXX) $(CFLAGS) -o MCFM offline.cpp $(LIBS) -D WATCH_MEM
+
+LAF: monitor.h input.h output.h global.h LUF.cpp
+	$(CXX) $(CFLAGS) -o LAF LUF.cpp $(LIBS)
+
+LAFM: monitor.h input.h output.h global.h LUF.cpp
+	$(CXX) $(CFLAGS) -o LAFM LUF.cpp $(LIBS) -D WATCH_MEM
+
+AAM: monitor.h input.h output.h global.h OLGF.cpp
+	$(CXX) $(CFLAGS) -o AAM OLGF.cpp $(LIBS)
+
+AAMM: monitor.h input.h output.h global.h OLGF.cpp
+	$(CXX) $(CFLAGS) -o AAMM OLGF.cpp $(LIBS) -D WATCH_MEM
+
+.PHONY: clean
 clean:
-		-@rm *.o *.gcno *~ 2> /dev/null || true	
-		-@rm RR LRF OLRF offline PR 2> /dev/null || true	
-		-@rm RRM LRFM OLRFM offlineM PRM 2> /dev/null || true	
+		-@rm *.o *.gcno *~ 2> /dev/null || true
+		-@rm RR LRF OLRF offline PR 2> /dev/null || true
+		-@rm RRM LRFM OLRFM offlineM PRM 2> /dev/null || true
+		-@rm LGF AAM AAMM MCF MCFM LAF LAFM 2> /dev/null || true

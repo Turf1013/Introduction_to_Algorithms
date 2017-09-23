@@ -1,5 +1,5 @@
 /**
-	1. offline version - Minimum Cost Maximum Flow 
+	1. offline version - Minimum Cost Maximum Flow
 	2. \author: Trasier
 	3. \date:   2017.9.14
 	4. \complexity: O(n^3 U_max)
@@ -46,38 +46,54 @@ void FreeMem() {
 
 int main(int argc, char **argv) {
 	string execName("offline");
-	
+
 	string srcFileName;
 	if (argc > 1) {
 		srcFileName = string(argv[1]);
 	}
 	if (argc > 2)
 		freopen(argv[2], "w", stdout);
-	
+
 	// step1: read Input
 	if (srcFileName.empty()) {
 		readInput(cin);
 	} else {
 		ifstream fin(srcFileName.c_str(), ios::in);
 		if (!fin.is_open()) {
-			fprintf(stderr, "FILE %s is invalid.", srcFileName.c_str());
+			fprintf(stderr, "FILE %s is invalid.\n", srcFileName.c_str());
 			exit(1);
-		}	
-		
+		}
+
 		readInput(fin);
 		fin.close();
 	}
-	
+
+	#ifdef LOCAL_DEBUG
+	fprintf(stderr, "finish reading input.\n");
+	#endif
+
 	// step2: online execute
 	Schedule();
-	
+
+	#ifdef LOCAL_DEBUG
+	fprintf(stderr, "finish scheduling.\n");
+	#endif
+
 	// step3: output result
 	int ans = calcResult(taskN, compTime);
 	dumpResult(execName, ans);
-	
+
+	#ifdef LOCAL_DEBUG
+	fprintf(stderr, "finish dumping.\n");
+	#endif
+
 	// step4: free memory
 	FreeMem();
-	
+
+	#ifdef LOCAL_DEBUG
+	fprintf(stderr, "finish free memory.\n");
+	#endif
+
 	return 0;
 }
 
@@ -97,19 +113,19 @@ double m;
 
 void init_Graph(int bid, int eid) {
 	int uN = 0, vN = 0;
-	
+
 	uN = eid - bid;
 	for (int j=0; j<taskN; ++j) {
 		if (tasks[j].s >= st)
 			continue;
 		vlabels[vN++] = j;
 	}
-	
+
 	edgeN = 2 * (uN*vN + uN + vN);
 	vertexN = uN + vN + 2;
 	st = vertexN - 2;
 	ed = vertexN - 1;
-	
+
 	head = new int[vertexN];
 	E = new edge_t[edgeN];
 	visit = new bool[vertexN];
@@ -135,7 +151,7 @@ void add_Edge(int u, int v, int f, int w) {
 	E[l].w = w;
 	E[l].nxt = head[u];
 	head[u] = l++;
-	
+
 	E[l].v = u;
 	E[l].f = 0;
 	E[l].w = -w;
@@ -146,7 +162,7 @@ void add_Edge(int u, int v, int f, int w) {
 void build_Graph(int leftNum, int bid, int eid) {
 	int uN = eid - bid, vN = leftNum;
 	l = 0;
-	
+
 	for (int j=0; j<uN; ++j) {
 		add_Edge(st, j, K, 0);
 	}
@@ -154,7 +170,7 @@ void build_Graph(int leftNum, int bid, int eid) {
 		int taskId = vlabels[i];
 		int c = (int)ceil(delta - tasks[taskId].s);
 		add_Edge(uN+i, ed, c, 0);
-		
+
 		for (int j=0; j<uN; ++j) {
 			double ut = calcUtility(tasks[taskId], workers[bid+j]);
 			ut = min(ut, delta-tasks[taskId].s);
@@ -166,14 +182,14 @@ void build_Graph(int leftNum, int bid, int eid) {
 bool bfs() {
     queue<int> Q;
     int u, v, k;
-    
+
 	for (int i=0; i<vertexN; ++i) {
 		dis[i] = inf;
 		visit[i] = false;
 	}
 	dis[st] = 0;
 	Q.push(st);
-    
+
     while (!Q.empty()) {
         u = Q.front();
         Q.pop();
@@ -191,42 +207,42 @@ bool bfs() {
             }
         }
     }
-    
+
     return dis[ed] >= inf;
 }
 
 pair<double,int> solve_Graph(int& flow, double& cost) {
 	int tmp;
     int u, v, k;
-    
+
 	flow = 0;
 	cost = 0.0;
     while (true) {
         if (bfs())
             break;
-        
+
         tmp = inf;
         for (v=ed, u=pre[v]; v!=st; v=u, u=pre[v]) {
             k = ID[v];
             tmp = min(E[k].f, tmp);
         }
-        
+
         for (v=ed, u=pre[v]; v!=st; v=u, u=pre[v]) {
             k = ID[v];
             E[k].f -= tmp;
             E[k^1].f += tmp;
         }
-        
+
 		flow += tmp;
         cost += dis[ed] * tmp;
     }
-    
+
     return make_pair(cost, flow);
 }
 
 void make_Assign(int& leftNum, int bid, int eid) {
 	int uN = eid - bid, vN = leftNum;
-	
+
 	for (int u=0; u<uN; ++u) {
 		int workerId = bid + u;
 		for (int k=head[u]; k!=-1; k=E[k].f) {
@@ -240,9 +256,9 @@ void make_Assign(int& leftNum, int bid, int eid) {
 			}
 		}
 	}
-	
+
 	priority_queue<pdi, vector<pdi>, greater<pdi> > Q;
-	
+
 	for (int stk=head[st]; stk!=-1; stk=E[stk].nxt) {
 		if (stk & 1) continue;
 		int u = E[stk].v, workerId = bid + u;
@@ -262,7 +278,7 @@ void make_Assign(int& leftNum, int bid, int eid) {
 			Q.push(make_pair(ut, taskId));
 			if (Q.size() > szQ) Q.pop();
 		}
-		
+
 		while (!Q.empty()) {
 			pdi p = Q.top();
 			Q.pop();
@@ -274,7 +290,7 @@ void make_Assign(int& leftNum, int bid, int eid) {
 			}
 		}
 	}
-	
+
 	leftNum = 0;
 	for (int j=0; j<taskN; ++j) {
 		if (tasks[j].s >= delta)

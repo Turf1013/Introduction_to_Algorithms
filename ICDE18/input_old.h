@@ -3,8 +3,8 @@
 	2. \author: Trasier
 	3. \date:   2017.9.14
 */
-#ifndef INPUT_H
-#define INPUT_H
+#ifndef INPUT_OLD_H
+#define INPUT_OLD_H
 
 #include <bits/stdc++.h>
 using namespace std;
@@ -14,7 +14,7 @@ using namespace std;
 
 struct location_t {
 	double x, y;
-	
+
 	location_t(double x=0., double y=0.):
 		x(x), y(y) {}
 };
@@ -24,7 +24,7 @@ struct task_t {
 	location_t loc;
 	double arr[DVEC];
 	double s;
-	
+
 	friend istream& operator>>(istream& fin, task_t& t) {
 		fin >> t.loc.x >> t.loc.y;
 		for (int i=0; i<DVEC; ++i) {
@@ -38,7 +38,7 @@ struct worker_t {
 	int id;
 	location_t loc;
 	double arr[DVEC];
-	
+
 	friend istream& operator>>(istream& fin, worker_t& w) {
 		fin >> w.loc.x >> w.loc.y;
 		for (int i=0; i<DVEC; ++i) {
@@ -60,7 +60,7 @@ void readInput_Tasks(const string& fileName, int& taskN, task_t*& tasks) {
 		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
 		exit(1);
 	}
-	
+
 	readInput_Tasks(fin, taskN, tasks);
 	fin.close();
 }
@@ -82,7 +82,7 @@ void readInput_Workers(const string& fileName, int& workerN, worker_t*& workers)
 		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
 		exit(1);
 	}
-	
+
 	readInput_Workers(fin, workerN, workers);
 	fin.close();
 }

@@ -11,6 +11,8 @@ using namespace std;
 #include "output.h"
 #include "global.h"
 
+#define LOCAL_DEBUG
+
 const int inf = 1<<30;
 int K;
 int* compTime;
@@ -22,6 +24,8 @@ double delta, epsilon;
 
 void readInput(istream& fin) {
 	fin >> K >> epsilon;
+	delta = calcDelta(epsilon);
+	taskN = workerN = 0;
 	readInput_Tasks(fin, taskN, tasks);
 	readInput_Workers(fin, workerN, workers);
 	compTime = new int[taskN];
@@ -37,7 +41,7 @@ void FreeMem() {
 
 void Schedule() {
 	int leftNum = taskN, cid = 0;
-	
+
 	for (int i=0; leftNum>0&&i<workerN; ++i) {
 		for (int j=0; leftNum>0&&j<K; ++j) {
 			while (tasks[cid].s >= delta) {
@@ -56,37 +60,53 @@ void Schedule() {
 
 int main(int argc, char **argv) {
 	string execName("RR");
-	
+
 	string srcFileName;
 	if (argc > 1) {
 		srcFileName = string(argv[1]);
 	}
 	if (argc > 2)
 		freopen(argv[2], "w", stdout);
-	
+
 	// step1: read Input
 	if (srcFileName.empty()) {
 		readInput(cin);
 	} else {
 		ifstream fin(srcFileName.c_str(), ios::in);
 		if (!fin.is_open()) {
-			fprintf(stderr, "FILE %s is invalid.", srcFileName.c_str());
+			fprintf(stderr, "FILE %s is invalid.\n", srcFileName.c_str());
 			exit(1);
-		}	
-		
+		}
+
 		readInput(fin);
 		fin.close();
 	}
-	
+
+	#ifdef LOCAL_DEBUG
+	fprintf(stderr, "finish reading input.\n");
+	#endif
+
 	// step2: online execute
 	Schedule();
-	
+
+	#ifdef LOCAL_DEBUG
+	fprintf(stderr, "finish scheduling.\n");
+	#endif
+
 	// step3: output result
 	int ans = calcResult(taskN, compTime);
 	dumpResult(execName, ans);
-	
+
+	#ifdef LOCAL_DEBUG
+	fprintf(stderr, "finish dumping.\n");
+	#endif
+
 	// step4: free memory
 	FreeMem();
-	
+
+	#ifdef LOCAL_DEBUG
+	fprintf(stderr, "finish free memory.\n");
+	#endif
+
 	return 0;
 }
