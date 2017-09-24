@@ -34,8 +34,8 @@ void dumpPredictAcc() {
 			double p = calcPredictAcc(tasks[j], workers[i]);
 			printf("%.3lf ", p);
 		}
+		putchar('\n');
 	}
-	putchar('\n');
 }
 
 void readInput(istream& fin) {
