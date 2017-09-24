@@ -17,8 +17,8 @@ int K, t0;
 int* compTime;
 task_t* tasks;
 worker_t* workers;
-int taskN;
-int workerN;
+int taskN = 0;
+int workerN = 0;
 double delta;
 
 void Schedule();

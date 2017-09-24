@@ -18,8 +18,8 @@ int* compTime;
 task_t* tasks;
 worker_t* workers;
 int *vlabels;
-int taskN;
-int workerN;
+int taskN = 0;
+int workerN = 0;
 double delta, epsilon;
 
 void Schedule();
@@ -98,7 +98,8 @@ int main(int argc, char **argv) {
 }
 
 struct edge_t {
-	int v, f, w;
+	int v, f;
+	double w;
 	int nxt;
 };
 
@@ -116,7 +117,7 @@ void init_Graph(int bid, int eid) {
 
 	uN = eid - bid;
 	for (int j=0; j<taskN; ++j) {
-		if (tasks[j].s >= st)
+		if (tasks[j].s >= delta)
 			continue;
 		vlabels[vN++] = j;
 	}
@@ -134,6 +135,8 @@ void init_Graph(int bid, int eid) {
 	ID = new int[vertexN];
 
 	l = 0;
+	for (int i=0; i<vertexN; ++i)
+		head[i] = -1;
 }
 
 void del_Graph() {
@@ -145,7 +148,7 @@ void del_Graph() {
 	delete[] ID;
 }
 
-void add_Edge(int u, int v, int f, int w) {
+void add_Edge(int u, int v, int f, double w) {
 	E[l].v = v;
 	E[l].f = f;
 	E[l].w = w;
@@ -161,7 +164,6 @@ void add_Edge(int u, int v, int f, int w) {
 
 void build_Graph(int leftNum, int bid, int eid) {
 	int uN = eid - bid, vN = leftNum;
-	l = 0;
 
 	for (int j=0; j<uN; ++j) {
 		add_Edge(st, j, K, 0);
@@ -187,6 +189,7 @@ bool bfs() {
 		dis[i] = inf;
 		visit[i] = false;
 	}
+	visit[st] = true;
 	dis[st] = 0;
 	Q.push(st);
 
@@ -245,13 +248,13 @@ void make_Assign(int& leftNum, int bid, int eid) {
 
 	for (int u=0; u<uN; ++u) {
 		int workerId = bid + u;
-		for (int k=head[u]; k!=-1; k=E[k].f) {
+		for (int k=head[u]; k!=-1; k=E[k].nxt) {
 			if (k & 1) continue;
 			if (E[k].f) continue;
 			int taskId = vlabels[E[k].v - uN];
 			double ut = calcUtility(tasks[taskId], workers[workerId]);
 			tasks[taskId].s += ut;
-			if (tasks[taskId].s >= ut) {
+			if (tasks[taskId].s >= delta) {
 				compTime[taskId] = workerId;
 			}
 		}
@@ -267,7 +270,7 @@ void make_Assign(int& leftNum, int bid, int eid) {
 #ifdef LOCAL_DEBUG
 		assert(szQ <= K && szQ >= 0);
 #endif
-		for (int k=head[u]; k!=-1; k=E[k].f) {
+		for (int k=head[u]; k!=-1; k=E[k].nxt) {
 			if (k & 1) continue;
 			if (E[k].f == 0) continue;
 			int taskId = vlabels[E[k].v - uN];

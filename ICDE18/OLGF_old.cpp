@@ -17,8 +17,8 @@ int* compTime;
 task_t* tasks;
 worker_t* workers;
 int *visit;
-int taskN;
-int workerN;
+int taskN = 0;
+int workerN = 0;
 double delta, epsilon;
 
 void readInput(istream& fin) {
