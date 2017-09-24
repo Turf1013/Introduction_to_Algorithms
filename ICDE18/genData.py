@@ -6,7 +6,7 @@ import sys
 import os
 
 class constForDataSet:
-    locRng = [0, 10]
+    locRng = [0, 3]
 
 class CFDS(constForDataSet):
     pass
@@ -32,7 +32,7 @@ class normalGenerator(baseGenerator):
         self.sigma = sigma
 
     def gen(self, n, lb = None, rb = None):
-        ret = np.random.normal(self.mu, self.signma, n)
+        ret = np.random.normal(self.mu, self.sigma, n)
         for i in xrange(n):
             if lb is not None and ret[i]<lb:
                 ret[i] = lb
@@ -63,7 +63,7 @@ class locGenerator(baseGenerator):
         self.high = high
 
     def gen(self, n, permitLayer = True):
-        if (self.high - self.low + 1) ** 2 < n:
+        if permitLayer==False and (self.high - self.low + 1) ** 2 < n:
             raise ValueError("Not enough poi in 2D places")
         locSet = set()
         ret = []
@@ -81,8 +81,8 @@ class locGenerator(baseGenerator):
 
 def genData(desFile, taskN, workerN, K, epsilon, grt):
     locGrt = locGenerator(CFDS.locRng[0], CFDS.locRng[1])
-    taskLoc = locGrt.gen(taskN)
-    workerLoc = locGrt.gen(workerN)
+    taskLoc = locGrt.gen(taskN, False)
+    workerLoc = locGrt.gen(workerN, True)
     workerAcc = grt.gen(workerN)
     with open(desFile, "w") as fout:
         line = "%s %s\n" % (K, epsilon)
@@ -109,9 +109,9 @@ def genDataBatch(desFilePath, n, taskN, workerN, K, epsilon, grt):
 def genDataSet(desFilePath):
     taskN = 6
     K = 2
-    workerN = 16
-    epsilon = 0.17
-    grt = uniformGenerator(0.7, 0.9)
+    workerN = 25
+    epsilon = 0.32
+    grt = uniformGenerator(0.84, 0.96)
     genDataBatch(desFilePath, 10, taskN, workerN, K, epsilon, grt)
 
 

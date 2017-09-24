@@ -9,7 +9,7 @@
 #include "input.h"
 
 const double eps = 1e-4;
-const double dmax = 100 * 1.4122;
+const double dmax = 5;
 typedef pair<int,int> pii;
 typedef pair<double,int> pdi;
 typedef pair<double,double> pdd;
@@ -27,10 +27,21 @@ double Length(const location_t& a, const location_t& b) {
 	return sqrt( (a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y) );
 }
 
+double calcPredictAcc(const task_t& t, const worker_t& w) {
+	double l = Length(t.loc, w.loc), p;
+	if (l >= dmax)
+		p = 0.5 + eps;
+	else
+		p = w.p * (rand()%2+8) / 10.0;
+	if (p <= 0.5) p = 0.5 + eps;
+	return p;
+}
+
 double calcUtility(const task_t& t, const worker_t& w) {
-	double l = Length(t.loc, w.loc);
-	//return w.p * (dmax -l) / dmax;
-	return hardAccArr[t.id][w.id];
+	double p = calcPredictAcc(t, w);
+	double q = (p+p-1.0)*(p+p-1.0);
+	return q;
+	//return hardAccArr[t.id][w.id];
 }
 
 double calcDelta(double epsilon) {

@@ -20,6 +20,16 @@ int taskN = 0;
 int workerN = 0;
 double delta, epsilon;
 
+void dumpPredictAcc() {
+	for (int i=0; i<workerN; ++i) {
+		for (int j=0; j<taskN; ++j) {
+			double p = calcPredictAcc(tasks[j], workers[i]);
+			printf("%.3lf ", p);
+		}
+	}
+	putchar('\n');
+}
+
 void readInput(istream& fin) {
 	fin >> K >> epsilon;
 	readInput_Tasks(fin, taskN, tasks);
@@ -27,6 +37,9 @@ void readInput(istream& fin) {
 	compTime = new int[taskN];
 	for (int i=0; i<taskN; ++i)
 		compTime[i] = inf;
+	#ifdef LOCAL_DEBUG
+	dumpPredictAcc();
+	#endif
 }
 
 void FreeMem() {
@@ -38,7 +51,7 @@ void FreeMem() {
 void Schedule() {
 	int leftNum = taskN, cid = 0;
 	int* tid = new int[taskN];
-	
+
 	for (int j=0; j<taskN; ++j) tid[j] = j;
 	for (int i=0; leftNum>0&&i<workerN; ++i) {
 		random_shuffle(tid, tid+leftNum);
@@ -53,20 +66,20 @@ void Schedule() {
 			}
 		}
 	}
-	
+
 	delete[] tid;
 }
 
 int main(int argc, char **argv) {
 	string execName("PR");
-	
+
 	string srcFileName;
 	if (argc > 1) {
 		srcFileName = string(argv[1]);
 	}
 	if (argc > 2)
 		freopen(argv[2], "w", stdout);
-	
+
 	// step1: read Input
 	if (srcFileName.empty()) {
 		readInput(cin);
@@ -75,21 +88,21 @@ int main(int argc, char **argv) {
 		if (!fin.is_open()) {
 			fprintf(stderr, "FILE %s is invalid.", srcFileName.c_str());
 			exit(1);
-		}	
-		
+		}
+
 		readInput(fin);
 		fin.close();
 	}
-	
+
 	// step2: online execute
 	Schedule();
-	
+
 	// step3: output result
 	int ans = calcResult(taskN, compTime);
 	dumpResult(execName, ans);
-	
+
 	// step4: free memory
 	FreeMem();
-	
+
 	return 0;
 }

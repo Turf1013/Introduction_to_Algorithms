@@ -28,6 +28,16 @@ int taskN = 0;
 int workerN = 0;
 double delta, epsilon;
 
+void dumpPredictAcc() {
+	for (int i=0; i<workerN; ++i) {
+		for (int j=0; j<taskN; ++j) {
+			double p = calcPredictAcc(tasks[j], workers[i]);
+			printf("%.3lf ", p);
+		}
+	}
+	putchar('\n');
+}
+
 void readInput(istream& fin) {
 	fin >> K >> epsilon;
 	delta = calcDelta(epsilon);
@@ -40,6 +50,9 @@ void readInput(istream& fin) {
 	compTime = new int[taskN];
 	for (int i=0; i<taskN; ++i)
 		compTime[i] = inf;
+	#ifdef LOCAL_DEBUG
+	dumpPredictAcc();
+	#endif
 }
 
 void FreeMem() {
@@ -66,7 +79,7 @@ void Schedule() {
 				--leftNum;
 			}
 			if (++cid == taskN) cid = 0;
-			
+
 			#ifdef LOG_ALLOCATE
 			printf(" t%d", cid+1);
 			#endif
@@ -75,7 +88,7 @@ void Schedule() {
 		putchar('\n');
 		#endif
 	}
-	
+
 	#ifdef WATCH_MEM
 	watchSolutionOnce(getpid(), usedMemory);
 	#endif
@@ -118,7 +131,7 @@ int main(int argc, char **argv) {
 	#ifdef LOCAL_DEBUG
 	fprintf(stderr, "finish scheduling.\n");
 	#endif
-	
+
 	// step3: output result
 	int ans = calcResult(taskN, compTime);
 	double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
