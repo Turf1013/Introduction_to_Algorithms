@@ -94,6 +94,8 @@ int main(int argc, char **argv) {
 	fprintf(stderr, "finish free memory.\n");
 	#endif
 
+	fflush(stdout);
+
 	return 0;
 }
 
@@ -245,6 +247,9 @@ pair<double,int> solve_Graph(int& flow, double& cost) {
 
 void make_Assign(int& leftNum, int bid, int eid) {
 	int uN = eid - bid, vN = leftNum;
+	int *leftK = new int[uN];
+
+	for (int i=0; i<uN; ++i) leftK[i] = K;
 
 	for (int u=0; u<uN; ++u) {
 		int workerId = bid + u;
@@ -257,16 +262,21 @@ void make_Assign(int& leftNum, int bid, int eid) {
 			if (tasks[taskId].s >= delta) {
 				compTime[taskId] = workerId;
 			}
+			--leftK[u];
 		}
 	}
 
+	#ifdef LOCAL_DEBUG
+	for (int i=0; i<taskN; ++i)
+		printf("%d: %.3lf\n", i, tasks[i].s);
+	fflush(stdout);
+	#endif
+
 	priority_queue<pdi, vector<pdi>, greater<pdi> > Q;
 
-	for (int stk=head[st]; stk!=-1; stk=E[stk].nxt) {
-		if (stk & 1) continue;
-		int u = E[stk].v, workerId = bid + u;
-		if (E[stk].f == 0) continue;
-		int szQ = E[stk].f;
+	for (int u=0, workerId = bid+u; u<uN; ++u,++workerId) {
+		if (leftK[u] == 0) continue;
+		int szQ = leftK[u];
 #ifdef LOCAL_DEBUG
 		assert(szQ <= K && szQ >= 0);
 #endif

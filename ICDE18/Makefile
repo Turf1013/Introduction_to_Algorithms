@@ -41,17 +41,17 @@ MCF: monitor.h input.h output.h global.h offline.cpp
 MCFM: monitor.h input.h output.h global.h offline.cpp
 	$(CXX) $(CFLAGS) -o MCFM offline.cpp $(LIBS) -D WATCH_MEM
 
-LAF: monitor.h input.h output.h global.h LUF.cpp
-	$(CXX) $(CFLAGS) -o LAF LUF.cpp $(LIBS)
+LAF: monitor.h input.h output.h global.h LAF.cpp
+	$(CXX) $(CFLAGS) -o LAF LAF.cpp $(LIBS)
 
-LAFM: monitor.h input.h output.h global.h LUF.cpp
-	$(CXX) $(CFLAGS) -o LAFM LUF.cpp $(LIBS) -D WATCH_MEM
+LAFM: monitor.h input.h output.h global.h LAF.cpp
+	$(CXX) $(CFLAGS) -o LAFM LAF.cpp $(LIBS) -D WATCH_MEM
 
-AAM: monitor.h input.h output.h global.h OLGF.cpp
-	$(CXX) $(CFLAGS) -o AAM OLGF.cpp $(LIBS)
+AAM: monitor.h input.h output.h global.h AAM.cpp
+	$(CXX) $(CFLAGS) -o AAM AAM.cpp $(LIBS)
 
-AAMM: monitor.h input.h output.h global.h OLGF.cpp
-	$(CXX) $(CFLAGS) -o AAMM OLGF.cpp $(LIBS) -D WATCH_MEM
+AAMM: monitor.h input.h output.h global.h AAM.cpp
+	$(CXX) $(CFLAGS) -o AAMM AAM.cpp $(LIBS) -D WATCH_MEM
 
 .PHONY: clean
 clean:
