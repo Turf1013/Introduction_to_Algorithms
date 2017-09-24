@@ -25,6 +25,9 @@ double delta, epsilon;
 void readInput(istream& fin) {
 	fin >> K >> epsilon;
 	delta = calcDelta(epsilon);
+	#ifdef LOCAL_DEBUG
+	fprintf(stderr, "epsilon = %.3lf, delta = %.3lf\n", epsilon, delta);
+	#endif
 	taskN = workerN = 0;
 	readInput_Tasks(fin, taskN, tasks);
 	readInput_Workers(fin, workerN, workers);
@@ -98,6 +101,7 @@ int main(int argc, char **argv) {
 	dumpResult(execName, ans);
 
 	#ifdef LOCAL_DEBUG
+	calcResult(taskN, compTime, tasks);
 	fprintf(stderr, "finish dumping.\n");
 	#endif
 

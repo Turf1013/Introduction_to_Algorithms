@@ -9,6 +9,8 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+#include "input.h"
+
 #define DVEC 	5
 #define SCORE	100
 
@@ -17,11 +19,27 @@ void dumpResult(const string& execName, int ans, double usedTime=-1.0, double us
 
 int calcResult(int taskN, int* compTimes) {
 	int ret = 0;
-	
+
 	for (int i=0; i<taskN; ++i)
 		ret = max(ret, compTimes[i]);
 	++ret;
-	
+
+	return ret;
+}
+
+int calcResult(int taskN, int* compTimes, task_t* tasks) {
+	int ret = 0;
+
+	for (int i=0; i<taskN; ++i)
+		ret = max(ret, compTimes[i]);
+	++ret;
+
+	if (ret >= 1000000005) {
+		for (int i=0; i<taskN; ++i) {
+			fprintf(stderr, "%d: %.3lf %d\n", i, tasks[i].s, compTimes[i]);
+		}
+	}
+
 	return ret;
 }
 

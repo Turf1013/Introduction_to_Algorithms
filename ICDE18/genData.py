@@ -109,8 +109,8 @@ def genDataBatch(desFilePath, n, taskN, workerN, K, epsilon, grt):
 def genDataSet(desFilePath):
     taskN = 6
     K = 2
-    workerN = 20
-    epsilon = 0.15
+    workerN = 16
+    epsilon = 0.17
     grt = uniformGenerator(0.7, 0.9)
     genDataBatch(desFilePath, 10, taskN, workerN, K, epsilon, grt)
 
