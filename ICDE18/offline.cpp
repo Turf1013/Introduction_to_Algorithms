@@ -10,7 +10,14 @@ using namespace std;
 #include "input.h"
 #include "output.h"
 #include "global.h"
+
 #define LOCAL_DEBUG
+#define LOG_ALLOCATE
+
+#ifdef WATCH_MEM
+#include "monitor.h"
+int usedMemory = 0;
+#endif
 
 const int inf = 1<<29;
 int K, t0;
@@ -45,7 +52,7 @@ void FreeMem() {
 }
 
 int main(int argc, char **argv) {
-	string execName("offline");
+	string execName("MCF");
 
 	string srcFileName;
 	if (argc > 1) {
@@ -73,7 +80,10 @@ int main(int argc, char **argv) {
 	#endif
 
 	// step2: online execute
+	clock_t begTime, endTime;
+	begTime = clock();
 	Schedule();
+	endTime = clock();
 
 	#ifdef LOCAL_DEBUG
 	fprintf(stderr, "finish scheduling.\n");
@@ -81,7 +91,12 @@ int main(int argc, char **argv) {
 
 	// step3: output result
 	int ans = calcResult(taskN, compTime);
-	dumpResult(execName, ans);
+	double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
+	#ifdef WATCH_MEM
+	dumpResult(execName, ans, usedTime, usedMemory/1024.0)
+	#else
+	dumpResult(execName, ans, usedTime);
+	#endif
 
 	#ifdef LOCAL_DEBUG
 	fprintf(stderr, "finish dumping.\n");
@@ -251,6 +266,11 @@ void make_Assign(int& leftNum, int bid, int eid) {
 
 	for (int i=0; i<uN; ++i) leftK[i] = K;
 
+	#ifdef LOG_ALLOCATE
+	vector<vector<int> > allocList;
+	for (int i=0; i<uN; ++i)
+		allocList.push_back(vector<int>());
+	#endif
 	for (int u=0; u<uN; ++u) {
 		int workerId = bid + u;
 		for (int k=head[u]; k!=-1; k=E[k].nxt) {
@@ -263,8 +283,25 @@ void make_Assign(int& leftNum, int bid, int eid) {
 				compTime[taskId] = workerId;
 			}
 			--leftK[u];
+			#ifdef LOG_ALLOCATE
+			allocList[u].push_back(taskId);
+			#endif
 		}
 	}
+	#ifdef LOG_ALLOCATE
+	printf("ALLOCATE FROM FLOW:\n");
+	for (int i=0; i<uN; ++i) {
+		vector<int>& vtask = allocList[i];
+		printf("w%d:", bid+i);
+		sort(vtask.begin(), vtask.end());
+		assert(vtask.size() <= K);
+		for (int j=0; j<vtask.size(); ++j) {
+			printf(" t%d", vtask[j]);
+		}
+		putchar('\n');
+		vtask.clear();
+	}
+	#endif
 
 	#ifdef LOCAL_DEBUG
 	for (int i=0; i<taskN; ++i)
@@ -280,6 +317,10 @@ void make_Assign(int& leftNum, int bid, int eid) {
 #ifdef LOCAL_DEBUG
 		assert(szQ <= K && szQ >= 0);
 #endif
+		#ifdef LOG_ALLOCATE
+		printf("w%d:", workerId);
+		vector<int> vtask;
+		#endif
 		for (int k=head[u]; k!=-1; k=E[k].nxt) {
 			if (k & 1) continue;
 			if (E[k].f == 0) continue;
@@ -301,7 +342,16 @@ void make_Assign(int& leftNum, int bid, int eid) {
 			if (tasks[taskId].s >= delta) {
 				compTime[taskId] = workerId;
 			}
+			#ifdef LOG_ALLOCATE
+			vtask.push_back(taskId);
+			#endif
 		}
+
+		#ifdef LOG_ALLOCATE
+		for (int j=vtask.size()-1; j>=0; --j)
+			printf(" t%d", vtask[j]);
+		putchar('\n');
+		#endif
 	}
 
 	leftNum = 0;
@@ -326,6 +376,10 @@ void Schedule() {
 		build_Graph(leftNum, bid, eid);
 		solve_Graph(flow, cost);
 		make_Assign(leftNum, bid, eid);
+
+		#ifdef WATCH_MEM
+		watchSolutionOnce(getpid(), usedMemory);
+		#endif
 
 		del_Graph();
 	}

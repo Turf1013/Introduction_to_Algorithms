@@ -12,6 +12,12 @@ using namespace std;
 #include "global.h"
 
 #define LOCAL_DEBUG
+#define LOG_ALLOCATE
+
+#ifdef WATCH_MEM
+#include "monitor.h"
+int usedMemory = 0;
+#endif
 
 const int inf = 1<<30;
 int K;
@@ -51,6 +57,10 @@ void Schedule() {
 			uQ.push(make_pair(u, j));
 			if (uQ.size() > K) uQ.pop();
 		}
+		#ifdef LOG_ALLOCATE
+		printf("w%d:", i+1);
+		vector<int> vtasks;
+		#endif
 		while (!uQ.empty()) {
 			pdi tmp = uQ.top();
 			uQ.pop();
@@ -61,12 +71,24 @@ void Schedule() {
 				compTime[taskId] = i;
 				--leftNum;
 			}
+			#ifdef LOG_ALLOCATE
+			vtasks.push_back(taskId);
+			#endif
 		}
+		#ifdef LOG_ALLOCATE
+		for (int i=vtasks.size()-1; i>=0; --i)
+			printf(" t%d", vtasks[i]);
+		putchar('\n');
+		#endif
 	}
+	
+	#ifdef WATCH_MEM
+	watchSolutionOnce(getpid(), usedMemory);
+	#endif
 }
 
 int main(int argc, char **argv) {
-	string execName("LUF");
+	string execName("LAF");
 
 	string srcFileName;
 	if (argc > 1) {
@@ -94,15 +116,23 @@ int main(int argc, char **argv) {
 	#endif
 
 	// step2: online execute
+	clock_t begTime, endTime;
+	begTime = clock();
 	Schedule();
+	endTime = clock();
 
 	#ifdef LOCAL_DEBUG
 	fprintf(stderr, "finish scheduling.\n");
 	#endif
-
+	
 	// step3: output result
 	int ans = calcResult(taskN, compTime);
-	dumpResult(execName, ans);
+	double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
+	#ifdef WATCH_MEM
+	dumpResult(execName, ans, usedTime, usedMemory/1024.0)
+	#else
+	dumpResult(execName, ans, usedTime);
+	#endif
 
 	#ifdef LOCAL_DEBUG
 	fprintf(stderr, "finish dumping.\n");

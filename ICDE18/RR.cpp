@@ -12,6 +12,12 @@ using namespace std;
 #include "global.h"
 
 #define LOCAL_DEBUG
+#define LOG_ALLOCATE
+
+#ifdef WATCH_MEM
+#include "monitor.h"
+int usedMemory = 0;
+#endif
 
 const int inf = 1<<30;
 int K;
@@ -46,6 +52,9 @@ void Schedule() {
 	int leftNum = taskN, cid = 0;
 
 	for (int i=0; leftNum>0&&i<workerN; ++i) {
+		#ifdef LOG_ALLOCATE
+		printf("w%d:", i+1);
+		#endif
 		for (int j=0; leftNum>0&&j<K; ++j) {
 			while (tasks[cid].s >= delta) {
 				if (++cid == taskN) cid =0;
@@ -57,8 +66,19 @@ void Schedule() {
 				--leftNum;
 			}
 			if (++cid == taskN) cid = 0;
+			
+			#ifdef LOG_ALLOCATE
+			printf(" t%d", cid);
+			#endif
 		}
+		#ifdef LOG_ALLOCATE
+		putchar('\n');
+		#endif
 	}
+	
+	#ifdef WATCH_MEM
+	watchSolutionOnce(getpid(), usedMemory);
+	#endif
 }
 
 int main(int argc, char **argv) {
@@ -90,15 +110,23 @@ int main(int argc, char **argv) {
 	#endif
 
 	// step2: online execute
+	clock_t begTime, endTime;
+	begTime = clock();
 	Schedule();
+	endTime = clock();
 
 	#ifdef LOCAL_DEBUG
 	fprintf(stderr, "finish scheduling.\n");
 	#endif
-
+	
 	// step3: output result
 	int ans = calcResult(taskN, compTime);
-	dumpResult(execName, ans);
+	double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
+	#ifdef WATCH_MEM
+	dumpResult(execName, ans, usedTime, usedMemory/1024.0)
+	#else
+	dumpResult(execName, ans, usedTime);
+	#endif
 
 	#ifdef LOCAL_DEBUG
 	calcResult(taskN, compTime, tasks);
