@@ -7,7 +7,7 @@ LIBS = -lrt
 CFLAGS = -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: LRF OLRF offline PR LAF LAFM AAM AAMM MCF MCFM RR RRM
+all: LRF offline PR LAF LAFM AAM AAMM MCF MCFM RR RRM
 RR: monitor.h input.h output.h global.h RR.cpp
 	$(CXX) $(CFLAGS) -o RR RR.cpp $(LIBS)
 
@@ -28,12 +28,6 @@ LGF: monitor.h input.h output.h global.h LGF.cpp
 
 LRFM: monitor.h input.h output.h global.h LRF.cpp
 	$(CXX) $(CFLAGS) -o LRFM LRF.cpp $(LIBS) -D WATCH_MEM
-
-OLRF: monitor.h input.h output.h global.h OLRF.cpp
-	$(CXX) $(CFLAGS) -o OLRF OLRF.cpp $(LIBS)
-
-OLRFM: monitor.h input.h output.h global.h OLRF.cpp
-	$(CXX) $(CFLAGS) -o OLRFM OLRF.cpp $(LIBS) -D WATCH_MEM
 
 offline: monitor.h input.h output.h global.h offline.cpp
 	$(CXX) $(CFLAGS) -o offline offline.cpp $(LIBS)

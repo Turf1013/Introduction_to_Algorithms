@@ -20,6 +20,7 @@ struct location_t {
 };
 
 struct task_t {
+	int id;
 	location_t loc;
 	double s;
 
@@ -65,6 +66,7 @@ void readInput_Tasks(istream& fin, int& taskN, task_t*& tasks) {
 	for (int i=0; i<taskN; ++i) {
 		fin >> tasks[i];
 		tasks[i].s = 0;
+		tasks[i].id = i;
 	}
 }
 
