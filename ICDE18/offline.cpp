@@ -296,7 +296,7 @@ void make_Assign(int& leftNum, int bid, int eid) {
 		sort(vtask.begin(), vtask.end());
 		assert(vtask.size() <= K);
 		for (int j=0; j<vtask.size(); ++j) {
-			printf(" t%d", vtask[j]);
+			printf(" t%d", vtask[j]+1);
 		}
 		putchar('\n');
 		vtask.clear();
@@ -349,7 +349,7 @@ void make_Assign(int& leftNum, int bid, int eid) {
 
 		#ifdef LOG_ALLOCATE
 		for (int j=vtask.size()-1; j>=0; --j)
-			printf(" t%d", vtask[j]);
+			printf(" t%d", vtask[j]+1);
 		putchar('\n');
 		#endif
 	}

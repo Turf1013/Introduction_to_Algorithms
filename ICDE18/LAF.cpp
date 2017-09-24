@@ -54,8 +54,14 @@ void Schedule() {
 			if (tasks[j].s >= delta)
 				continue;
 			double u = calcUtility(tasks[j], worker);
-			uQ.push(make_pair(u, j));
-			if (uQ.size() > K) uQ.pop();
+			if (uQ.size() == K) {
+				if (u > uQ.top().first) {
+					uQ.pop();
+					uQ.push(make_pair(u, j));
+				}
+			} else {
+				uQ.push(make_pair(u, j));
+			}
 		}
 		#ifdef LOG_ALLOCATE
 		printf("w%d:", i+1);
@@ -77,7 +83,7 @@ void Schedule() {
 		}
 		#ifdef LOG_ALLOCATE
 		for (int i=vtasks.size()-1; i>=0; --i)
-			printf(" t%d", vtasks[i]);
+			printf(" t%d", vtasks[i]+1);
 		putchar('\n');
 		#endif
 	}

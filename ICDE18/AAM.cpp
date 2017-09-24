@@ -123,7 +123,7 @@ void Schedule() {
 		}
 		#ifdef LOG_ALLOCATE
 		for (int i=vtasks.size()-1; i>=0; --i)
-			printf(" t%d", vtasks[i]);
+			printf(" t%d", vtasks[i]+1);
 		putchar('\n');
 		#endif
 	}

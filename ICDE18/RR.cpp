@@ -68,7 +68,7 @@ void Schedule() {
 			if (++cid == taskN) cid = 0;
 			
 			#ifdef LOG_ALLOCATE
-			printf(" t%d", cid);
+			printf(" t%d", cid+1);
 			#endif
 		}
 		#ifdef LOG_ALLOCATE
