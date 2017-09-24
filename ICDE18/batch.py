@@ -25,4 +25,4 @@ def batchRound(srcFilePath, n):
 
 if __name__ == "__main__":
     srcFilePath = "./dataSet"
-    batchRound(srcFilePath, 10)
+    batchRound(srcFilePath, 1)
