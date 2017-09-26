@@ -200,7 +200,7 @@ def genDataSet(desFilePath):
             if not os.path.exists(subDesFilePath):
                 os.mkdir(subDesFilePath)
             genDataBatch(subDesFilePath, runTime, taskN, workerN, K, epsilon, uniformGrt)
-    return
+    # return
     for scal_taskN in scal_taskNList:
         K = KList[2]
         epsilon = epsilonList[2]
@@ -213,5 +213,5 @@ def genDataSet(desFilePath):
         genDataBatch(subDesFilePath, runTime, scal_taskN, scal_workerN, K, epsilon, normalGrt)
 
 if __name__ == "__main__":
-    desFilePath = "/home/turf/Code/dataSet"
+    desFilePath = "../dataSet"
     genDataSet(desFilePath)
