@@ -31,6 +31,12 @@ LRFM: monitor.h input.h output.h global.h LRF.cpp
 
 offline: monitor.h input.h output.h global.h offline_fast.cpp
 	$(CXX) $(CFLAGS) -o offline offline_fast.cpp $(LIBS)
+	
+SSPA: monitor.h input.h output.h global.h sspa.cpp
+	$(CXX) $(CFLAGS) -o SSPA sspa.cpp $(LIBS)
+	
+SSPAM: monitor.h input.h output.h global.h sspa.cpp
+	$(CXX) $(CFLAGS) -o SSPAM sspa.cpp $(LIBS) -D WATCH_MEM
 
 offlineM: monitor.h input.h output.h global.h offline.cpp
 	$(CXX) $(CFLAGS) -o offlineM offline.cpp $(LIBS) -D WATCH_MEM
@@ -59,3 +65,4 @@ clean:
 		-@rm RR LRF OLRF offline PR 2> /dev/null || true
 		-@rm RRM LUF LRFM OLRFM offlineM PRM 2> /dev/null || true
 		-@rm LGF AAM AAMM MCF MCFM LAF LAFM 2> /dev/null || true
+		-@rm SSPA SSPAM 2> /dev/null || true
