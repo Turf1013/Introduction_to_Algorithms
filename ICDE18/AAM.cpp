@@ -86,10 +86,10 @@ void Schedule() {
 		worker_t& worker = workers[i];
 		calcValue2(maxRemain, avg);
 #ifdef LOCAL_DEBUG
-		if (avg >= maxRemain)
-			printf("TURN TO AVG.\n");
-		else
-			printf("TURN TO MAX.\n");
+//		if (avg >= maxRemain)
+//			printf("TURN TO AVG.\n");
+//		else
+//			printf("TURN TO MAX.\n");
 #endif
 		#ifdef LOG_ALLOCATE
 		printf("w%d:", i+1);
@@ -98,13 +98,21 @@ void Schedule() {
 		for (int j=0; j<taskN; ++j) {
 			if (tasks[j].s >= delta)
 				continue;
+			double tmp;
 			if (avg >= maxRemain) {
-				double ut = calcUtility(tasks[j], worker);
-				Q.push(make_pair(min(delta-tasks[j].s, ut), j));
+				double ut = calcUtility(tasks[j], worker), tmp = min(delta-tasks[j].s, ut);
+				if (Q.size() == K) {
+					if (tmp > Q.top().first) {
+						Q.pop();
+						Q.push(make_pair(tmp, j));
+					}
+				} else {
+					Q.push(make_pair(tmp, j));
+				}
 			} else {
 				Q.push(make_pair(delta-tasks[j].s, j));
+				if (Q.size() > K) Q.pop();
 			}
-			if (Q.size() > K) Q.pop();
 		}
 
 		while (!Q.empty()) {
@@ -127,10 +135,10 @@ void Schedule() {
 		putchar('\n');
 		#endif
 	}
-	
+
 	#ifdef WATCH_MEM
 	watchSolutionOnce(getpid(), usedMemory);
-	#endif		
+	#endif
 }
 
 int main(int argc, char **argv) {
@@ -170,7 +178,7 @@ int main(int argc, char **argv) {
 	#ifdef LOCAL_DEBUG
 	fprintf(stderr, "finish scheduling.\n");
 	#endif
-	
+
 	// step3: output result
 	int ans = calcResult(taskN, compTime);
 	double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
@@ -182,6 +190,9 @@ int main(int argc, char **argv) {
 
 	#ifdef LOCAL_DEBUG
 	fprintf(stderr, "finish dumping.\n");
+	for (int i=0; i<taskN; ++i) {
+		fprintf(stderr, "%d: %.3lf %d\n", i, tasks[i].s, compTime[i]);
+	}
 	#endif
 
 	// step4: free memory

@@ -29,8 +29,8 @@ int workerN = 0;
 double delta, epsilon;
 
 void dumpPredictAcc() {
-	for (int i=0; i<workerN; ++i) {
-		for (int j=0; j<taskN; ++j) {
+	for (int j=0; j<taskN; ++j) {
+		for (int i=0; i<workerN; ++i) {
 			double p = calcPredictAcc(tasks[j], workers[i]);
 			printf("%.3lf ", p);
 		}
