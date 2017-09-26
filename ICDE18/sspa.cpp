@@ -129,6 +129,20 @@ double *dis;
 int *pre, *ID, *cnt;
 double m;
 
+void new_Graph(int uN) {
+  int vN = taskN;
+
+  edgeN = 2 * (uN*vN + uN + vN);
+	vertexN = uN + vN + 2;
+
+  head = new int[vertexN];
+	E = new edge_t[edgeN];
+	visit = new bool[vertexN];
+	dis = new double[vertexN];
+	pre = new int[vertexN];
+	ID = new int[vertexN];
+}
+
 void init_Graph(int bid, int eid) {
 	int uN = 0, vN = 0;
 
@@ -139,18 +153,9 @@ void init_Graph(int bid, int eid) {
 		vlabels[vN++] = j;
 	}
 
-	edgeN = 2 * (uN*vN + uN + vN);
 	vertexN = uN + vN + 2;
 	st = vertexN - 2;
 	ed = vertexN - 1;
-
-	head = new int[vertexN];
-	E = new edge_t[edgeN];
-	visit = new bool[vertexN];
-	dis = new double[vertexN];
-	pre = new int[vertexN];
-	ID = new int[vertexN];
-	cnt = new int[vertexN];
 
 	l = 0;
 	for (int i=0; i<vertexN; ++i)
@@ -393,7 +398,8 @@ void Schedule() {
 	double m = taskN * ceil(delta) / K;
 	int leftNum = taskN, flow;
 	double cost;
-
+	
+	new_Graph((int)floor(2*m));
 	for (int rid=0,bid=0,eid; leftNum>0&&bid<workerN; ++rid,bid=eid) {
 		eid = bid + (rid==0 ? floor(2*m) : floor(m));
 		eid = min(workerN, eid);
@@ -403,11 +409,11 @@ void Schedule() {
 		build_Graph(leftNum, bid, eid);
 		solve_Graph(flow, cost);
 		make_Assign(leftNum, bid, eid);
-
-		#ifdef WATCH_MEM
-		watchSolutionOnce(getpid(), usedMemory);
-		#endif
-
-		del_Graph();
 	}
+
+	#ifdef WATCH_MEM
+	watchSolutionOnce(getpid(), usedMemory);
+	#endif
+
+	del_Graph();
 }

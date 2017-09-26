@@ -373,21 +373,21 @@ void Schedule() {
 	int leftNum = taskN, flow;
 	double cost;
 
-  new_Graph((int)floor(2*m));
+    new_Graph((int)floor(2*m));
 
 	for (int rid=0,bid=0,eid; leftNum>0&&bid<workerN; ++rid,bid=eid) {
 		eid = bid + (rid==0 ? floor(2*m) : floor(m));
 		eid = min(workerN, eid);
 
-    init_Graph(bid, eid);
+		init_Graph(bid, eid);
 		build_Graph(leftNum, bid, eid);
 		solve_Graph(flow, cost);
 		make_Assign(leftNum, bid, eid);
 	}
 
-  #ifdef WATCH_MEM
-  watchSolutionOnce(getpid(), usedMemory);
-  #endif
+	#ifdef WATCH_MEM
+	watchSolutionOnce(getpid(), usedMemory);
+	#endif
 
-  del_Graph();
+	del_Graph();
 }

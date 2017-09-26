@@ -38,8 +38,8 @@ SSPA: monitor.h input.h output.h global.h sspa.cpp
 SSPAM: monitor.h input.h output.h global.h sspa.cpp
 	$(CXX) $(CFLAGS) -o SSPAM sspa.cpp $(LIBS) -D WATCH_MEM
 
-offlineM: monitor.h input.h output.h global.h offline.cpp
-	$(CXX) $(CFLAGS) -o offlineM offline.cpp $(LIBS) -D WATCH_MEM
+offlineM: monitor.h input.h output.h global.h offline_fast.cpp
+	$(CXX) $(CFLAGS) -o offlineM offline_fast.cpp $(LIBS) -D WATCH_MEM
 
 MCF: monitor.h input.h output.h global.h offline.cpp
 	$(CXX) $(CFLAGS) -o MCF offline.cpp $(LIBS)
