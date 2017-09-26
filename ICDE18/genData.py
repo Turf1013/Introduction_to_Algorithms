@@ -130,11 +130,11 @@ def genDataSet(desFilePath):
     uniformGrt = uniformGenerator(0.0, 0.0)
     taskNList = [500, 1000, 2500, 5000, 10000]
     KList = [2, 4, 6, 8, 10]
-    workerN = 50000
+    workerN = 60000
     epsilonList = [0.01, 0.05, 0.1, 0.15, 0.2]
     scal_taskNList = [10000, 20000, 30000, 40000, 50000, 100000]
-    scal_workerN = 500000
-    muList = [0,75, 0.80, 0.85, 0.90, 0.95]
+    scal_workerN = 600000
+    muList = [0.75, 0.80, 0.85, 0.90, 0.95]
     for taskN in taskNList:
         K = KList[2]
         epsilon = epsilonList[2]

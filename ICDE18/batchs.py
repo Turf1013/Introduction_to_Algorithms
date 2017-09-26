@@ -55,7 +55,7 @@ def poolExp(execName, srcFilePath, bid, eid, desFilePath):
 	pool = multiprocessing.Pool(processes = 12)
 	dirNames = os.listdir(srcFilePath)
 	for dirName in dirNames:
-		if dirName.endswith('S'):
+		if not dirName.endswith('S'):
 			continue
 		subSrcFilePath = os.path.join(srcFilePath, dirName)
 		if '/' in execName:
@@ -79,7 +79,7 @@ def poolExec(execNames, srcFilePath, bid, eid, desFilePath):
 
 
 def exp1():
-	execNames = ["LAFM", "AAMM"]
+	execNames = ["LAFM", "AAMM", "MCFM"]
 	srcFilePath = "/home/server/Yihuihe/dataSet/"
 	desFilePath = "/home/server/Yihuihe/result/"
 	bid = 0
