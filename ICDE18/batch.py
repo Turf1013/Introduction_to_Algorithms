@@ -39,8 +39,8 @@ def batchSubExp(execName, srcFilePath, bid, eid, desFilePath):
 def batchExp(execName, srcFilePath, bid, eid, desFilePath):
     dirNames = os.listdir(srcFilePath)
     for dirName in dirNames:
-        if dirName.endswith('S'):
-            continue
+        # if dirName.endswith('S'):
+            # continue
         subSrcFilePath = os.path.join(srcFilePath, dirName)
         subDesFilePath = os.path.join(desFilePath, dirName)
         if not os.path.exists(subDesFilePath):
@@ -52,7 +52,7 @@ def batchExec(execNames, srcFilePath, bid, eid, desFilePath):
         batchExp(execName, srcFilePath, bid, eid, desFilePath)
 
 def poolExp(execName, srcFilePath, bid, eid, desFilePath):
-    pool = multiprocessing.Pool(processes = 6)
+    pool = multiprocessing.Pool(processes = 12)
     dirNames = os.listdir(srcFilePath)
     for dirName in dirNames:
         if dirName.endswith('S'):
