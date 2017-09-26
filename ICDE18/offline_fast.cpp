@@ -52,7 +52,7 @@ void FreeMem() {
 }
 
 int main(int argc, char **argv) {
-	string execName("MCF");
+	string execName("offline");
 
 	string srcFileName;
 	if (argc > 1) {
@@ -152,7 +152,7 @@ void init_Graph(int bid, int eid) {
 			continue;
 		vlabels[vN++] = j;
 	}
-  
+
 	vertexN = uN + vN + 2;
 	st = vertexN - 2;
 	ed = vertexN - 1;

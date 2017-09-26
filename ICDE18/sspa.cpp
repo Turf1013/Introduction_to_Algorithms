@@ -52,7 +52,7 @@ void FreeMem() {
 }
 
 int main(int argc, char **argv) {
-	string execName("MCF");
+	string execName("SSPA");
 
 	string srcFileName;
 	if (argc > 1) {

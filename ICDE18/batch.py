@@ -5,23 +5,14 @@ import os
 import commands
 import multiprocessing
 
-def batchRound(srcFilePath, n):
-	execList = [
-		"RR",
-		"LAF",
-		"AAM",
-		"MCF",
-	]
-	for i in xrange(n):
-		srcFileName = "data_%03d.txt" % (i)
-		srcFileName = os.path.join(srcFilePath, srcFileName)
-		for execName in execList:
-			cmdLine = "./%s %s data.out" % (execName, srcFileName)
-			print cmdLine
-			commands.getoutput(cmdLine)
-			with open("data.out", "r") as fin:
-				line = fin.readlines()[-1]
-			print line
+def batchRound(execName, srcFilePath, i):
+	srcFileName = "data_%03d.txt" % (i)
+	srcFileName = os.path.join(srcFilePath, srcFileName)
+	cmdLine = "./%s %s" % (execName, srcFileName)
+	print cmdLine
+	line = commands.getoutput(cmdLine)
+	print line
+
 
 def batchSubExp(execName, srcFilePath, bid, eid, desFilePath):
 	for i in xrange(bid, eid):
@@ -86,6 +77,17 @@ def exp1():
 	eid = 50
 	poolExec(execNames, srcFilePath, bid, eid, desFilePath)
 
+def exp2():
+	execNames = ["SSPA", "MCF", "offline"]
+	srcFilePath = "/home/turf/Code/dataSet/500_6_0.10_0.80_N"
+	n = 6
+	pool = multiprocessing.Pool(processes = 3)
+	for i in xrange(1,n):
+		for execName in execNames:
+			pool.apply_async(batchRound, (execName, srcFilePath, i, ))
+	pool.close()
+	pool.join()
+
 
 if __name__ == "__main__":
-	exp1()
+	exp2()
