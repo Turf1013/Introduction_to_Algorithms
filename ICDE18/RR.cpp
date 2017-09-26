@@ -11,8 +11,8 @@ using namespace std;
 #include "output.h"
 #include "global.h"
 
-#define LOCAL_DEBUG
-#define LOG_ALLOCATE
+//#define LOCAL_DEBUG
+//#define LOG_ALLOCATE
 
 #ifdef WATCH_MEM
 #include "monitor.h"

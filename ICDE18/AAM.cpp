@@ -11,15 +11,15 @@ using namespace std;
 #include "output.h"
 #include "global.h"
 
-#define LOCAL_DEBUG
-#define LOG_ALLOCATE
+//#define LOCAL_DEBUG
+//#define LOG_ALLOCATE
 
 #ifdef WATCH_MEM
 #include "monitor.h"
 int usedMemory = 0;
 #endif
 
-const int inf = 1<<29;
+const int inf = 1<<30;
 int K;
 int* compTime;
 task_t* tasks;
@@ -101,14 +101,16 @@ void Schedule() {
 			double tmp;
 			if (avg >= maxRemain) {
 				double ut = calcUtility(tasks[j], worker), tmp = min(delta-tasks[j].s, ut);
-				if (Q.size() == K) {
-					if (tmp > Q.top().first) {
-						Q.pop();
-						Q.push(make_pair(tmp, j));
-					}
-				} else {
-					Q.push(make_pair(tmp, j));
-				}
+				// if (Q.size() == K) {
+				// 	if (tmp > Q.top().first) {
+				// 		Q.pop();
+				// 		Q.push(make_pair(tmp, j));
+				// 	}
+				// } else {
+				// 	Q.push(make_pair(tmp, j));
+				// }
+				Q.push(make_pair(tmp, j));
+				if (Q.size() > K) Q.pop();
 			} else {
 				Q.push(make_pair(delta-tasks[j].s, j));
 				if (Q.size() > K) Q.pop();
@@ -183,7 +185,7 @@ int main(int argc, char **argv) {
 	int ans = calcResult(taskN, compTime);
 	double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
 	#ifdef WATCH_MEM
-	dumpResult(execName, ans, usedTime, usedMemory/1024.0)
+	dumpResult(execName, ans, usedTime, usedMemory/1024.0);
 	#else
 	dumpResult(execName, ans, usedTime);
 	#endif

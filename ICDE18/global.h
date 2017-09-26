@@ -9,7 +9,7 @@
 #include "input.h"
 
 const double eps = 1e-4;
-const double dmax = 100 * 1.4122;
+const double dmax = 30;
 typedef pair<int,int> pii;
 typedef pair<double,int> pdi;
 typedef pair<double,double> pdd;
@@ -27,22 +27,24 @@ double Length(const location_t& a, const location_t& b) {
 	return sqrt( (a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y) );
 }
 
-double calcPredictAcc(const task_t& t, const worker_t& w) {
-	double l = Length(t.loc, w.loc), p;
-	if (l >= dmax)
-		p = 0.5 + eps;
-	else
-		p = w.p * (rand()%2+8) / 10.0;
-	if (p <= 0.5) p = 0.5 + eps;
-	p = hardAccArr[t.id][w.id];
-	return (p*2-1)*(p*2-1);
+inline double calcPredictAcc(const task_t& t, const worker_t& w) {
+	double l = Length(t.loc, w.loc);
+	double ret = w.p / (1.0 + exp(-(dmax - l)));
+	// if (l >= dmax)
+	// 	p = 0.5 + eps;
+	// else
+	// 	p = w.p * (rand()%2+8) / 10.0;
+	// if (p <= 0.5) p = 0.5 + eps;
+	// p = hardAccArr[t.id][w.id];
+	return ret;
 }
 
-double calcUtility(const task_t& t, const worker_t& w) {
-	double l = Length(t.loc, w.loc);
+inline double calcUtility(const task_t& t, const worker_t& w) {
+	//double l = Length(t.loc, w.loc);
 	//return w.p * (dmax -l) / dmax;
-	double p = hardAccArr[t.id][w.id];
-	return (p*2-1)*(p*2-1);
+	double p = calcPredictAcc(t, w);
+	double ret = (p <= 0.5) ? eps : (p*2-1.0)*(p*2-1.0);
+	return ret;
 }
 
 double calcDelta(double epsilon) {

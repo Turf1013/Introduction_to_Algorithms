@@ -11,8 +11,8 @@ using namespace std;
 #include "output.h"
 #include "global.h"
 
-#define LOCAL_DEBUG
-#define LOG_ALLOCATE
+//#define LOCAL_DEBUG
+//#define LOG_ALLOCATE
 
 #ifdef WATCH_MEM
 #include "monitor.h"
@@ -54,14 +54,16 @@ void Schedule() {
 			if (tasks[j].s >= delta)
 				continue;
 			double u = calcUtility(tasks[j], worker);
-			if (uQ.size() == K) {
-				if (u > uQ.top().first) {
-					uQ.pop();
-					uQ.push(make_pair(u, j));
-				}
-			} else {
-				uQ.push(make_pair(u, j));
-			}
+			// if (uQ.size() == K) {
+			// 	if (u > uQ.top().first) {
+			// 		uQ.pop();
+			// 		uQ.push(make_pair(u, j));
+			// 	}
+			// } else {
+			// 	uQ.push(make_pair(u, j));
+			// }
+			uQ.push(make_pair(u, j));
+			if (uQ.size() > K) uQ.pop();
 		}
 		#ifdef LOG_ALLOCATE
 		printf("w%d:", i+1);
@@ -87,7 +89,7 @@ void Schedule() {
 		putchar('\n');
 		#endif
 	}
-	
+
 	#ifdef WATCH_MEM
 	watchSolutionOnce(getpid(), usedMemory);
 	#endif
@@ -130,12 +132,12 @@ int main(int argc, char **argv) {
 	#ifdef LOCAL_DEBUG
 	fprintf(stderr, "finish scheduling.\n");
 	#endif
-	
+
 	// step3: output result
 	int ans = calcResult(taskN, compTime);
 	double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
 	#ifdef WATCH_MEM
-	dumpResult(execName, ans, usedTime, usedMemory/1024.0)
+	dumpResult(execName, ans, usedTime, usedMemory/1024.0);
 	#else
 	dumpResult(execName, ans, usedTime);
 	#endif

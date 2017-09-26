@@ -6,7 +6,7 @@ import sys
 import os
 
 class constForDataSet:
-    locRng = [0, 3]
+    locRng = [0, 5000]
 
 class CFDS(constForDataSet):
     pass
@@ -40,6 +40,12 @@ class normalGenerator(baseGenerator):
                 ret[i] = rb
         return ret
 
+    def setMu(self, mu):
+        self.mu = mu
+
+    def setSigma(self, sigma):
+        self.sigma = sigma
+
 
 class uniformGenerator(baseGenerator):
 
@@ -56,10 +62,22 @@ class uniformGenerator(baseGenerator):
                 ret[i] = rb
 	    return ret
 
+    def setLow(self, low):
+        self.low = low
+
+    def setHigh(self, high):
+        self.high = high
+
 class locGenerator(baseGenerator):
 
     def __init__(self, low, high):
         self.low = low
+        self.high = high
+
+    def setLow(self, low):
+        self.low = low
+
+    def setHigh(self, high):
         self.high = high
 
     def gen(self, n, permitLayer = True):
@@ -82,7 +100,7 @@ class locGenerator(baseGenerator):
 def genData(desFile, taskN, workerN, K, epsilon, grt):
     locGrt = locGenerator(CFDS.locRng[0], CFDS.locRng[1])
     taskLoc = locGrt.gen(taskN, False)
-    workerLoc = locGrt.gen(workerN, True)
+    workerLoc = locGrt.gen(workerN, False)
     workerAcc = grt.gen(workerN)
     with open(desFile, "w") as fout:
         line = "%s %s\n" % (K, epsilon)
@@ -90,12 +108,12 @@ def genData(desFile, taskN, workerN, K, epsilon, grt):
         line = "%s\n" % (taskN)
         fout.write(line)
         for i in xrange(taskN):
-            line = "%s %s\n" % (taskLoc[i][0], taskLoc[i][1])
+            line = "%s %s\n" % (taskLoc[i][0]/10.0, taskLoc[i][1]/10.0)
             fout.write(line)
         line = "%s\n" % (workerN)
         fout.write(line)
         for i in xrange(workerN):
-            line = "%s %s %.2f\n" % (workerLoc[i][0], workerLoc[i][1], workerAcc[i])
+            line = "%s %s %.2f\n" % (workerLoc[i][0]/10.0, workerLoc[i][1]/10.0, workerAcc[i])
             fout.write(line)
 
 
@@ -107,14 +125,93 @@ def genDataBatch(desFilePath, n, taskN, workerN, K, epsilon, grt):
 
 
 def genDataSet(desFilePath):
-    taskN = 6
-    K = 2
-    workerN = 25
-    epsilon = 0.32
-    grt = uniformGenerator(0.84, 0.96)
-    genDataBatch(desFilePath, 10, taskN, workerN, K, epsilon, grt)
-
+    runTime = 50
+    normalGrt = normalGenerator(0.0, 0.05)
+    uniformGrt = uniformGenerator(0.0, 0.0)
+    taskNList = [500, 1000, 2500, 5000, 10000]
+    KList = [2, 4, 6, 8, 10]
+    workerN = 50000
+    epsilonList = [0.01, 0.05, 0.1, 0.15, 0.2]
+    scal_taskNList = [10000, 20000, 30000, 40000, 50000, 100000]
+    scal_workerN = 500000
+    muList = [0,75, 0.80, 0.85, 0.90, 0.95]
+    for taskN in taskNList:
+        K = KList[2]
+        epsilon = epsilonList[2]
+        mu = muList[2]
+        normalGrt.setMu(mu)
+        subDesFilePath = "%d_%d_%.2f_%.2f_N" % (taskN, K, epsilon, mu)
+        subDesFilePath = os.path.join(desFilePath, subDesFilePath)
+        if not os.path.exists(subDesFilePath):
+            os.mkdir(subDesFilePath)
+        genDataBatch(subDesFilePath, runTime, taskN, workerN, K, epsilon, normalGrt)
+    for K in KList:
+        if K == KList[2]:
+            continue
+        taskN = taskNList[2]
+        epsilon = epsilonList[2]
+        mu = muList[2]
+        normalGrt.setMu(mu)
+        subDesFilePath = "%d_%d_%.2f_%.2f_N" % (taskN, K, epsilon, mu)
+        subDesFilePath = os.path.join(desFilePath, subDesFilePath)
+        if not os.path.exists(subDesFilePath):
+            os.mkdir(subDesFilePath)
+        genDataBatch(subDesFilePath, runTime, taskN, workerN, K, epsilon, normalGrt)
+    for epsilon in epsilonList:
+        if epsilon == epsilonList[2]:
+            continue
+        taskN = taskNList[2]
+        K = KList[2]
+        mu = muList[2]
+        normalGrt.setMu(mu)
+        subDesFilePath = "%d_%d_%.2f_%.2f_N" % (taskN, K, epsilon, mu)
+        subDesFilePath = os.path.join(desFilePath, subDesFilePath)
+        if not os.path.exists(subDesFilePath):
+            os.mkdir(subDesFilePath)
+        genDataBatch(subDesFilePath, runTime, taskN, workerN, K, epsilon, normalGrt)
+    for mu in muList:
+        if mu == muList[2]:
+            continue
+        taskN = taskNList[2]
+        K = KList[2]
+        epsilon = epsilonList[2]
+        normalGrt.setMu(mu)
+        subDesFilePath = "%d_%d_%.2f_%.2f_N" % (taskN, K, epsilon, mu)
+        subDesFilePath = os.path.join(desFilePath, subDesFilePath)
+        if not os.path.exists(subDesFilePath):
+            os.mkdir(subDesFilePath)
+        genDataBatch(subDesFilePath, runTime, taskN, workerN, K, epsilon, normalGrt)
+    for mu in muList:
+            if mu == muList[2]:
+                continue
+            taskN = taskNList[2]
+            K = KList[2]
+            epsilon = epsilonList[2]
+            if mu <= 0.85:
+                low = 0.7
+                high = 2*mu - low
+            else:
+                high = 1.0
+                low = 2*mu - high
+            uniformGrt.setLow(low)
+            uniformGrt.setHigh(high)
+            subDesFilePath = "%d_%d_%.2f_%.2f_U" % (taskN, K, epsilon, mu)
+            subDesFilePath = os.path.join(desFilePath, subDesFilePath)
+            if not os.path.exists(subDesFilePath):
+                os.mkdir(subDesFilePath)
+            genDataBatch(subDesFilePath, runTime, taskN, workerN, K, epsilon, uniformGrt)
+    return
+    for scal_taskN in scal_taskNList:
+        K = KList[2]
+        epsilon = epsilonList[2]
+        mu = muList[2]
+        normalGrt.setMu(mu)
+        subDesFilePath = "%d_%d_%.2f_%.2f_S" % (scal_taskN, K, epsilon, mu)
+        subDesFilePath = os.path.join(desFilePath, subDesFilePath)
+        if not os.path.exists(subDesFilePath):
+            os.mkdir(subDesFilePath)
+        genDataBatch(subDesFilePath, runTime, scal_taskN, scal_workerN, K, epsilon, normalGrt)
 
 if __name__ == "__main__":
-    desFilePath = "/home/turf/Code/Introduction_to_Algorithms/ICDE18/dataSet"
+    desFilePath = "/home/turf/Code/dataSet"
     genDataSet(desFilePath)

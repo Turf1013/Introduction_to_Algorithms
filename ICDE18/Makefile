@@ -29,8 +29,8 @@ LGF: monitor.h input.h output.h global.h LGF.cpp
 LRFM: monitor.h input.h output.h global.h LRF.cpp
 	$(CXX) $(CFLAGS) -o LRFM LRF.cpp $(LIBS) -D WATCH_MEM
 
-offline: monitor.h input.h output.h global.h offline.cpp
-	$(CXX) $(CFLAGS) -o offline offline.cpp $(LIBS)
+offline: monitor.h input.h output.h global.h offline_fast.cpp
+	$(CXX) $(CFLAGS) -o offline offline_fast.cpp $(LIBS)
 
 offlineM: monitor.h input.h output.h global.h offline.cpp
 	$(CXX) $(CFLAGS) -o offlineM offline.cpp $(LIBS) -D WATCH_MEM
@@ -57,5 +57,5 @@ AAMM: monitor.h input.h output.h global.h AAM.cpp
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm RR LRF OLRF offline PR 2> /dev/null || true
-		-@rm RRM LRFM OLRFM offlineM PRM 2> /dev/null || true
+		-@rm RRM LUF LRFM OLRFM offlineM PRM 2> /dev/null || true
 		-@rm LGF AAM AAMM MCF MCFM LAF LAFM 2> /dev/null || true
