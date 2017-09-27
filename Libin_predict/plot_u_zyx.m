@@ -11,7 +11,7 @@ linewidth = 1.5;
 figure;
 hold on;
 
-figuresize(5, 4, 'inches');
+%figuresize(5, 4, 'inches');
 
 box on;
 x1 = [5000,10000,20000,30000,40000];

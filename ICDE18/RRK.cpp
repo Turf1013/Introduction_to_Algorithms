@@ -11,17 +11,18 @@ using namespace std;
 #include "output.h"
 #include "global.h"
 
-//#define LOCAL_DEBUG
-//#define LOG_ALLOCATE
+// #define LOCAL_DEBUG
+// #define LOG_ALLOCATE
 
 #ifdef WATCH_MEM
 #include "monitor.h"
 int usedMemory = 0;
 #endif
 
+extern const double eps;
 const int inf = 1<<30;
 int K;
-int* compTime;
+int *compTime, *tids;
 task_t* tasks;
 worker_t* workers;
 int taskN = 0;
@@ -48,6 +49,7 @@ void readInput(istream& fin) {
 	readInput_Tasks(fin, taskN, tasks);
 	readInput_Workers(fin, workerN, workers);
 	compTime = new int[taskN];
+	tids = new int[taskN];
 	for (int i=0; i<taskN; ++i)
 		compTime[i] = inf;
 	#ifdef LOCAL_DEBUG
@@ -59,6 +61,7 @@ void FreeMem() {
 	delete[] compTime;
 	delete[] tasks;
 	delete[] workers;
+	delete[] tids;
 }
 
 void Schedule() {
@@ -68,21 +71,26 @@ void Schedule() {
 		#ifdef LOG_ALLOCATE
 		printf("w%d:", i+1);
 		#endif
-		for (int j=0; leftNum>0&&j<K; ++j) {
-			while (tasks[cid].s >= delta) {
-				if (++cid == taskN) cid =0;
-			}
-			double ut = calcUtility(tasks[cid], workers[i]);
-			tasks[cid].s += ut;
-			if (tasks[cid].s >= delta) {
-				compTime[cid] = i;
+		int reachN = 0;
+		for (int j=0; j<taskN; ++j) {
+			if (tasks[j].s >= delta)
+				continue;
+			double ut = calcUtility(tasks[j], workers[i]);
+			if (ut > eps)
+				tids[reachN++] = j;
+		}
+		random_shuffle(tids, tids+reachN);
+		for (int j=min(reachN,K)-1; j>=0; --j) {
+			int taskId = tids[j];
+			#ifdef LOG_ALLOCATE
+			printf(" %d:", taskId+1);
+			#endif
+			double ut = calcUtility(tasks[taskId], workers[i]);
+			tasks[taskId].s += ut;
+			if (tasks[taskId].s >= delta) {
+				compTime[taskId] = i;
 				--leftNum;
 			}
-			if (++cid == taskN) cid = 0;
-
-			#ifdef LOG_ALLOCATE
-			printf(" t%d", cid+1);
-			#endif
 		}
 		#ifdef LOG_ALLOCATE
 		putchar('\n');
@@ -95,7 +103,7 @@ void Schedule() {
 }
 
 int main(int argc, char **argv) {
-	string execName("RR");
+	string execName("RandomK");
 
 	string srcFileName;
 	if (argc > 1) {

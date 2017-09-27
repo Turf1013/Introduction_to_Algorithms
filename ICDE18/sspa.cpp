@@ -141,6 +141,7 @@ void new_Graph(int uN) {
 	dis = new double[vertexN];
 	pre = new int[vertexN];
 	ID = new int[vertexN];
+	cnt = new int[vertexN];
 }
 
 void init_Graph(int bid, int eid) {
