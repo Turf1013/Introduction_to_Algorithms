@@ -21,9 +21,10 @@ aam1 = [3398.14, 4240.74, 6604.18, 10843.36, 19420.52];
 mcf1 = [3068.00, 3662.00, 0.00, 0.00, 0.00];
 mpdc5 = distinguishable_colors(5);
 plot(x1, rrk1, 'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
+plot(x1, aam1, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x1, mcf1, '*-', 'Color', mpdc5(4, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x1, laf1, 's--', 'Color', mpdc5(5, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-plot(x1, aam1, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
+
 %旋转
 set( gca(), 'XTickLabel', x1 )
 rotateXLabels( gca(), 60 )
@@ -32,7 +33,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x1);
 
 xlabel('|W|', 'FontSize', 14);
 ylabel('Max Index of Worker', 'FontSize', 14);
-h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM', 'Location','SouthEast');
+h_legend = legend('RandomK', 'MCF',  'LAF', 'AAM', 'Location','SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -61,7 +62,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x2);
 %set(gca, 'XLim', [25, 125]);
 xlabel('|W|', 'FontSize', 14);
 ylabel('Time(secs)', 'FontSize', 14);
-h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM', 'Location','SouthEast');
+h_legend = legend('RandomK', 'MCF',  'LAF', 'AAM', 'Location','SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -83,18 +84,17 @@ plot(x3, rrk3, 'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize',
 plot(x3, aam3, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x3, mcf3, '*-', 'Color', mpdc5(4, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x3, laf3, 's--', 'Color', mpdc5(5, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-
 set( gca(), 'XTickLabel', x3 )
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x3);
 %set(gca, 'XLim', [25, 125]);
 xlabel('|W|', 'FontSize', 14);
 ylabel('Memory(MB)', 'FontSize', 14);
-h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM','Location', 'SouthEast');
+h_legend = legend('RandomK', 'MCF',  'LAF', 'AAM', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
-return ;
+
 
 %4---------------------------------------------------------
 figure;
@@ -103,16 +103,14 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x4 = [5000,10000,20000,30000,40000];
-rrk4= [1808,2956,4241,5220,5918];
-laf4= [4412,8057,12560,15084,16260];
-aam4= [2030,3902,6640,8215,9152];
-aamg4= [1901,3224,4622,5757,6581];
-mcf4= [3027,5771,9591,11858,13127];
+x4 = [2,4,6,8,10];
+rrk4 = [17814.080, 9909.020, 7106.120, 5921.340, 5399.440];
+laf4 = [17125.800, 9408.380, 6811.700, 5733.460, 5144.740];
+aam4 = [16045.940, 8990.000, 6604.180, 5616.940, 5099.680];
+mcf4 = [0.000, 0.000, 0.000, 0.000, 4973.000];
 mpdc5 = distinguishable_colors(5);
 plot(x4, rrk4, 'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x4, aam4, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-%plot(x4, aamg4, 'd-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x4, mcf4, '*-', 'Color', mpdc5(4, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x4, laf4, 's--', 'Color', mpdc5(5, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 %旋转
@@ -121,9 +119,9 @@ rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x4);
 %
 
-xlabel('|R|', 'FontSize', 14);
-ylabel('Matching Size', 'FontSize', 14);
-h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM','Location', 'SouthEast');
+xlabel('|K|', 'FontSize', 14);
+ylabel('Max Index of Worker', 'FontSize', 14);
+h_legend = legend('RandomK', 'MCF',  'LAF', 'AAM','Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -135,12 +133,11 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x5 = [5000,10000,20000,30000,40000];
-rrk5= [1.081000,2.133000,4.864000,7.468000,9.888000];
-laf5= [3.370000,8.039000,10.989000,13.971000,17.111000];
-aam5= [0.015000,0.018000,0.024000,0.031000,0.037000];
-aamg5= [0.0775,0.1673,0.3199,0.4597,0.5880];
-mcf5= [0.012000,0.020000,0.041000,0.053000,0.056000];
+x5 = [2,4,6,8,10];
+rrk5 = [3.427, 1.790, 1.243, 0.921, 0.768];
+laf5 = [3.293, 1.845, 1.271, 0.996, 0.823];
+aam5 = [4.053, 2.167, 1.456, 1.130, 0.922];
+mcf5 = [0.000, 0.000, 0.000, 0.000, 20281.206];
 mpdc5 = distinguishable_colors(5);
 plot(x5, rrk5, 'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x5, aam5, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
@@ -152,9 +149,9 @@ set( gca(), 'XTickLabel', x5 )
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x5);
 %set(gca, 'XLim', [25, 125]);
-xlabel('|R|', 'FontSize', 14);
+xlabel('|K|', 'FontSize', 14);
 ylabel('Time(secs)', 'FontSize', 14);
-h_legend = legend('SimpleGreedy', 'POLAR', 'POLAR-OP', 'laf','Location', 'SouthEast');
+h_legend = legend('RandomK', 'MCF',  'LAF', 'AAM', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -166,16 +163,14 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x6 = [5000,10000,20000,30000,40000];
-rrk6= [4.332031,4.503906,4.523438,4.753906,4.882813];
-laf6= [43.390625,85.285156,160.617188,233.699219,304.035156];
-aam6= [6.417969,6.480469,6.601563,6.703125,6.820313];
-aamg6= [17,17,18,18,19];
-mcf6= [28.472656,28.640625,29.042969,29.242188,29.585938];
+x6 = [2,4,6,8,10];
+rrk6 = [18.949, 18.949, 18.949, 18.949, 18.949];
+laf6 = [18.949, 18.949, 18.949, 18.949, 18.949];
+aam6 = [18.953, 18.953, 18.953, 18.953, 18.953];
+mcf6 = [0.000, 0.000, 0.000, 0.000, 305.453];
 mpdc5 = distinguishable_colors(5);
 plot(x6, rrk6, 'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x6, aam6, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-%plot(x6, aamg6, 'd-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x6, mcf6, '*-', 'Color', mpdc5(4, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x6, laf6, 's--', 'Color', mpdc5(5, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 
@@ -183,7 +178,7 @@ set( gca(), 'XTickLabel', x6 )
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x6);
 %set(gca, 'XLim', [25, 125]);
-xlabel('|R|', 'FontSize', 14);
+xlabel('|K|', 'FontSize', 14);
 ylabel('Memory(MB)', 'FontSize', 14);
 h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM', 'Location','SouthEast');
 set(h_legend, 'FontSize', legendsize);
@@ -197,16 +192,14 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x7 = [1.0,1.5,2.0,2.5,3.0];
-rrk7= [2348,3296,4241,5595,7134];
-laf7= [8142,10579,12560,15128,17195];
-aam7= [4143,5539,6640,8017,9169];
-aamg7= [2331,3487,4622,6306,8097];
-mcf7= [6029,8026,9591,11431,13025];
+x7 = [0.01, 0.05, 0.1, 0.15, 0.2];
+rrk7 = [13394.400, 9236.760, 7106.120, 6056.520, 5407.680];
+laf7 = [12647.080, 8767.900, 6811.700, 5903.200, 5161.160];
+aam7 = [12417.200, 8498.240, 6604.180, 5632.900, 4877.840];
+mcf7 = [0.000, 0.000, 0.000, 0.000, 0.000];
 mpdc5 = distinguishable_colors(5);
 plot(x7, rrk7, 'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x7, aam7, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-%plot(x7, aamg7, 'd-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x7, mcf7, '*-', 'Color', mpdc5(4, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x7, laf7, 's--', 'Color', mpdc5(5, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 %旋转
@@ -215,9 +208,9 @@ rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x7);
 %
 
-xlabel('Dr', 'FontSize', 14);
-ylabel('Matching Size', 'FontSize', 14);
-h_legend = legend('SimpleGreedy', 'POLAR','POLAR-OP', 'laf','Location', 'SouthEast');
+xlabel('\epsilon', 'FontSize', 14);
+ylabel('Max Index of Worker', 'FontSize', 14);
+h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -229,16 +222,14 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x8 = [1.0,1.5,2.0,2.5,3.0];
-rrk8= [4.813000,4.686000,4.864000,4.705000,4.812000];
-laf8= [8.978000,10.013000,10.989000,12.316000,11.831000];
-aam8= [0.031000,0.024000,0.024000,0.025000,0.024000];
-aamg8= [0.3359,0.3393,0.3431,0.3835,0.4563];
-mcf8= [0.019000,0.029000,0.041000,0.044000,0.078000];
+x8 = [0.01, 0.05, 0.1, 0.15, 0.2];
+rrk8 = [2.350, 1.603, 1.243, 0.998, 0.804];
+laf8 = [2.447, 1.656, 1.271, 1.042, 0.894];
+aam8 = [2.760, 1.877, 1.456, 1.212, 1.042];
+mcf8 = [0.000, 0.000, 0.000, 0.000, 0.000];
 mpdc5 = distinguishable_colors(5);
 plot(x8, rrk8, 'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x8, aam8, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-%plot(x8, aamg8, 'd-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x8, mcf8, '*-', 'Color', mpdc5(4, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x8, laf8, 's--', 'Color', mpdc5(5, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 
@@ -246,9 +237,9 @@ set( gca(), 'XTickLabel', x8 )
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x8);
 %set(gca, 'XLim', [25, 125]);
-xlabel('Dr', 'FontSize', 14);
+xlabel('\epsilon', 'FontSize', 14);
 ylabel('Time(secs)', 'FontSize', 14);
-h_legend = legend('SimpleGreedy', 'POLAR', 'POLAR-OP', 'laf','Location', 'SouthEast');
+h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -260,16 +251,14 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x9 = [1.0,1.5,2.0,2.5,3.0];
-rrk9= [4.644531,4.640625,4.523438,4.625000,4.519531];
-laf9= [66.554688,107.191406,160.617188,229.566406,327.441406];
-aam9= [6.589844,6.593750,6.601563,6.589844,6.585938];
-aamg9= [17,17,18,19,19];
-mcf9= [28.812500,28.937500,29.042969,29.253906,29.347656];
+x9 = [0.01, 0.05, 0.1, 0.15, 0.2];
+rrk9 = [18.949, 18.949, 18.949, 18.949, 18.949];
+laf9 = [18.949, 18.949, 18.949, 18.949, 18.949];
+aam9 = [18.953, 18.953, 18.953, 18.953, 18.953];
+mcf9 = [0.000, 0.000, 0.000, 0.000, 0.000];
 mpdc5 = distinguishable_colors(5);
 plot(x9, rrk9, 'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x9, aam9, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-%plot(x9, aamg9, 'd-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x9, mcf9, '*-', 'Color', mpdc5(4, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x9, laf9, 's--', 'Color', mpdc5(5, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 
@@ -277,7 +266,7 @@ set( gca(), 'XTickLabel', x9 )
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x9);
 %set(gca, 'XLim', [25, 125]);
-xlabel('Dr', 'FontSize', 14);
+xlabel('\epsilon', 'FontSize', 14);
 ylabel('Memory(MB)', 'FontSize', 14);
 h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM','Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
@@ -291,16 +280,14 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x10 = [20,30,50,100,200];
-rrk10= [7723,6211,4241,2348,405];
-laf10= [14110,13334,12560,12767,8149];
-aam10= [8775,7692,6640,6071,3586];
-aamg10= [8161,6673,4622,2572,380];
-mcf10= [12769,11084,9591,8332,4704];
+x10 = [0.75,0.8,0.85,0.9,0.95];
+rrk10 = [12663.700, 9518.120, 7106.120, 5757.900, 4760.460];
+laf10 = [12221.280, 8891.300, 6811.700, 5520.360, 4641.640];
+aam10 = [11841.460, 8671.520, 6604.180, 5344.240, 4509.740];
+mcf10 = [0.000, 0.000, 0.000, 0.000, 0.000];
 mpdc5 = distinguishable_colors(5);
 plot(x10, rrk10, 'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x10, aam10, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-%plot(x10, aamg10, 'd-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x10, mcf10, '*-', 'Color', mpdc5(4, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x10, laf10, 's--', 'Color', mpdc5(5, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 %旋转
@@ -309,8 +296,8 @@ rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x10);
 %
 
-xlabel('Grid', 'FontSize', 14);
-ylabel('Matching Size', 'FontSize', 14);
+xlabel('\mu', 'FontSize', 14);
+ylabel('Max Index of Worker', 'FontSize', 14);
 h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM','Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
@@ -323,16 +310,14 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x11 = [20,30,50,100,200];
-rrk11= [4.956000,4.860000,4.864000,4.944000,4.862000];
-laf11= [11.047000,9.657000,10.989000,10.752000,8.785000];
-aam11= [0.024000,0.028000,0.024000,0.026000,0.023000];
-aamg11= [0.3816,0.2813,0.2956,0.2959,0.2431];
-mcf11= [0.038000,0.040000,0.041000,0.036000,0.044000];
+x11 = [0.75,0.8,0.85,0.9,0.95];
+rrk11 = [2.240, 1.636, 1.243, 0.927, 0.744];
+laf11 = [2.412, 1.719, 1.271, 0.981, 0.770];
+aam11 = [2.675, 1.959, 1.456, 1.131, 0.905];
+mcf11 = [0.000, 0.000, 0.000, 0.000, 0.000];
 mpdc5 = distinguishable_colors(5);
 plot(x11, rrk11, 'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x11, aam11, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-%plot(x11, aamg11, 'd-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x11, mcf11, '*-', 'Color', mpdc5(4, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x11, laf11, 's--', 'Color', mpdc5(5, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 
@@ -340,9 +325,9 @@ set( gca(), 'XTickLabel', x11 )
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x11);
 %set(gca, 'XLim', [25, 125]);
-xlabel('Grid', 'FontSize', 14);
+xlabel('\mu', 'FontSize', 14);
 ylabel('Time(secs)', 'FontSize', 14);
-h_legend = legend('SimpleGreedy', 'POLAR', 'POLAR-OP', 'laf','Location', 'SouthEast');
+h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -354,16 +339,14 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x12 = [20,30,50,100,200];
-rrk12= [4.492188,4.644531,4.523438,4.496094,4.726563];
-laf12= [195.074219,170.277344,160.617188,149.824219,65.492188];
-aam12= [5.046875,5.406250,6.601563,12.070313,34.054688];
-aamg12= [18,18,18,17,17];
-mcf12= [9.980469,14.750000,29.042969,33.582031,40.386719];
+x12 = [0.75,0.8,0.85,0.9,0.95];
+rrk12 = [18.949, 18.949, 18.949, 18.949, 18.949];
+laf12 = [18.949, 18.949, 18.949, 18.949, 18.949];
+aam12 = [18.953, 18.953, 18.953, 18.953, 18.953];
+mcf12 = [0.000, 0.000, 0.000, 0.000, 0.000];
 mpdc5 = distinguishable_colors(5);
 plot(x12, rrk12,'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x12, aam12, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-%plot(x12, aamg12, 'd-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x12, mcf12, '*-', 'Color', mpdc5(4, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x12, laf12, 's--', 'Color', mpdc5(5, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 
@@ -371,7 +354,7 @@ set( gca(), 'XTickLabel', x12 )
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x12);
 %set(gca, 'XLim', [25, 125]);
-xlabel('Grid', 'FontSize', 14);
+xlabel('\mu', 'FontSize', 14);
 ylabel('Memory(MB)', 'FontSize', 14);
 h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM','Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
@@ -385,16 +368,14 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x13 = [12,24,48,96,144];
-rrk13= [4273,4420,4241,4238,4029];
-laf13= [11987,12655,12560,12364,11886];
-aam13= [7846,7421,6640,5965,5512];
-aamg13= [4904,4980,4622,4470,4149];
-mcf13= [11191,10951,9591,8256,7375];
+x13 = [0.75,0.8,0.85,0.9,0.95];
+rrk13 = [13367.660, 9292.280, 7146.940, 5803.560, 4850.180];
+laf13 = [12597.680, 8887.000, 6847.920, 5499.780, 4677.220];
+aam13 = [12371.700, 8716.060, 6663.180, 5293.800, 4573.560];
+mcf13 = [0.000, 8324.000, 0.000, 0.000, 4163.000];
 mpdc5 = distinguishable_colors(5);
 plot(x13, rrk13, 'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x13, aam13, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-%plot(x13, aamg13, 'd-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x13, mcf13, '*-', 'Color', mpdc5(4, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x13, laf13, 's--', 'Color', mpdc5(5, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 %旋转
@@ -403,9 +384,9 @@ rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x13);
 %
 
-xlabel('Time Slot', 'FontSize', 14);
-ylabel('Matching Size', 'FontSize', 14);
-h_legend = legend('SimpleGreedy', 'POLAR', 'POLAR-OP', 'laf','Location', 'SouthEast');
+xlabel('\mu', 'FontSize', 14);
+ylabel('Max Index of Worker', 'FontSize', 14);
+h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -417,16 +398,14 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x14 =  [12,24,48,96,144];
-rrk14= [5.085000,5.072000,4.864000,4.725000,4.654000];
-laf14= [13.552000,11.251000,10.989000,9.492000,8.745000];
-aam14= [0.025000,0.025000,0.024000,0.040000,0.024000];
-aamg14= [1.1450,0.6130,0.2615,0.1618,0.1193];
-mcf14= [0.029000,0.049000,0.041000,0.037000,0.031000];
+x14 =  [0.75,0.8,0.85,0.9,0.95];
+rrk14 = [2.385, 1.642, 1.136, 0.897, 0.745];
+laf14 = [2.516, 1.714, 1.244, 0.961, 0.778];
+aam14 = [2.796, 1.945, 1.465, 1.119, 0.905];
+mcf14 = [0.000, 39719.082, 0.000, 0.000, 32416.289];
 mpdc5 = distinguishable_colors(5);
 plot(x14, rrk14, 'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x14, aam14, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-%plot(x14, aamg14, 'd-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x14, mcf14, '*-', 'Color', mpdc5(4, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x14, laf14, 's--', 'Color', mpdc5(5, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 
@@ -434,9 +413,9 @@ set( gca(), 'XTickLabel', x14 )
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x14);
 %set(gca, 'XLim', [25, 125]);
-xlabel('Time Slot', 'FontSize', 14);
+xlabel('\mu', 'FontSize', 14);
 ylabel('Time(secs)', 'FontSize', 14);
-h_legend = legend('SimpleGreedy', 'POLAR','POLAR-OP', 'laf','Location', 'SouthEast');
+h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -448,16 +427,14 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x15 =  [12,24,48,96,144];
-rrk15= [4.742188,4.484375,4.523438,4.515625,4.507813];
-laf15= [524.535156,301.890625,160.617188,86.195313,59.578125];
-aam15= [5.210938,5.675781,6.601563,8.425781,10.261719];
-aamg15= [25,21,18,17,17];
-mcf15= [12.171875,17.304688,29.042969,53.890625,77.957031];
+x15 =  [0.75,0.8,0.85,0.9,0.95];
+rrk15 = [18.949, 18.949, 18.949, 18.949, 18.949];
+laf15 = [18.949, 18.949, 18.949, 18.949, 18.949];
+aam15 = [18.953, 18.953, 18.953, 18.953, 18.953];
+mcf15 = [0.000, 0.000, 0.000, 0.000, 0.000];
 mpdc5 = distinguishable_colors(5);
 plot(x15, rrk15,'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x15, aam15, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-%plot(x15, aamg15, 'd-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x15, mcf15, '*-', 'Color', mpdc5(4, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x15, laf15, 's--', 'Color', mpdc5(5, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 
@@ -465,9 +442,9 @@ set( gca(), 'XTickLabel', x15 )
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x15);
 %set(gca, 'XLim', [25, 125]);
-xlabel('Time Slot', 'FontSize', 14);
+xlabel('\mu', 'FontSize', 14);
 ylabel('Memory(MB)', 'FontSize', 14);
-h_legend = legend('SimpleGreedy', 'POLAR', 'POLAR-OP', 'laf','Location', 'SouthEast');
+h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -479,12 +456,11 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x16 = [0.25,0.375,0.5,0.625,0.75];
-rrk16= [4289,4226,4241,4264,4127];
-laf16= [12413,12370,12560,12251,12007];
-aam16= [6515,6579,6640,6530,6239];
-aamg16= [4699,4666,4622,4674,4493];
-mcf16= [9462,9522,9591,9360,9086];
+x16 = [10000,20000,30000,40000,50000,100000];
+rrk16 = [21943.320, 41249.780, 60562.140, 79393.120, 98260.640, 192006.385];
+laf16 = [20365.900, 37985.980, 55540.780, 72608.460, 89323.680, 172813.889];
+aam16 = [19168.200, 35946.300, 52959.800, 68049.300, 84648.800, 167350.000];
+mcf16 = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000];
 mpdc5 = distinguishable_colors(5);
 plot(x16, rrk16, 'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x16, aam16, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
@@ -497,9 +473,9 @@ rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x16);
 %
 
-xlabel('\mu', 'FontSize', 14);
-ylabel('Matching Size', 'FontSize', 14);
-h_legend = legend('SimpleGreedy', 'POLAR', 'POLAR-OP', 'laf','Location', 'SouthEast');
+xlabel('|T|', 'FontSize', 14);
+ylabel('Max Index of Worker', 'FontSize', 14);
+h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -511,16 +487,14 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x17 = [0.25,0.375,0.5,0.625,0.75];
-rrk17= [5.264000,5.097000,4.864000,4.503000,4.398000];
-laf17= [10.266000,10.303000,10.989000,10.215000,10.771000];
-aam17= [0.025000,0.024000,0.024000,0.025000,0.024000];
-aamg17= [0.3644,0.2535,0.2902,0.2310,0.2884];
-mcf17= [0.045000,0.042000,0.041000,0.039000,0.040000];
+x17 = [10000,20000,30000,40000,50000,100000];
+rrk17 = [16.949, 66.788, 148.628, 260.757, 399.753, 1592.338];
+laf17 = [17.266, 69.451, 146.756, 265.318, 410.139, 1614.952];
+aam17 = [22.032, 86.354, 193.289, 336.420, 521.453, 2046.006];
+mcf17 = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000];
 mpdc5 = distinguishable_colors(5);
 plot(x17, rrk17, 'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x17, aam17, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-%plot(x17, aamg17, 'd-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x17, mcf17, '*-', 'Color', mpdc5(4, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x17, laf17, 's--', 'Color', mpdc5(5, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 
@@ -528,7 +502,7 @@ set( gca(), 'XTickLabel', x17 )
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x17);
 %set(gca, 'XLim', [25, 125]);
-xlabel('\mu', 'FontSize', 14);
+xlabel('|T|', 'FontSize', 14);
 ylabel('Time(secs)', 'FontSize', 14);
 h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM','Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
@@ -542,12 +516,11 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x18 = [0.25,0.375,0.5,0.625,0.75];
-rrk18= [4.640625,4.636719,4.523438,4.640625,4.640625];
-laf18= [163.128906,160.582031,160.617188,156.457031,150.785156];
-aam18= [6.593750,6.582031,6.601563,6.601563,6.597656];
-aamg18= [19,18,18,17,17];
-mcf18= [29.054688,29.011719,29.042969,28.996094,29.062500];
+x18 = [10000,20000,30000,40000,50000,100000];
+rrk18 = [35.738, 36.207, 36.586, 36.965, 37.340, 39.250];
+laf18 = [35.738, 36.043, 36.348, 36.809, 37.148, 38.867];
+aam18 = [35.742, 36.211, 36.590, 36.969, 37.344, 39.254];
+mcf18 = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000];
 mpdc5 = distinguishable_colors(5);
 plot(x18, rrk18,'o-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 plot(x18, aam18, 'x-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
@@ -559,12 +532,13 @@ set( gca(), 'XTickLabel', x18 )
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x18);
 %set(gca, 'XLim', [25, 125]);
-xlabel('\mu', 'FontSize', 14);
+xlabel('|T|', 'FontSize', 14);
 ylabel('Memory(MB)', 'FontSize', 14);
-h_legend = legend('SimpleGreedy', 'POLAR', 'POLAR-OP', 'laf','Location', 'SouthEast');
+h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
+return ;
 %19---------------------------------------------------------
 figure;
 hold on;
@@ -591,8 +565,8 @@ set(gca, 'FontSize', fontsize, 'Xtick', x19);
 %
 
 xlabel('\sigma', 'FontSize', 14);
-ylabel('Matching Size', 'FontSize', 14);
-h_legend = legend('SimpleGreedy', 'POLAR', 'POLAR-OP', 'laf','Location', 'SouthEast');
+ylabel('Max Index of Worker', 'FontSize', 14);
+h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -654,7 +628,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x21);
 %set(gca, 'XLim', [25, 125]);
 xlabel('\sigma', 'FontSize', 14);
 ylabel('Memory(MB)', 'FontSize', 14);
-h_legend = legend('SimpleGreedy', 'POLAR','POLAR-OP', 'laf','Location', 'SouthEast');
+h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -684,7 +658,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x22);
 %
 
 xlabel('mean', 'FontSize', 14);
-ylabel('Matching Size', 'FontSize', 14);
+ylabel('Max Index of Worker', 'FontSize', 14);
 h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM','Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
@@ -716,7 +690,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x23);
 %set(gca, 'XLim', [25, 125]);
 xlabel('mean', 'FontSize', 14);
 ylabel('Time(secs)', 'FontSize', 14);
-h_legend = legend('SimpleGreedy', 'POLAR', 'POLAR-OP', 'laf','Location', 'SouthEast');
+h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -777,7 +751,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x25);
 %
 
 xlabel('cov', 'FontSize', 14);
-ylabel('Matching Size', 'FontSize', 14);
+ylabel('Max Index of Worker', 'FontSize', 14);
 h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM','Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
@@ -840,7 +814,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x27);
 %set(gca, 'XLim', [25, 125]);
 xlabel('cov', 'FontSize', 14);
 ylabel('Memory(MB)', 'FontSize', 14);
-h_legend = legend('SimpleGreedy', 'POLAR', 'POLAR-OP', 'laf','Location', 'SouthEast');
+h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -871,7 +845,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x28);
 %
 
 xlabel('\alpha', 'FontSize', 14);
-ylabel('Matching Size', 'FontSize', 14);
+ylabel('Max Index of Worker', 'FontSize', 14);
 h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM','Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
@@ -965,7 +939,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x31);
 %
 
 xlabel('|W|(|R|)', 'FontSize', 14);
-ylabel('Matching Size', 'FontSize', 14);
+ylabel('Max Index of Worker', 'FontSize', 14);
 h_legend = legend('RandomK', 'MCF',  'LAF', 'LAM','Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 

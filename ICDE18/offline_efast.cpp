@@ -11,8 +11,8 @@ using namespace std;
 #include "output.h"
 #include "global.h"
 
-//#define LOCAL_DEBUG
-//#define LOG_ALLOCATE
+#define LOCAL_DEBUG
+#define LOG_ALLOCATE
 
 #ifdef WATCH_MEM
 #include "monitor.h"
@@ -52,11 +52,10 @@ void FreeMem() {
 	delete[] tasks;
 	delete[] workers;
 	delete[] vlabels;
-	delete[] wcap;
 }
 
 int main(int argc, char **argv) {
-	string execName("offline");
+	string execName("MCF");
 
 	string srcFileName;
 	if (argc > 1) {
@@ -371,7 +370,7 @@ void greedy_Assign(int& leftNum, int bid, int eid) {
 		wcap[j-bid] = K;
 
 	typedef pair<pdi, int> pdii;
-	priority_queue<pdii, vector<pdii>, less<pdii> > Q;
+	priority_queue<pdii, vector<pdii>, greater<pdii> > Q;
 	for (int i=0; i<taskN; ++i) {
 		if (tasks[i].s >= delta)
 			continue;
@@ -389,7 +388,6 @@ void greedy_Assign(int& leftNum, int bid, int eid) {
 		int taskId = p.second, workerId = p.first.second;
 		if (tasks[taskId].s>=delta || wcap[workerId]<=0)
 			continue;
-		--wcap[workerId];
 		double ut = p.first.first;
 		tasks[taskId].s += ut;
 		if (tasks[taskId].s >= delta) {

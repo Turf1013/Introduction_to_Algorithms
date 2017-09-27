@@ -42,25 +42,28 @@ def gao(d):
 	ret = ""
 	for i in xrange(len(d)):
 		if i == 0:
-			ret += "%.2f" % (d[i])
+			ret += "%.3f" % (d[i])
 		else:
-			ret += ", %.2f" % (d[i])
+			ret += ", %.3f" % (d[i])
 	ret = "[%s]" % (ret)
 	return ret
 	
 	
 def findResult(d, arr):
-	if arr not in d:
-		return [0.0] * 3
-	infoList = d[arr]
+	algoNames = ["RRKM", "LAFM", "AAMM", "SSPAM"]
 	tmpDict = dict()
+	if arr not in d:
+		for algoName in algoNames:
+			tmpDict[algoName] = [0.0] * 3
+		return tmpDict
+	infoList = d[arr]
 	for tmpList in infoList:
-		tmpDict[tmpList[0]] = tmpList[1:]
-	algoNames = ["RRKM", "LAFM", "AAMM", "SSPAM"]			
+		tmpDict[tmpList[0]] = tmpList[1:]			
 	for algoName in algoNames:
 		if algoName not in tmpDict:
 			tmpDict[algoName] = [0.0] * 3
 	return tmpDict
+	
 	
 def turnToLine(d, id):	
 	algoNames = ["RRKM", "LAFM", "AAMM", "SSPAM"]
@@ -112,6 +115,7 @@ def getResult(aDict):
 	line = ""
 	
 	resDict = dict()
+	idx = 1
 	for taskN in taskNList:
 		K = KList[2]
 		epsilon = epsilonList[2]
@@ -122,40 +126,81 @@ def getResult(aDict):
 			if algoName not in resDict:
 				resDict[algoName] = []
 			resDict[algoName].append(tmpList)
-	line += turnToLine(resDict, 1)
-	
+	line += turnToLine(resDict, idx)
+	idx += 3
 	resDict = dict()
+	
 	for K in KList:
 		taskN = taskNList[2]
 		epsilon = epsilonList[2]
 		mu = muList[2]
 		arrName = "%d_%d_%.2f_%.2f_N" % (taskN, K, epsilon, mu)
-		
+		tmpDict = findResult(aDict, arrName)
+		for algoName,tmpList in tmpDict.iteritems():
+			if algoName not in resDict:
+				resDict[algoName] = []
+			resDict[algoName].append(tmpList)
+	line += turnToLine(resDict, idx)
+	idx += 3
 	resDict = dict()	
+	
 	for epsilon in epsilonList:
 		taskN = taskNList[2]
 		K = KList[2]
 		mu = muList[2]
 		arrName = "%d_%d_%.2f_%.2f_N" % (taskN, K, epsilon, mu)
-		
+		tmpDict = findResult(aDict, arrName)
+		for algoName,tmpList in tmpDict.iteritems():
+			if algoName not in resDict:
+				resDict[algoName] = []
+			resDict[algoName].append(tmpList)
+	line += turnToLine(resDict, idx)
+	idx += 3
+	resDict = dict()
+	
 	for mu in muList:
 		taskN = taskNList[2]
 		K = KList[2]
 		epsilon = epsilonList[2]
 		arrName = "%d_%d_%.2f_%.2f_N" % (taskN, K, epsilon, mu)
-	   
+		tmpDict = findResult(aDict, arrName)
+		for algoName,tmpList in tmpDict.iteritems():
+			if algoName not in resDict:
+				resDict[algoName] = []
+			resDict[algoName].append(tmpList)
+	line += turnToLine(resDict, idx)
+	idx += 3
+	resDict = dict()
+	
 	for mu in muList:
 		taskN = taskNList[2]
 		K = KList[2]
 		epsilon = epsilonList[2]
 		arrName = "%d_%d_%.2f_%.2f_U" % (taskN, K, epsilon, mu)
-		
+		tmpDict = findResult(aDict, arrName)
+		# print tmpDict, arrName
+		for algoName,tmpList in tmpDict.iteritems():
+			if algoName not in resDict:
+				resDict[algoName] = []
+			resDict[algoName].append(tmpList)
+	line += turnToLine(resDict, idx)
+	idx += 3
+	resDict = dict()
+	
 	for scal_taskN in scal_taskNList:
 		K = KList[2]
 		epsilon = epsilonList[2]
 		mu = muList[2]
 		arrName = "%d_%d_%.2f_%.2f_S" % (scal_taskN, K, epsilon, mu)
-		
+		tmpDict = findResult(aDict, arrName)
+		for algoName,tmpList in tmpDict.iteritems():
+			if algoName not in resDict:
+				resDict[algoName] = []
+			resDict[algoName].append(tmpList)
+	line += turnToLine(resDict, idx)
+	idx += 3
+	resDict = dict()
+	
 	with open("F:/tmp2.txt", "w") as fout:
 		fout.writelines(line)
 
