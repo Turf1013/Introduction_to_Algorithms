@@ -19,6 +19,7 @@ using namespace std;
 int usedMemory = 0;
 #endif
 
+extern const double eps;
 const int inf = 1<<30;
 int K, t0;
 int* compTime;
@@ -195,11 +196,15 @@ void build_Graph(int leftNum, int bid, int eid) {
 	}
 	for (int i=0; i<vN; ++i) {
 		int taskId = vlabels[i];
+		if (tasks[taskId].s >= delta)
+			continue;
 		int c = (int)ceil(delta - tasks[taskId].s);
 		add_Edge(uN+i, ed, c, 0);
 
 		for (int j=0; j<uN; ++j) {
 			double ut = calcUtility(tasks[taskId], workers[bid+j]);
+			if (ut <= eps) 
+				continue;
 			ut = min(ut, delta-tasks[taskId].s);
 			add_Edge(j, uN+i, 1, -ut);
 		}
@@ -395,14 +400,29 @@ void make_Assign(int& leftNum, int bid, int eid) {
 	}
 }
 
+int calcBatchSize() {
+	int ret = 0;
+	double sum =0;
+	
+	for (int j=0; j<taskN; ++j) {
+		if (tasks[j].s >= delta)
+			continue;
+		sum += delta - tass[j].s;
+	}
+	ret = sum * delta / K;
+	
+	return ret;
+}
+
 void Schedule() {
 	double m = taskN * ceil(delta) / K;
 	int leftNum = taskN, flow;
 	double cost;
 	
 	new_Graph((int)floor(2*m));
-	for (int rid=0,bid=0,eid; leftNum>0&&bid<workerN; ++rid,bid=eid) {z
-		eid = bid + (rid==0 ? floor(2*m) : floor(m));
+	for (int rid=0,bid=0,eid; leftNum>0&&bid<workerN; ++rid,bid=eid) {
+		int batchSize = calcBatchSize();
+		eid = bid + (rid==0 ? floor(2*m):batchSize);
 		eid = min(workerN, eid);
 
 		init_Graph(bid, eid);

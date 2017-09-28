@@ -20,6 +20,8 @@ def calc(srcFilePath):
 				with open(fileName, "r") as fin:
 					line = fin.readlines()[0]
 					L = line.split(' ')[1:]
+					if float(L[0]) >= 1073741825:
+						continue
 					for i in xrange(3):
 						avgList[i] += float(L[i])
 					c += 1
@@ -31,11 +33,11 @@ def calc(srcFilePath):
 			if tmpName not in aDict:
 				aDict[tmpName] = []
 			aDict[tmpName].append([execName] + avgList)
-	# with open("F:/tmp.txt", "w") as fout:
-		# for arrName,infoList in aDict.iteritems():
-			# fout.write("%s\n" % (arrName))
-			# for info in infoList:
-				# fout.write("%s\n" % (info))
+	with open("F:/tmp.txt", "w") as fout:
+		for arrName,infoList in aDict.iteritems():
+			fout.write("%s\n" % (arrName))
+			for info in infoList:
+				fout.write("%s\n" % (info))
 	return aDict			
 
 def gao(d):
@@ -50,7 +52,7 @@ def gao(d):
 	
 	
 def findResult(d, arr):
-	algoNames = ["RRKM", "LAFM", "AAMM", "SSPAM"]
+	algoNames = ["RRKM", "LAFM", "AAMM", "SSPAM", "SSPAFM", "offlineM"]
 	tmpDict = dict()
 	if arr not in d:
 		for algoName in algoNames:
@@ -66,7 +68,7 @@ def findResult(d, arr):
 	
 	
 def turnToLine(d, id):	
-	algoNames = ["RRKM", "LAFM", "AAMM", "SSPAM"]
+	algoNames = ["RRKM", "LAFM", "AAMM", "SSPAM", "SSPAFM", "offlineM"]
 	aDict = dict()
 	bDict = dict()
 	cDict = dict()
