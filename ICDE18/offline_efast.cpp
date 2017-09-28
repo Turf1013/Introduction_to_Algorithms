@@ -44,7 +44,7 @@ void readInput(istream& fin) {
 		compTime[i] = inf;
 	vlabels = new int[taskN];
 	double m = taskN * ceil(delta) / K;
-	wcap = new int[(int)floor(m) + 5];
+	wcap = new int[workerN];
 }
 
 void FreeMem() {
@@ -195,6 +195,7 @@ void build_Graph(int leftNum, int bid, int eid) {
 
 		for (int j=0; j<uN; ++j) {
 			double ut = calcUtility(tasks[taskId], workers[bid+j]);
+			if (ut <= eps) continue;
 			ut = min(ut, delta-tasks[taskId].s);
 			add_Edge(j, uN+i, 1, -ut);
 		}
@@ -367,7 +368,7 @@ void make_Assign(int& leftNum, int bid, int eid) {
 
 void greedy_Assign(int& leftNum, int bid, int eid) {
 	for (int j=bid; j<eid; ++j)
-		wcap[j-bid] = K;
+		wcap[j] = K;
 
 	typedef pair<pdi, int> pdii;
 	priority_queue<pdii, vector<pdii>, greater<pdii> > Q;
@@ -388,6 +389,7 @@ void greedy_Assign(int& leftNum, int bid, int eid) {
 		int taskId = p.second, workerId = p.first.second;
 		if (tasks[taskId].s>=delta || wcap[workerId]<=0)
 			continue;
+		--wcap[workerId];
 		double ut = p.first.first;
 		tasks[taskId].s += ut;
 		if (tasks[taskId].s >= delta) {
