@@ -11,8 +11,8 @@ using namespace std;
 #include "output.h"
 #include "global.h"
 
-// #define LOCAL_DEBUG
-// #define LOG_ALLOCATE
+//#define LOCAL_DEBUG
+//#define LOG_ALLOCATE
 
 #ifdef WATCH_MEM
 #include "monitor.h"
@@ -25,7 +25,7 @@ int K, t0;
 int* compTime;
 task_t* tasks;
 worker_t* workers;
-int *vlabels, *wcap;
+int *vlabels;
 int taskN = 0;
 int workerN = 0;
 double delta, epsilon;
@@ -43,8 +43,6 @@ void readInput(istream& fin) {
 	for (int i=0; i<taskN; ++i)
 		compTime[i] = inf;
 	vlabels = new int[taskN];
-	double m = taskN * ceil(delta) / K;
-	wcap = new int[workerN];
 }
 
 void FreeMem() {
@@ -55,7 +53,7 @@ void FreeMem() {
 }
 
 int main(int argc, char **argv) {
-	string execName("offlineM");
+	string execName("SSPAF");
 
 	string srcFileName;
 	if (argc > 1) {
@@ -129,8 +127,23 @@ int *head;
 edge_t *E;
 bool *visit;
 double *dis;
-int *pre, *ID;
+int *pre, *ID, *cnt;
 double m;
+
+void new_Graph(int uN) {
+  int vN = taskN;
+
+  edgeN = 2 * (uN*vN + uN + vN);
+	vertexN = uN + vN + 2;
+
+  head = new int[vertexN];
+	E = new edge_t[edgeN];
+	visit = new bool[vertexN];
+	dis = new double[vertexN];
+	pre = new int[vertexN];
+	ID = new int[vertexN];
+	cnt = new int[vertexN];
+}
 
 void init_Graph(int bid, int eid) {
 	int uN = 0, vN = 0;
@@ -142,17 +155,9 @@ void init_Graph(int bid, int eid) {
 		vlabels[vN++] = j;
 	}
 
-	edgeN = 2 * (uN*vN + uN + vN);
 	vertexN = uN + vN + 2;
 	st = vertexN - 2;
 	ed = vertexN - 1;
-
-	head = new int[vertexN];
-	E = new edge_t[edgeN];
-	visit = new bool[vertexN];
-	dis = new double[vertexN];
-	pre = new int[vertexN];
-	ID = new int[vertexN];
 
 	l = 0;
 	for (int i=0; i<vertexN; ++i)
@@ -166,6 +171,7 @@ void del_Graph() {
 	delete[] dis;
 	delete[] pre;
 	delete[] ID;
+	delete[] cnt;
 }
 
 void add_Edge(int u, int v, int f, double w) {
@@ -195,44 +201,69 @@ void build_Graph(int leftNum, int bid, int eid) {
 
 		for (int j=0; j<uN; ++j) {
 			double ut = calcUtility(tasks[taskId], workers[bid+j]);
-			if (ut <= eps) continue;
 			ut = min(ut, delta-tasks[taskId].s);
+			if (ut <= eps) continue;
 			add_Edge(j, uN+i, 1, -ut);
 		}
 	}
 }
 
-bool bfs() {
-    queue<int> Q;
-    int u, v, k;
+void Bellman_Ford() {
+	int u, v, k;
+	queue<int> Q;
 
 	for (int i=0; i<vertexN; ++i) {
 		dis[i] = inf;
-		visit[i] = false;
+		cnt[i]= 0;
+		pre[i] = -1;
 	}
-	visit[st] = true;
 	dis[st] = 0;
+	cnt[st] = 1;
 	Q.push(st);
 
+	while (!Q.empty()) {
+		u = Q.front();
+		Q.pop();
+		cnt[u] = -cnt[u];
+		for (k=head[u]; k!=-1; k=E[k].nxt) {
+            v = E[k].v;
+            if (E[k].f && dis[v]>dis[u]+E[k].w) {
+                dis[v] = dis[u] + E[k].w;
+                ID[v] = k;
+                pre[v] = u;
+				if (cnt[v] <= 0) {
+					cnt[v] = -cnt[v] + 1;
+					Q.push(v);
+				}
+            }
+        }
+	}
+}
+
+bool bfs() {
+	Bellman_Ford();
+    priority_queue<pdi, vector<pdi>, greater<pdi> > Q;
+    int u, v, k;
+
+	Q.push(make_pair(0., st));
     while (!Q.empty()) {
-        u = Q.front();
+        pdi p = Q.top();
         Q.pop();
-        visit[u] = false;
+		u = p.second;
+		if (dis[p.second] > p.first) continue;
+		if (u == ed) break;
         for (k=head[u]; k!=-1; k=E[k].nxt) {
             v = E[k].v;
             if (E[k].f && dis[v]>dis[u]+E[k].w) {
                 dis[v] = dis[u] + E[k].w;
                 ID[v] = k;
                 pre[v] = u;
-                if (!visit[v]) {
-                    visit[v] = true;
-                    Q.push(v);
-                }
+                Q.push(make_pair(dis[v], v));
             }
         }
     }
 
-    return dis[ed] >= inf;
+    return pre[ed] == -1;
 }
 
 pair<double,int> solve_Graph(int& flow, double& cost) {
@@ -282,6 +313,7 @@ void make_Assign(int& leftNum, int bid, int eid) {
 			if (E[k].f) continue;
 			int taskId = vlabels[E[k].v - uN];
 			double ut = calcUtility(tasks[taskId], workers[workerId]);
+			if (ut <= eps) continue;
 			tasks[taskId].s += ut;
 			if (tasks[taskId].s >= delta) {
 				compTime[taskId] = workerId;
@@ -332,6 +364,7 @@ void make_Assign(int& leftNum, int bid, int eid) {
 			if (tasks[taskId].s >= delta)
 				continue;
 			double ut = calcUtility(tasks[taskId], workers[workerId]);
+			if (ut <= eps) continue;
 			// ut = min(ut, tasks[v].s);
 			Q.push(make_pair(ut, taskId));
 			if (Q.size() > szQ) Q.pop();
@@ -366,79 +399,26 @@ void make_Assign(int& leftNum, int bid, int eid) {
 	}
 }
 
-void greedy_Assign(int& leftNum, int bid, int eid) {
-	for (int j=bid; j<eid; ++j)
-		wcap[j] = K;
-
-	typedef pair<pdi, int> pdii;
-	priority_queue<pdii, vector<pdii>, greater<pdii> > Q;
-	for (int i=0; i<taskN; ++i) {
-		if (tasks[i].s >= delta)
-			continue;
-		for (int j=bid; j<eid; ++j) {
-			double ut = calcUtility(tasks[i], workers[j]);
-			if (ut > eps) {
-				pdi p = make_pair(ut, j);
-				Q.push(make_pair(p, i));
-			}
-		}
-	}
-	while (!Q.empty()) {
-		pdii p = Q.top();
-		Q.pop();
-		int taskId = p.second, workerId = p.first.second;
-		if (tasks[taskId].s>=delta || wcap[workerId]<=0)
-			continue;
-		--wcap[workerId];
-		double ut = p.first.first;
-		tasks[taskId].s += ut;
-		if (tasks[taskId].s >= delta) {
-			compTime[taskId] = workerId;
-			--leftNum;
-		}
-	}
-}
-
 void Schedule() {
 	double m = taskN * ceil(delta) / K;
 	int leftNum = taskN, flow;
 	double cost;
-
-	if (workerN <= floor(2*m)) {
-		int bid = 0, eid = workerN;
+	
+	new_Graph((int)floor(2*m));
+	for (int rid=0,bid=0,eid; leftNum>0&&bid<workerN; ++rid,bid=eid) {
+		eid = bid + (rid==0 ? floor(2*m) : floor(m));
+		eid = min(workerN, eid);
 
 		init_Graph(bid, eid);
+
 		build_Graph(leftNum, bid, eid);
 		solve_Graph(flow, cost);
 		make_Assign(leftNum, bid, eid);
-		#ifdef WATCH_MEM
-		watchSolutionOnce(getpid(), usedMemory);
-		#endif
-
-		del_Graph();
-		return ;
 	}
-	{// first round MinCostFlow
-		int bid = 0, eid = floor(2*m);
-		init_Graph(bid, eid);
-		build_Graph(leftNum, bid, eid);
-		solve_Graph(flow, cost);
-		make_Assign(leftNum, bid, eid);
-		#ifdef WATCH_MEM
-		watchSolutionOnce(getpid(), usedMemory);
-		#endif
 
-		del_Graph();
-	}
-	{// batch greedy
-		int batchSize = floor(m);
-		for (int bid=floor(2*m),eid; leftNum>0&&bid<workerN; bid=eid) {
-			eid = min(workerN, bid+batchSize);
-
-			greedy_Assign(leftNum, bid, eid);
-		}
-	}
 	#ifdef WATCH_MEM
 	watchSolutionOnce(getpid(), usedMemory);
 	#endif
+
+	del_Graph();
 }
