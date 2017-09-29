@@ -16,10 +16,15 @@ def calc(srcFilePath):
 			avgList = [0., 0., 0.]
 			c = 0
 			for fileName in fileNames:
+				dataSetId = int(fileName[5:-4])
+				if dataSetId > 5:
+					continue
 				fileName = os.path.join(filePath, fileName)
 				with open(fileName, "r") as fin:
 					line = fin.readlines()[0]
 					L = line.split(' ')[1:]
+					if "data" in L[0]:
+						continue
 					if float(L[0]) >= 1073741825:
 						continue
 					for i in xrange(3):
@@ -52,7 +57,7 @@ def gao(d):
 	
 	
 def findResult(d, arr):
-	algoNames = ["RRKM", "LAFM", "AAMM", "SSPAM", "SSPAFM", "offlineM"]
+	algoNames = ["RRKM", "SSPAF2M", "LAFM", "AAMM"]
 	tmpDict = dict()
 	if arr not in d:
 		for algoName in algoNames:
@@ -68,7 +73,7 @@ def findResult(d, arr):
 	
 	
 def turnToLine(d, id):	
-	algoNames = ["RRKM", "LAFM", "AAMM", "SSPAM", "SSPAFM", "offlineM"]
+	algoNames = ["RRKM", "SSPAF2M", "LAFM", "AAMM"]
 	aDict = dict()
 	bDict = dict()
 	cDict = dict()
@@ -84,26 +89,27 @@ def turnToLine(d, id):
 		cDict[algoName] = memList
 	ret = ""
 	for algoName in algoNames:
-		if algoName == "SSPAM":
+		if algoName == "SSPAF2M":
 			tmpName = "MCFM"
 		else:
 			tmpName = algoName
 		tmpName = "%s" % (tmpName[:-1].lower())
 		ret += "%s%d = %s;\n" % (tmpName, id, gao(aDict[algoName]))
 	for algoName in algoNames:
-		if algoName == "SSPAM":
+		if algoName == "SSPAF2M":
 			tmpName = "MCFM"
 		else:
 			tmpName = algoName
 		tmpName = "%s" % (tmpName[:-1].lower())
 		ret += "%s%d = %s;\n" % (tmpName, id+1, gao(bDict[algoName]))
 	for algoName in algoNames:
-		if algoName == "SSPAM":
+		if algoName == "SSPAF2M":
 			tmpName = "MCFM"
 		else:
 			tmpName = algoName
 		tmpName = "%s" % (tmpName[:-1].lower())
 		ret += "%s%d = %s;\n" % (tmpName, id+2, gao(cDict[algoName]))
+	# ret += "\n"
 	return ret
 	
 def getResult(aDict):

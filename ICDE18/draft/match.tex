@@ -1,0 +1,77 @@
+\documentclass[conference,letterpaper]{IEEEtran}
+
+
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{graphicx}
+\usepackage[ruled, vlined, linesnumbered]{algorithm2e}
+%\usepackage{algorithmic}
+\usepackage{balance}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{multirow}	
+\usepackage[pass]{geometry}
+\usepackage{enumerate}
+\usepackage{bbm}
+\usepackage{xcolor}
+\usepackage{xspace}
+
+%\hyphenation{optical networks semiconductor}
+
+\newcommand{\etal}{\emph{et~al.}\xspace}
+\newcommand{\eg}{\emph{e.g.},\xspace}
+\newcommand{\ie}{\emph{i.e.},\xspace}
+\newcommand{\etc}{etc.\xspace}
+\newcommand{\cf}{cf.\/~}
+\newcommand\figref[1]{Fig.~\ref{#1}}
+\newcommand\figsubref[1]{Fig.~\subref{#1}}
+\newcommand\tabref[1]{Table~\ref{#1}}
+\newcommand\tabsubref[1]{Table~\subref{#1}}
+\newcommand\secref[1]{Sec.~\ref{#1}}
+\newcommand\equref[1]{Eq.\ref{#1}}
+\newcommand\appref[1]{(App.~\ref{#1})}
+
+\newcommand{\fakeparagraph}[1]{\vspace{1mm}\noindent\textbf{#1.}}
+\newcommand{\rev}[1]{{\color{blue}#1}}
+\newcommand{\TODO}[1]{\textbf{\color{red}TODO:{ #1} }}
+\newcommand{\ANSWER}[1]{\textbf{\color{blue}ANSWER:{ #1} }}
+
+\begin{document}	
+
+\title{Latency-oriented Task Completion \\
+	via Spatial Crowdsourcing}
+
+\author{\IEEEauthorblockN{}
+	\IEEEauthorblockA{The Hong Kong University of Science and Technology\\
+		\{\}@ust.hk}}
+
+\maketitle
+
+
+\newtheorem{definition}{Definition} %[section]
+\newtheorem{example}{Example} %[section]
+\newtheorem{lemma}{Lemma} %[section]
+\newtheorem{theorem}{Theorem} %[section]
+\newtheorem{corollary}{Corollary} %[section]
+
+\input{abstract}
+
+\IEEEpeerreviewmaketitle
+
+%\newpage
+\input{introduction}
+\input{definition}
+\input{offline}
+\input{online}
+\input{experiment}
+\input{related}
+\input{conclusion}
+\section*{Acknowledgment}
+\balance
+	
+\bibliographystyle{IEEEtran}
+
+\bibliography{match}
+
+\end{document}
+
+

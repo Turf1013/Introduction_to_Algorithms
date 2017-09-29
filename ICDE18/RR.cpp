@@ -31,7 +31,7 @@ double delta, epsilon;
 void dumpPredictAcc() {
 	for (int j=0; j<taskN; ++j) {
 		for (int i=0; i<workerN; ++i) {
-			double p = calcPredictAcc(tasks[j], workers[i]);
+			double p = calcUtility(tasks[j], workers[i]);
 			printf("%.3lf ", p);
 		}
 		putchar('\n');

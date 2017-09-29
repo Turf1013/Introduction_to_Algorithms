@@ -407,9 +407,9 @@ int calcBatchSize() {
 	for (int j=0; j<taskN; ++j) {
 		if (tasks[j].s >= delta)
 			continue;
-		sum += delta - tass[j].s;
+		sum += delta - tasks[j].s;
 	}
-	ret = sum * delta / K;
+	ret = sum / K;
 	
 	return ret;
 }

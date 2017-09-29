@@ -1,0 +1,198 @@
+\section{Offline Algorithm}
+\label{sec:offline}
+In this section, we propose an approximation algorithm for the WSSC problem.
+This method is based on minimum cost flow and we proof the approximation ratio of this method is $0.5U_{max}$.
+
+The basic idea of this algorithm is to get a optimal arrangement before a certain number of workers appear.
+Therefore, if the global optimal arrangement have enough reliability in this period, this method will get the same amount.
+However, if the optimal arrangement can only get small amount reliability, then it might finish all the tasks more slowly.
+Considering all these two cases, the approximation ratio is bounded by $0.5U_{max}$, which will be proved later.
+Since the key point of this method is how to calculate this certain number, it is better to introduce Theorem~\ref{thm:boundOfWSSC} before 
+explaining the method.
+
+\begin{theorem}[WSSC* bound]
+\label{thm:boundOfWSSC}
+Assume $|T| \ge K$ and $\delta \ge 2r_{max}$,
+the lower bound of WSSC problem is $\frac{|T|\delta}{Kr_{max}}$ and the upper bound is $\frac{|T|\delta}{Kr_{min}} + \frac{|T|}{K} + 1$.
+\end{theorem}
+
+\begin{proof}
+According to the famous McNaughton's Rule\cite{NaughtonRule}, it is easy to make an optimal arrangement when every workers contributes the same reliability $r$ to every tasks.
+In fact, the answer is $\max\{\lceil \frac{|T| \cdot \lceil \frac{\delta}{r} \rceil}{K} \rceil,\ \delta\}$ and the optimal arrangement can be solved in polynomial time.
+Then it is easy to get both lower bound and upper bound by replacing $r$ with $r_{max}$ and $r_{min}$ respectively.
+\begin{align*}
+	bound_{lower} &\ge \max\{\lceil \frac{|T| \cdot \lceil \frac{\delta}{r_{max}} \rceil}{K} \rceil,\ \delta\} \\
+					&\ge \max\{\lceil \frac{|T|\delta}{Kr_{max}} \rceil,\ \delta \} \\
+					&\ge \frac{|T|\delta}{Kr_{max}}  \\
+	bound_{upper} &\le \max\{\lceil \frac{|T| \cdot \lceil \frac{\delta}{r_{min}} \rceil}{K} \rceil,\ \delta\} \\
+					&\le \max\{ \frac{|T|\delta}{Kr_{min}} + \frac{|T|}{K} + 1,\ \delta \} \\
+					&\le \frac{|T|\delta}{Kr_{min}} + \frac{|T|}{K} + 1
+\end{align*}
+\end{proof}
+
+According to McNaughton's Rule\cite{NaughtonRule}, it is obvious that the lower bound can be achieved only when each task is assigned to the worker with highest reliability.
+Then, in order to get better approximation ratio, it is better to get as many high reliability as possible.
+Therefore, we divide all the workers into different batches and transform the instance in each batch to the Minimum Cost Maximum Flow(MCMF) problem at the first.
+Secondly, we keep all the arrangement from MCMF while some workers might still be able to peform tasks and we use greedy to allocate the tasks.
+Finally, whenever all the tasks reach the threshold, we stop the procedure and return the arrangement.
+At first, we explain the MCMF step in details.
+
+Given an instance of WSSC problem with only parts of the workers $W'$, we construct a flow network $G_F = (N_F, E_F)$ as follows.
+$N_F = T \cup W' \cup \{st, ed\}$, where $st$ is a source node and $ed$ is a sink node. 
+For every pair $w \in W', t \in T$, there is an edge $e_F(w, t) \in E_F$ from $w$ to $t$ with 
+$e_F(w, t).cost = -\min\{\delta, \delta-S[t]\}$ and $e_F(w, t).capacity = 1$.
+Here $S_{t}$ indicates the amount of reliability that $t$ has already got. 
+For every $w \in W'$, there is an edge $e_F(st, w) \in E_F$ from $st$ to $w$ with
+$e_F(st, w).cost = 0$ and $e_F(st, w).capacity = K$.
+For every $t \in T$, there is an edge $e_F(t, ed) \in E_F$ from $t$ to $ed$ with 
+$e_F(t, ed).cost = 0$ and $e_F(t, ed).capacity = \lceil \frac{t_{remain}}{U_{max}} \rceil$.
+Therefore, after solving the MCMF, we have an temporary arrangement $M'$,
+where each worker perform less than $K$ tasks and one task may be assigned to a bounded number of workers.
+Particularly, we use the Successive Shortest Path Algorithm (SSPA) to calculate the
+minimum cost flow since it is the one suitable for large-scale data and many-to-many matching with real-valued arc costs as pointed out by \cite{yiu2008capacity}.
+
+Since the capacity of the edge $e_F(t, ed)$ is bounded by $\lceil \frac{t_{remain}}{U_{max}} \rceil$ tightly, 
+sometimes it leads to a drawbacks that some workers can still perform more tasks.
+So in the second step, tasks are greedily allocated to workers who only peform less than $K$ tasks according to $M'$.
+Each time, the most reliable tasks that the worker has never performed before is assigned to him/her.
+In this way, all the workers can perform as many tasks as they could and the tasks may get more reliability at each round.
+
+\begin{algorithm}[t]
+	\SetKwInOut{Input}{input}\SetKwInOut{Output}{output}
+	\Input{$T, W, R(.,.), K, \delta, r_{max}$}
+	\Output{A feasible arrangement $M$}
+	$m \leftarrow \frac{|T|}{K}\lceil \frac{\delta}{r_{max}} \rceil, n \leftarrow |T|, S[1 \ldots n] \leftarrow \{0,0,\cdots,0\}$\;
+	\For{$i \leftarrow 2$ \emph{\KwTo} $\lceil \frac{|W|}{m} \rceil$ and $n > 0$}{
+		$W' \leftarrow $ another $\lfloor m \rfloor$($\lfloor 2m \rfloor$ when $i=2$) from workers\;
+		construct $G_F = (N_F, E_F)$ according to $(W', T, S, r_{max})$\;
+		MinCostFlow$(G_F)$ and construct $M'$ accordingly\;
+		update the $S$ and $n$ according to $M'$\;
+		\ForEach{$e_F(st, u) \in E_F$}{
+			$Q \leftarrow \emptyset, k \leftarrow e_F(st, u).capacity - e_F(st, u).flow$\;
+			\ForEach{$e_F(u, v) \in E_F$}{
+				\If{$e_F(st, u).flow == 0$}{
+					push $\{R(W[u], T[v]), v\}$ into $Q$\;
+					\If{$|Q| > k$}{
+						extract the least reliability pair from $Q$\;
+					}
+				}
+				\While{$Q \neq \emptyset$}{
+					extract a reliability pair $\{r, v\}$ from $Q$\;
+					$M' \leftarrow M' \cup (u, v), S[i] \leftarrow S[i] + r$\;
+					\If{$S[i] \ge \delta$} {
+						$n \leftarrow n - 1$\;
+					}
+				}
+			}
+		}
+		$M \leftarrow M \cup M'$\;
+	}
+	\If{$n > 0$}{
+		\KwRet{$\emptyset$}
+	}
+	\Else{
+		\KwRet{$M$}
+	}
+\caption{MCMF-WSSC}
+\label{alg:MCMF}
+\end{algorithm}
+
+The whole procedure is illustrated in Algorithm~\ref{alg:MCMF}. 
+In lines 2-6, we first construct a flow network $G_F$ and calculate
+the minimum cost flow on $G_F$ according to current workers and tasks as descrived before, 
+and then obtain a temporary matching $M$. 
+In the second step, we use greedy to assign more tasks to some of the workers and update $M'$ accordingly
+in lines 7-18. Specifically, for each worker, we maintance the most reliable tasks by a heap $Q$ in lines 8-13.
+Then in lines 14-18, the tasks get their corresponded increase of reliabilities and $n$ is reduced when some of them reach to threshold. 
+
+\textbf{Approximation Ratio}. 
+Next, we study the approximation ratio of MCMF-WSSC.
+
+\begin{lemma}
+If optimal solution get less than $|T|\delta$ from the first $\lfloor 2\frac{|T|}{K}\lceil \frac{\delta}{r_{max}} \rceil \rfloor$ workers,
+then the competitive ratio is $\frac{1}{2}\frac{r_{max}}{r_{min}}$ in this situation.
+\end{lemma}
+\begin{proof}
+According to the assumption, optimal solution needs at least another workers,
+which is $\lfloor 2\frac{|T|}{K}\lceil \frac{\delta}{r_{max}} \rceil \rfloor + 1 \ge 2\frac{|T|\delta}{Kr_{max}}$ workers.
+According to Theorem~\ref{thm:boundOfWSSC}, any solution needs at most $\frac{|T|\delta}{Kr_{min}} + \frac{|T|}{K} + 1$ workers.
+Thus, the ratio is 
+\begin{equation*}
+	\frac{\frac{|T|\delta}{Kr_{min}} + \frac{|T|}{K} + 1}{2\frac{|T|\delta}{Kr_{max}}} = \frac{1}{2}\frac{r_{max}}{r_{min}} + O(1)
+\end{equation*}
+\end{proof}
+
+\begin{lemma}
+\label{lem:optFinish}
+If optimal solution gets more than $\rho |T|\delta$ 
+from the first $\lfloor \frac{|T|}{K}\lceil \frac{\delta}{r_{max}} \rceil \rfloor$ workers,
+then the arrangment of $M'$ will get more than $\frac{2\rho|T|\delta}{3}$ increasement.
+\end{lemma}
+\begin{proof}
+Since the number of workers is $\lfloor \frac{|T|}{K}\lceil \frac{\delta}{r_{max}} \rceil \rfloor$ at the first iteration,
+all the workers can perform at most $K \cdot \lfloor \frac{|T|}{K}\lceil \frac{\delta}{r_{max}} \rceil \rfloor \le |T|\lceil \frac{\delta}{r_{max}} \rceil$ times of tasks in total.
+Also each task needs at least $\lceil \frac{\delta}{r_{max}} \rceil$ to reach the threshold.
+Then if and only if each task is assigned to $\lceil \frac{\delta}{r_{max}} \rceil$ different workers,
+the optimal solution is within $\lfloor \frac{|T|}{K}\lceil \frac{\delta}{r_{max}} \rceil \rfloor$.
+Because the capacity between $t$ and $ed$ is limited to $\lceil \frac{\delta}{r_{max}} \rceil$,
+it is easy to see the total reliabilities of arrangement $M'$ is no less than the total reliabilities of optimal solution. 
+However, even though $M'$ may get more reliabilities, this does not mean it makes more task reach $\delta$.
+E.g., when $S = cr_{max} +1$ and $\lceil \frac{\delta}{r_{max}} \rceil = c + 1$, 
+MCMF may cover the capacity of a task with $c+1$ flow each with cost $-r_{max}$.
+But in optimal solution, it may only need $c$ workers each with $r_{max}$ and another worker with only $1$.
+Therefore, MCMF may waste $r_{max} - 1$ reliabilities at each $task$,
+so the total increasement of arrangement $M'$ is no less than 
+$\frac{\lfloor \frac{S}{r_{max}} \rfloor}{\lceil \frac{S}{r_{max}} \rceil} \ge \frac{2}{3}$ of the total reliabilities.
+Thus,
+\begin{align*}
+	total\_increase_{M'} &\ge \frac{2}{3} total\_reliability_{M'} \\
+	total\_reliabity_{M'} &\ge total\_reliability_{OPT} \\
+	total\_increase_{M'} &\ge \frac{2}{3} total\_reliability_{OPT} \\
+						&\ge \frac{2}{3} |T|\delta
+\end{align*}
+\end{proof}
+
+\begin{lemma}
+\label{lem:optNotFinish}
+If optimal solution gets less than $\rho |T|\delta$ 
+from the first $\lfloor \frac{|T|}{K}\lceil \frac{\delta}{r_{max}} \rceil \rfloor$ workers,
+it needs more than $\lceil \frac{(1-\rho) n\delta}{Kr_{max}} \rceil$ workers.
+\end{lemma}
+\begin{proof}
+Assume the reliability of each task becomes to $r_i$ after $\lfloor \frac{|T|}{K}\lceil \frac{\delta}{r_{max}} \rceil \rfloor$ workers.
+Then every tasks still needs more than $\lceil \frac{\delta-r_i}{r_{max}} \rceil$ workers to perform.
+Then according to McNaughton's rule~\cite{NaughtonRule}, it still needs 
+$\sum_{i=1}^{|T|} {\lceil \frac{\delta-r_i}{r_{max}} \rceil} \ge \frac{|T|\delta-\sum_{i=1}^{|T|}{r_i}}{r_{max}} \ge \frac{(1-\rho)|T|\delta}{r_{max}}$ times in total. 
+Thus, it needs more than $\lceil \frac{(1-\rho) n\delta}{Kr_{max}} \rceil$ workers to perform.
+\end{proof}
+
+\begin{theorem}
+The approximation ratio of Algorithm~\ref{alg:MCMF} is $0.667\frac{r_{max}}{r_{min}}$.
+\end{theorem}
+\begin{proof}
+According to Lemma~\ref{lem:optFinish}, when $total\_reliability_{OPT} \ge \rho |T|\delta$, 
+Algorithm~\ref{alg:MCMF} needs at most $\frac{(1-\frac{2\rho}{3}) |T|\delta}{r_{min}}$ workers.
+Then in this case, the ratio is 
+\begin{align*}
+ratio &\le \frac{\frac{(1-\frac{2\rho}{3}) |T|\delta}{r_{min}}}{\lfloor \frac{|T|}{K}\lceil \frac{\delta}{r_{max}} \rceil \rfloor} \\
+	  &\le (1-\frac{2\rho}{3})\frac{r_{max}}{r_{min}}
+\end{align*}
+On the other side, according to Lemma~\ref{lem:optNotFinish}, when $total\_reliability_{OPT} < \rho |T|\delta$,
+optimal solution needs more than $\lceil \frac{(1-\rho) n\delta}{Kr_{max}} \rceil$ workers.
+Then in this case, the ratio is
+\begin{align*}
+ratio &\le \frac{{|T|\delta}{r_{min}}}{\lfloor \frac{|T|}{K}\lceil \frac{\delta}{r_{max}} \rceil \rfloor + \lceil \frac{(1-\rho) n\delta}{Kr_{max}} \rceil + 1} \\
+	  &\le \frac{1}{2-\rho}\frac{r_{max}}{r_{min}}
+\end{align*} 
+Thus, the ratio is $\max\{(1-\frac{2\rho}{3}),\ \frac{1}{2-\rho}\}\frac{r_{max}}{r_{min}}$.
+Since parameter $\rho$ can be any value in the range of $[0,1]$ and the ratio is expected to be as small as possible, 
+it is easy to solve the equation $(1-\frac{2\rho}{3}) = \frac{1}{2-\rho}$ to calculate the optimal parameter $\rho$.
+Thus, when $\rho$ equals to $\frac{1}{2}$, the ratio is $\frac{2}{3} \frac{r_{max}}{r_{min}} < 0.667 \frac{r_{max}}{r_{min}}$
+\end{proof}
+
+\textbf{Complexity Analysis}. 
+The first step takes $O(\frac{\delta}{r_{max}} |T|^2\log{|T|})$ time and
+the second step takes $O(\frac{\delta}{r_{max}} |T|^2\frac{\log{K}}{K})$ time.
+Also the iteration takes $O(\frac{r_{max}|W|K}{\delta|T|})$ round at most.
+Since $K$ is relatively small compared to $T$, the totay time cost is
+$O(K|W||T|\log{|T|})$.

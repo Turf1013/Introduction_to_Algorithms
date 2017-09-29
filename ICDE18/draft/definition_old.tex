@@ -1,0 +1,142 @@
+\section{Problem Definition}
+\label{sec:definition}
+In this section, we first formally define the \textit{Latency-oriented Information Acquisition}(LIA) problem in offline scenario and 
+prove the offline LIA problem is actually NP-hard. We then formulate the online version of this problem named as OnlineLIA problem.
+
+\subsection{Offline Scenario of LIA}
+
+% worker, task, confidence, 
+\begin{definition}[Micro-Task]
+\label{def:task}
+A micro-task(``task'' for short), denoted by $t = <\boldsymbol{l}_t, \epsilon>$.
+$\boldsymbol{l}_t$ is the location of $t$ with category $c_t$ and $\epsilon$ is a constant which indicates
+the maximum tolerable error rate of each task.
+\end{definition}
+
+\begin{definition}[Crowd Worker]
+\label{def:worker}
+A crowd worker(``worker'' for short), denoted by $w = <o_w, \boldsymbol{l}_w, p_w, h_w, K>$.
+The worker is the $o_w$-th person who checks in with location $\boldsymbol{l_w}$ on the platform.
+$p_w$ is the history accuracy of the worker and $h_w = <h_w^1, h_w^2,h_w^d>$ is a d-dimensional vector to represent the number of times that worker has checked in place with categordy $\forall i \in [1,d]$.
+$K$ is a constant for every worker which indicates the maximum number of tasks he would perform.
+\end{definition}
+
+\begin{definition}[Predicted Accuracy]
+\label{def:acc}
+The predicted accuracy that a worker $w$ performs task $t$ is measured by a function $Acc(w, t) \in [0,1]$
+based on the worker's history accuracy and their both locations.
+\end{definition}
+
+Particularly, we use Equation~\ref{equ:predictAcc} as our accuracy function in the experiments, where $d_{max}$ is the furthest Euclidean distance
+between any two locations in the 2D place. 
+Note that other functions of predicting the accuracy for a pair of a worker and a task are applicable to our problem.
+\begin{equation}
+\label{equ:predictAcc}
+Acc(w, t) = p_w (\alpha \frac{d_{max}-\|\boldsymbol{l}_w, \boldsymbol{l}_t\|}{d_{max}} + (1-\alpha)\frac{h_w^{c_t}}{\max\{h_w\}})
+\end{equation}
+
+Since binary task is highly common in check-in based spatial crowdsourcing platform, in this paper
+we focus on how to solve this type of tasks. 
+Without of loss generality, $+1$ is denoted as a YES and $-1$ is denoted as a NO.
+Then fix a task $t$ and let $W_{t}$ denote the set of workers assigned to $t$.
+Our aggregation method is to take a weighted vote of each worker's answer.
+Specifically, $\ell_t = sign(\sum_{w \in W_{t}}{weight_{w,t} \ell_{w,t}}), \ell_{w,t} \in \{+1, -1\}$.
+According to \cite{Ho2013}, 
+when $weight_{w,t} = 2Acc(w,t) - 1$ and $\sum_{w \in W_t}(2Acc(w,t) - 1)^2 \ge 2\ln(1/\epsilon)$,
+Hoeffding’s inequality can guarantee that the final answer is error with less than $\epsilon$ probabiity on task $t$.
+We use the shorthand $\delta = 2\ln(1/\epsilon)$. 
+Note that when $Acc(w,t) = 0.5$, the value of $(2Acc(w,t) - 1)^2$ becomes to zero.
+In order to ensure that all the tasks will reach the tolerable error rate, 
+we assume that the value of $(2Acc(w,t) - 1)^2$ falls into $[\alpha, 1]$ and $\alpha > 0$ is a small float-point(e.g. the precesion of $\epsilon$).
+We use the shorthand $Acc^{*}(w,t) = \min\{\alpha,\ (2Acc(w,t) - 1)^2\}$ 
+
+In this paper, we call the task which reaches the error rate $\epsilon$ as completed.
+Since latency is usually defined as the completion time of tasks, 
+we define the latency of a task as follows.
+\begin{definition}[Task Latency]
+\label{def:taskLatency}
+The latency of a task $L_t$ is denoted as the index of the last person on the platform who performs $t$.
+$L_t = \max_{w \in W_t} o_w$,
+if $\sum_{w \in W_t} Acc^{*}(w,t) \ge \delta$.
+\end{definition}
+
+Finally we define the LIA problem in offline scenario as follows.
+\begin{definition}[LIA Problem]
+Given a set of tasks $T$, each $t$ of which with location $\boldsymbol{l}_t$ and a tolarate error rate $\epsilon$,
+a set of workers $W$, each $w$ of which with index $o_w$, location $\boldsymbol{l}_w$, history arrcuray $p_t$ and capacity $K$,
+a function $Acc(w, t)$ which predicts the accuracy of $w$ performing $t$ with precision $\alpha > 0$.
+find an arrangement $M$ among tasks and workers to minimize the maximum latency of all tasks
+$MinMax(M) = \max_{t \in T}{\max_{w \in W_t} o_w}$ such that
+\begin{itemize}
+\vspace{-1ex}
+\item Invariable constraint: once a task $t$ is allocated to a worker $w$, the allocation of $(t, w)$ cannot be changed.
+\vspace{-1ex}
+\item Capacity Constraint: $\sum_{t \in T} \mathbbm{1}(w \in W_t) \le K, \forall w \in W$
+\vspace{-1ex}
+\item Error Rate Constraint: $\sum_{w \in W_t} Acc^{*}(w,t) \ge \delta, \forall t \in T$ with $\delta = 2\ln(1/\epsilon), Acc^{*}(w,t) = \min\{\alpha,\ (2Acc(w,t) - 1)^2\}$
+\end{itemize}
+\end{definition}
+
+\begin{example}
+Back to our Example~\ref{exa:introExa}.
+Since each time only two tasks can be assigned to a worker, then $K = 2$.
+Besides, if we want to keep the accuracy no less than 83\%, the $\delta = 2\ln(1.0/(1.0-0.83)) \approx 3.544$.
+And the predicted accuracy in Table~\ref{table:predictAcc} are just values of $Acc(w_i,t_j), \forall w_i \in W, t_j \in T $.
+\end{example}
+
+\begin{theorem}
+The LIA problem is NP-hard.
+\end{theorem}
+\begin{proof}
+The 3 partition problem\cite{ThreePar} is a well-known NP-complete problem in computational complexity theory.
+Firstly, we reduce 3 partition problem to the decision version of LIA problem. 
+The following is an instance of 3 partition problem.
+Given a list of $3m$ positive intergers $X = \{x_1, x_2, \cdots, x_{3m}\}$ with $\sum_{i=1}^{3m} x_i = mB$ and
+each $x_i$ satisfying $\frac{B}{4} < x_i < \frac{B}{2}$.
+The problem aims to decide whether it is possible to partition $X$ into $m$ triples such that each one sums to exactly $B$.  
+According to an instance of 3 partition problem, an instance of LIA problem can be built as follows:
+\begin{enumerate}[(1)]
+	\vspace{-1ex}
+	\item The $m$ triples of the partition problem corresponds to the first $m$ tasks with threshold $\epsilon = e^{-\frac{1}{2}}, \delta = 1$. \\
+	\vspace{-1ex}
+	\item The $3m$ elements of the list $X$ corresponds to $3m$ workers. \\
+	\vspace{-1ex}
+	\item For a worker $w_i$, function $Acc^{*}(,)$ can perform the same value $Acc^{*}(w_i, t) = \frac{x_i}{B} \in (\frac{1}{4}, \frac{1}{2}), \forall t \in T$, but a worker can only peform $K = 1$ task at most.
+\end{enumerate}
+Given an instance of such problem, we want to decide whether there is an feasible arrangement $M$ such that $MinMax(M) = 3m$.
+Next, we proof the instance of 3 partition problem is YES if and only the LIA instance is YES.
+Since the value of function $Acc^{*}(w, t)$ falls into the range $(\frac{1}{4}, \frac{1}{2})$, 
+it is obvious that each task has to be peformed by more than $\frac{\delta}{\max_{w,t} Acc^{*}(w, t)} > 1/{\frac{1}{2}} > 2 \ge 3$ workers.
+However, there are only $3m$ workers but $m$ tasks in total.
+So each task must be performed by exactly 3 workers and each worker must perform exactly one task($K = 1$), 
+otherwise at least one task cannot meet the constraint of error rate.
+Thereby, if there is a feasible arrangement for LIA problem, we will get $m$ triples.
+Since a worker $w$ perform all the tasks with the same value $Acc^*(w,) = \frac{x_i}{B}$ and only one task is assigned to this worker, 
+it is easy to see that every element $\frac{x_i}{B}, x_i \in X$ appears only once in the arrangement $M$.
+Therefore, these $m$ triples are partitions of $X' = \{\frac{x_i}{B} | x_i \in X\}$ because they are disjoint and they can cover $X'$.  
+The only thing left is to prove that every $Acc^{*}$ sum of these triples with their workers is exactly $\delta = 1$.
+Since the arrangement is feasible, each of these $m$ sum is no less than $\delta = 1$ and the sum of 
+all these values are $\sum_{x_i \in X} {\frac{x_i}{B}} = \frac{sum_{x_i \in X} x_i}{B} = m$.
+Thus, each of these sum is exactly $1$, which proves that the sum of these three $x$ of the function $Acc^{*}$ is exactly $B$.
+Therefore, we get a feasible instance of 3 partition problem via the LIA problem.
+Accordingly, the decision version of LIA problem is NP-complete and the LIA problem is NP-hard.
+\end{proof}
+
+\subsection{Online Scenario of LIA}
+
+We finally define the LIA problem in the online scenario as follows.
+\begin{definition}[OnlineLIA]
+Given a set of tasks $T$, each $t$ of which with location $\boldsymbol{l}_t$ and a tolarate error rate $\epsilon$,
+a set of workers $W$, each $w$ of which with index $o_w$, location $\boldsymbol{l}_w$, history arrcuray $p_t$ and capacity $K$,
+a function $Acc(w, t)$ which predicts the accuracy of $w$ performing $t$ with precision $\alpha > 0$.
+find an arrangement $M$ among tasks and workers to minimize the maximum latency of all tasks
+$MinMax(M) = \max_{t \in T}{\max_{w \in W_t} o_w}$ such that
+\begin{itemize}
+\vspace{-1ex}
+\item The assignment for a new worker $w$ must be decided before the next worker appears and cannot be revoked.
+\vspace{-1ex}
+\item The three constraints of LIA are also satisfied.
+\end{itemize}
+\end{definition}
+
+Notice that the most important constraint of OnlineLIA is that the selections of $K$ tasks for the new worker should be determined immediately and cannot be revoked.

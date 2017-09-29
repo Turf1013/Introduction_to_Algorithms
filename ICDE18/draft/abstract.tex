@@ -1,0 +1,21 @@
+\begin{abstract}
+with the tremendous development of mobile Internet
+and sharing economy, Location Based Service(LBS) has been utiltized by
+more and more spatial crowdsourcing(SC) platforms.
+Specifically, as soon as the users login the platform with their check-in places,
+platform may send them some simple tasks just around their check-in places.
+By this way, these SC platforms can collect or update some important information about these locations.
+Quality and Latency are usually some of the most important considerations of such platforms.
+Many existing studies focus on how to control the latency by dynamically adjusting the cost of task and task selection.
+However, since people always volunteer to peform these tasks on such platforms, these solutions are not applicable.
+On the other hand, even though there are many studies focus on quality control.
+But since these platforms usually expect to achieve the good quality as fast as possible, which indicates organize the users very thoughtfully,
+none of existing workers focus on these scenario.
+In this paper, to solve the problems between quality and latency, 
+we first formally define this problem particularly in SC platform, 
+called the Latency-oriented Information Acquisition(LIA) problem.
+Unfortunately the problem is proven as NP-hard, we first devise an MinimumCostFlow-based algorithm to solve the problem in offline scenario with approximation ratio guarantees.
+Since these services are common in offline scenario, we also design two greedy algorithms with competitive ratio guarantees to solve the problem in online scenario.
+Finally, we verify the effectiveness and efficiency of the proposed methods
+through extensive experiments on real and synthetic datasets.
+\end{abstract}

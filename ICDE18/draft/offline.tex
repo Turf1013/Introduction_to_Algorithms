@@ -1,0 +1,217 @@
+\section{Offline Algorithm}
+\label{sec:offline}
+Since the offline LTC problem is NP-hard, we propose an approximate algorithm based on minimum cost flow.
+Compared with the optimal latency, our algorithm has a approximation ratio of $\frac{0.625}{\alpha}$.
+
+\fakeparagraph{Basic Idea}
+Our algorithm utilizes the lower and upper bounds of the maximum latency.
+%The basic idea of this algorithm is to make an arrangement closed to the optimal solution with a certain number of workers.
+%Therefore, if the global optimal arrangement have large increasement of $Acc^*$ during this period,
+%our method will also have large increasement though it may be less than the optimum.
+%However, if the optimal arrangement can only increase a little amount,
+%which suggests it may finish all the tasks more slowly,
+%the approximation between our method and optimal may become smaller accordingly.
+%Considering all these two cases, the approximation ratio is bounded by $\frac{0.625}{\alpha}$,
+%which will be proved later.
+%Since the key point of this method is how to evaluate the maximum latency in both worst case and best case,
+%it is better to introduce Theorem~\ref{thm:boundOfLTC} before explaining the method.
+
+\begin{theorem}[Bounds of Maximum Latency of All Tasks]
+\label{thm:boundOfLTC}
+Assume $|T| \ge K$ and $\delta \ge 3$, the maximum latency of all tasks in the offline LTC problem has a lower bound of $\frac{|T|\delta}{K}$ and an upper bound of $\frac{|T|\delta}{K\alpha} + \frac{|T|}{K} + 1$.
+\end{theorem}
+
+\begin{proof}
+According to the McNaughton's Rule~\cite{NaughtonRule}, it is easy to make an optimal arrangement when every worker has the same accuracy for each tasks, \ie $Acc^{*}(w, t) = r, \forall w \in W, t \in T$.
+Under this assumption, the maximum latency of all tasks is $\max\{\lceil \frac{|T| \cdot \lceil \frac{\delta}{r} \rceil}{K} \rceil,\ \lceil \frac{\delta}{r} \rceil\}$ and the optimal arrangement can be found in polynomial time.
+We can get the lower and upper bounds of the maximum latency of all tasks by replacing $r$ with $1$ and $\alpha$, respectively.
+\begin{align*}
+	bound_{lower} &\ge \max\{\lceil \frac{|T| \cdot \lceil \frac{\delta}{1} \rceil}{K} \rceil,\ \delta\} \\
+					&\ge \max\{\lceil \frac{|T|\delta}{K} \rceil,\ \delta \} \\
+					&\ge \frac{|T|\delta}{K}  \\
+	bound_{upper} &\le \max\{\lceil \frac{|T| \cdot \lceil \frac{\delta}{\alpha} \rceil}{K} \rceil,\ \lceil \frac{\delta}{\alpha} \rceil\} \\
+					&\le \max\{ \frac{|T|\delta}{K\alpha} + \frac{|T|}{K} + 1,\ \lceil \frac{\delta}{\alpha} \rceil\} \\
+					&\le \frac{|T|\delta}{K\alpha} + \frac{|T|}{K} + 1
+\end{align*}
+\end{proof}
+
+From Theorem~\ref{thm:boundOfLTC}, the lower bound of the maximum latency can be achieved only when each task is assigned to the worker with the highest $Acc^*$, and the minimal latency achievable is $\frac{|T|\delta}{K}$.
+The idea of our algorithm is to iteratively select a batch of workers (\eg $\frac{|T|\delta}{K}$ workers), and find a temporary arrangement leveraging solutions to the Minimum Cost Flow (MCF) problem.
+The iteration continues among the workers who still have capacity available and the tasks which have not reached the tolerable error rate.
+The algorithm finds a feasible arrangement and outputs the maximum latency or equivalently, the maximum index of workers in the arrangement.
+
+\fakeparagraph{Algorithm Details}
+We present the detailed algorithm, MCF-LTC, for the offline LTC problem as follows.
+
+Given an instance of the offline LTC problem with workers $W'$ in a batch, we first construct a flow network $G_F = (N_F, E_F)$, where $N_F = T \cup W' \cup \{st, ed\}$.
+$st$ is a source node and $ed$ is a sink node.
+For each pair $w \in W', t \in T$, there is an edge $e_F(w, t) \in E_F$ from $w$ to $t$ with $e_F(w, t).cost = -Acc^*(w, t)$ and $e_F(w, t).capacity = 1$.
+For each $w \in W'$, there is an edge $e_F(st, w) \in E_F$ from $st$ to $w$ with $e_F(st, w).cost = 0$ and $e_F(st, w).capacity = K$.
+For each $t \in T$, there is an edge $e_F(t, ed) \in E_F$ from $t$ to $ed$ with $e_F(t, ed).cost = 0$ and $e_F(t, ed).capacity = \lceil \delta-S[t] \rceil$.
+Here $S[t]$ indicates the amount of $Acc^*$ that $t$ has already got.
+Note that we formulate an MCF problem, and we can get a temporary arrangement $M'$ by solving the MCF problem.
+Specifically, we apply the Successive Shortest Path Algorithm (SSPA) to calculate the minimum cost flow.
+Similar algorithms can also apply, but SSPA is suitable for large-scale data and many-to-many matching with real-valued arc costs~\cite{yiu2008capacity}.
+
+Note that the capacity of the edge $e_F(t, ed)$ is tightly bounded by $\lceil \delta-S[t] \rceil$.
+Therefore, it is possible that some workers can still perform tasks (\ie fewer than $K$ tasks have been assigned to the worker using $M'$).
+Hence in the next batches, we allocate tasks to workers who can still perform tasks.
+In each batch, the most reliable tasks that the worker has never performed before are assigned to him/her.
+
+\begin{algorithm}[t]
+	\SetKwInOut{Input}{input}\SetKwInOut{Output}{output}
+	\Input{$T, W, Acc^{*}(.,.), K, \epsilon$}
+	\Output{Maximum Index of worker in a feasible arrangement $M$}
+	$\delta \leftarrow 2\ln{(1.0/\epsilon)}, Q \leftarrow \emptyset, m \leftarrow \frac{|T|\lceil \delta \rceil}{K}$\;
+	$S \leftarrow \{0,\ldots,0\}$ \tcc*{S stores accumulated value for each task}
+	\For{$i \leftarrow 2$ \emph{\KwTo} $\lceil \frac{|W|}{m} \rceil$ and not all $T$ have reached $\delta$}{
+		$W' \leftarrow $ next $\lfloor m \rfloor$($\lfloor 2m \rfloor$ if $i=2$) workers from $W$\;
+		construct $G_F = (N_F, E_F)$ according to $(W', T, S)$\;
+		MinCostFlow$(G_F)$ and construct $M'$ accordingly\;
+		update the $S$ according to $M'$\;
+		\ForEach{$w \in W'$}{
+			\ForEach{$i \leftarrow 1$ \emph{\KwTo} $|T|$}{
+				\If{$T[i]$ has not reached $\delta$ and $w$ does not perform $T[i]$ according to $M'$}{
+					push $Acc^{*}(w, T[i])$ with index $i$ into $Q$\;
+					maintain size of $Q$ under capacity of $w$\;
+				}
+			}
+			\While{$Q \neq \emptyset$}{
+				extract an element with index $i$ from $Q$\;
+				$S[i] \leftarrow S[i] + Acc^{*}(w, T[i]), M' \leftarrow M' \cup (w, T[i])$\;
+			}
+		}
+		$M \leftarrow M \cup M'$\;
+	}
+	\KwRet{Maximum Index of worker in $M$}
+\caption{MCF-LTC}
+\label{alg:MCF}
+\end{algorithm}
+
+Algorithm~\ref{alg:MCF} shows the procedure of our MCT-LTC algorithm.
+In lines 1-2, we initialize the parameters.
+Specifically, $\delta$ is initialized based on the Hoeffding's inequality~\cite{Ho2013}.
+It represents the minimal accumulated $Acc^*$ of each task.
+$Q$ is a heap to maintain the largest $Acc^*$ for each worker and is an empty at the beginning.
+$m$ is set as the lower bound of the maximum latency in Theorem~\ref{thm:boundOfLTC}, which means $m$ workers are always enough to finish all the remaining tasks if the accuracy of each worker is 100\%.
+We use $S$ to store the accumulated $Acc^*$ for each task.
+In lines 3-7, we first construct a flow network $G_F$ and calculate the minimum cost flow on $G_F$ among the workers and tasks in the current batch and then obtain a temporary matching $M$.
+In lines 8-17, we greedily assign more tasks to the workers who can still perform tasks and update $M'$ accordingly.
+Specifically, for each worker, we maintain the most reliable tasks using a heap $Q$ in lines 9-12.
+Then in lines 13-15, the accuracy of tasks increases accordingly and the number of remaining tasks $n$ is reduced when any task reaches the tolerable error rate.
+Finally the assignment is updated in line 16 and the maximum index of workers in $M$ is output as the latency to compete all the tasks.
+
+\begin{table*}[t]
+	\centering
+	\caption{Assignment for each worker using different methods.}
+	\label{table:solutions}
+	\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+		\hline
+		\quad &$w_1$ &$w_2$ &$w_3$ &$w_4$ &$w_5$ &$w_6$ &$w_7$ &$w_8$ &$w_9$ &$w_{10}$ &$w_{11}$ &$w_{12}$ &$w_{13}$ &$w_{14}$ &$w_{15}$ &$w_{16}$ \\
+		\hline
+		$RR$ &$t_1,t_2$ &$t_3,t_4$ &$t_5,t_6$ &$t_1,t_2$ &$t_3,t_4$ &$t_5,t_6$ &$t_1,t_2$ &$t_3,t_4$ &$t_5,t_6$ &$t_1,t_2$ &$t_3,t_4$ &$t_5,t_6$ &$t_1,t_2$ &$t_3,t_4$ &$t_5,t_6$ &$t_6$ \\
+		%\hline
+		%$OPT$ &$t_1,t_2$ &$t_1,t_2$ &$t_1,t_2$ &$t_1,t_2$ &$t_1,t_2$ &$t_1,t_2$ &$t_1,t_2$ &$t_1,t_2$ &$t_1,t_2$ &$t_1,t_2$ &$t_1,t_2$ &$t_1,t_2$ &$t_1,t_2$ &$t_1,t_2$ &$t_1,t_2$ &$t_1,t_2$ \\
+		\hline
+		$MCF$ &$t_1,t_3$ &$t_3,t_4$ &$t_3,t_4$ &$t_1,t_4$ &$t_1,t_2$ &$t_3,t_4$ &$t_5,t_6$ &$t_2,t_5$ &$t_1,t_2$ &$t_5,t_6$ &$t_2,t_6$ &$t_5,t_6$ &$$ &$$ &$$ &$$ \\
+		\hline
+		$LAF$ &$t_2,t_1$ &$t_2,t_1$ &$t_1,t_2$ &$t_1,t_2$ &$t_6,t_5$ &$t_3,t_4$ &$t_6,t_5$ &$t_5,t_6$ &$t_4,t_3$ &$t_5,t_6$ &$t_6,t_3$ &$t_4,t_3$ &$t_3,t_4$ &$t_4$ &$$ &$$ \\
+		\hline
+		$AAM$ &$t_2,t_1$ &$t_2,t_1$ &$t_1,t_2$ &$t_4,t_1$ &$t_6,t_5$ &$t_3,t_4$ &$t_6,t_5$ &$t_5,t_2$ &$t_4,t_3$ &$t_5,t_6$ &$t_3,t_4$ &$t_6,t_3$ &$t_3,t_4$ &$$ &$$ &$$ \\
+		\hline
+	\end{tabular}
+\end{table*}
+
+\begin{figure}[t]
+	\center
+	\includegraphics[width=0.3\textwidth]{figure/flowExample.png}
+	\caption{Flow graph constructed}
+	\vspace{-3ex}
+	\label{fig:flowConstruct}
+\end{figure}
+
+\begin{example}
+Back to our running example in Example~\ref{exa:introExa}.
+\figref{fig:flowConstruct} shows the flow network $G_F$.
+The capacity between $st$ and $w$ is $K = 2$ and the capacity between $t$ and $ed$ is $\lceil\delta\rceil=\lceil2\ln_{1/(1-0.83)}\rceil=4$.
+Since the predicted accuracy for $w_1$ to perform $t_1$ is $0.971$  (see \tabref{table:predictAcc}), the cost between $w_1$ and $t_1$ is $-Acc^*(w_1, t_1) = -(2Acc(w_1,t_1)-1)^2 = -(2\cdot0.971-1)^2 \approx 0.887$.
+The flow graph is constructed after all the edges between $w$ and $t$ are added in the similar way.
+After running SSPA on this cost flow network, an arrangement $M'$ is formed using the edges between $w$ and $t$ with non-zero flow.
+And we obtain the allocation for each worker (see the first row in \tabref{table:solutions}).
+For example, $w_1$ should be assigned to $t_1$ and $t_3$.
+Based on this arrangement, only 12 workers are needed and we achieve a maximum latency of 12.
+\end{example}
+
+\fakeparagraph{Approximation Ratio}
+Next we study the approximation ratio (in terms of the latency to complete all tasks) of MCF-LTC.
+
+\begin{lemma}
+\label{lem:ratioNotFinish}
+If the latency of the optimal arrangement is smaller than $|T|\delta$ using the arrangement from the first $\lfloor 2\frac{|T|\lceil \delta \rceil}{K} \rfloor$ workers,
+then the approximation ratio is $\frac{1}{2\alpha}$.
+\end{lemma}
+\begin{proof}
+Based on the above assumption, the optimal arrangement needs at least another worker to complete all the tasks.
+Therefore, at least $\lfloor 2\frac{|T|\lceil \delta \rceil}{K} \rfloor + 1 \ge 2\frac{|T|\delta}{K}$ workers are needed.
+According to Theorem~\ref{thm:boundOfLTC}, our algorithm may need $\frac{|T|\delta}{K\alpha} + \frac{|T|}{K} + 1$ workers in the worst case.
+Note that the number of workers required is proportional to the maximum latency to complete all tasks.
+Thus, the approximation ratio is
+\begin{equation*}
+	\frac{\frac{|T|\delta}{K\alpha} + \frac{|T|}{K} + 1}{2\frac{|T|\delta}{K}} = \frac{1}{2\alpha} + \frac{1}{2\delta}(1+\frac{K}{|T|})  = \frac{1}{2\alpha} + O(1)
+\end{equation*}
+\end{proof}
+
+\begin{lemma}
+\label{lem:functionOfMCF}
+Let $\delta \ge 3$.
+If each task has been performed by $\lceil \delta \rceil$ workers from the first $\lfloor 2\frac{|T|\lceil \delta \rceil}{K} \rfloor$ ones,
+Algorithm~\ref{alg:MCF} will get at least $\frac{3}{4}$ of the $Acc^{*}$ increase of the optimal arrangement.
+\end{lemma}
+\begin{proof}
+Since the capacity between $t$ and $ed$ is no more than $\lceil \delta \rceil$, the absolute value of the cost from SSPA is no less than that of the optimal arrangement.
+However, this does not mean Algorithm~\ref{alg:MCF} will increase $Acc^{*}$ by the same amount as the optimal arrangement
+This is because when $\delta = \lfloor \delta \rfloor + \alpha$, Algorithm~\ref{alg:MCF} might waste $1 - \alpha$ for each task in the worst case
+(\eg $\lceil \delta \rceil$ workers with $Acc^{*}(,) = 1$ perform this task).
+Therefore, the actual increase in $Acc^*$ of Algorithm~\ref{alg:MCF} is at least $\lfloor \delta \rfloor / \lceil \delta \rceil \ge \frac{3}{4}$ of the absolute value of the minimum cost.
+Thus Algorithm~\ref{alg:MCF} will get at least $\frac{3}{4}$ of the $Acc^{*}$ increase of the optimal arrangement.
+\end{proof}
+
+\begin{lemma}
+\label{lem:portionFinish}
+If the latency of optimal arrangement is no more than $\lfloor 2\frac{|T|\lceil \delta \rceil}{K} \rfloor$, then the sum of $Acc^*$ in Algorithm~\ref{alg:MCF} will be at least $\frac{3}{8}|T|\delta$.
+\end{lemma}
+\begin{proof}
+Since each task in the optimal arrangement satisfies the error rate constraints, then each task should have been performed by no fewer than $\lceil \delta \rceil$ workers.
+Otherwise the accumulation of $Acc^*$ of at least one task is less than $\delta$.
+Meanwhile, since there are $\lfloor 2\frac{|T|\lceil \delta \rceil}{K} \rfloor$ workers, all these workers can perform tasks by at most $2|T|\lceil \delta \rceil$ times in total.
+Then the sum of the largest $\lceil \delta \rceil$ increase in $Acc^{*}$ of each task is at least $\frac{|T|\delta}{2}$.
+According to Lemma~\ref{lem:functionOfMCF}, Algorithm~\ref{alg:MCF} would increase the accumulated $Acc^*$ to at least $\frac{3|T|\delta}{8}$ after the arrangement among the first $\lfloor 2\frac{|T|\lceil \delta \rceil}{K} \rfloor$ workers.
+\end{proof}
+
+\begin{lemma}
+\label{lem:ratioFinish}
+If the latency of the optimal arrangement is no less than $|T|\delta$ using the arrangement from the first $\lfloor 2\frac{|T|\lceil \delta \rceil }{K}\rfloor$ workers, the approximation ratio is $\frac{5}{8\alpha}$.
+\end{lemma}
+\begin{proof}
+According to Lemma~\ref{lem:portionFinish}, the accumulated $Acc^*$ in Algorithm~\ref{alg:MCF} will reach at least $\frac{3|T|\delta}{8}$ after arrangement among the current workers.
+Then according to Theorem~\ref{thm:boundOfLTC}, it needs at most another $\frac{\frac{5}{8}|T|\delta}{K\alpha} + \frac{|T|}{K} + 1$ workers.
+Thus, the ratio is
+\begin{equation*}
+	\frac{\frac{\frac{5}{8}|T|\delta}{K\alpha} + \frac{|T|}{K} + 1}{\frac{|T|\delta}{K}} = \frac{5}{8\alpha} + \frac{1}{\delta}(1 + \frac{K}{|T|}) = \frac{5}{8\alpha} + O(1) \\
+\end{equation*}
+\end{proof}
+
+\begin{theorem}
+\label{thm:ratioOfMCF}
+The approximation ratio of Algorithm~\ref{alg:MCF} (MCF-LTC) is $\frac{0.625}{\alpha}$.
+\end{theorem}
+\begin{proof}
+According to Lemma~\ref{lem:ratioNotFinish} and Lemma~\ref{lem:ratioFinish}, the ratio of Algorithm~\ref{alg:MCF} is
+$\max\{\frac{1}{2\alpha},\ \frac{5}{8\alpha}\} = \frac{0.625}{\alpha}$.
+\end{proof}
+
+\fakeparagraph{Complexity Analysis}
+The first batch takes $O(K|T| \cdot (\frac{|T|^2\delta}{K} + (|T|+\frac{|T|\delta}{K})\log{(|T|+\frac{|T|\delta}{K})})) = O(\delta |T|^3)$ time and
+the remaining batches take $O(\frac{|T|\delta}{K} \cdot |T|\log{K}) = O(\delta |T|^2\frac{\log{K}}{K})$ time.
+The iteration takes $O(\frac{|W|K}{\delta|T|})$ batches at most.
+Since $K$ is relatively small compared to $T$, the total time cost is $O(\frac{|W|K}{\delta|T|} \cdot (\delta |T|^3 + \delta |T|^2\frac{\log{K}}{K}) = K|W||T|^2)$.
