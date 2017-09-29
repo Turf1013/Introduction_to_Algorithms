@@ -4,6 +4,7 @@ import sys
 
 def calc(srcFilePath):
 	dirNames = os.listdir(srcFilePath)
+	dirNames = filter(lambda x:not x.endswith(".gz"), dirNames)
 	aDict = dict()
 	for dirName in dirNames:
 		execName = dirName
@@ -16,8 +17,9 @@ def calc(srcFilePath):
 			avgList = [0., 0., 0.]
 			c = 0
 			for fileName in fileNames:
-				dataSetId = int(fileName[5:-4])
-				if dataSetId > 5:
+				try:
+					dataSetId = int(fileName[5:-4])
+				except:
 					continue
 				fileName = os.path.join(filePath, fileName)
 				with open(fileName, "r") as fin:
@@ -57,7 +59,7 @@ def gao(d):
 	
 	
 def findResult(d, arr):
-	algoNames = ["RRKM", "SSPAF2M", "LAFM", "AAMM"]
+	algoNames = ["RRKM", "SSPAFM", "LAFM", "AAMM"]
 	tmpDict = dict()
 	if arr not in d:
 		for algoName in algoNames:
@@ -73,7 +75,7 @@ def findResult(d, arr):
 	
 	
 def turnToLine(d, id):	
-	algoNames = ["RRKM", "SSPAF2M", "LAFM", "AAMM"]
+	algoNames = ["RRKM", "SSPAFM", "LAFM", "AAMM"]
 	aDict = dict()
 	bDict = dict()
 	cDict = dict()
@@ -89,21 +91,21 @@ def turnToLine(d, id):
 		cDict[algoName] = memList
 	ret = ""
 	for algoName in algoNames:
-		if algoName == "SSPAF2M":
+		if algoName == "SSPAFM":
 			tmpName = "MCFM"
 		else:
 			tmpName = algoName
 		tmpName = "%s" % (tmpName[:-1].lower())
 		ret += "%s%d = %s;\n" % (tmpName, id, gao(aDict[algoName]))
 	for algoName in algoNames:
-		if algoName == "SSPAF2M":
+		if algoName == "SSPAFM":
 			tmpName = "MCFM"
 		else:
 			tmpName = algoName
 		tmpName = "%s" % (tmpName[:-1].lower())
 		ret += "%s%d = %s;\n" % (tmpName, id+1, gao(bDict[algoName]))
 	for algoName in algoNames:
-		if algoName == "SSPAF2M":
+		if algoName == "SSPAFM":
 			tmpName = "MCFM"
 		else:
 			tmpName = algoName

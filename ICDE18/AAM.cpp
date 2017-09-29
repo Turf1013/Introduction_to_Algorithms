@@ -24,7 +24,6 @@ int K;
 int* compTime;
 task_t* tasks;
 worker_t* workers;
-int *visit;
 int taskN = 0;
 int workerN = 0;
 double delta, epsilon;
@@ -35,11 +34,9 @@ void readInput(istream& fin) {
 	readInput_Tasks(fin, taskN, tasks);
 	readInput_Workers(fin, workerN, workers);
 	compTime = new int[taskN];
-	visit = new int[taskN];
 
 	for (int i=0; i<taskN; ++i) {
 		compTime[i] = inf;
-		visit[i] = 0;
 	}
 }
 
