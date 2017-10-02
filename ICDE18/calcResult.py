@@ -79,6 +79,7 @@ def turnToLine(d, id):
 	aDict = dict()
 	bDict = dict()
 	cDict = dict()
+	algoNames = list(set(algoNames) & set(d.keys()))
 	for algoName in algoNames:
 		resList,timeList,memList = [],[],[]
 		tmpList = d[algoName]
@@ -114,6 +115,37 @@ def turnToLine(d, id):
 	# ret += "\n"
 	return ret
 	
+def updateResDict(aDict, arrName):
+	filePath = "F:/result/real"
+	tmpList = os.listdir(filePath)
+	for algoName in tmpList:
+		if algoName not in aDict:
+			aDict[algoName] = []
+		realPath = os.path.join(filePath, algoName)
+		fileNames = os.listdir(realPath)
+		fileNames = filter(lambda x:x.startswith(arrName), fileNames)
+		avgList = [0] * 3
+		c = 0
+		for fileName in fileNames:
+			fileName = os.path.join(realPath, fileName)
+			with open(fileName, "r") as fin:
+				line = fin.readlines()[0]
+			tmpList = line.split()
+			if len(tmpList) < 4:
+				continue
+			if float(tmpList[1]) > 573703:
+				continue
+			avgList[0] += float(tmpList[1])
+			avgList[1] += float(tmpList[2])
+			avgList[2] += float(tmpList[3])
+			c += 1
+		if c==0:
+			c = 1
+		for i in xrange(3):
+			avgList[i] /= c
+		aDict[algoName].append(avgList)	
+		
+			
 def getResult(aDict):
 	taskNList = [500, 1000, 2500, 5000, 10000]
 	KList = [2, 4, 6, 8, 10]
@@ -210,6 +242,15 @@ def getResult(aDict):
 	line += turnToLine(resDict, idx)
 	idx += 3
 	resDict = dict()
+	
+	for place in ["NYC", "TKY"]:
+		resDict = dict()
+		for p in [0.12, 0.14, 0.16, 0.18, 0.2]:
+			arrName = "%s_%s" % (place, p)
+			updateResDict(resDict, arrName)
+		line += turnToLine(resDict, idx)
+		idx += 3	
+		resDict = dict()
 	
 	with open("F:/tmp2.txt", "w") as fout:
 		fout.writelines(line)

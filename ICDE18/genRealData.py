@@ -55,7 +55,7 @@ def distance(a, b):
 	return ((a[0]-b[0])**2 + (a[1]-b[1])**2)**0.5
 	
 def updateCloseDict(workerLoc, taskLocDict, cntDict):
-	dmax = 500
+	dmax = 1200
 	for taskId, taskLoc in taskLocDict.iteritems():
 		if taskId not in cntDict:
 			cntDict[taskId] = 0
