@@ -9,6 +9,25 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+typedef long long LL;
+
+struct item_t {
+	LL lcm;
+	double uc;
+
+	item_t(LL lcm=0, double uc=0.0):
+		lcm(lcm), uc(uc) {}
+
+	bool operator<(const item_t& i) const {
+		if (lcm != i.lcm)
+			return lcm > i.lcm;
+		else
+			return uc < i.uc;
+	}
+};
+
+typedef set<item_t> priQueue;
+typedef set<item_t>::iterator priQueueIter;
 
 struct bin_t {
 	int l;

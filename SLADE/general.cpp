@@ -3,9 +3,6 @@
 	2. \author: Trasier
 	3. \date:   2017.10.5
 */
-#ifndef GENERAL_H
-#define GENERAL_H
-
 #include <bits/stdc++.h>
 using namespace std;
 
@@ -79,5 +76,4 @@ int main(int argc, char **argv) {
 	
 	return 0;
 }
-
-#endif
+	
