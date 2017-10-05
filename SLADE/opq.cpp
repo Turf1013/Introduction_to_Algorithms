@@ -14,15 +14,18 @@ using namespace std;
 #define LOCAL_DEBUG
 // #define WATCH_MEM
 
+const int maxBin = 30;
 int taskN, binN;
 double* threshs;
 bin_t* bins;
-item_t* itemS;
+int* itemS;
 
-void enumerate(int bidx, item_t prevS, double q, double logt, priQueue& Q);
+void enumerate(int bidx, double q, double logt, priQueue& Q, int dep=0);
 
 void initial() {
-	itemS = new item_t[maxBinNum+5];
+	itemS = new int[maxBin];
+	for (int i=0; i<maxBin; ++i)
+		itemS[i] = 0;
 }
 
 void freeMem() {
@@ -34,7 +37,7 @@ void freeMem() {
 void initial_PQ(priQueue& Q) {
 	double logt = log(1.0 - threshs[0]);
 	Q.clear();
-	enumerate(0, 0, 0, threshs[0], Q);
+	enumerate(0, 0, logt, Q, 0);
 	if (Q.empty()) return;
 
 	const int szQ = Q.size();
@@ -47,24 +50,24 @@ void initial_PQ(priQueue& Q) {
 
 	double minUc = inf;
 	for (int i=szQ-1; i>=0; --i) {
-		if (vitems[i].uc < minUc) {
+		if (vitems[i].uc <= minUc) {
 			minUc = vitems[i].uc;
 			Q.insert(vitems[i]);
 		}
 	}
 }
 
-void enumerate(int bidx, item_t prevS, double q, double logt, priQueue& Q) {
+void enumerate(int bidx, double q, double logt, priQueue& Q, int dep) {
+	if (dep >= maxBinNum) return ;
 	item_t curS;
 	for (int k=bidx; k<binN; ++k) {
-		curS.lcm = __lcm(prevS.lcm, bins[k].l);
-		LL na = curS.lcm / prevS.lcm, nb = curS.lcm / bins[k].l;
-		curS.uc = prevS.lcm * na + bins[k].c/bins[k].l * nb;
+		itemS[dep] = k;
+		curS = calcItem(itemS, bins, dep+1);
 
-		bool flag = false;
+		bool flag = true;
 		for (priQueueIter iter=Q.begin(); !flag&&iter!=Q.end(); ++iter) {
-			if (curS.lcm<iter->lcm || curS.uc<iter->uc) {
-				flag = true;
+			if (!(curS.lcm<iter->lcm || curS.uc<iter->uc)) {
+				flag = false;
 				break;
 			}
 		}
@@ -73,15 +76,29 @@ void enumerate(int bidx, item_t prevS, double q, double logt, priQueue& Q) {
 			double tmp = q-log(1.0 - bins[k].r);
 			if (tmp >= -logt) {
 				Q.insert(curS);
-				priQueueIter citer = Q.upper_bound(curS), eiter;
+				priQueueIter citer = Q.find(curS), eiter;
+				#ifdef LOCAL_DEBUG
+				assert(citer != Q.end());
+				#endif
+				++citer;
 				while (citer!=Q.end() && citer->lcm==curS.lcm) {
 					eiter = citer++;
+					#ifdef LOCAL_DEBUG
+					assert(eiter->uc > curS.uc);
+					#endif
 					if (eiter->uc > curS.uc) {
 						Q.erase(eiter);
 					}
 				}
+// #ifdef LOCAL_DEBUG
+				// printf("add curS with (%lld, %.3lf)\n", curS.lcm, curS.uc);
+				// for (priQueueIter iter=Q.begin(); iter!=Q.end(); ++iter)
+					// printf("(%lld, %.3lf)  ", iter->lcm, iter->uc);
+				// putchar('\n');
+				// fflush(stdout);
+// #endif
 			} else {
-				enumerate(k, curS, tmp, logt, Q);
+				enumerate(k, tmp, logt, Q, dep+1);
 			}
 		}
 	}
@@ -94,14 +111,15 @@ double solve() {
 
 	initial();
 	initial_PQ(Q);
-	
+
 	int n = taskN;
-	double prevCost = 0.0;
+	double prevCost = inf;
 	item_t prevItem, curItem(1LL<<50, 0.0);
 
 	#ifdef LOCAL_DEBUG
 	assert(Q.size() > 0);
 	#endif
+	iter = Q.begin();
 	while (n > 0) {
 		if (iter == Q.end()) {
 			cost += prevItem.lcm * prevItem.uc;
@@ -111,9 +129,11 @@ double solve() {
 		while (iter != Q.end()) {
 			curItem = *iter;
 			iter++;
+			if (curItem.lcm <= n)
+				break;
 		}
 		LL k = (int)floor(n / curItem.lcm);
-		if (k*curItem.lcm*curItem.uc > prevCost) {
+		if (curItem.lcm*curItem.uc*k > prevCost) {
 			cost += prevItem.lcm * prevItem.uc;
 			n -= prevItem.lcm;
 		} else {
@@ -132,7 +152,7 @@ double solve() {
 }
 
 int main(int argc, char **argv) {
-	string execName = "";
+	string execName = "opq";
 	double result, usedTime = -1, usedMem = -1;
 	
 	if (argc > 1)

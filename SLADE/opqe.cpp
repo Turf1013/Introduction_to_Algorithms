@@ -18,17 +18,17 @@ int taskN, binN;
 double* threshs;
 double* thetas;
 bin_t* bins;
-item_t* itemS;
+int* itemS;
 priQueue* Qs;
 int* Ns;
 
 double OPQ(int n, priQueue& Q);
-void enumerate(int bidx, item_t prevS, double q, double logt, priQueue& Q);
+void enumerate(int bidx, double q, double logt, priQueue& Q, int dep);
 
 void initial() {
-	itemS = new item_t[maxBinNum+5];
+	itemS = new int[maxBinNum+5];
 	thetas = new double[taskN];
-	
+
 	for (int i=0; i<taskN; ++i) {
 		thetas[i] = -log(1.0 - threshs[i]);
 	}
@@ -42,10 +42,10 @@ void freeMem() {
 	delete[] thetas;
 }
 
-void initial_PQ(priQueue& Q, double thresh) {
-	double logt = log(1.0 - thresh);
+void initial_PQ(priQueue& Q, double theta) {
+	double logt = -theta;
 	Q.clear();
-	enumerate(0, 0, 0, logt, Q);
+	enumerate(0, 0, logt, Q, 0);
 	if (Q.empty()) return;
 
 	const int szQ = Q.size();
@@ -58,24 +58,24 @@ void initial_PQ(priQueue& Q, double thresh) {
 
 	double minUc = inf;
 	for (int i=szQ-1; i>=0; --i) {
-		if (vitems[i].uc < minUc) {
+		if (vitems[i].uc <= minUc) {
 			minUc = vitems[i].uc;
 			Q.insert(vitems[i]);
 		}
 	}
 }
 
-void enumerate(int bidx, item_t prevS, double q, double logt, priQueue& Q) {
+void enumerate(int bidx, double q, double logt, priQueue& Q, int dep) {
+	if (dep >= maxBinNum) return ;
 	item_t curS;
 	for (int k=bidx; k<binN; ++k) {
-		curS.lcm = __lcm(prevS.lcm, bins[k].l);
-		LL na = curS.lcm / prevS.lcm, nb = curS.lcm / bins[k].l;
-		curS.uc = prevS.lcm * na + bins[k].c/bins[k].l * nb;
+		itemS[dep] = k;
+		curS = calcItem(itemS, bins, dep+1);
 
-		bool flag = false;
+		bool flag = true;
 		for (priQueueIter iter=Q.begin(); !flag&&iter!=Q.end(); ++iter) {
-			if (curS.lcm<iter->lcm || curS.uc<iter->uc) {
-				flag = true;
+			if (!(curS.lcm<iter->lcm || curS.uc<iter->uc)) {
+				flag = false;
 				break;
 			}
 		}
@@ -84,15 +84,22 @@ void enumerate(int bidx, item_t prevS, double q, double logt, priQueue& Q) {
 			double tmp = q-log(1.0 - bins[k].r);
 			if (tmp >= -logt) {
 				Q.insert(curS);
-				priQueueIter citer = Q.upper_bound(curS), eiter;
+				priQueueIter citer = Q.find(curS), eiter;
+				#ifdef LOCAL_DEBUG
+				assert(citer != Q.end());
+				#endif
+				++citer;
 				while (citer!=Q.end() && citer->lcm==curS.lcm) {
 					eiter = citer++;
+					#ifdef LOCAL_DEBUG
+					assert(eiter->uc > curS.uc);
+					#endif
 					if (eiter->uc > curS.uc) {
 						Q.erase(eiter);
 					}
 				}
 			} else {
-				enumerate(k, curS, tmp, logt, Q);
+				enumerate(k, tmp, logt, Q, dep+1);
 			}
 		}
 	}
@@ -100,26 +107,26 @@ void enumerate(int bidx, item_t prevS, double q, double logt, priQueue& Q) {
 
 int calcK(int alpha, double theta) {
 	int ret = 0, i = 0;
-	
-	while (exp2(alpha+i) < theta) {
+
+	while (exp2(alpha+i) <= theta) {
 		++i;
 	}
-		
-	return ret;
+
+	return i;
 }
 
-void intial_Qs() {
+void initial_Qs() {
 	double theta_min = inf, theta_max = -inf;
-	
+
 	for (int i=0; i<taskN; ++i) {
 		theta_min = min(theta_min, thetas[i]);
 		theta_max = max(theta_max, thetas[i]);
 	}
-	
-	int alpha = (int)floor(log2(theta_min)), i = 0;
+
+	int alpha = (int)floor(log2(theta_min-eps)), i = 0;
 	int K = calcK(alpha, theta_max);
 	double tau;
-	
+
 	Qs = new priQueue[K];
 	Ns = new int[K];
 	memset(Ns, 0, sizeof(int)*K);
@@ -129,51 +136,66 @@ void intial_Qs() {
 		} else {
 			tau = exp2(alpha+i+1);
 		}
+		#ifdef LOCAL_DEBUG
+		assert(i>=0 && i<K);
+		#endif
 		initial_PQ(Qs[i], tau);
 		++i;
 	}
 }
 
 double solve() {
-	double cost = 0.0, tmp;
-	priQueueIter iter;
+	double cost = 0.0;
 
 	initial();
 	initial_Qs();
-	
-	double theta_max, theta_min;
-	
+
+	double theta_max = -inf, theta_min = inf;
+
 	for (int i=0; i<taskN; ++i) {
 		theta_max = max(theta_max, thetas[i]);
 		theta_min = min(theta_min, thetas[i]);
 	}
-	int aplha = (int)floor(log2(theta_min)), beta = (int)ceil(log2(theta_max)), K = calcK(alpha, theta_max);
-	
+	int alpha = (int)floor(log2(theta_min-eps)), beta = (int)ceil(log2(theta_max)), K = calcK(alpha, theta_max);
+
 	for (int i=0; i<taskN; ++i) {
 		int j = (int)ceil(log2(thetas[i]));
 		#ifdef LOCAL_DEBUG
-		assert((j-alpha) >= 0);
-		assert((j-alpha) < K);
+		assert((j-alpha-1) >= 0);
+		assert((j-alpha-1) < K);
 		#endif
-		++Ns[j-alpha];
+		++Ns[j-alpha-1];
 	}
-	
+
 	for (int i=0; i<K; ++i) {
 		if (Ns[i] == 0) continue;
-		
+
 		cost += OPQ(Ns[i], Qs[i]);
 	}
-	
+
+#ifdef LOCAL_DEBUG
+	for (int i=0; i<K; ++i) {
+		double thresh = (i==K-1) ? (*max_element(threshs, threshs+taskN)) : (1.0 - exp(-exp2(alpha + i + 1)));
+		printf("%d %.3lf %d\n", Ns[i], thresh, Qs[i].size());
+	}
+#endif
+
+#ifdef WATCH_MEM
+watchSolutionOnce(getpid(), usedMem);
+#endif
+
 	return cost;
 }
-	
+
 double OPQ(int n, priQueue& Q) {
-	double cost, prevCost = 0.0;
+	double cost, prevCost = inf;
 	item_t prevItem, curItem(1LL<<50, 0.0);
 
 	#ifdef LOCAL_DEBUG
 	assert(Q.size() > 0);
+	printf("Q.size() = %d\n", Q.size());
 	#endif
+	priQueueIter iter = Q.begin();
 	while (n > 0) {
 		if (iter == Q.end()) {
 			cost += prevItem.lcm * prevItem.uc;
@@ -183,9 +205,11 @@ double OPQ(int n, priQueue& Q) {
 		while (iter != Q.end()) {
 			curItem = *iter;
 			iter++;
+			if (curItem.lcm <= n)
+				break;
 		}
 		LL k = (int)floor(n / curItem.lcm);
-		if (k*curItem.lcm*curItem.uc > prevCost) {
+		if (curItem.lcm*curItem.uc*k > prevCost) {
 			cost += prevItem.lcm * prevItem.uc;
 			n -= prevItem.lcm;
 		} else {
@@ -196,27 +220,23 @@ double OPQ(int n, priQueue& Q) {
 		}
 	}
 
-	#ifdef WATCH_MEM
-	watchSolutionOnce(getpid(), usedMem);
-	#endif
-
 	return cost;
 }
 
 int main(int argc, char **argv) {
-	string execName = "";
+	string execName = "opqe";
 	double result, usedTime = -1, usedMem = -1;
-	
+
 	if (argc > 1)
 		freopen(argv[1], "r", stdin);
 	if (argc > 2)
 		freopen(argv[2], "w", stdout);
-	
+
 	/**
 		\step 1: read the input
 	*/
 	readInput(taskN, threshs, binN, bins);
-	
+
 	/**
 		\step 2: solve the problem and return the result
 	*/
@@ -229,18 +249,18 @@ int main(int argc, char **argv) {
 	watchSolutionOnce(getpid(), usedMem);
 	usedMem /= 1024.0;
 	#endif
-	
-	
+
+
 	/**
 		\step 3: print the result
 	*/
 	dumpResult(execName, result, usedTime, usedMem);
-	
-	
+
+
 	/**
 		\step 4: free the memoroy
 	*/
 	freeMem();
-	
+
 	return 0;
 }

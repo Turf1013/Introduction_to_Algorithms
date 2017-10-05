@@ -32,7 +32,7 @@ void initial() {
 	for (int i=0; i<taskN; ++i) {
 		ranks[i] = make_pair(thetas[i], i);
 	}
-	sort(ranks, ranks+taskN, less<pdi>());
+	sort(ranks, ranks+taskN, greater<pdi>());
 }
 
 void freeMem() {
@@ -45,14 +45,14 @@ void freeMem() {
 double solve() {
 	double ret = 0.0;
 	initial();
-	
+
 	while (ranks[0].first > 0) {
 		int k = 0, bestIdx = -1;
 		double minVal = inf, sumOfTheta = 0;
 		for (int i=0; i<binN; ++i) {
 			int l = bins[i].l;
 			double cl = bins[i].c, rl = bins[i].r;
-			while (k<binN && k<l) {
+			while (k<taskN && k<l) {
 				sumOfTheta += ranks[k].first;
 				++k;
 			}
@@ -63,18 +63,18 @@ double solve() {
 			}
 		}
 		ret += bins[bestIdx].c;
-		for (int i=0; i<bins[bestIdx].l; ++i) {
+		for (int i=0; i<taskN&&i<bins[bestIdx].l; ++i) {
 			ranks[i].first -= (-log(1.0 - bins[bestIdx].r));
 			if (ranks[i].first < 0) ranks[i].first = 0;
 		}
-		sort(ranks, ranks+taskN, less<pdi>());
+		sort(ranks, ranks+taskN, greater<pdi>());
 	}
 	
 	return ret;
 }
 
 int main(int argc, char **argv) {
-	string execName = "";
+	string execName = "greedy";
 	double result, usedTime = -1, usedMem = -1;
 	
 	if (argc > 1)
@@ -111,7 +111,6 @@ int main(int argc, char **argv) {
 		\step 4: free the memoroy
 	*/
 	freeMem();
-	
 	
 	return 0;
 }
