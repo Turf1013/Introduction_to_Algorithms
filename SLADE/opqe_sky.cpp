@@ -140,11 +140,24 @@ void build_OPQ(double threshold, set <pair <LL, double> > &S) {
     }
 }
 
+void printQ(set <pair <LL, double> >& S) {
+	priority_queue <pair <LL, double> > q;
+    for (set <pair <LL, double> >::iterator iter = S.begin(); iter!=S.end(); ++iter) {
+        q.push(*iter);
+    }
+	while (!q.empty()) {
+		printf("(%lld,%.3lf) ", q.top().first, q.top().second);
+		q.pop();
+	}
+	putchar('\n');
+}
+
 double OPQ(int N, double T) {
 	printf("N = %d, thresh = %.3lf\n", N, T);
     double cost = 0.;
     set <pair <LL, double> > S;
     build_OPQ(T, S);
+	printQ(S);
     priority_queue <pair <LL, double> > q;
     for (set <pair <LL, double> >::iterator iter = S.begin(); iter!=S.end(); ++iter) {
         q.push(*iter);

@@ -1,6 +1,6 @@
 /**
 	1. program name
-	2. \author: OPQ
+	2. \author: OPQE
 	3. \date:   2017.10.5
 */
 #include <bits/stdc++.h>
@@ -173,12 +173,17 @@ double solve() {
 		cost += OPQ(Ns[i], Qs[i]);
 	}
 
-#ifdef LOCAL_DEBUG
-	for (int i=0; i<K; ++i) {
-		double thresh = (i==K-1) ? (*max_element(threshs, threshs+taskN)) : (1.0 - exp(-exp2(alpha + i + 1)));
-		printf("%d %.3lf %d\n", Ns[i], thresh, Qs[i].size());
-	}
-#endif
+// #ifdef LOCAL_DEBUG
+	// for (int i=0; i<K; ++i) {
+		// double thresh = (i==K-1) ? (*max_element(threshs, threshs+taskN)) : (1.0 - exp(-exp2(alpha + i + 1)));
+		// double tmp = OPQ(Ns[i], Qs[i]);
+		// printf("%d %.3lf %.3lf\n", Ns[i], thresh, tmp);
+		// for (priQueueIter iter=Qs[i].begin(); iter!=Qs[i].end(); ++iter)
+			// printf("(%lld,%.3lf) ", iter->lcm, iter->uc);
+		// putchar('\n');
+		// fflush(stdout);
+	// }
+// #endif
 
 #ifdef WATCH_MEM
 watchSolutionOnce(getpid(), usedMem);
@@ -188,7 +193,7 @@ watchSolutionOnce(getpid(), usedMem);
 }
 
 double OPQ(int n, priQueue& Q) {
-	double cost, prevCost = inf;
+	double cost = 0.0, prevCost = inf;
 	item_t prevItem, curItem(1LL<<50, 0.0);
 
 	#ifdef LOCAL_DEBUG
