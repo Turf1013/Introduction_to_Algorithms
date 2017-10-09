@@ -15,7 +15,7 @@ int dcmp(double x) {
 /* N : max number of tasks
  * M : max number of task bins
  */
-const int maxBinNum = 500;
+const int maxBinNum = 10;
 const int N = 1e6 + 7;
 const int M = 1e6 + 7;
 int n;
@@ -216,10 +216,10 @@ int main(int argc, char **argv) {
     //ans = greedy();
 
     // OPQ
-    //ans = OPQ(n, t[0]);
+    ans = OPQ(n, t[0]);
 
     //OPQ-Extended
-    ans = OPQ_Extended();
+    //ans = OPQ_Extended();
 
     clock_t begTime, endTime;
   	begTime = clock();

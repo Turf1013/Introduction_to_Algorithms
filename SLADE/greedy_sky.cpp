@@ -15,7 +15,7 @@ int dcmp(double x) {
 /* N : max number of tasks
  * M : max number of task bins
  */
-const int maxBinNum = 500;
+const int maxBinNum = 10;
 const int N = 1e6 + 7;
 const int M = 1e6 + 7;
 int n;
@@ -213,19 +213,19 @@ int main(int argc, char **argv) {
     double ans = 0;
 
     // greedy
-    //ans = greedy();
+    ans = greedy();
 
     // OPQ
     //ans = OPQ(n, t[0]);
 
     //OPQ-Extended
-    ans = OPQ_Extended();
+    //ans = OPQ_Extended();
 
     clock_t begTime, endTime;
   	begTime = clock();
   	endTime = clock();
   	double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
-    printf("opqe %.3lf %.3lf\n", ans, usedTime);
+    printf("greedy %.3lf %.3lf\n", ans, usedTime);
     fflush(stdout);
 
     return 0;

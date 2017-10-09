@@ -11,7 +11,7 @@
 using namespace std;
 
 const double eps = 1e-6;
-const int maxBinNum = 10;
+const int maxBinNum = 5000;
 const double inf = 1LL<<50;
 typedef pair<double,int> pdi;
 typedef pair<int,int> pii;

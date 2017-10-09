@@ -21,6 +21,7 @@ bin_t* bins;
 int* itemS;
 priQueue* Qs;
 int* Ns;
+int usedMem = 0;
 
 double OPQ(int n, priQueue& Q);
 void enumerate(int bidx, double q, double logt, priQueue& Q, int dep);
@@ -138,6 +139,7 @@ void initial_Qs() {
 		}
 		#ifdef LOCAL_DEBUG
 		assert(i>=0 && i<K);
+		printf("i = %d, tau = %.2lf\n", i, tau);
 		#endif
 		initial_PQ(Qs[i], tau);
 		++i;
@@ -169,7 +171,9 @@ double solve() {
 
 	for (int i=0; i<K; ++i) {
 		if (Ns[i] == 0) continue;
-
+		#ifdef LOCAL_DEBUG
+		printf("i = %d\n", i);
+		#endif
 		cost += OPQ(Ns[i], Qs[i]);
 	}
 
@@ -230,7 +234,7 @@ double OPQ(int n, priQueue& Q) {
 
 int main(int argc, char **argv) {
 	string execName = "opqe";
-	double result, usedTime = -1, usedMem = -1;
+	double result, usedTime = -1;
 
 	if (argc > 1)
 		freopen(argv[1], "r", stdin);
@@ -252,14 +256,13 @@ int main(int argc, char **argv) {
 	usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
 	#ifdef WATCH_MEM
 	watchSolutionOnce(getpid(), usedMem);
-	usedMem /= 1024.0;
 	#endif
 
 
 	/**
 		\step 3: print the result
 	*/
-	dumpResult(execName, result, usedTime, usedMem);
+	dumpResult(execName, result, usedTime, usedMem/1024.0);
 
 
 	/**

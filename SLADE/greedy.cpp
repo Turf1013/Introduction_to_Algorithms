@@ -69,24 +69,25 @@ double solve() {
 		}
 		sort(ranks, ranks+taskN, greater<pdi>());
 	}
-	
+
 	return ret;
 }
 
 int main(int argc, char **argv) {
 	string execName = "greedy";
-	double result, usedTime = -1, usedMem = -1;
-	
+	double result, usedTime = -1;
+	int usedMem = 0;
+
 	if (argc > 1)
 		freopen(argv[1], "r", stdin);
 	if (argc > 2)
 		freopen(argv[2], "w", stdout);
-	
+
 	/**
 		\step 1: read the input
 	*/
 	readInput(taskN, threshs, binN, bins);
-	
+
 	/**
 		\step 2: solve the problem and return the result
 	*/
@@ -97,21 +98,20 @@ int main(int argc, char **argv) {
 	usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
 	#ifdef WATCH_MEM
 	watchSolutionOnce(getpid(), usedMem);
-	usedMem /= 1024.0;
 	#endif
-	
-	
+
+
 	/**
 		\step 3: print the result
 	*/
-	dumpResult(execName, result, usedTime, usedMem);
-	
-	
+	dumpResult(execName, result, usedTime, usedMem/1024.0);
+
+
 	/**
 		\step 4: free the memoroy
 	*/
 	freeMem();
-	
+
 	return 0;
 }
 
