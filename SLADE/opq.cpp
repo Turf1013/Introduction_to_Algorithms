@@ -11,7 +11,7 @@ using namespace std;
 #include "output.h"
 #include "monitor.h"
 
-#define LOCAL_DEBUG
+//#define LOCAL_DEBUG
 // #define WATCH_MEM
 
 const int maxBin = 30;
@@ -19,7 +19,7 @@ int taskN, binN;
 double* threshs;
 bin_t* bins;
 int* itemS;
-int usedMem = 0;
+int usedMem = -1;
 
 void enumerate(int bidx, double q, double logt, priQueue& Q, int dep=0);
 

@@ -10,15 +10,19 @@ def run(execName, srcFileName, desFileName):
 	print cmdLine
 	line = commands.getoutput(cmdLine)
 	print line
+	lines = line.split('\n')
+	resLine = lines[-1]
 	with open(desFileName, "w") as fout:
-		fout.write("%s\n" % (line))
+		fout.write("%s\n" % (resLine))
 
-def exp1(n = 10):
-	execNames = ["greedy", "opqe"]
+def exp1(n = 10, nprocess=4):
+	execNames = ["greedy", "opq", "base"]
 	srcFilePath = "../dataSet/"
 	desFilePath = "../result_SLADE/"
-	pool = multiprocessing.Pool(processes = 10)
-	
+	pool = multiprocessing.Pool(processes = nprocess)
+
+	if not os.path.exists(desFilePath):
+		os.mkdir(desFilePath)
 	dirNames = os.listdir(srcFilePath)
 	dirNames = filter(lambda x:x[0]=='e', dirNames)
 	for execName in execNames:
@@ -26,7 +30,7 @@ def exp1(n = 10):
 		if not os.path.exists(tmpFilePath):
 			os.mkdir(tmpFilePath)
 		for dirName in dirNames:
-			tmpFilePath = os.path.join(tmpFilePath, dirName)
+			tmpFilePath = os.path.join(desFilePath, execName, dirName)
 			if not os.path.exists(tmpFilePath):
 				os.mkdir(tmpFilePath)
 			for i in xrange(0, n):
@@ -34,17 +38,19 @@ def exp1(n = 10):
 				desFileName = os.path.join(tmpFilePath, srcFileName)
 				srcFileName = os.path.join(srcFilePath, dirName, srcFileName)
 				pool.apply_async(run, (execName, srcFileName, desFileName, ))
-			
+
 	pool.close()
 	pool.join()
 
-	
-def exp2(n = 10):
-	execNames = ["greedy", "opqe"]
+
+def exp2(n = 10, nprocess=4):
+	execNames = ["greedy", "opqe", "base"]
 	srcFilePath = "../dataSet/"
 	desFilePath = "../result_SLADE/"
-	pool = multiprocessing.Pool(processes = 10)
-	
+	pool = multiprocessing.Pool(processes = nprocess)
+
+	if not os.path.exists(desFilePath):
+		os.mkdir(desFilePath)
 	dirNames = os.listdir(srcFilePath)
 	dirNames = filter(lambda x:x[0]!='e', dirNames)
 	for execName in execNames:
@@ -52,7 +58,7 @@ def exp2(n = 10):
 		if not os.path.exists(tmpFilePath):
 			os.mkdir(tmpFilePath)
 		for dirName in dirNames:
-			tmpFilePath = os.path.join(tmpFilePath, dirName)
+			tmpFilePath = os.path.join(desFilePath, execName, dirName)
 			if not os.path.exists(tmpFilePath):
 				os.mkdir(tmpFilePath)
 			for i in xrange(0, n):
@@ -60,12 +66,12 @@ def exp2(n = 10):
 				desFileName = os.path.join(tmpFilePath, srcFileName)
 				srcFileName = os.path.join(srcFilePath, dirName, srcFileName)
 				pool.apply_async(run, (execName, srcFileName, desFileName, ))
-			
+
 	pool.close()
 	pool.join()
 
 
 if __name__ == "__main__":
-	dataSetN = 10
+	dataSetN = 30
 	exp1(dataSetN)
 	exp2(dataSetN)

@@ -29,3 +29,6 @@
 
 # raw data
 *.txt
+
+# dataset
+dataSet/

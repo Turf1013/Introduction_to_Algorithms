@@ -11,7 +11,7 @@ using namespace std;
 #include "output.h"
 #include "monitor.h"
 
-#define LOCAL_DEBUG
+//#define LOCAL_DEBUG
 // #define WATCH_MEM
 
 int taskN, binN;
@@ -21,7 +21,7 @@ bin_t* bins;
 int* itemS;
 priQueue* Qs;
 int* Ns;
-int usedMem = 0;
+int usedMem = -1;
 
 double OPQ(int n, priQueue& Q);
 void enumerate(int bidx, double q, double logt, priQueue& Q, int dep);

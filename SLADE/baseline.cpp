@@ -12,8 +12,8 @@ using namespace std;
 #include "output.h"
 #include "monitor.h"
 
-// #define USE_SIMPLE
-#define LOCAL_DEBUG
+#define USE_SIMPLE
+// #define LOCAL_DEBUG
 // #define WATCH_MEM
 
 int taskN, binN;
@@ -22,7 +22,7 @@ bin_t* bins;
 double* thetas;
 double *vals;
 int *inds;
-int usedMem = 0;
+int usedMem = -1;
 
 void initial() {
   double theta;
@@ -200,7 +200,7 @@ string getProgName(char *s) {
 }
 
 int main(int argc, char **argv) {
-	string execName = "baseline", progName = "cip";
+	string execName = "base", progName = "cip";
 	double result, usedTime = -1;
 
 	if (argc > 1) {

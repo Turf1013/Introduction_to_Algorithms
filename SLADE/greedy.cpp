@@ -14,7 +14,7 @@ using namespace std;
 #include "output.h"
 #include "monitor.h"
 
-#define LOCAL_DEBUG
+// #define LOCAL_DEBUG
 // #define WATCH_MEM
 
 int taskN, binN;
@@ -76,7 +76,7 @@ double solve() {
 int main(int argc, char **argv) {
 	string execName = "greedy";
 	double result, usedTime = -1;
-	int usedMem = 0;
+	int usedMem = -1;
 
 	if (argc > 1)
 		freopen(argv[1], "r", stdin);
