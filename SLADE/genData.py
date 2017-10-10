@@ -70,6 +70,23 @@ class uniformGenerator(baseGenerator):
 	def setHigh(self, high):
 		self.high = high
 
+class expGenerator(baseGenerator):
+
+	def __init__(self, mu):
+		self.mu = mu
+
+	def gen(self, n, lb = None, rb = None):
+		ret = np.random.exponential(self.mu, n)
+		for i in xrange(n):
+			if lb is not None and ret[i]<lb:
+				ret[i] = lb
+			if rb is not None and ret[i]>rb:
+				ret[i] = rb
+		return ret
+
+	def setMu(self, mu):
+		self.mu = mu
+
 
 def genData(desFileName, taskN, binN, threshGrt, reliaGrt, ic, ir):
 	print desFileName
@@ -95,6 +112,14 @@ def genData(desFileName, taskN, binN, threshGrt, reliaGrt, ic, ir):
 			cost = curUc * (i+1)
 			fout.write("%s %.3f %.3f\n" % (i+1, cost, relia))
 
+			
+def genDataN(desFilePath, dataSetN, taskN, binN, threshGrt, reliaGrt, ic, ir):		
+	for dataSetId in xrange(dataSetN):
+		desFileName = "data_%02d" % (dataSetId)
+		desFileName = os.path.join(desFilePath, desFileName)
+		genData(desFileName, taskN, binN, threshGrt, reliaGrt, ic, ir)
+		
+			
 def exp1():
 	desFilePath = "./dataSet/"
 	if not os.path.exists(desFilePath):
@@ -111,5 +136,48 @@ def exp1():
 		genData(desFileName, taskN, binN, threshGrt, reliaGrt, ic, ir)
 
 
+def exp2(dataSetN = 20):
+	desFilePath = "./dataSet/"
+	if not os.path.exists(desFilePath):
+		os.mkdir(desFilePath)
+	threshGrt = normalGenerator(0.9, 0.01)
+	reliaGrt = normalGenerator(0.8, 0.10)
+	ir,ic = 0.9, 0.2
+	
+	# varying of binN
+	taskN = 10 ** 4
+	binList = [1,2,5,10,20,30,40,50]
+	for binN in binList:
+		tmpFilePath = "varying_binN_%02d" % (binN)
+		tmpFilePath = os.path.join(desFilePath, tmpFilePath)
+		if not os.path.exists(tmpFilePath):
+			os.mkdir(tmpFilePath)
+		genDataN(tmpFilePath, dataSetN, taskN, binN, threshGrt, reliaGrt, ic, ir)
+		
+	# varying of distribution of threshold(uniform)
+	taskN,binN = 10**4,20
+	meanList = [0.97, 0.95, 0.92, 0.9, 0.87]
+	for mean in meanList:
+		tmpFilePath = "varying_umean_%s" % (mean)
+		tmpFilePath = os.path.join(desFilePath, tmpFilePath)
+		if not os.path.exists(tmpFilePath):
+			os.mkdir(tmpFilePath)
+		low = 2*mean - 0.99
+		high = 0.99
+		threshGrt = uniformGenerator(low, high)
+		genDataN(tmpFilePath, dataSetN, taskN, binN, threshGrt, reliaGrt, ic, ir)
+		
+	# varying of distribution of threshold(heavy tailed)
+	taskN,binN = 10**4,20
+	meanList = [0.97, 0.95, 0.92, 0.9, 0.87]
+	for mean in meanList:
+		tmpFilePath = "varying_emean_%s" % (mean)
+		tmpFilePath = os.path.join(desFilePath, tmpFilePath)
+		if not os.path.exists(tmpFilePath):
+			os.mkdir(tmpFilePath)
+		threshGrt = expGenerator(mean)
+		genDataN(tmpFilePath, dataSetN, taskN, binN, threshGrt, reliaGrt, ic, ir)
+		
+
 if __name__ == "__main__":
-	exp1()
+	exp2(2)
