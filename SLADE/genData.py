@@ -115,13 +115,13 @@ def genData(desFileName, taskN, binN, threshGrt, reliaGrt, ic, ir):
 			
 def genDataN(desFilePath, dataSetN, taskN, binN, threshGrt, reliaGrt, ic, ir):		
 	for dataSetId in xrange(dataSetN):
-		desFileName = "data_%02d" % (dataSetId)
+		desFileName = "data_%02d.txt" % (dataSetId)
 		desFileName = os.path.join(desFilePath, desFileName)
 		genData(desFileName, taskN, binN, threshGrt, reliaGrt, ic, ir)
 		
 			
 def exp1():
-	desFilePath = "./dataSet/"
+	desFilePath = "../dataSet/"
 	if not os.path.exists(desFilePath):
 		os.mkdir(desFilePath)
 	threshGrt = normalGenerator(0.85, 0.03)
@@ -137,7 +137,7 @@ def exp1():
 
 
 def exp2(dataSetN = 20):
-	desFilePath = "./dataSet/"
+	desFilePath = "../dataSet/"
 	if not os.path.exists(desFilePath):
 		os.mkdir(desFilePath)
 	threshGrt = normalGenerator(0.9, 0.01)
@@ -153,6 +153,18 @@ def exp2(dataSetN = 20):
 		if not os.path.exists(tmpFilePath):
 			os.mkdir(tmpFilePath)
 		genDataN(tmpFilePath, dataSetN, taskN, binN, threshGrt, reliaGrt, ic, ir)
+	
+	# varying of binN
+	taskN = 10 ** 4
+	binList = [1,2,5,10,20,30,40,50]
+	threshGrt = uniformGenerator(0.9, 0.9)
+	for binN in binList:
+		tmpFilePath = "evarying_binN_%02d" % (binN)
+		tmpFilePath = os.path.join(desFilePath, tmpFilePath)
+		if not os.path.exists(tmpFilePath):
+			os.mkdir(tmpFilePath)
+		genDataN(tmpFilePath, dataSetN, taskN, binN, threshGrt, reliaGrt, ic, ir)
+		
 		
 	# varying of distribution of threshold(uniform)
 	taskN,binN = 10**4,20
