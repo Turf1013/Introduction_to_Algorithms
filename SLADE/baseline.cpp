@@ -150,7 +150,6 @@ double getResult(glp_prob *lp) {
 
 double solve(string progName) {
   double ret = 0.0;
-  initial();
 
   #ifdef LOCAL_DEBUG
   printf("progName = %s\n", progName.c_str());
@@ -215,6 +214,12 @@ int main(int argc, char **argv) {
 	*/
 	readInput(taskN, threshs, binN, bins);
 
+	/**
+		\step 1.5: initial the group
+	*/
+	initial();
+	
+	
 	/**
 		\step 2: solve the problem and return the result
 	*/

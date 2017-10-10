@@ -73,5 +73,5 @@ def exp2(n = 10, nprocess=4):
 
 if __name__ == "__main__":
 	dataSetN = 30
-	exp1(dataSetN)
-	exp2(dataSetN)
+	exp1(dataSetN, 12)
+	exp2(dataSetN, 12)

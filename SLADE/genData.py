@@ -145,7 +145,7 @@ def exp2(dataSetN = 20):
 	ir,ic = 0.9, 0.2
 
 	# varying of binN
-	taskN = 10 ** 3
+	taskN = 10 ** 4
 	binList = [1,2,5,10,20,30,40,50]
 	for binN in binList:
 		tmpFilePath = "varying_binN_%02d" % (binN)
