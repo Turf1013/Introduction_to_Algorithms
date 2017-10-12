@@ -225,8 +225,8 @@ int main(int argc, char **argv) {
 		\step 1.5: initial the group
 	*/
 	initial();
-	
-	
+
+
 	/**
 		\step 2: solve the problem and return the result
 	*/

@@ -48,6 +48,7 @@ void initial_PQ(priQueue& Q, double theta) {
 	Q.clear();
 	enumerate(0, 0, logt, Q, 0);
 	if (Q.empty()) return;
+	// printf("before, szQ = %d\n", Q.size());
 
 	const int szQ = Q.size();
 	vector<item_t> vitems(szQ);
@@ -57,17 +58,25 @@ void initial_PQ(priQueue& Q, double theta) {
 	}
 	Q.clear();
 
+
 	double minUc = inf;
 	for (int i=szQ-1; i>=0; --i) {
-		if (vitems[i].uc <= minUc) {
+		if (vitems[i].uc < minUc) {
 			minUc = vitems[i].uc;
 			Q.insert(vitems[i]);
+			// printf("lcm = %lld, uc = %.2lf\n", vitems[i].lcm, vitems[i].uc);
 		}
 	}
+
+	// printf("*lcm = %lld, uc = %.2lf\n", Q.begin()->lcm, Q.begin()->uc);
+	// printf("after, szQ = %d\n\n", Q.size());
 }
 
 void enumerate(int bidx, double q, double logt, priQueue& Q, int dep) {
-	if (dep >= maxBinNum) return ;
+	if (dep >= maxBinNum) {
+		printf("depth reach %d\n", dep);
+		return ;
+	}
 	item_t curS;
 	for (int k=bidx; k<binN; ++k) {
 		itemS[dep] = k;
