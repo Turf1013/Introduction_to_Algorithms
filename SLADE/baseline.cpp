@@ -183,13 +183,19 @@ double solve(string progName) {
 }
 
 string getProgName(char *s) {
-  string ret = "cip";
+  string ret = "^";
   int len = strlen(s), i;
   for (i=len-1; i>=0; --i) {
-    if (s[i] == '.')
+    if (s[i] == '/')
       break;
   }
   --i;
+  ret += s[len-6];
+  ret += s[len-5];
+  for (int k=2; k>0; --k) {
+	  while (i>=0 && s[i]!='_') ret += s[i];
+	  --i;
+  }
   while (i>=0 && isdigit(s[i])) {
     ret += s[i];
     --i;
@@ -205,6 +211,7 @@ int main(int argc, char **argv) {
 	if (argc > 1) {
 		freopen(argv[1], "r", stdin);
     progName = getProgName(argv[1]);
+	printf("progName = %s\n", progName.c_str());
   }
 	if (argc > 2)
 		freopen(argv[2], "w", stdout);

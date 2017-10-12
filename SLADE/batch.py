@@ -64,6 +64,8 @@ def exp2(n = 10, nprocess=4):
 			for i in xrange(0, n):
 				srcFileName = "data_%02d.txt" % (i)
 				desFileName = os.path.join(tmpFilePath, srcFileName)
+				if os.path.exists(desFileName):
+					continue
 				srcFileName = os.path.join(srcFilePath, dirName, srcFileName)
 				pool.apply_async(run, (execName, srcFileName, desFileName, ))
 
