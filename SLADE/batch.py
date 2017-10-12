@@ -44,7 +44,8 @@ def exp1(n = 10, nprocess=4):
 
 
 def exp2(n = 10, nprocess=4):
-	execNames = ["greedy", "opqe", "base"]
+	# execNames = ["greedy", "opqe", "base"]
+	execNames = ["greedy", "opqe2"]
 	srcFilePath = "../dataSet/"
 	desFilePath = "../result_SLADE/"
 	pool = multiprocessing.Pool(processes = nprocess)
@@ -74,6 +75,6 @@ def exp2(n = 10, nprocess=4):
 
 
 if __name__ == "__main__":
-	dataSetN = 30
-	exp1(dataSetN, 12)
-	exp2(dataSetN, 12)
+	dataSetN = 60
+	exp1(dataSetN, 16)
+	exp2(dataSetN, 16)
