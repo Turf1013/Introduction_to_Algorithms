@@ -5,7 +5,7 @@ import commands
 from time import sleep
 
 def run(srcFilePath):
-    execNames = ["opqe", "greedy"]
+    execNames = ["opqe", "opqe2", "greedy"]
     dirNames = os.listdir(srcFilePath)
     dirNames.sort()
     for dirName in dirNames:
