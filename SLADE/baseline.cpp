@@ -151,9 +151,9 @@ double getResult(glp_prob *lp) {
 double solve(string progName) {
   double ret = 0.0;
 
-  #ifdef LOCAL_DEBUG
+ #ifdef LOCAL_DEBUG
   printf("progName = %s\n", progName.c_str());
-  #endif
+ #endif
 
   glp_prob *lp;
 
@@ -193,7 +193,10 @@ string getProgName(char *s) {
   ret += s[len-6];
   ret += s[len-5];
   for (int k=2; k>0; --k) {
-	  while (i>=0 && s[i]!='_') ret += s[i];
+	  while (i>=0 && s[i]!='_') {
+      ret += s[i];
+      --i;
+    }
 	  --i;
   }
   while (i>=0 && isdigit(s[i])) {
@@ -211,7 +214,7 @@ int main(int argc, char **argv) {
 	if (argc > 1) {
 		freopen(argv[1], "r", stdin);
     progName = getProgName(argv[1]);
-	printf("progName = %s\n", progName.c_str());
+	  //printf("progName = %s\n", progName.c_str());
   }
 	if (argc > 2)
 		freopen(argv[2], "w", stdout);

@@ -145,23 +145,23 @@ def exp2(dataSetN = 20):
 	ir,ic = 0.9, 0.2
 
 	# varying of binN
-	taskN = 10 ** 4 + 100
-	binList = [1,4,8,10,15,20,25,30,35,40]
+	taskN = 10 ** 3 + 100
+	binList = [1,2,4,6,8,10,15,20,25,30,35,40,45,50]
 	for binN in binList:
 		tmpFilePath = "varying_binN_%02d" % (binN)
 		tmpFilePath = os.path.join(desFilePath, tmpFilePath)
-		continue
+		# continue
 		if not os.path.exists(tmpFilePath):
 			os.mkdir(tmpFilePath)
 		genDataN(tmpFilePath, dataSetN, taskN, binN, threshGrt, reliaGrt, ic, ir)
 
 	# varying of binN
-	binList = [1,4,8,10,15,20,25,30,35,40]
+	binList = [1,2,4,6,8,10,15,20,25,30,35,40,45,50]
 	threshGrt = uniformGenerator(0.9, 0.9)
 	for binN in binList:
 		tmpFilePath = "evarying_binN_%02d" % (binN)
 		tmpFilePath = os.path.join(desFilePath, tmpFilePath)
-		continue
+		# continue
 		if not os.path.exists(tmpFilePath):
 			os.mkdir(tmpFilePath)
 		genDataN(tmpFilePath, dataSetN, taskN, binN, threshGrt, reliaGrt, ic, ir)
