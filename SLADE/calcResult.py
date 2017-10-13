@@ -7,7 +7,7 @@ import sys
 def calc(srcFilePath):
 	itemN = 2
 	dirNames = os.listdir(srcFilePath)
-	dirNames = filter(lambda x:not x.endswith(".gz"), dirNames)
+	dirNames.sort()
 	aDict = dict()
 	for dirName in dirNames:
 		execName = dirName
@@ -22,7 +22,7 @@ def calc(srcFilePath):
 			for fileName in fileNames:
 				try:
 					dataSetId = int(fileName[5:7])
-					if dataSetId >= 10:
+					if dataSetId >= 4:
 						continue
 				except:
 					continue
@@ -47,7 +47,10 @@ def calc(srcFilePath):
 			# avgList.append(0.0)
 			aDict[tmpName].append([execName] + avgList)
 	with open("F:/tmp/tmp.txt", "w") as fout:
-		for arrName,infoList in aDict.iteritems():
+		arrNames = aDict.keys()
+		arrNames.sort()
+		for arrName in arrNames:
+			infoList = aDict[arrName]
 			fout.write("%s\n" % (arrName))
 			for info in infoList:
 				fout.write("%s\n" % (info))
@@ -152,7 +155,7 @@ def getResult(aDict):
 	binN = 20
 	meanList = [0.88, 0.90, 0.92, 0.94, 0.96]
 	for mean in meanList:
-		tmpFilePath = "varying_umean_%s" % (mean)
+		tmpFilePath = "varying_umean_%.02f" % (mean)
 		tmpDict = findResult(aDict, tmpFilePath)
 		for algoName,tmpList in tmpDict.iteritems():
 			if algoName not in resDict:
@@ -166,7 +169,7 @@ def getResult(aDict):
 	binN = 20
 	meanList = [0.88, 0.90, 0.92, 0.94, 0.96]
 	for mean in meanList:
-		tmpFilePath = "varying_emean_%s" % (mean)
+		tmpFilePath = "varying_emean_%.02f" % (mean)
 		tmpDict = findResult(aDict, tmpFilePath)
 		for algoName,tmpList in tmpDict.iteritems():
 			if algoName not in resDict:
