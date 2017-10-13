@@ -137,7 +137,7 @@ def exp1():
 
 
 def exp2(dataSetN = 20):
-	desFilePath = "../dataSet/"
+	desFilePath = "F:/dataSet/"
 	if not os.path.exists(desFilePath):
 		os.mkdir(desFilePath)
 	threshGrt = normalGenerator(0.9, 0.01)

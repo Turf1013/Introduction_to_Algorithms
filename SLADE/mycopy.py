@@ -38,7 +38,7 @@ def gao22(desFilePath, srcFilePath, dirNames, dataSetId, commonLines):
 				fout.write(newLine)
 					
 
-def gao2(filePath, dirNames, dataSetN = 20):
+def gao2(filePath, dirNames, dataSetN = 60):
 	desFilePath = "F:/tmp/dataSet"
 	numList = map(lambda s:float(s[s.rindex('_')+1:]), dirNames)
 	mxNum = max(numList)
