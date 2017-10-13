@@ -16,12 +16,12 @@ double ans = 0.; // total completion time
 
 struct Position {
     double x, y;
-    Driver(int pid=1):pid(pid) {}
 } p[POSITION_NUMBER];
 
 struct Driver {
     int pid;
     vector <int> schedule;
+    Driver(int pid=1):pid(pid) {}
 } driver[DRIVER_NUMBER];
 
 struct Order {
@@ -115,7 +115,7 @@ double simulate(int L, int R, double tim) {
     return tim;
 }
 
-int main() {
+int main(int argc, char **argv) {
   string execName("SJF");
 
   string srcFileName;
@@ -153,7 +153,7 @@ int main() {
         double pending = simulate(L, R, nw);
         pre = nw, nw = pending;
     }
-    printf("Short Job First: %.3f\n", ans);
+  //  printf("Short Job First: %.3f\n", ans);
 
     endTime = clock();
 

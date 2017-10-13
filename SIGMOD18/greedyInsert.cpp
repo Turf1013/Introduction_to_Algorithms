@@ -10,7 +10,7 @@ using namespace std;
 #include "global.h"
 // #include "monitor.h"
 
-#define LOCAL_DEBUG
+// #define LOCAL_DEBUG
 
 int V, N, C, M;
 position_t* points = NULL;
