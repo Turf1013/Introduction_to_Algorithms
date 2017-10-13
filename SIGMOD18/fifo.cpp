@@ -19,6 +19,7 @@ struct Position {
 struct Driver {
     int pid;
     vector <int> schedule;
+	Driver(int pid=1):pid(pid) {}
 } driver[DRIVER_NUMBER];
 
 struct Order {
@@ -115,7 +116,7 @@ int main(int argc, char **argv) {
 	}
 	
     scanf("%d%d%d%d", &d, &m, &c, &n);
-    for (int i = 0; i < d; ++ i) {
+    for (int i = 1; i <= d; ++ i) {
         scanf("%lf%lf", &p[i].x, &p[i].y);
     }
     for (int i = 0; i < n; ++ i) {

@@ -158,7 +158,7 @@ pair<double,double> insertFeasibilityCheck(const int driverId, const int orderId
 	order_t& order = orders[orderId];
 	vector<node_t>& route = driver.route;
 	int sz = route.size();
-	double flowTime = inf;
+	double flowTime = 0;
 
 	// check the complete path
 	position_t curLoc = driver.pos, nextLoc;
@@ -180,7 +180,7 @@ pair<double,double> insertFeasibilityCheck(const int driverId, const int orderId
 			nextLoc = points[order.eid];
 			arriveTime += Length(curLoc, nextLoc);
 			--cap;
-			flowTime = min(flowTime, arriveTime-order.tid);
+			flowTime += arriveTime - order.tid;
 
 			curLoc = nextLoc;
 		}
@@ -191,7 +191,7 @@ pair<double,double> insertFeasibilityCheck(const int driverId, const int orderId
 		arriveTime += Length(curLoc, nextLoc);
 
 		if (mark[orderId_]==0 || pickTime[orderId_]<inf) {
-			flowTime = min(flowTime, arriveTime-orders[orderId_].tid);
+			flowTime += arriveTime - orders[orderId_].tid;
 			--cap;
 		} else {
 			pickTime[orderId_] = arriveTime;
@@ -214,6 +214,42 @@ pair<double,double> insertFeasibilityCheck(const int driverId, const int orderId
 	return make_pair(flowTime, arriveTime-order.tid);
 }
 
+double calcOrgSumFlow(const int driverId) {
+	driver_t& driver = drivers[driverId];
+	order_t& order = orders[orderId];
+	vector<node_t>& route = driver.route;
+	int sz = route.size();
+	double flowTime = 0;
+
+	// check the complete path
+	position_t curLoc = driver.pos, nextLoc;
+	double arriveTime = order.tid;
+
+	for (int i=0; i<sz; ++i) {
+		
+		const int orderId_ = route[i].orderId;
+		nextLoc = (mark[orderId_]==0 || pickTime[orderId_]<inf) ? points[orders[orderId].sid]:points[orders[orderId].eid];
+		arriveTime += Length(curLoc, nextLoc);
+
+		if (mark[orderId_]==0 || pickTime[orderId_]<inf) {
+			flowTime += arriveTime - orders[orderId_].tid;
+		} else {
+			pickTime[orderId_] = arriveTime;
+		}
+
+		curLoc = nextLoc;
+	}
+
+	for (int i=0; i<sz; ++i) {
+		const int orderId_ = route[i].orderId;
+		if (mark[orderId_] == -1) {
+			pickTime[orderId_] = inf;
+		}
+	}
+	
+	return flowTime;
+}
+
 void getBestPosition(const int driverId, const int orderId, int& pick, int& deliver, double& flowTime, double& distance) {
 	driver_t& driver = drivers[driverId];
 	int sz = driver.route.size();
@@ -228,6 +264,10 @@ void getBestPosition(const int driverId, const int orderId, int& pick, int& deli
 			// #ifdef LOCAL_DEBUG
 			// printf("driverId = %d, pick = %d, deliver = %d, flowTime = %.2lf, distance = %.2lf\n", driverId, i, j, tmp.first, tmp.second);
 			// #endif
+			tmp.first -= calcOrgSumFlow(driverId);
+			#ifdef LOCAL_DEBUG
+			assert(tmp.first >= 0);
+			#endif
 			if (tmp.first<flowTime || (tmp.first==flowTime && tmp.second<distance)) {
 				flowTime = tmp.first;
 				distance = tmp.second;
