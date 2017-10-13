@@ -30,7 +30,7 @@ void init() {
 	}
 	drivers = new driver_t[N];
 	for (int i=0; i<N; ++i) {
-		int idx = rand() % N;
+		int idx = 0; //rand() % N;
 		drivers[i].pos = points[idx];
 	}
 
@@ -358,13 +358,13 @@ void greedyInsert() {
 }
 
 double calcResult() {
-	double ans = -1;
+	double ans = 0;
 
 	for (int orderId=0; orderId<M; ++orderId) {
 		#ifdef LOCAL_DEBUG
 		assert(mark[orderId] == 1);
 		#endif
-		ans = max(ans, deliverTime[orderId]-orders[orderId].tid);
+		ans += deliverTime[orderId]-orders[orderId].tid;
 	}
 
 	return ans;
