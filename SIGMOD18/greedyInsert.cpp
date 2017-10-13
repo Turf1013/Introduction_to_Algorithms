@@ -301,7 +301,8 @@ void greedyInsert() {
 		scheduling(orderId, driverId, pickLoc, deliverLoc, flowTime);
 		#ifdef LOCAL_DEBUG
 		int orderN = calcOrderN(driverId) + 1;
-		printf("driverId = %d, orderId = %d, orderNum = %d, flowTime = %d\n", driverId, orderId, orderN, flowTime);
+		printf("driverId = %d, orderId = %d, orderNum = %d, flowTime = %.3lf\n", driverId, orderId, orderN, flowTime);
+		fflush(stdout);
 		#endif
 		#ifdef LOCAL_DEBUG
 		assert(driverId>=0 && pickLoc>=0 && deliverLoc>=0);
@@ -339,7 +340,7 @@ double solve() {
 }
 
 int main(int argc, char **argv) {
-	string execName("LAF");
+	string execName("GreedyInsert");
 
 	string srcFileName;
 	if (argc > 1) {
