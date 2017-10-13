@@ -16,12 +16,12 @@ double ans = 0.; // total completion time
 
 struct Position {
     double x, y;
+    Driver(int pid=1):pid(pid) {}
 } p[POSITION_NUMBER];
 
 struct Driver {
     int pid;
     vector <int> schedule;
-	Driver(int pid=1):pid(pid) {}
 } driver[DRIVER_NUMBER];
 
 struct Order {
@@ -82,18 +82,27 @@ double run_driver(int did, double tim) {
     return t_tim - tim;
 }
 
+bool cmp(int a, int b) {
+    return order[a].t < order[b].t;
+}
+
 // simulating: dispatch one batch orders to drivers
 double simulate(int L, int R, double tim) {
     int len = R - L;
     int batch_len = MINI_BATCH * m;
     int st = L, ed;
+    vector <int> cont;
+    for (int i = L; i < R; ++ i) {
+        cont.push_back(i);
+    }
+    sort(cont.begin(), cont.end(), cmp);
     while (st < R) {
         for (int i = 0; i < m; ++ i) {
             driver[i].schedule.clear();
         }
         ed = min(R, st + batch_len);
         for (int i = st; i < ed; ++ i) {
-            driver[i % m].schedule.push_back(i);
+            driver[i % m].schedule.push_back(cont[i - L]);
         }
         double pass_time = 0.;
         for (int i = 0; i < m; ++ i) {
@@ -106,16 +115,17 @@ double simulate(int L, int R, double tim) {
     return tim;
 }
 
-int main(int argc, char **argv) {
-	string execName("FIFO");
+int main() {
+  string execName("SJF");
 
-	string srcFileName;
-	if (argc > 1) {
-		freopen(argv[1], "r", stdin);
-	}
-	if (argc > 2) {
-		freopen(argv[2], "w", stdout);
-	}
+  string srcFileName;
+  if (argc > 1) {
+    freopen(argv[1], "r", stdin);
+  }
+  if (argc > 2) {
+    freopen(argv[2], "w", stdout);
+  }
+
 
     scanf("%d%d%d%d", &d, &m, &c, &n);
     for (int i = 1; i <= d; ++ i) {
@@ -125,8 +135,8 @@ int main(int argc, char **argv) {
         scanf("%lf%d%d", &order[i].t, &order[i].s, &order[i].d);
     }
 
-	clock_t begTime, endTime;
-	begTime = clock();
+    clock_t begTime, endTime;
+  	begTime = clock();
 
     double pre = 0., nw = 0.;
     int pos = 0;
@@ -143,17 +153,18 @@ int main(int argc, char **argv) {
         double pending = simulate(L, R, nw);
         pre = nw, nw = pending;
     }
+    printf("Short Job First: %.3f\n", ans);
 
-	endTime = clock();
+    endTime = clock();
 
     double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
-	#ifdef WATCH_MEM
-	dumpResult(execName, ans, usedTime, -1);
-	#else
-	dumpResult(execName, ans, usedTime);
-	#endif
+    #ifdef WATCH_MEM
+    dumpResult(execName, ans, usedTime, -1);
+    #else
+    dumpResult(execName, ans, usedTime);
+    #endif
 
-	fflush(stdout);
+    fflush(stdout);
 
     return 0;
 }

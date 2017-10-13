@@ -18,9 +18,15 @@ fifo: output.h fifo.cpp monitor.h
 	$(CXX) $(CFLAGS) -o fifo fifo.cpp $(LIBS)
 
 fifoM: output.h fifo.cpp monitor.h
-	$(CXX) $(CFLAGS) -o fifoM fifo.cpp $(LIBS)	
-	
+	$(CXX) $(CFLAGS) -o fifoM fifo.cpp $(LIBS)
+
+sjf: output.h sjf.cpp monitor.h
+	$(CXX) $(CFLAGS) -o sjf sjf.cpp $(LIBS)
+
+sjfM: output.h fifo.cpp monitor.h
+	$(CXX) $(CFLAGS) -o sjfM sjf.cpp $(LIBS)
+
 .PHONY: clean
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
-		-@rm gi giM fifo fifoM 2> /dev/null || true
+		-@rm gi giM fifo fifoM sjf sjfM 2> /dev/null || true
