@@ -187,7 +187,7 @@ pair<double,double> insertFeasibilityCheck(const int driverId, const int orderId
 		if (i == sz) continue;
 
 		const int orderId_ = route[i].orderId;
-		nextLoc = (mark[orderId_]==0 || pickTime[orderId_]<inf) ? points[orders[orderId].sid]:points[orders[orderId].eid];
+		nextLoc = (mark[orderId_]==0 || pickTime[orderId_]<inf) ? points[orders[orderId_].sid]:points[orders[orderId_].eid];
 		arriveTime += Length(curLoc, nextLoc);
 
 		if (mark[orderId_]==0 || pickTime[orderId_]<inf) {
@@ -214,21 +214,19 @@ pair<double,double> insertFeasibilityCheck(const int driverId, const int orderId
 	return make_pair(flowTime, arriveTime-order.tid);
 }
 
-double calcOrgSumFlow(const int driverId) {
+double calcOrgSumFlow(const int driverId, double orderTid) {
 	driver_t& driver = drivers[driverId];
-	order_t& order = orders[orderId];
 	vector<node_t>& route = driver.route;
 	int sz = route.size();
 	double flowTime = 0;
 
 	// check the complete path
 	position_t curLoc = driver.pos, nextLoc;
-	double arriveTime = order.tid;
+	double arriveTime = orderTid;
 
 	for (int i=0; i<sz; ++i) {
-		
 		const int orderId_ = route[i].orderId;
-		nextLoc = (mark[orderId_]==0 || pickTime[orderId_]<inf) ? points[orders[orderId].sid]:points[orders[orderId].eid];
+		nextLoc = (mark[orderId_]==0 || pickTime[orderId_]<inf) ? points[orders[orderId_].sid]:points[orders[orderId_].eid];
 		arriveTime += Length(curLoc, nextLoc);
 
 		if (mark[orderId_]==0 || pickTime[orderId_]<inf) {
@@ -246,7 +244,7 @@ double calcOrgSumFlow(const int driverId) {
 			pickTime[orderId_] = inf;
 		}
 	}
-	
+
 	return flowTime;
 }
 
@@ -264,7 +262,7 @@ void getBestPosition(const int driverId, const int orderId, int& pick, int& deli
 			// #ifdef LOCAL_DEBUG
 			// printf("driverId = %d, pick = %d, deliver = %d, flowTime = %.2lf, distance = %.2lf\n", driverId, i, j, tmp.first, tmp.second);
 			// #endif
-			tmp.first -= calcOrgSumFlow(driverId);
+			tmp.first -= calcOrgSumFlow(driverId, orders[orderId].tid);
 			#ifdef LOCAL_DEBUG
 			assert(tmp.first >= 0);
 			#endif
