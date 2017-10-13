@@ -2,38 +2,41 @@
 	\author: 	Trasier
 	\date: 		2017.10.13
 */
-/**
-	\author: 	Trasier
-	\date:   	2017.6.1
-	\source: 	ICDE13 T-share: A Large-Scale Dynamic Taxi Ridesharing Service
-	\note: 		1) 2017.6.5 updateMove is not fixed yet.
-				2) 2017.6.6 There could be some bugs in updateMove, since at one place(aRest or aDist), more than one riders can be pickedup or delivered.
-				3) 2017.6.7 Because of previous bugs, leaveTime of each movement should also be updated, the begTime/endTime for all the places are not the same.
-								But the maximum value is the leaveTime.
-*/
+#include <bits/stdc++.h>
+using namespace std;
+
+#include "input.h"
+#include "output.h"
 #include "global.h"
-
-
+// #include "monitor.h"
 
 #define LOCAL_DEBUG
-
 
 int V, N, C, M;
 position_t* points = NULL;
 order_t* orders = NULL;
+driver_t* drivers;
 double *pickTime;
 double *deliverTime;
 int *mark;
 
 void init() {
 	mark = new int[M];
-	mark_ = new int[M];
 	pickTime = new double[M];
-	delvierTime = new double[M];
+	deliverTime = new double[M];
 	for (int i=0; i<M; ++i) {
 		pickTime[i] = deliverTime[i] = inf;
 		mark[i] = -1;
 	}
+	drivers = new driver_t[N];
+	for (int i=0; i<N; ++i) {
+		int idx = rand() % N;
+		drivers[i].pos = points[idx];
+	}
+
+	#ifdef LOCAL_DEBUG
+	printf("V = %d, N = %d, C = %d, M = %d\n", V, N, C, M);
+	#endif
 }
 
 void FreeMem() {
@@ -42,21 +45,22 @@ void FreeMem() {
 	delete[] pickTime;
 	delete[] deliverTime;
 	delete[] mark;
+	delete[] drivers;
 }
 
 void updateMove(const int driverId) {
 	driver_t& driver = drivers[driverId];
 	if (driver.empty()) return ;
-	
+
 	const int placeId = driver.route[0].placeId;
 	const int orderId = driver.route[0].orderId;
 	position_t& nextPos = points[placeId];
 	double arriveTime = driver.curTime + Length(driver.pos, nextPos);
-	
+
 	// update the pickup time or delivery time
 	vector<node_t>::iterator iter = driver.route.begin();
 	while (iter!=driver.route.end() && iter->placeId==placeId) {
-		/** 
+		/**
 			update the rider's record to evaluate the global answer
 				-- 2017.6.7 more than once.
 		*/
@@ -78,15 +82,17 @@ void updateMove(const int driverId) {
 		++iter;
 	}
 	driver.erase(driver.route.begin(), iter);
-	
+
 	driver.pos = nextPos;
 	driver.curTime = arriveTime;
 }
 
 void updateDriverPosition(const int driverId, const double orderTid) {
 	driver_t& driver = drivers[driverId];
-	if (driver.isEmpty())
+	if (driver.isEmpty()) {
+		driver.curTime = orderTid;
 		return ;
+	}
 
 	if (dcmp(driver.curTime-orderTid) == 0)
 		return ;
@@ -106,20 +112,17 @@ void updateDriverPosition(const int driverId, const double orderTid) {
 	double dy = (des.y - src.y) / t;
 
 	// add a new move
-	move_t move;
-
 	driver.pos.x = src.x + dx * (orderTid - driver.curTime);
 	driver.pos.y = src.y + dy * (orderTid - driver.curTime);
-	move.arrive = move.leave = orderTid;
 	driver.curTime = orderTid;
 }
 
-void updateDriverPosition(const int driverId, const double orderTid) {
+void updateDriver(const int driverId, const double orderTid) {
 	driver_t& driver = drivers[driverId];
 	#ifdef LOCAL_DEBUG
 	assert(driver.curTime <= orderTid);
 	#endif
-	
+
 	while (!driver.isEmpty()) {
 		const int placeId = driver.route[0].placeId;
 		const int orderId = driver.route[0].orderId;
@@ -143,7 +146,7 @@ int calcCurCap(const int driverId) {
 	int ret = 0;
 
 	for (int i=0; i<sz; ++i) {
-		if (mark[route[i].orderId]==0)
+		if (mark[route[i].orderId] == 0)
 			++ret;
 	}
 
@@ -161,7 +164,6 @@ pair<double,double> insertFeasibilityCheck(const int driverId, const int orderId
 	position_t curLoc = driver.pos, nextLoc;
 	double arriveTime = order.tid;
 	int cap = initCap;
-	double ret = -1;
 
 	for (int i=0; i<=sz; ++i) {
 		if (i == pick) {
@@ -178,19 +180,18 @@ pair<double,double> insertFeasibilityCheck(const int driverId, const int orderId
 			nextLoc = points[order.eid];
 			arriveTime += Length(curLoc, nextLoc);
 			--cap;
-			ret = max(ret, arriveTime-order.tid);
+			flowTime = min(flowTime, arriveTime-order.tid);
 
 			curLoc = nextLoc;
 		}
 		if (i == sz) continue;
 
-		const int placeId_ = route[i].placeId;
 		const int orderId_ = route[i].orderId;
-		nextLoc = points[placeId_];
+		nextLoc = (mark[orderId_]==0 || pickTime[orderId_]<inf) ? points[orders[orderId].sid]:points[orders[orderId].eid];
 		arriveTime += Length(curLoc, nextLoc);
-		
-		if (mark[orderId_]==1 || pickTime[orderId_]<inf) {
-			flowTime = max(flowTime, arriveTime-orders[orderId_].tid);
+
+		if (mark[orderId_]==0 || pickTime[orderId_]<inf) {
+			flowTime = min(flowTime, arriveTime-orders[orderId_].tid);
 			--cap;
 		} else {
 			pickTime[orderId_] = arriveTime;
@@ -199,12 +200,11 @@ pair<double,double> insertFeasibilityCheck(const int driverId, const int orderId
 				break;
 			}
 		}
-		
+
 		curLoc = nextLoc;
 	}
 
 	for (int i=0; i<sz; ++i) {
-		const int placeId_ = route[i].placeId;
 		const int orderId_ = route[i].orderId;
 		if (mark[orderId_] == -1) {
 			pickTime[orderId_] = inf;
@@ -218,29 +218,35 @@ void getBestPosition(const int driverId, const int orderId, int& pick, int& deli
 	driver_t& driver = drivers[driverId];
 	int sz = driver.route.size();
 	double tmp;
-	int iniCap = calcCap(driverId);
+	int iniCap = calcCurCap(driverId);
 
 	pick = deliver = -1;
 	flowTime = distance = inf;
 	for (int i=0; i<=sz; ++i) {
 		for (int j=i; j<=sz; ++j) {
 			pair<double,double> tmp = insertFeasibilityCheck(driverId, orderId, i, j, iniCap);
-			if (tmp.first<flowTime || (tmp.fist==flowTime && tmp.second<distance)) {
+			// #ifdef LOCAL_DEBUG
+			// printf("driverId = %d, pick = %d, deliver = %d, flowTime = %.2lf, distance = %.2lf\n", driverId, i, j, tmp.first, tmp.second);
+			// #endif
+			if (tmp.first<flowTime || (tmp.first==flowTime && tmp.second<distance)) {
 				flowTime = tmp.first;
 				distance = tmp.second;
+				pick = i;
+				deliver = j;
 			}
 		}
 	}
 }
 
-void scheduling(const int orderId, int& bestDriver, int& bestPick, int& bestDeliver) {
-	double bestFlow = inf, bestDistance = inf;
+void scheduling(const int orderId, int& bestDriver, int& bestPick, int& bestDeliver, double& bestFlow) {
+	double bestDistance = inf;
 	double tmpFlow, tmpDistance;
 	int pickLoc, deliverLoc;
-	
+
+	bestFlow = inf;
 	bestPick = bestDeliver = bestDriver = -1;
 	for (int driverId=0; driverId<N; ++driverId) {
-		getBesPosition(driverId, orderId, pickLoc, deliverLoc, tmpFlow, tmpDistance);
+		getBestPosition(driverId, orderId, pickLoc, deliverLoc, tmpFlow, tmpDistance);
 		if (tmpFlow<bestFlow || (tmpFlow==bestFlow && tmpDistance<bestDistance)) {
 			bestDriver = driverId;
 			bestPick = pickLoc;
@@ -260,7 +266,7 @@ void responseDriver(int orderId, int driverId, int pickLoc, int deliverLoc) {
 	driver.curTime = order.tid;
 	driver.clear();
 	for (int i=0; i<=routeSz; ++i) {
-		if (i == pickLoc) 
+		if (i == pickLoc)
 			driver.route.push_back(node_t(order.sid, orderId));
 		if (i == deliverLoc)
 			driver.route.push_back(node_t(order.eid, orderId));
@@ -269,14 +275,34 @@ void responseDriver(int orderId, int driverId, int pickLoc, int deliverLoc) {
 	}
 }
 
+int calcOrderN(const int driverId) {
+	driver_t& driver = drivers[driverId];
+	vector<node_t>& route = driver.route;
+	int routeSz = route.size();
+	int ret = routeSz, orderId;
+
+	for (int i=0; i<routeSz; ++i) {
+		orderId = route[i].orderId;
+		if (mark[orderId] == 0)
+			++ret;
+	}
+
+	return ret / 2;
+}
+
 void greedyInsert() {
 	int driverId, orderId, pickLoc, deliverLoc;
-	
+	double flowTime;
+
 	for (orderId=0; orderId<M; ++orderId) {
 		for (driverId=0; driverId<N; ++driverId) {
-			updateIndex(driverId, orders[orderId].tid);
+			updateDriver(driverId, orders[orderId].tid);
 		}
-		scheduling(orderId, driverId, pickLoc, deliverLoc);
+		scheduling(orderId, driverId, pickLoc, deliverLoc, flowTime);
+		#ifdef LOCAL_DEBUG
+		int orderN = calcOrderN(driverId) + 1;
+		printf("driverId = %d, orderId = %d, orderNum = %d, flowTime = %d\n", driverId, orderId, orderN, flowTime);
+		#endif
 		#ifdef LOCAL_DEBUG
 		assert(driverId>=0 && pickLoc>=0 && deliverLoc>=0);
 		#endif
@@ -292,14 +318,14 @@ void greedyInsert() {
 
 double calcResult() {
 	double ans = -1;
-	
+
 	for (int orderId=0; orderId<M; ++orderId) {
 		#ifdef LOCAL_DEBUG
-		assert(mark[orderId] == 2);
+		assert(mark[orderId] == 1);
 		#endif
 		ans = max(ans, deliverTime[orderId]-orders[orderId].tid);
 	}
-	
+
 	return ans;
 }
 
@@ -307,9 +333,9 @@ double solve() {
 	init();
 
 	greedyInsert();
-	
-	double ret = calcResult();
-	return ret;
+
+	double flowTime = calcResult();
+	return flowTime;
 }
 
 int main(int argc, char **argv) {
@@ -324,16 +350,9 @@ int main(int argc, char **argv) {
 
 	// step1: read Input
 	if (srcFileName.empty()) {
-		readInput(cin);
+		readInput(cin, V, N, C, M, points, orders);
 	} else {
-		ifstream fin(srcFileName.c_str(), ios::in);
-		if (!fin.is_open()) {
-			fprintf(stderr, "FILE %s is invalid.\n", srcFileName.c_str());
-			exit(1);
-		}
-
-		readInput(fin);
-		fin.close();
+		readInput(srcFileName, V, N, C, M, points, orders);
 	}
 
 	#ifdef LOCAL_DEBUG

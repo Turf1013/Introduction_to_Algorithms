@@ -8,6 +8,15 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+#include "global.h"
+
+int dcmp(double x);
+int dcmp(double x) {
+	if (fabs(x) < eps)
+		return 0;
+	return x<0 ? -1:1;
+}
+
 struct position_t {
 	double x, y;
 	
@@ -91,25 +100,11 @@ struct driver_t {
 	void clear() {
 		route.clear();
 	}
-
-	vector<int> getBucket() {
-		const int sz = route.size();
-		vector<int> ret;
-		set<int> unpicked;
-
-		for (int i=0; i<sz; ++i) {
-			if (route[i].placeId < R)
-				unpicked.insert(route[i].orderId);
-			if (route[i].placeId>=R && unpicked.count(route[i].orderId)==0)
-				ret.push_back(route[i].orderId);
-		}
-
-		return ret;
-	}
 };
 
 void readInput(const string& fileName, int& V, int& N, int& C, int& M, position_t*& points, order_t*& orders);
 void readInput(istream& fin, int& V, int& N, int& C, int& M, position_t*& points, order_t*& orders);
+double Length(const position_t& a, const position_t& b);
 
 void readInput(const string& fileName, int& V, int& N, int& C, int& M, position_t*& points, order_t*& orders) {
 	ifstream fin(fileName.c_str(), ios::in);
@@ -139,5 +134,8 @@ void readInput(istream& fin, int& V, int& N, int& C, int& M, position_t*& points
 	}
 }
 
+double Length(const position_t& a, const position_t& b) {
+	return sqrt((a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y));
+}
 
 #endif

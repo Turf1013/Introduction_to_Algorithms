@@ -87,7 +87,7 @@ class expGenerator(baseGenerator):
 	def setMu(self, mu):
 		self.mu = mu
 
-def genLoc(n, low, high):		
+def genLoc(n, low, high):
 	ret = []
 	st = set()
 	for i in xrange(n):
@@ -100,8 +100,8 @@ def genLoc(n, low, high):
 		ret.append(t)
 		st.add(t)
 	return ret
-		
-		
+
+
 def genData(V, N, C, M, desFileName):
 	with open(desFileName, "w") as fout:
 		line = "%s %s %s %s\n" % (V, N, C, M)
@@ -112,7 +112,7 @@ def genData(V, N, C, M, desFileName):
 			fout.write(line)
 		tids = []
 		for i in xrange(M):
-			tid = randint(1, 1440)
+			tid = randint(1, 40)
 			tids.append(tid)
 		tids.sort()
 		for i in xrange(M):
@@ -122,9 +122,9 @@ def genData(V, N, C, M, desFileName):
 			line = "%s %s %s\n" % (tid, sid, eid)
 			fout.write(line)
 
-			
+
 def exp1(dataSetN = 5):
-	desFilePath = "F:/tmp/dial"
+	desFilePath = "./smallDataSet"
 	if not os.path.exists(desFilePath):
 		os.mkdir(desFilePath)
 	V = 100
@@ -133,14 +133,13 @@ def exp1(dataSetN = 5):
 	M = 500
 	for i in xrange(dataSetN):
 		V = randint(50, 100)
-		N = randint(10, 30)
-		C = randint(5, 12)
-		M = randint(300, 500)
+		N = randint(8, 15)
+		C = randint(5, 7)
+		M = randint(800, 1000)
 		desFileName = "data_%02d.txt" % (i)
 		desFileName = os.path.join(desFilePath, desFileName)
 		genData(V, N, C, M, desFileName)
- 
-	
+
+
 if __name__ == "__main__":
 	exp1()
-	
