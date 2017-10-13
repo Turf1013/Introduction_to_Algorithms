@@ -54,5 +54,5 @@ if __name__ == "__main__":
 	srcFilePath = "F:/tmp/result_SLADE"
 	dataFilePath = "F:/tmp/dataSet"
 	desFilePath = "F:/tmp/dataSet_SLADE"
-	execNames = ["opqe", "greedy"]
+	execNames = ["opq", "greedy"]
 	select(srcFilePath, dataFilePath, desFilePath, execNames)
