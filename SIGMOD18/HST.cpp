@@ -5,7 +5,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-#include "hst.h"
+#include "HST.h"
 #include "input.h"
 
 position_t *points;

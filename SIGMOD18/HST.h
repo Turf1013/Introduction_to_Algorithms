@@ -10,20 +10,24 @@ using namespace std;
 
 #include "input.h"
 
+#define LOCAL_DEBUG
+
 struct treeNode_t {
 	int dep, sz, id;
-	treeNode_t* sons;
+	vector<treeNode_t*> sons;
 
-	treeNode_t(int dep=0, int sz=0, int id=0, treeNode_t* sons=NULL):
-		dep(dep), sz(sz), id(id), sons(sons) {}
+	treeNode_t(int dep=0, int sz=0, int id=0):
+		dep(dep), sz(sz), id(id) {}
 
 	void addSon(treeNode_t *son) {
-		treeNode_t* tmp = new treeNode_t[sz];
-		memcopy(tmp, sons, sizeof(treeNode_t*)*sz);
-		delete[] sons;
-		sons = new treeNode_t[sz+1];
-		memcopy(sons, tmp, sizeof(treeNode_t*)*sz);
-		sons[sz++] = son;
+		// treeNode_t* tmp = new treeNode_t[sz];
+		// memcopy(tmp, sons, sizeof(treeNode_t*)*sz);
+		// delete[] sons;
+		// sons = new treeNode_t[sz+1];
+		// memcopy(sons, tmp, sizeof(treeNode_t*)*sz);
+		// sons[sz++] = son;
+		++sz;
+		sons.push_back(son);
 	}
 
 	void setId(int _id) {
@@ -36,15 +40,23 @@ void genRandomPermu(int V, int* permu) {
 		permu = new int[V];
 	for (int i=0; i<V; ++i)
 		permu[i] = i;
-	shuffle(permu, permu+V);
+	#ifdef LOCAL_DEBUG
+	return ;
+	#endif
+	random_shuffle(permu, permu+V);
 }
 
 double genRandomBeta() {
+	#ifdef LOCAL_DEBUG
+	return 1.0;
+	#endif
+	const double ln2 = 0.69314718055995;
+
 	double p[205];
 	for (int i=100; i<=200; ++i) {
-		p[i-100] = 1.0 / (log(2.0, exp(1.0)) * i / 100.0);
+		p[i-100] = 1.0 / (i / 100.0 * ln2);
 	}
-	for (int i=101; i<=200)
+	for (int i=101; i<=200; ++i)
 		p[i-100] += p[i-101];
 	int ub = p[100], dice = rand() % ub;
 	for (int i=100; i<=200; ++i) {
@@ -72,31 +84,44 @@ double exp2(int n) {
 	return ret;
 }
 
-void HST_Construction(int V, position_t* points, treeNode*& root) {
+double ceilLog2(double x) {
+	//return ceil(log(x) / log(2.0));
+	long long y = 1;
+	int c = 0;
+
+	while (x > y) {
+		++c;
+		y *= 2;
+	}
+
+	return c;
+}
+
+void HST_Construction(int V, position_t* points, treeNode_t*& root) {
 	int *permu = NULL;
-	int delta = ceil(log(calcDelta(V, points), 2.0));
+	int delta = ceilLog2(calcDelta(V, points));
 	double beta = genRandomBeta();
 	int* vids[2];
 	int* cids[2];
 	int* bids[2];
-	vector<vector<treeNode*> > nodes[2];
+	vector<treeNode_t*> nodes[2];
 
 	genRandomPermu(V, permu);
 	for (int i=0; i<2; ++i) {
 		vids[i] = new int[V];
 		cids[i] = new int[V];
 		bids[i] = new int[V];
-		nodes[i].push_back(vector<treeNode*>(NULL, V));
+		nodes[i].resize(V, NULL);
 	}
 	bids[0][0] = V;
 	for (int i=0; i<V; ++i) {
-		cids[0][i] = 0；
+		cids[0][i] = 0;
 		vids[0][i] = i;
 
 		cids[1][i] = -1;
 		vids[1][i] = -1;
 	}
-	root = new treeNode(0, 0, NULL);
+	root = new treeNode_t(0, 0, 0);
 	nodes[0][0] = root;
 
 	int p = 0, q = 1;
@@ -105,7 +130,7 @@ void HST_Construction(int V, position_t* points, treeNode*& root) {
 		int clusterN = 0, idx = 0;
 		for (int j=0; j<V; ++j) {
 			int oid = permu[j];
-			int cid = cids[p][vid];
+			int cid = cids[p][oid];
 			int b = (cid==0) ? 0 : bids[p][cid-1];
 			int e = bids[p][cid];
 			int c = 0;
@@ -121,9 +146,8 @@ void HST_Construction(int V, position_t* points, treeNode*& root) {
 			}
 
 			// add a node, maybe a leaf
-			nodes[q][clusterN] = new treeNode(nodes[p][cid].dep+1);
+			nodes[q][clusterN] = new treeNode_t(nodes[p][cid]->dep+1, 0, vids[q][idx-1]);
 			nodes[p][cid]->addSon(nodes[q][clusterN]);
-			nodes[p][cid]->setId(vids[q][idx-1]);
 			bids[q][clusterN] = (clusterN == 0) ? idx : (bids[q][clusterN-1]+idx);
 			++clusterN;
 		}
@@ -163,7 +187,7 @@ void HST_traversePrint(treeNode_t* root) {
 	}
 }
 
-void HST_dump(treeNode_t*& root) {
+void HST_dump(treeNode_t* root) {
 	queue<treeNode_t*> Q;
 
 	Q.push(root);
