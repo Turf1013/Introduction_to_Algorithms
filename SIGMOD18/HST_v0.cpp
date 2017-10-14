@@ -86,7 +86,6 @@ double exp2(int n) {
 
 double ceilLog2(double x) {
 	//return ceil(log(x) / log(2.0));
-	x += 1e-6;
 	long long y = 1;
 	int c = 0;
 
@@ -130,46 +129,40 @@ void HST_Construction(int V, position_t* points, treeNode_t*& root) {
 	for (int i=delta; i>0; --i) {
 		double betai = beta * exp2(i-1);
 		clusterN = 0, idx = 0;
-		for (int cid=0; cid<preClusterN; ++cid) {
+		vector<int> vtmp;
+		for (int j=0; j<V; ++j) {
+			int oid = permu[j];
+			int cid = cids[p][oid];
 			int b = (cid==0) ? 0 : bids[p][cid-1];
 			int e = bids[p][cid];
-			for (int j=0; j<V; ++j) {
-				int oid = permu[j], c = 0;
-				#ifdef LOCAL_DEBUG
-				vector<int> vtmp;
-				#endif
-				for (int k=b; k<e; ++k) {
-					int vid = vids[p][k];
-					if (cids[q][vid] != -1) continue;
+			int c = 0;
+			for (int k=b; k<e; ++k) {
+				int vid = vids[p][k];
+				if (cids[q][vid] != -1) continue;
 
-					if (Length(points[oid], points[vid]) < betai) {
-						cids[q][vid] = clusterN;
-						vids[q][idx++] = vid;
-						++c;
-						#ifdef LOCAL_DEBUG
-						vtmp.push_back(vid);
-						#endif
-					}
-				}
-				// add a node, maybe a leaf
-				if (c > 0) {
-					nodes[q][clusterN] = new treeNode_t(nodes[p][cid]->dep+1, 0, vids[q][idx-1]);
-					nodes[p][cid]->addSon(nodes[q][clusterN]);
-					bids[q][clusterN] = idx;
-					++clusterN;
-#ifdef LOCAL_DEBUG
-					printf("betai = %.01lf, oid = %d: ", betai, oid);
-					for (int i=0; i<vtmp.size(); ++i)
-						printf("%d ", vtmp[i]);
-					putchar('\n');
-#endif
+				if (Length(points[oid], points[vid]) < betai) {
+					cids[q][vid] = clusterN;
+					vids[q][idx++] = vid;
+					++c;
+					vtmp.push_back(vid);
 				}
 			}
+
+			// add a node, maybe a leaf
+			if (c > 0) {
+				nodes[q][clusterN] = new treeNode_t(nodes[p][cid]->dep+1, 0, vids[q][idx-1]);
+				nodes[p][cid]->addSon(nodes[q][clusterN]);
+				bids[q][clusterN] = idx;
+				++clusterN;
+
+				printf("betai = %.01lf, oid = %d: ", betai, oid);
+				for (int i=0; i<vtmp.size(); ++i)
+					printf("%d ", vtmp[i]);
+				putchar('\n');
+				vtmp.clear();
+			}
 		}
-		preClusterN = clusterN;
-#ifdef LOCAL_DEBUG
 		printf("clusterN = %d\n", clusterN);
-#endif
 		swap(p, q);
 		for (int j=0; j<V; ++j) {
 			cids[q][j] = -1;
@@ -181,7 +174,6 @@ void HST_Construction(int V, position_t* points, treeNode_t*& root) {
 	for (int i=0; i<2; ++i) {
 		delete[] vids[i];
 		delete[] cids[i];
-		delete[] bids[i];
 	}
 }
 

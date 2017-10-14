@@ -22,7 +22,7 @@ def calc(srcFilePath):
 			for fileName in fileNames:
 				try:
 					dataSetId = int(fileName[5:7])
-					if dataSetId >= 4:
+					if dataSetId >= 5:
 						continue
 				except:
 					continue
@@ -126,7 +126,7 @@ def getResult(aDict):
 	taskN = 10 ** 4
 	
 	# varying of binN
-	binList = [1,2,4,6,8,10,15,20,25,30,35,40,45,50]
+	binList = [1,2,4,6,8,10,15,20,25,30,40,50]
 	for binN in binList:
 		tmpFilePath = "evarying_binN_%02d" % (binN)
 		tmpDict = findResult(aDict, tmpFilePath)
@@ -139,7 +139,7 @@ def getResult(aDict):
 	resDict = dict()
 	
 	# varying of binN
-	binList = [1,2,4,6,8,10,15,20,25,30,35,40,45,50]
+	binList = [1,2,4,6,8,10,15,20,25,30,40,50]
 	for binN in binList:
 		tmpFilePath = "varying_binN_%02d" % (binN)
 		tmpDict = findResult(aDict, tmpFilePath)
