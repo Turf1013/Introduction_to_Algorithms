@@ -11,12 +11,12 @@ using namespace std;
 #include "input.h"
 
 struct treeNode_t {
-	int dep, sz;
+	int dep, sz, id;
 	treeNode_t* sons;
-	
-	treeNode_t(int dep=0, int sz=0, treeNode_t* sons=NULL):
-		dep(dep), sz(sz), sons(sons) {}
-	
+
+	treeNode_t(int dep=0, int sz=0, int id=0, treeNode_t* sons=NULL):
+		dep(dep), sz(sz), id(id), sons(sons) {}
+
 	void addSon(treeNode_t *son) {
 		treeNode_t* tmp = new treeNode_t[sz];
 		memcopy(tmp, sons, sizeof(treeNode_t*)*sz);
@@ -24,6 +24,10 @@ struct treeNode_t {
 		sons = new treeNode_t[sz+1];
 		memcopy(sons, tmp, sizeof(treeNode_t*)*sz);
 		sons[sz++] = son;
+	}
+
+	void setId(int _id) {
+		id = _id;
 	}
 };
 
@@ -47,7 +51,7 @@ double genRandomBeta() {
 		if (dice <= p[i-100])
 			return i/100.0;
 	}
-	
+
 	assert(false);
 	return -1.0;
 }
@@ -76,7 +80,7 @@ void HST_Construction(int V, position_t* points, treeNode*& root) {
 	int* cids[2];
 	int* bids[2];
 	vector<vector<treeNode*> > nodes[2];
-	
+
 	genRandomPermu(V, permu);
 	for (int i=0; i<2; ++i) {
 		vids[i] = new int[V];
@@ -88,13 +92,13 @@ void HST_Construction(int V, position_t* points, treeNode*& root) {
 	for (int i=0; i<V; ++i) {
 		cids[0][i] = 0；
 		vids[0][i] = i;
-		
+
 		cids[1][i] = -1;
 		vids[1][i] = -1;
 	}
 	root = new treeNode(0, 0, NULL);
 	nodes[0][0] = root;
-	
+
 	int p = 0, q = 1;
 	for (int i=delta-1; i>0; --i) {
 		double betai = beta * exp2(i-1);
@@ -108,17 +112,18 @@ void HST_Construction(int V, position_t* points, treeNode*& root) {
 			for (int k=b; k<e; ++k) {
 				int vid = vids[p][k];
 				if (cids[q][vid] != -1) continue;
-				
+
 				if (Length(points[oid], points[vid]) <= betai) {
 					cids[q][vid] = clusterN;
 					vids[q][idx++] = vid;
 					++c;
 				}
 			}
-			
+
 			// add a node, maybe a leaf
 			nodes[q][clusterN] = new treeNode(nodes[p][cid].dep+1);
 			nodes[p][cid]->addSon(nodes[q][clusterN]);
+			nodes[p][cid]->setId(vids[q][idx-1]);
 			bids[q][clusterN] = (clusterN == 0) ? idx : (bids[q][clusterN-1]+idx);
 			++clusterN;
 		}
@@ -128,12 +133,54 @@ void HST_Construction(int V, position_t* points, treeNode*& root) {
 			nodes[q][j] = NULL;
 		}
 	}
-	
+
 	delete[] permu;
 	for (int i=0; i<2; ++i) {
 		delete[] vids[i];
 		delete[] cids[i];
 	}
-} 
- 
+}
+
+void HST_delete(treeNode_t*& root) {
+	if (root == NULL) return ;
+
+	for (int i=0; i<root->sz; ++i) {
+		HST_delete(root->sons[i]);
+	}
+
+	delete root;
+}
+
+void HST_traversePrint(treeNode_t* root) {
+	if (root == NULL) return ;
+	if (root->sz == 0) {
+		printf("%d ", root->id);
+		return ;
+	}
+
+	for (int i=0; i<root->sz; ++i) {
+		HST_traversePrint(root->sons[i]);
+	}
+}
+
+void HST_dump(treeNode_t*& root) {
+	queue<treeNode_t*> Q;
+
+	Q.push(root);
+	while (!Q.empty()) {
+		int szQ = Q.size();
+		printf("%d\n", szQ);
+		while (szQ--) {
+			treeNode_t* node = Q.front();
+			Q.pop();
+			HST_traversePrint(node);
+			putchar('\n');
+			for (int i=0; i<node->sz; ++i) {
+				Q.push(node->sons[i]);
+			}
+		}
+		fflush(stdout);
+	}
+}
+
 #endif
