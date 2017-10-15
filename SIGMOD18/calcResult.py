@@ -246,7 +246,7 @@ def getResult1(aDict):
 		
 		
 if __name__ == "__main__":
-	srcFilePath = "F:/tmp/result_SIGMOD/"
+	srcFilePath = "F:/tmp/result_SIGMOD_1/"
 	aDict = calc(srcFilePath)
-	getResult(aDict)
+	getResult1(aDict)
 	
