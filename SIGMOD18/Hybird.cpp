@@ -61,7 +61,7 @@ struct FIFO_cmp {
 
 struct SJF_cmp {
     bool operator () (const int &A, const int &B) {
-        if (dcmp(dist(order[A].s, order[A].d) - dist(order[B].s, order[B].d))) return A < B;
+        if (dcmp(dist(order[A].s, order[A].d) - dist(order[B].s, order[B].d)) == 0) return A < B;
         return dist(order[A].s, order[A].d) < dist(order[B].s, order[B].d);
     }
 };
@@ -222,7 +222,7 @@ void FIFO() {
             FIFO_order_pool.erase(FIFO_it ++);
             cnt ++;
         }
-        
+
         tot11 += cnt;
         Q.push(DriverStatus(did, run_driver(did, tim)));
     }
@@ -256,7 +256,7 @@ void SJF() {
             SJF_order_pool.erase(SJF_it ++);
             cnt ++;
         }
-        
+
         tot11 += cnt;
         Q.push(DriverStatus(did, run_driver(did, tim)));
     }
@@ -301,13 +301,13 @@ void Hybrid() {
             SJF_order_pool.erase(SJF_it ++);
             cnt ++;
         }
-        
+
         tot11 += cnt;
         Q.push(DriverStatus(did, run_driver(did, tim)));
     }
 }
 
-int main() {
+int main(int argc, char **argv) {
 	string execName("hybrid");
 
 	if (argc > 1) {
@@ -316,7 +316,7 @@ int main() {
 	if (argc > 2) {
 		freopen(argv[2], "w", stdout);
 	}
-	
+
     FILE *fp = fopen("permutations_5.in", "r");
     fscanf(fp, "%d", &perm_num);
     for (int i = 0; i < perm_num; ++ i) {
@@ -332,7 +332,7 @@ int main() {
     for (int i = 0; i < n; ++ i) {
         scanf("%lf%d%d", &order[i].t, &order[i].s, &order[i].d);
     }
-	
+
 	clock_t begTime, endTime;
 	begTime = clock();
 
@@ -349,9 +349,9 @@ int main() {
 	printf("%s %.3lf %.3lf\n", execName.c_str(), ans, usedTime);
 
 	fflush(stdout);
-	
+
 	assert(tottttt == n);
     assert(tot11 == n);
-	
+
     return 0;
 }

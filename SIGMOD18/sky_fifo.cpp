@@ -61,7 +61,7 @@ struct FIFO_cmp {
 
 struct SJF_cmp {
     bool operator () (const int &A, const int &B) {
-        if (dcmp(dist(order[A].s, order[A].d) - dist(order[B].s, order[B].d))) return A < B;
+        if (dcmp(dist(order[A].s, order[A].d) - dist(order[B].s, order[B].d)) == 0) return A < B;
         return dist(order[A].s, order[A].d) < dist(order[B].s, order[B].d);
     }
 };
@@ -349,6 +349,9 @@ int main(int argc, char **argv) {
 	printf("%s %.3lf %.3lf\n", execName.c_str(), ans, usedTime);
 
 	fflush(stdout);
+	
+	assert(tottttt == n);
+    assert(tot11 == n);
 	
     return 0;
 }
