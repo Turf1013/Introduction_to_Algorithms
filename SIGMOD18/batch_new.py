@@ -52,7 +52,7 @@ def exp2(dataSetN=10, nprocess=12):
 	
 	
 if __name__ == "__main__":
-	dataSetN = 20
+	dataSetN = 10
 	nprocess = 16
 	exp1(dataSetN, nprocess)
 	exp2(dataSetN, nprocess)

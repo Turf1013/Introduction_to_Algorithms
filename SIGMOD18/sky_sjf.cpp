@@ -54,12 +54,14 @@ double dist(int a, int b) {
 
 struct FIFO_cmp {
     bool operator() (const int &A, const int &B) {
+        if (dcmp(order[A].t - order[B].t) == 0) return A < B;
         return order[A].t < order[B].t;
     }
 };
 
 struct SJF_cmp {
     bool operator () (const int &A, const int &B) {
+        if (dcmp(dist(order[A].s, order[A].d) - dist(order[B].s, order[B].d))) return A < B;
         return dist(order[A].s, order[A].d) < dist(order[B].s, order[B].d);
     }
 };
@@ -90,16 +92,16 @@ pair <double, pair <double, int> > attempt(int permid, int did, double tim) {
     int *PR = perm[permid];
     int pos = driver[did].pid;
     for (int i = 0; i < 2 * MINI_BATCH; ++ i) {
-        int cid = i >> 1;
+        int cid = PR[i] >> 1;
         if (cluster[cid].size() == 0) continue;
-        if (i & 1) {
+        if (PR[i] & 1) {
             //optimal_sorting(cid);
             random_sorting(cid);
         } else {
             random_sorting(cid);
         }
         for (int j = 0; j < cluster[cid].size(); ++ j) {
-            if (i & 1) {
+            if (PR[i] & 1) {
                 ret.second.first += dist(pos, order[cluster[cid][j]].d);
                 ret.first += ret.second.first - order[cluster[cid][j]].t;
                 pos = order[cluster[cid][j]].d;
@@ -117,8 +119,19 @@ double calc_diff(int i, int j) {
     return dist(order[i].s, order[j].s) + dist(order[i].d, order[j].d);
 }
 
+/////////debug
+bool test[ORDER_NUMBER];
+int tottttt = 0, tot11 = 0;
+/////////
+
 double run_driver(int id, double tim) {
     vector <int> &S = driver[id].schedule;
+    for (int i = 0; i < S.size(); ++ i) assert(order[S[i]].t < tim + EPS);
+    for (int i = 0; i < S.size(); ++ i) {
+        assert(!test[S[i]]);
+        test[S[i]] = true;
+        tottttt ++;
+    }
     int R = S.size() % MINI_BATCH;
     int D = S.size() / MINI_BATCH;
     for (int i = 0; i < MINI_BATCH; ++ i) {
@@ -130,6 +143,7 @@ double run_driver(int id, double tim) {
         for (; j < S.size(); ++ j) {
             if (!in_cluster[j]) break;
         }
+        assert(j < S.size());
         cluster[i].push_back(S[j]);
         in_cluster[j] = true;
         for (int num = 0; num < D; ++ num) {
@@ -152,6 +166,7 @@ double run_driver(int id, double tim) {
         for (; j < S.size(); ++ j) {
             if (!in_cluster[j]) break;
         }
+        assert(j < S.size());
         cluster[i].push_back(S[j]);
         in_cluster[j] = true;
         for (int num = 0; num < D - 1; ++ num) {
@@ -179,12 +194,81 @@ double run_driver(int id, double tim) {
     return ch.second.first;
 }
 
-void Hybird() {
+void FIFO() {
     for (int i = 0; i < m; ++ i) {
         Q.push(DriverStatus(i, 0.));
     }
     int pos = 0;
-    while (pos < n || !FIFO_order_pool.empty()) {
+    while (pos < n || FIFO_order_pool.size() > 0) {
+        DriverStatus best = Q.top();
+        Q.pop();
+        double tim = best.f_time;
+        while (pos < n && order[pos].t < tim + EPS) {
+            FIFO_order_pool.insert(pos);
+            pos ++;
+        }
+        if (FIFO_order_pool.empty()) {
+            assert(pos < n);
+            tim = order[pos].t;
+            FIFO_order_pool.insert(pos);
+            pos ++;
+        }
+        int did = best.id;
+        driver[did].schedule.clear();
+        int cnt = 0;
+        set <int, FIFO_cmp> :: iterator FIFO_it = FIFO_order_pool.begin();
+        while (cnt < c && FIFO_it != FIFO_order_pool.end()) {
+            driver[did].schedule.push_back(*FIFO_it);
+            FIFO_order_pool.erase(FIFO_it ++);
+            cnt ++;
+        }
+
+        tot11 += cnt;
+        Q.push(DriverStatus(did, run_driver(did, tim)));
+    }
+}
+
+void SJF() {
+    for (int i = 0; i < m; ++ i) {
+        Q.push(DriverStatus(i, 0.));
+    }
+    int pos = 0;
+    while (pos < n || SJF_order_pool.size() > 0) {
+        DriverStatus best = Q.top();
+        Q.pop();
+        double tim = best.f_time;
+        while (pos < n && order[pos].t < tim + EPS) {
+            SJF_order_pool.insert(pos);
+            pos ++;
+        }
+        if (SJF_order_pool.empty()) {
+            assert(pos < n);
+            tim = order[pos].t;
+            SJF_order_pool.insert(pos);
+            pos ++;
+        }
+        int did = best.id;
+        driver[did].schedule.clear();
+        int cnt = 0;
+        set <int, SJF_cmp> :: iterator SJF_it = SJF_order_pool.begin();
+        while (cnt < c && SJF_it != SJF_order_pool.end()) {
+            driver[did].schedule.push_back(*SJF_it);
+            SJF_order_pool.erase(SJF_it ++);
+            cnt ++;
+        }
+
+        tot11 += cnt;
+        Q.push(DriverStatus(did, run_driver(did, tim)));
+    }
+}
+
+// hybrid FIFO and SJF
+void Hybrid() {
+    for (int i = 0; i < m; ++ i) {
+        Q.push(DriverStatus(i, 0.));
+    }
+    int pos = 0;
+    while (pos < n || FIFO_order_pool.size() > 0) {
         DriverStatus best = Q.top();
         Q.pop();
         double tim = best.f_time;
@@ -198,17 +282,18 @@ void Hybird() {
             tim = order[pos].t;
             FIFO_order_pool.insert(pos);
             SJF_order_pool.insert(pos);
+            pos ++;
         }
         int did = best.id;
         driver[did].schedule.clear();
         int cnt = 0;
-        // set <int, FIFO_cmp> :: iterator FIFO_it = FIFO_order_pool.begin();
-        // while (cnt < c/2 && FIFO_it != FIFO_order_pool.end()) {
-            // driver[did].schedule.push_back(*FIFO_it);
-            // SJF_order_pool.erase(*FIFO_it);
-            // FIFO_order_pool.erase(FIFO_it ++);
-            // cnt ++;
-        // }
+        set <int, FIFO_cmp> :: iterator FIFO_it = FIFO_order_pool.begin();
+        while (cnt < c/2 && FIFO_it != FIFO_order_pool.end()) {
+            driver[did].schedule.push_back(*FIFO_it);
+            SJF_order_pool.erase(*FIFO_it);
+            FIFO_order_pool.erase(FIFO_it ++);
+            cnt ++;
+        }
         set <int, SJF_cmp> :: iterator SJF_it = SJF_order_pool.begin();
         while (cnt < c && SJF_it != SJF_order_pool.end()) {
             driver[did].schedule.push_back(*SJF_it);
@@ -216,13 +301,14 @@ void Hybird() {
             SJF_order_pool.erase(SJF_it ++);
             cnt ++;
         }
+
+        tot11 += cnt;
         Q.push(DriverStatus(did, run_driver(did, tim)));
     }
 }
 
-
 int main(int argc, char **argv) {
-	string execName("newSJF");
+	string execName("newsjf");
 
 	if (argc > 1) {
 		freopen(argv[1], "r", stdin);
@@ -230,7 +316,7 @@ int main(int argc, char **argv) {
 	if (argc > 2) {
 		freopen(argv[2], "w", stdout);
 	}
-	
+
     FILE *fp = fopen("permutations_5.in", "r");
     fscanf(fp, "%d", &perm_num);
     for (int i = 0; i < perm_num; ++ i) {
@@ -246,12 +332,12 @@ int main(int argc, char **argv) {
     for (int i = 0; i < n; ++ i) {
         scanf("%lf%d%d", &order[i].t, &order[i].s, &order[i].d);
     }
-	
+
 	clock_t begTime, endTime;
 	begTime = clock();
-	
-    Hybird();
-	
+
+	SJF();
+
 	endTime = clock();
 
     double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
@@ -261,8 +347,8 @@ int main(int argc, char **argv) {
 	// dumpResult(execName, ans, usedTime);
 	// #endif
 	printf("%s %.3lf %.3lf\n", execName.c_str(), ans, usedTime);
-	
+
 	fflush(stdout);
-	
+
     return 0;
 }
