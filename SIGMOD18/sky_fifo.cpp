@@ -222,7 +222,7 @@ void Hybird() {
 
 
 int main(int argc, char **argv) {
-	string execName("Hybrid");
+	string execName("newFIFO");
 
 	if (argc > 1) {
 		freopen(argv[1], "r", stdin);
