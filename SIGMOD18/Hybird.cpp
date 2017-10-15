@@ -260,7 +260,7 @@ int main(int argc, char **argv) {
 	// #else
 	// dumpResult(execName, ans, usedTime);
 	// #endif
-	printf("%s %.3lf\n", execName.c_str(), ans);
+	printf("%s %.3lf %.3lf\n", execName.c_str(), ans, usedTime);
 	
 	fflush(stdout);
 	

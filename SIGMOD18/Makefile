@@ -28,8 +28,18 @@ sjfM: output.h fifo.cpp monitor.h
 
 hst: input.h HST.h HST.cpp monitor.h
 	$(CXX) $(CFLAGS) -o hst HST.cpp $(LIBS)
+	
+newsjf: sky_sjf.cpp
+	$(CXX) $(CFLAGS) -o newsjf sky_sjf.cpp $(LIBS)
 
+newfifo: sky_fifo.cpp
+	$(CXX) $(CFLAGS) -o newfifo sky_fifo.cpp $(LIBS)
+
+hybrid: hybrid.cpp
+	$(CXX) $(CFLAGS) -o hybrid hybrid.cpp $(LIBS)	
+	
 .PHONY: clean
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm hst gi giM fifo fifoM sjf sjfM 2> /dev/null || true
+		-@rm newsjf newfifo hybrid 2> /dev/null || true
