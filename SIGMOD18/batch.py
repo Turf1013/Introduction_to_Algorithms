@@ -29,7 +29,7 @@ def batch(desFilePath, srcFilePath, dataSetN, nprocess=12):
 			tmpFilePath = os.path.join(desFilePath, execName, dirName)
 			if not os.path.exists(tmpFilePath):
 				os.mkdir(tmpFilePath)
-			for dataSetId in dataSetN:
+			for dataSetId in xrange(dataSetN):
 				srcFileName = "data_%02d.txt" % (dataSetId)
 				desFileName = os.path.join(desFilePath, execName, dirName, srcFileName)
 				srcFileName = os.path.join(srcFilePath, dirName, srcFileName)

@@ -73,12 +73,18 @@ def getALGO(s):
 		return 'FirstInFirstServe'
 	elif s=='gi':
 		return 'GreedyInsert'
+	elif s=='hybrid':
+		return 'Hybrid'
+	elif s=='newsjf':
+		return 'newSJF'
+	elif s=='newfifo':
+		return 'newFIFO'
 	else:
 		return 'None'
 	
 def findResult(d, arr):
 	itemN = 3
-	algoNames = ["sjf", "fifo", "gi"]
+	algoNames = ["sjf", "fifo", "gi", 'hybrid', 'newsjf', 'newfifo']
 	tmpDict = dict()
 	if arr not in d:
 		for algoName in algoNames:
@@ -94,7 +100,7 @@ def findResult(d, arr):
 	
 	
 def turnToLine(d, id):	
-	algoNames = ["sjf", "fifo", "gi"]
+	algoNames = ["sjf", "fifo", "gi", 'hybrid', 'newsjf', 'newfifo']
 	aDict = dict()
 	bDict = dict()
 	algoNames = list(set(algoNames) & set(d.keys()))
