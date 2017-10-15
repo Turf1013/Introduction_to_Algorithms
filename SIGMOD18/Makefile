@@ -35,8 +35,8 @@ newsjf: sky_sjf.cpp
 newfifo: sky_fifo.cpp
 	$(CXX) $(CFLAGS) -o newfifo sky_fifo.cpp $(LIBS)
 
-hybrid: hybrid.cpp
-	$(CXX) $(CFLAGS) -o hybrid hybrid.cpp $(LIBS)	
+hybrid: sky_hybrid.cpp
+	$(CXX) $(CFLAGS) -o hybrid sky_hybrid.cpp $(LIBS)	
 	
 .PHONY: clean
 clean:
