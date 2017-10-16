@@ -28,16 +28,22 @@ sjfM: output.h fifo.cpp monitor.h
 
 hst: input.h HST.h HST.cpp monitor.h
 	$(CXX) $(CFLAGS) -o hst HST.cpp $(LIBS)
-	
+
 newsjf: sky_sjf.cpp
 	$(CXX) $(CFLAGS) -o newsjf sky_sjf.cpp $(LIBS)
 
 newfifo: sky_fifo.cpp
 	$(CXX) $(CFLAGS) -o newfifo sky_fifo.cpp $(LIBS)
 
+staticsjf: static_sjf.cpp
+	$(CXX) $(CFLAGS) -o staticsjf static_sjf.cpp $(LIBS)
+
+staticfifo: static_fifo.cpp
+	$(CXX) $(CFLAGS) -o staticfifo static_fifo.cpp $(LIBS)
+
 hybrid: sky_hybrid.cpp
-	$(CXX) $(CFLAGS) -o hybrid sky_hybrid.cpp $(LIBS)	
-	
+	$(CXX) $(CFLAGS) -o hybrid sky_hybrid.cpp $(LIBS)
+
 .PHONY: clean
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
