@@ -22,7 +22,7 @@ def calc(srcFilePath):
 			for fileName in fileNames:
 				try:
 					dataSetId = int(fileName[5:7])
-					if dataSetId >= 6:
+					if dataSetId >= 10:
 						continue
 				except:
 					continue
@@ -54,7 +54,7 @@ def calc(srcFilePath):
 			fout.write("%s\n" % (arrName))
 			for info in infoList:
 				fout.write("%s\n" % (info))
-	return aDict			
+	return aDict
 
 def gao(d):
 	ret = ""
@@ -65,7 +65,7 @@ def gao(d):
 			ret += ", %.3f" % (d[i])
 	ret = "[%s]" % (ret)
 	return ret
-	
+
 def getALGO(s):
 	if s=='sjf':
 		return 'ShortestJobFirst'
@@ -79,12 +79,16 @@ def getALGO(s):
 		return 'newSJF'
 	elif s=='newfifo':
 		return 'newFIFO'
+	elif s=='staticsjf':
+		return 'staticSJF'
+	elif s=='staticfifo':
+		return 'staticFIFO'
 	else:
 		return 'None'
-	
+
 def findResult(d, arr):
 	itemN = 3
-	algoNames = ["sjf", "fifo", "gi", 'hybrid', 'newsjf', 'newfifo']
+	algoNames = ["sjf", "fifo", "gi", 'hybrid', 'newsjf', 'newfifo', 'staticfifo', 'staticsjf']
 	tmpDict = dict()
 	if arr not in d:
 		for algoName in algoNames:
@@ -92,15 +96,15 @@ def findResult(d, arr):
 		return tmpDict
 	infoList = d[arr]
 	for tmpList in infoList:
-		tmpDict[tmpList[0]] = tmpList[1:]			
+		tmpDict[tmpList[0]] = tmpList[1:]
 	for algoName in algoNames:
 		if algoName not in tmpDict:
 			tmpDict[algoName] = [0.0] * itemN
 	return tmpDict
-	
-	
-def turnToLine(d, id):	
-	algoNames = ["sjf", "fifo", "gi", 'hybrid', 'newsjf', 'newfifo']
+
+
+def turnToLine(d, id):
+	algoNames = ["sjf", "fifo", "gi", 'hybrid', 'newsjf', 'newfifo', 'staticfifo', 'staticsjf']
 	aDict = dict()
 	bDict = dict()
 	algoNames = list(set(algoNames) & set(d.keys()))
@@ -125,13 +129,13 @@ def turnToLine(d, id):
 
 def genTmpFileName(N, C, M, Tmax):
 	return "%02d_%02d_%04d_%03d" % (N, C, M, Tmax)
-	
+
 def getResult(aDict):
 	resDict = dict()
 	idx = 1
 	line = ""
 	V, N, C, M, Tmax = 50, 30, 8, 1000, 120
-	
+
 	# varying of binN
 	workerNList = [10, 20, 30, 40, 50]
 	for N in workerNList:
@@ -145,7 +149,7 @@ def getResult(aDict):
 	idx += 2
 	resDict = dict()
 	V, N, C, M, Tmax = 50, 30, 8, 1000, 120
-	
+
 	# varying of capacity
 	capacityList = [2, 4, 8, 16, 32]
 	for C in capacityList:
@@ -159,7 +163,7 @@ def getResult(aDict):
 	idx += 2
 	resDict = dict()
 	V, N, C, M, Tmax = 50, 30, 8, 1000, 120
-	
+
 	# varying of orderN
 	orderNList = [200, 500, 1000, 2000, 3000]
 	for M in orderNList:
@@ -173,7 +177,7 @@ def getResult(aDict):
 	idx += 2
 	resDict = dict()
 	V, N, C, M, Tmax = 50, 30, 8, 1000, 120
-	
+
 	# varying of denisty
 	TmaxList = [30, 60, 120, 180, 240]
 	for Tmax in TmaxList:
@@ -187,18 +191,18 @@ def getResult(aDict):
 	idx += 2
 	resDict = dict()
 	V, N, C, M, Tmax = 50, 30, 8, 1000, 120
-	
-	
+
+
 	with open("F:/tmp/tmp2.txt", "w") as fout:
 		fout.writelines(line)
 
-		
+
 def getResult1(aDict):
 	resDict = dict()
 	idx = 3
 	line = ""
 	V, N, C, M, Tmax = 50, 1, 8, 200, 120
-	
+
 	# varying of capacity
 	capacityList = [2, 4, 8, 16, 32]
 	for C in capacityList:
@@ -212,7 +216,7 @@ def getResult1(aDict):
 	idx += 2
 	resDict = dict()
 	V, N, C, M, Tmax = 50, 1, 8, 200, 120
-	
+
 	# varying of orderN
 	orderNList = [50, 100, 200, 300, 500]
 	for M in orderNList:
@@ -226,7 +230,7 @@ def getResult1(aDict):
 	idx += 2
 	resDict = dict()
 	V, N, C, M, Tmax = 50, 1, 8, 200, 120
-	
+
 	# varying of denisty
 	TmaxList = [30, 60, 120, 180, 240]
 	for Tmax in TmaxList:
@@ -240,13 +244,12 @@ def getResult1(aDict):
 	idx += 2
 	resDict = dict()
 	V, N, C, M, Tmax = 50, 1, 8, 200, 120
-	
+
 	with open("F:/tmp/tmp2.txt", "w") as fout:
 		fout.writelines(line)
-		
-		
+
+
 if __name__ == "__main__":
 	srcFilePath = "F:/tmp/result_SIGMOD_1/"
 	aDict = calc(srcFilePath)
 	getResult1(aDict)
-	
