@@ -197,11 +197,11 @@ def getResult(aDict):
 		fout.writelines(line)
 
 
-def getResult1(aDict):
+def getResult1(aDict, nV):
 	resDict = dict()
 	idx = 3
 	line = ""
-	V, N, C, M, Tmax = 50, 1, 8, 200, 120
+	V, N, C, M, Tmax = nV, 1, 8, 200, 120
 
 	# varying of capacity
 	capacityList = [2, 4, 8, 16, 32]
@@ -215,7 +215,7 @@ def getResult1(aDict):
 	line += turnToLine(resDict, idx)
 	idx += 2
 	resDict = dict()
-	V, N, C, M, Tmax = 50, 1, 8, 200, 120
+	V, N, C, M, Tmax = nV, 1, 8, 200, 120
 
 	# varying of orderN
 	orderNList = [50, 100, 200, 300, 500]
@@ -229,7 +229,7 @@ def getResult1(aDict):
 	line += turnToLine(resDict, idx)
 	idx += 2
 	resDict = dict()
-	V, N, C, M, Tmax = 50, 1, 8, 200, 120
+	V, N, C, M, Tmax = nV, 1, 8, 200, 120
 
 	# varying of denisty
 	TmaxList = [30, 60, 120, 180, 240]
@@ -243,7 +243,7 @@ def getResult1(aDict):
 	line += turnToLine(resDict, idx)
 	idx += 2
 	resDict = dict()
-	V, N, C, M, Tmax = 50, 1, 8, 200, 120
+	V, N, C, M, Tmax = nV, 1, 8, 200, 120
 
 	with open("F:/tmp/tmp2.txt", "w") as fout:
 		fout.writelines(line)
@@ -252,4 +252,5 @@ def getResult1(aDict):
 if __name__ == "__main__":
 	srcFilePath = "F:/tmp/result_SIGMOD_1/"
 	aDict = calc(srcFilePath)
-	getResult1(aDict)
+	getResult1(aDict, 50)
+	# getResult1(aDict, 20)
