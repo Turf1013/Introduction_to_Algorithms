@@ -88,7 +88,7 @@ def getALGO(s):
 
 def findResult(d, arr):
 	itemN = 3
-	algoNames = ["sjf", "fifo", "gi", 'hybrid', 'newsjf', 'newfifo', 'staticfifo', 'staticsjf']
+	algoNames = ["gi", 'hybrid', 'newsjf', 'newfifo', 'staticfifo', 'staticsjf']
 	tmpDict = dict()
 	if arr not in d:
 		for algoName in algoNames:
@@ -104,7 +104,7 @@ def findResult(d, arr):
 
 
 def turnToLine(d, id):
-	algoNames = ["sjf", "fifo", "gi", 'hybrid', 'newsjf', 'newfifo', 'staticfifo', 'staticsjf']
+	algoNames = ["gi", 'hybrid', 'newsjf', 'newfifo', 'staticfifo', 'staticsjf']
 	aDict = dict()
 	bDict = dict()
 	algoNames = list(set(algoNames) & set(d.keys()))
@@ -250,7 +250,7 @@ def getResult1(aDict, nV):
 
 
 if __name__ == "__main__":
-	srcFilePath = "F:/tmp/result_SIGMOD_1/"
+	srcFilePath = "F:/tmp/result_SIGMOD_2/"
 	aDict = calc(srcFilePath)
-	getResult1(aDict, 50)
-	# getResult1(aDict, 20)
+	# getResult1(aDict, 50)
+	getResult1(aDict, 20)
