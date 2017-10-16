@@ -15,7 +15,7 @@ def run(execName, srcFileName, desFileName):
 
 
 def batch(desFilePath, srcFilePath, dataSetN, nprocess=12):	
-	execNames = ["sjf", "fifo", "gi"]
+	execNames = ["newsjf", "newfifo", "gi", "hybrid", "staticfifo", "staticsjf"]
 	pool = multiprocessing.Pool(processes = nprocess)	
 	
 	if not os.path.exists(desFilePath):
@@ -50,10 +50,14 @@ def exp2(dataSetN=10, nprocess=12):
 	desFilePath = "../result_SIGMOD"
 	batch(desFilePath, srcFilePath, dataSetN, nprocess)
 	
+def exp3(dataSetN=10, nprocess=12):
+	srcFilePath = "../dataSet_SIGMOD_2"
+	desFilePath = "../result_SIGMOD_2"
+	batch(desFilePath, srcFilePath, dataSetN, nprocess)
 	
 if __name__ == "__main__":
-	dataSetN = 20
+	dataSetN = 10
 	nprocess = 16
-	exp1(dataSetN, nprocess)
-	exp2(dataSetN, nprocess)
-
+	# exp1(dataSetN, nprocess)
+	# exp2(dataSetN, nprocess)
+	exp3(dataSetN, nprocess)

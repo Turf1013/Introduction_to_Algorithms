@@ -259,9 +259,9 @@ def batchDataSet(desFilePath, dataSetId = 2):
 
 def batchDataSet2(desFilePath, dataSetId = 2):
 	Mmax = 500
-	V, N, C, M, Tmax = 50, 1, 8, 200, 120
+	V, N, C, M, Tmax = 20, 30, 8, 1000, 120
 	rng = randomGenerator(Tmax)
-	points = genLoc(V, 0, 50)
+	points = genLoc(V, 0, 20)
 	rng.setMx(Tmax)
 	bigTids = rng.gen(Mmax)
 	rng.setMx(V)
@@ -285,7 +285,7 @@ def batchDataSet2(desFilePath, dataSetId = 2):
 			print "2"
 			continue
 		genDataSet(V, N, C, M, points, tids, sids, eids, desFileName)
-	V, N, C, M, Tmax = 50, 1, 8, 200, 120
+	V, N, C, M, Tmax = 20, 30, 8, 1000, 120
 
 	# varying of orderN
 	orderNList = [50, 100, 200, 300, 500]
@@ -301,7 +301,7 @@ def batchDataSet2(desFilePath, dataSetId = 2):
 			continue
 		_tids, _sids, _eids = sampleOrder(bigTids, bigSids, bigEids, M)
 		genDataSet(V, N, C, M, points, _tids, _sids, _eids, desFileName)
-	V, N, C, M, Tmax = 50, 1, 8, 200, 120
+	V, N, C, M, Tmax = 20, 30, 8, 1000, 120
 
 	# varying of denisty
 	TmaxList = [30, 60, 120, 180, 240]
@@ -319,7 +319,7 @@ def batchDataSet2(desFilePath, dataSetId = 2):
 			print "4"
 			continue
 		genDataSet(V, N, C, M, points, _tids, sids, eids, desFileName)
-	V, N, C, M, Tmax = 50, 1, 8, 200, 120
+	V, N, C, M, Tmax = 20, 30, 8, 1000, 120
 
 def exp2():
 	desFilePath = "../dataSet_SIGMOD"
@@ -328,7 +328,7 @@ def exp2():
 		batchDataSet(desFilePath, dataSetId)
 
 def exp3():
-	desFilePath = "../dataSet_SIGMOD_1"
+	desFilePath = "../dataSet_SIGMOD_2"
 	dataSetN = 20
 	for dataSetId in xrange(dataSetN):
 		batchDataSet2(desFilePath, dataSetId)
