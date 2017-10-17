@@ -1,6 +1,6 @@
 /**
 	\author: 	Sky_xuan
-	\date: 		2017.10.16
+	\date: 		2017.10.17
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -28,10 +28,9 @@ struct Position {
 
 struct Driver {
     int pid;
-    vector <int> schedule;
-    Driver (int _p = 1) : pid(_p) {}
+    set <int> Sd;
+    Driver (int _p = 0) : pid(_p) {}
 } driver[DRIVER_NUMBER];
-
 
 struct Order {
     double t;
@@ -66,14 +65,6 @@ set <int, SJF_cmp> SJF_order_pool[POSITION_NUMBER];
 // for one driver
 vector <int> TSP;
 
-set <int> Sd;
-
-////////////////////////////
-// TODO : get TSP
-////////////////////////////
-/**
-	A.K.A. Using Prim to approximate TSP
-*/
 void dfsInTSP(int u, vector<vector<int> >& g, vector<int>& idxs, vector<int>& ret) {
 	const int sz = g[u].size();
 
@@ -130,29 +121,42 @@ vector<int> calcRoute(vector<int>& idxs) {
 
 	return ret;
 }
+struct DriverStatus {
+    int id;
+    double f_time;
+    DriverStatus (int _id = 0, double _f = 0.) : id(_id), f_time(_f) {}
+};
 
+bool operator < (const DriverStatus &A, const DriverStatus &B) {
+    if (dcmp(A.f_time - B.f_time) == 0) return A.id > B.id;
+    return A.f_time > B.f_time;
+}
+
+priority_queue <DriverStatus> Q;
 
 void FIFO() {
     for (int i = 1; i <= d; ++ i) {
         TSP.push_back(i);
     }
     TSP = calcRoute(TSP);
-    int nw = 0, pos = -1;
-    double tim = 0.;
-    for (int i = 0; i < d; ++ i) {
-        if (1 == TSP[i]) {
-            pos = i;
-            break;
-        }
+    int nw = 0;
+    for (int i = 0; i < m; ++ i) {
+        driver[i].Sd.clear();
+        Q.push(DriverStatus(i, 0.));
     }
-    Sd.clear();
     int diliver_num = 0;
     while (diliver_num < n) {
+        DriverStatus best = Q.top();
+        Q.pop();
+        double tim = best.f_time;
         while (nw < n && order[nw].t < tim + EPS) {
             FIFO_order_pool[order[nw].s].insert(nw);
             nw ++;
         }
+        int did = best.id;
+        set <int> &Sd = driver[did].Sd;
         set <int> :: iterator it = Sd.begin();
+        int pos = driver[did].pid;
         while (it != Sd.end()) {
             if (order[*it].d == TSP[pos]) {
                 ans += tim - order[*it].t;
@@ -166,9 +170,8 @@ void FIFO() {
             Sd.insert(*(FIFO_order_pool[TSP[pos]].begin()));
             FIFO_order_pool[TSP[pos]].erase(FIFO_order_pool[TSP[pos]].begin());
         }
-        tim += dist(TSP[pos], TSP[(pos + 1) % d]);
-        pos ++;
-        pos %= d;
+        driver[did].pid = (pos + 1) % d;
+        Q.push(DriverStatus(did, tim + dist(pos, driver[did].pid)));
     }
 }
 
@@ -177,22 +180,24 @@ void SJF() {
         TSP.push_back(i);
     }
     TSP = calcRoute(TSP);
-    int nw = 0, pos = -1;
-    double tim = 0.;
-    for (int i = 0; i < d; ++ i) {
-        if (1 == TSP[i]) {
-            pos = i;
-            break;
-        }
+    int nw = 0;
+    for (int i = 0; i < m; ++ i) {
+        driver[i].Sd.clear();
+        Q.push(DriverStatus(i, 0.));
     }
-    Sd.clear();
     int diliver_num = 0;
     while (diliver_num < n) {
+        DriverStatus best = Q.top();
+        Q.pop();
+        double tim = best.f_time;
         while (nw < n && order[nw].t < tim + EPS) {
             SJF_order_pool[order[nw].s].insert(nw);
             nw ++;
         }
+        int did = best.id;
+        set <int> &Sd = driver[did].Sd;
         set <int> :: iterator it = Sd.begin();
+        int pos = driver[did].pid;
         while (it != Sd.end()) {
             if (order[*it].d == TSP[pos]) {
                 ans += tim - order[*it].t;
@@ -206,15 +211,13 @@ void SJF() {
             Sd.insert(*(SJF_order_pool[TSP[pos]].begin()));
             SJF_order_pool[TSP[pos]].erase(SJF_order_pool[TSP[pos]].begin());
         }
-        tim += dist(TSP[pos], TSP[(pos + 1) % d]);
-        pos ++;
-        pos %= d;
+        driver[did].pid = (pos + 1) % d;
+        Q.push(DriverStatus(did, tim + dist(pos, driver[did].pid)));
     }
 }
 
-
 int main(int argc, char **argv) {
-	string execName("staticfifo");
+	string execName("staticfifos");
 
 	if (argc > 1) {
 		freopen(argv[1], "r", stdin);
@@ -230,6 +233,10 @@ int main(int argc, char **argv) {
     for (int i = 0; i < n; ++ i) {
         scanf("%lf%d%d", &order[i].t, &order[i].s, &order[i].d);
     }
+    int lenn = (d + m - 1) / m;
+    for (int i = 0; i < m; ++ i) {
+        driver[i].pid = i * lenn % d;
+    }
 	
 	clock_t begTime, endTime;
 	begTime = clock();
@@ -239,11 +246,6 @@ int main(int argc, char **argv) {
 	endTime = clock();
 
     double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
-	// #ifdef WATCH_MEM
-	// dumpResult(execName, ans, usedTime, -1);
-	// #else
-	// dumpResult(execName, ans, usedTime);
-	// #endif
 	printf("%s %.3lf %.3lf\n", execName.c_str(), ans, usedTime);
 
 	fflush(stdout);

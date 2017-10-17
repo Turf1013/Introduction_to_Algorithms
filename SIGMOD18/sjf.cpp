@@ -1,3 +1,7 @@
+/**
+	\author: 	Sky_xuan
+	\date: 		2017.10.13
+*/
 #include <bits/stdc++.h>
 using namespace std;
 

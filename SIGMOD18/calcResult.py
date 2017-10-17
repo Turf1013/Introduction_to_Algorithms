@@ -250,7 +250,7 @@ def getResult1(aDict, nV):
 
 
 if __name__ == "__main__":
-	srcFilePath = "F:/tmp/result_SIGMOD_2/"
+	srcFilePath = "F:/tmp/result_SIGMOD_1/"
 	aDict = calc(srcFilePath)
-	# getResult1(aDict, 50)
-	getResult1(aDict, 20)
+	getResult1(aDict, 50)
+	# getResult1(aDict, 20)
