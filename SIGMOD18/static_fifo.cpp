@@ -129,13 +129,13 @@ vector<int> calcRoute(vector<int>& idxs) {
 
 
 void FIFO() {
-    for (int i = 1; i <= n; ++ i) {
+    for (int i = 1; i <= d; ++ i) {
         TSP.push_back(i);
     }
     TSP = calcRoute(TSP);
     int nw = 0, pos = -1;
     double tim = 0.;
-    for (int i = 0; i < n; ++ i) {
+    for (int i = 0; i < d; ++ i) {
         if (1 == TSP[i]) {
             pos = i;
             break;
@@ -162,20 +162,20 @@ void FIFO() {
             Sd.insert(*(FIFO_order_pool[TSP[pos]].begin()));
             FIFO_order_pool[TSP[pos]].erase(FIFO_order_pool[TSP[pos]].begin());
         }
-        tim += dist(TSP[pos], TSP[(pos + 1) % n]);
+        tim += dist(TSP[pos], TSP[(pos + 1) % d]);
         pos ++;
-        pos %= n;
+        pos %= d;
     }
 }
 
 void SJF() {
-    for (int i = 1; i <= n; ++ i) {
+    for (int i = 1; i <= d; ++ i) {
         TSP.push_back(i);
     }
     TSP = calcRoute(TSP);
     int nw = 0, pos = -1;
     double tim = 0.;
-    for (int i = 0; i < n; ++ i) {
+    for (int i = 0; i < d; ++ i) {
         if (1 == TSP[i]) {
             pos = i;
             break;
@@ -202,9 +202,9 @@ void SJF() {
             Sd.insert(*(SJF_order_pool[TSP[pos]].begin()));
             SJF_order_pool[TSP[pos]].erase(SJF_order_pool[TSP[pos]].begin());
         }
-        tim += dist(TSP[pos], TSP[(pos + 1) % n]);
+        tim += dist(TSP[pos], TSP[(pos + 1) % d]);
         pos ++;
-        pos %= n;
+        pos %= d;
     }
 }
 
