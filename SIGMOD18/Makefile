@@ -47,8 +47,11 @@ hybrid: sky_hybrid.cpp
 mft: mft.cpp input.h output.h monitor.h global.h
 	$(CXX) $(CFLAGS) -o mft mft.cpp $(LIBS)
 
+nnt: nnt.cpp input.h output.h monitor.h global.h
+	$(CXX) $(CFLAGS) -o nnt nnt.cpp $(LIBS)
+
 .PHONY: clean
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm hst gi giM fifo fifoM sjf sjfM 2> /dev/null || true
-		-@rm newsjf newfifo hybrid mft staticfifo staticsjf 2> /dev/null || true
+		-@rm newsjf newfifo hybrid mft nnt staticfifo staticsjf 2> /dev/null || true
