@@ -41,6 +41,9 @@ staticsjf: static_sjf.cpp
 staticfifo: static_fifo.cpp
 	$(CXX) $(CFLAGS) -o staticfifo static_fifo.cpp $(LIBS)
 
+staticdd: static_dd.cpp
+	$(CXX) $(CFLAGS) -o staticdd static_dd.cpp $(LIBS)
+
 hybrid: sky_hybrid.cpp
 	$(CXX) $(CFLAGS) -o hybrid sky_hybrid.cpp $(LIBS)
 
@@ -54,4 +57,4 @@ nnt: nnt.cpp input.h output.h monitor.h global.h
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm hst gi giM fifo fifoM sjf sjfM 2> /dev/null || true
-		-@rm newsjf newfifo hybrid mft nnt staticfifo staticsjf 2> /dev/null || true
+		-@rm newsjf newfifo hybrid mft nnt staticfifo staticsjf staticdd 2> /dev/null || true
