@@ -1,3 +1,7 @@
+/**
+	\author: 	Sky_xuan
+	\date: 		2017.10.16
+*/
 #include <bits/stdc++.h>
 using namespace std;
 
@@ -222,7 +226,7 @@ void FIFO() {
             FIFO_order_pool.erase(FIFO_it ++);
             cnt ++;
         }
-        
+
         tot11 += cnt;
         Q.push(DriverStatus(did, run_driver(did, tim)));
     }
@@ -256,7 +260,7 @@ void SJF() {
             SJF_order_pool.erase(SJF_it ++);
             cnt ++;
         }
-        
+
         tot11 += cnt;
         Q.push(DriverStatus(did, run_driver(did, tim)));
     }
@@ -301,7 +305,7 @@ void Hybrid() {
             SJF_order_pool.erase(SJF_it ++);
             cnt ++;
         }
-        
+
         tot11 += cnt;
         Q.push(DriverStatus(did, run_driver(did, tim)));
     }
@@ -316,7 +320,7 @@ int main(int argc, char **argv) {
 	if (argc > 2) {
 		freopen(argv[2], "w", stdout);
 	}
-	
+
     FILE *fp = fopen("permutations_5.in", "r");
     fscanf(fp, "%d", &perm_num);
     for (int i = 0; i < perm_num; ++ i) {
@@ -332,7 +336,7 @@ int main(int argc, char **argv) {
     for (int i = 0; i < n; ++ i) {
         scanf("%lf%d%d", &order[i].t, &order[i].s, &order[i].d);
     }
-	
+
 	clock_t begTime, endTime;
 	begTime = clock();
 
@@ -349,9 +353,9 @@ int main(int argc, char **argv) {
 	printf("%s %.3lf %.3lf\n", execName.c_str(), ans, usedTime);
 
 	fflush(stdout);
-	
+
 	assert(tottttt == n);
     assert(tot11 == n);
-	
+
     return 0;
 }

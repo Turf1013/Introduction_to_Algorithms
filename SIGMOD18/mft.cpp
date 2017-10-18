@@ -1,6 +1,6 @@
 /**
-	\author: 	Sky_xuan
-	\date: 		2017.10.16
+	\author: 	Trasier
+	\date: 		2017.10.18
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -56,22 +56,22 @@ double dist(int a, int b) {
     return sqrt(sqr(p[a].x - p[b].x) + sqr(p[a].y - p[b].y));
 }
 
-struct FIFO_cmp {
-    bool operator() (const int &A, const int &B) {
-        if (dcmp(order[A].t - order[B].t) == 0) return A < B;
-        return order[A].t < order[B].t;
+struct MFT_node_t {
+    double flow;
+    int orderId;
+
+    MFT_node_t(double flow=0.0, int orderId=0):
+        flow(flow), orderId(orderId) {}
+
+    bool operator< (const MFT_node_t& oth) const {
+        if (flow == oth.flow)
+            return orderId < oth.orderId;
+        else
+            return flow < oth.flow;
     }
 };
 
-struct SJF_cmp {
-    bool operator () (const int &A, const int &B) {
-        if (dcmp(dist(order[A].s, order[A].d) - dist(order[B].s, order[B].d)) == 0) return A < B;
-        return dist(order[A].s, order[A].d) < dist(order[B].s, order[B].d);
-    }
-};
-
-set <int, FIFO_cmp> FIFO_order_pool;
-set <int, SJF_cmp> SJF_order_pool;
+set <MFT_node_t> MFT_order_pool;
 
 priority_queue <DriverStatus> Q;
 
@@ -198,32 +198,36 @@ double run_driver(int id, double tim) {
     return ch.second.first;
 }
 
-void FIFO() {
+void MFT() {
     for (int i = 0; i < m; ++ i) {
         Q.push(DriverStatus(i, 0.));
     }
     int pos = 0;
-    while (pos < n || FIFO_order_pool.size() > 0) {
+    while (pos < n || MFT_order_pool.size() > 0) {
         DriverStatus best = Q.top();
         Q.pop();
         double tim = best.f_time;
         while (pos < n && order[pos].t < tim + EPS) {
-            FIFO_order_pool.insert(pos);
+            double flowTime = dist(order[pos].s, order[pos].d) - order[pos].t;
+            MFT_node_t node(flowTime, pos);
+            MFT_order_pool.insert(node);
             pos ++;
         }
-        if (FIFO_order_pool.empty()) {
+        if (MFT_order_pool.empty()) {
             assert(pos < n);
             tim = order[pos].t;
-            FIFO_order_pool.insert(pos);
+            double flowTime = dist(order[pos].s, order[pos].d) - order[pos].t;
+            MFT_node_t node(flowTime, pos);
+            MFT_order_pool.insert(node);
             pos ++;
         }
         int did = best.id;
         driver[did].schedule.clear();
         int cnt = 0;
-        set <int, FIFO_cmp> :: iterator FIFO_it = FIFO_order_pool.begin();
-        while (cnt < c && FIFO_it != FIFO_order_pool.end()) {
-            driver[did].schedule.push_back(*FIFO_it);
-            FIFO_order_pool.erase(FIFO_it ++);
+        set <MFT_node_t> :: iterator MFT_it = MFT_order_pool.begin();
+        while (cnt < c && MFT_it != MFT_order_pool.end()) {
+            driver[did].schedule.push_back(MFT_it->orderId);
+            MFT_order_pool.erase(MFT_it ++);
             cnt ++;
         }
 
@@ -232,87 +236,9 @@ void FIFO() {
     }
 }
 
-void SJF() {
-    for (int i = 0; i < m; ++ i) {
-        Q.push(DriverStatus(i, 0.));
-    }
-    int pos = 0;
-    while (pos < n || SJF_order_pool.size() > 0) {
-        DriverStatus best = Q.top();
-        Q.pop();
-        double tim = best.f_time;
-        while (pos < n && order[pos].t < tim + EPS) {
-            SJF_order_pool.insert(pos);
-            pos ++;
-        }
-        if (SJF_order_pool.empty()) {
-            assert(pos < n);
-            tim = order[pos].t;
-            SJF_order_pool.insert(pos);
-            pos ++;
-        }
-        int did = best.id;
-        driver[did].schedule.clear();
-        int cnt = 0;
-        set <int, SJF_cmp> :: iterator SJF_it = SJF_order_pool.begin();
-        while (cnt < c && SJF_it != SJF_order_pool.end()) {
-            driver[did].schedule.push_back(*SJF_it);
-            SJF_order_pool.erase(SJF_it ++);
-            cnt ++;
-        }
-
-        tot11 += cnt;
-        Q.push(DriverStatus(did, run_driver(did, tim)));
-    }
-}
-
-// hybrid FIFO and SJF
-void Hybrid() {
-    for (int i = 0; i < m; ++ i) {
-        Q.push(DriverStatus(i, 0.));
-    }
-    int pos = 0;
-    while (pos < n || FIFO_order_pool.size() > 0) {
-        DriverStatus best = Q.top();
-        Q.pop();
-        double tim = best.f_time;
-        while (pos < n && order[pos].t < tim + EPS) {
-            FIFO_order_pool.insert(pos);
-            SJF_order_pool.insert(pos);
-            pos ++;
-        }
-        if (FIFO_order_pool.empty()) {
-            assert(pos < n);
-            tim = order[pos].t;
-            FIFO_order_pool.insert(pos);
-            SJF_order_pool.insert(pos);
-            pos ++;
-        }
-        int did = best.id;
-        driver[did].schedule.clear();
-        int cnt = 0;
-        set <int, FIFO_cmp> :: iterator FIFO_it = FIFO_order_pool.begin();
-        while (cnt < c/2 && FIFO_it != FIFO_order_pool.end()) {
-            driver[did].schedule.push_back(*FIFO_it);
-            SJF_order_pool.erase(*FIFO_it);
-            FIFO_order_pool.erase(FIFO_it ++);
-            cnt ++;
-        }
-        set <int, SJF_cmp> :: iterator SJF_it = SJF_order_pool.begin();
-        while (cnt < c && SJF_it != SJF_order_pool.end()) {
-            driver[did].schedule.push_back(*SJF_it);
-            FIFO_order_pool.erase(*SJF_it);
-            SJF_order_pool.erase(SJF_it ++);
-            cnt ++;
-        }
-
-        tot11 += cnt;
-        Q.push(DriverStatus(did, run_driver(did, tim)));
-    }
-}
 
 int main(int argc, char **argv) {
-	string execName("newsjf");
+	string execName("mft");
 
 	if (argc > 1) {
 		freopen(argv[1], "r", stdin);
@@ -340,22 +266,18 @@ int main(int argc, char **argv) {
 	clock_t begTime, endTime;
 	begTime = clock();
 
-	SJF();
+	MFT();
 
 	endTime = clock();
 
-    double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
-	// #ifdef WATCH_MEM
-	// dumpResult(execName, ans, usedTime, -1);
-	// #else
-	// dumpResult(execName, ans, usedTime);
-	// #endif
+  double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
+
 	printf("%s %.3lf %.3lf\n", execName.c_str(), ans, usedTime);
 
 	fflush(stdout);
 
 	assert(tottttt == n);
-    assert(tot11 == n);
+  assert(tot11 == n);
 
-    return 0;
+  return 0;
 }
