@@ -239,11 +239,7 @@ int main(int argc, char **argv) {
 	endTime = clock();
 
     double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
-	// #ifdef WATCH_MEM
-	// dumpResult(execName, ans, usedTime, -1);
-	// #else
-	// dumpResult(execName, ans, usedTime);
-	// #endif
+
 	printf("%s %.3lf %.3lf\n", execName.c_str(), ans, usedTime);
 
 	fflush(stdout);

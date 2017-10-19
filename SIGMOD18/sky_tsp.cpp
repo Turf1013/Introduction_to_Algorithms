@@ -192,7 +192,7 @@ double TSP() {
 	vector<int> routeId = calcRoute(idxs);
 	double ret = 0;
 
-	assert(routeId.size() == d);
+	// assert(routeId.size() == d);
 	for (int i=0; i<d; ++i) {
 		int j = (i+1) % d;
 		int u = routeId[i], v = routeId[j];

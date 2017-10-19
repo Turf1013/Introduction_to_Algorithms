@@ -79,8 +79,6 @@ struct driver_nnt_t {
 	}
 };
 driver_nnt_t* drivers;
-typedef pair<double,int> pdi;
-priority_queue<pdi, vector<pdi>, greater<pdi> > Q;
 
 void init() {
 	for (int i=M; i>0; --i) {
@@ -97,7 +95,6 @@ void init() {
 		int idx = 0; //rand() % N;
 		drivers[i].pos = points[idx];
 	}
-	Q.push(make_pair(0.0, i));
 
 	#ifdef LOCAL_DEBUG
 	printf("V = %d, N = %d, C = %d, M = %d\n", V, N, C, M);
@@ -175,21 +172,24 @@ double nextTargetTime(const driver_nnt_t& driver) {
 }
 
 void updateAllDriver(int& poolSz, double tid) {
+	typedef pair<double,int> pdi;
+	priority_queue<pdi, vector<pdi>, greater<pdi> > Q;
 	int driverId;
 	position_t curPos, nextPos;
-	
-	while (Q.top().first < tid)	{
-		pdi p = Q.top();
-		Q.pop();
-		driver_nnt_t& driver = drivers[p.second];
+
+	for (driverId=0; driverId<N; ++driverId) {
+		driver_nnt_t& driver = drivers[driverId];
 		if (driver.empty()) {
-			
-		} else {
-			
+			Q.push(make_pair(driver.curTime, driverId));
+			continue;
+		}
+		double t = nextTargetTime(driver);
+		if (t <= tid) {
+			Q.push(make_pair(t, driverId));
 		}
 	}
-	
-	while (Q.top().first <= tid) {
+
+	while (!Q.empty()) {
 		pdi p = Q.top();
 		Q.pop();
 		driver_nnt_t& driver = drivers[p.second];
@@ -210,13 +210,12 @@ void updateAllDriver(int& poolSz, double tid) {
 				driver.deliverPool[0] = -orderId;
 			}
 			nextTarget(driver, tid, poolSz);
-			
-			if (!driver.empty()) {
-				double t = nextTargetTime(driver);
+		}
+
+		if (!driver.empty()) {
+			double t = nextTargetTime(driver);
+			if (t <= tid)
 				Q.push(make_pair(t, driverId));
-			} else {
-				Q.push(make_pair(tid, driverId));
-			}
 		}
 	}
 }
@@ -233,14 +232,10 @@ void NNT() {
 			orderPool[poolSz++] = orderId;
 			++orderId;
 		}
-		pdi p = Q.top();
-		if (p.first > orderTid) continue;
 		updateAllDriver(poolSz, orderTid);
 	}
 
-	while (poolSz > 0) {
-		updateAllDriver(poolSz, inf);
-	}
+	updateAllDriver(poolSz, inf);
 }
 
 double calcResult() {

@@ -86,8 +86,31 @@ void random_sorting(int x) {
 }
 
 // TODO: implement the optimal_sorting
-void optimal_sorting(int x) {
-    ;
+int enum_perm[CAP / MINI_BATCH + 4];
+int best_perm[CAP / MINI_BATCH + 4];
+void optimal_sorting(int x, int pos) {
+    vector <int> &C = cluster[x];
+    int len = C.size();
+    for (int i = 0; i < len; ++ i) enum_perm[i] = i;
+    double glob = INF;
+    do {
+        double tmp = 0., tim = 0.;
+        int nw = pos;
+        for (int i = 0; i < len; ++ i) {
+            tim += dist(nw, order[C[enum_perm[i]]].d);
+            tmp += tim;
+            nw = order[C[enum_perm[i]]].d;
+        }
+        if (tmp < glob) {
+            glob = tmp;
+            for (int i = 0; i < len; ++ i) {
+                best_perm[i] = C[enum_perm[i]];
+            }
+        }
+    } while (next_permutation(enum_perm, enum_perm + len));
+    for (int i = 0; i < len; ++ i) {
+        C[i] = best_perm[i];
+    }
 }
 
 // return : (sum flow time, finish time, finish position)
@@ -99,8 +122,8 @@ pair <double, pair <double, int> > attempt(int permid, int did, double tim) {
         int cid = PR[i] >> 1;
         if (cluster[cid].size() == 0) continue;
         if (PR[i] & 1) {
-            //optimal_sorting(cid);
-            random_sorting(cid);
+            optimal_sorting(cid, pos);
+            // random_sorting(cid);
         } else {
             random_sorting(cid);
         }
@@ -124,18 +147,11 @@ double calc_diff(int i, int j) {
 }
 
 /////////debug
-bool test[ORDER_NUMBER];
-int tottttt = 0, tot11 = 0;
 /////////
 
 double run_driver(int id, double tim) {
     vector <int> &S = driver[id].schedule;
-    for (int i = 0; i < S.size(); ++ i) assert(order[S[i]].t < tim + EPS);
-    for (int i = 0; i < S.size(); ++ i) {
-        assert(!test[S[i]]);
-        test[S[i]] = true;
-        tottttt ++;
-    }
+
     int R = S.size() % MINI_BATCH;
     int D = S.size() / MINI_BATCH;
     for (int i = 0; i < MINI_BATCH; ++ i) {
@@ -147,7 +163,6 @@ double run_driver(int id, double tim) {
         for (; j < S.size(); ++ j) {
             if (!in_cluster[j]) break;
         }
-        assert(j < S.size());
         cluster[i].push_back(S[j]);
         in_cluster[j] = true;
         for (int num = 0; num < D; ++ num) {
@@ -160,7 +175,6 @@ double run_driver(int id, double tim) {
                     mn = calc_diff(S[t], S[j]);
                 }
             }
-            assert(choose != -1);
             cluster[i].push_back(S[choose]);
             in_cluster[choose] = true;
         }
@@ -170,7 +184,6 @@ double run_driver(int id, double tim) {
         for (; j < S.size(); ++ j) {
             if (!in_cluster[j]) break;
         }
-        assert(j < S.size());
         cluster[i].push_back(S[j]);
         in_cluster[j] = true;
         for (int num = 0; num < D - 1; ++ num) {
@@ -183,7 +196,6 @@ double run_driver(int id, double tim) {
                     mn = calc_diff(S[t], S[j]);
                 }
             }
-            assert(choose != -1);
             cluster[i].push_back(S[choose]);
             in_cluster[choose] = true;
         }
@@ -212,7 +224,6 @@ void FIFO() {
             pos ++;
         }
         if (FIFO_order_pool.empty()) {
-            assert(pos < n);
             tim = order[pos].t;
             FIFO_order_pool.insert(pos);
             pos ++;
@@ -227,7 +238,6 @@ void FIFO() {
             cnt ++;
         }
 
-        tot11 += cnt;
         Q.push(DriverStatus(did, run_driver(did, tim)));
     }
 }
@@ -246,7 +256,6 @@ void SJF() {
             pos ++;
         }
         if (SJF_order_pool.empty()) {
-            assert(pos < n);
             tim = order[pos].t;
             SJF_order_pool.insert(pos);
             pos ++;
@@ -261,7 +270,6 @@ void SJF() {
             cnt ++;
         }
 
-        tot11 += cnt;
         Q.push(DriverStatus(did, run_driver(did, tim)));
     }
 }
@@ -282,7 +290,6 @@ void Hybrid() {
             pos ++;
         }
         if (FIFO_order_pool.empty()) {
-            assert(pos < n);
             tim = order[pos].t;
             FIFO_order_pool.insert(pos);
             SJF_order_pool.insert(pos);
@@ -306,7 +313,6 @@ void Hybrid() {
             cnt ++;
         }
 
-        tot11 += cnt;
         Q.push(DriverStatus(did, run_driver(did, tim)));
     }
 }
@@ -345,17 +351,10 @@ int main(int argc, char **argv) {
 	endTime = clock();
 
     double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
-	// #ifdef WATCH_MEM
-	// dumpResult(execName, ans, usedTime, -1);
-	// #else
-	// dumpResult(execName, ans, usedTime);
-	// #endif
+
 	printf("%s %.3lf %.3lf\n", execName.c_str(), ans, usedTime);
 
 	fflush(stdout);
-
-	assert(tottttt == n);
-    assert(tot11 == n);
 
     return 0;
 }

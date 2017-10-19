@@ -130,7 +130,7 @@ def genData(V, N, C, M, desFileName):
 
 
 def exp1(dataSetN = 5):
-	desFilePath = "./smallDataSet"
+	desFilePath = "f:/tmp/smallDataSet"
 	if not os.path.exists(desFilePath):
 		os.mkdir(desFilePath)
 	V = 100
@@ -138,10 +138,10 @@ def exp1(dataSetN = 5):
 	C = 12
 	M = 500
 	for i in xrange(dataSetN):
-		V = randint(50, 100)
-		N = randint(8, 15)
-		C = randint(5, 7)
-		M = randint(800, 1000)
+		V = randint(5, 10)
+		N = randint(2, 6)
+		C = randint(3, 5)
+		M = randint(10, 20)
 		desFileName = "data_%02d.txt" % (i)
 		desFileName = os.path.join(desFilePath, desFileName)
 		genData(V, N, C, M, desFileName)
@@ -335,5 +335,5 @@ def exp3():
 
 
 if __name__ == "__main__":
-	# exp1()
-	exp3()
+	exp1()
+	# exp3()

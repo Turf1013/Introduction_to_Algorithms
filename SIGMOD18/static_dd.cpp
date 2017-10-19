@@ -1,6 +1,6 @@
 /**
 	\author: 	Trasier
-	\date: 		2017.10.18
+	\date: 		2017.10.20
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -76,14 +76,14 @@ void dfsInTSP(int u, vector<vector<int> >& g, vector<int>& idxs, vector<int>& re
 	}
 }
 
-vector<int> calcRoute(vector<int>& idxs) {
+vector<int> calcRoute(vector<int>& idxs, int _oid=0) {
 	const int n = idxs.size();
 	vector<double> dis(n, 1e20);
 	vector<bool> visit(n, false);
 	vector<int> pre(n, -1);
 	vector<vector<int> > g(n, vector<int>());
 
-	int oid = rand() % n, st = idxs[oid];
+	int oid = _oid, st = idxs[oid];
 	for (int i=0; i<n; ++i) {
 		int v = idxs[i];
 		dis[i] = dist(st, v);
@@ -144,20 +144,21 @@ void DD() {
             FIFO_order_pool[order[nw].s].insert(nw);
             nw ++;
         }
-        set <int> :: iterator it = Sd.begin();
-        while (it != Sd.end()) {
-            if (order[*it].d == TSP[pos]) {
-                ans += tim - order[*it].t;
-                Sd.erase(it ++);
-                diliver_num ++;
-            } else {
-                it ++;
-            }
-        }
-        while (Sd.size() < c && !FIFO_order_pool[TSP[pos]].empty()) {
-            Sd.insert(*(FIFO_order_pool[TSP[pos]].begin()));
-            FIFO_order_pool[TSP[pos]].erase(FIFO_order_pool[TSP[pos]].begin());
-        }
+		int sz = FIFO_order_pool[TSP[pos]].size();
+		for (int i=0; i<sz; i+=c) {
+			vector<int> vtmp;
+			vtmp.push_back(TSP[pos]);
+			for (int j=0; i+j<sz&&j<c; ++j) {
+				vtmp.push_back(*(FIFO_order_pool[TSP[pos]].begin()));
+				FIFO_order_pool[TSP[pos]].erase(FIFO_order_pool[TSP[pos]].begin());
+			}
+			vtmp = calcRoute(vtmp);
+			const int vtmpSz = vtmp.size();
+			for (int j=0; j<vtmpSz; ++j) {
+				tim += dist(vtmp[j], vtmp[(j+1)%vtmpSz]);
+			}
+			diliver_num += vtmpSz - 1;
+		}
         tim += dist(TSP[pos], TSP[(pos + 1) % d]);
         pos ++;
         pos %= d;
@@ -190,7 +191,7 @@ int main(int argc, char **argv) {
 
 	endTime = clock();
 
-  double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
+    double usedTime = (endTime - begTime)*1.0 / CLOCKS_PER_SEC;
 
 	printf("%s %.3lf %.3lf\n", execName.c_str(), ans, usedTime);
 

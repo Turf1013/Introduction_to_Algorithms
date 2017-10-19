@@ -135,7 +135,6 @@ void prepare() {
 }
 
 int LCA(int p, int q) {
-    p = ref[p], q = ref[q];
     int lo;
     if (deep[p] < deep[q]) swap(p, q);
     for (lo = 1; (1 << lo) <= deep[p]; lo++); lo--;
@@ -154,7 +153,17 @@ int LCA(int p, int q) {
 }
 
 double d_tree(int p, int q) {
-    return dst[ref[p]] + dst[ref[q]] - 2. * dst[LCA(p, q)];
+	return dst[p] + dst[q] - 2.0 * dst[LCA(p, q)];
+}
+
+int LCA_true_point(int p, int q) {
+    p = ref[p], q = ref[q];
+    return LCA_tree_node(p, q);
+}
+
+double distance_true_point(int p, int q) {
+    p = ref[p], q = ref[q];
+    return distance_tree_node(p, q);
 }
 
 void test_print() {
