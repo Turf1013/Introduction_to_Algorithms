@@ -96,8 +96,8 @@ void init() {
 	for (int i=0; i<N; ++i) {
 		int idx = 0; //rand() % N;
 		drivers[i].pos = points[idx];
+  	Q.push(make_pair(0.0, i));
 	}
-	Q.push(make_pair(0.0, i));
 
 	#ifdef LOCAL_DEBUG
 	printf("V = %d, N = %d, C = %d, M = %d\n", V, N, C, M);
@@ -127,17 +127,19 @@ int NN(position_t& pos, int& poolSz) {
 	if (ret >= 0)
 		swap(orderPool[ret], orderPool[poolSz-1]);
 
-	return ret;
+	return orderPool[poolSz-1];
 }
 
-void nextTarget(driver_nnt_t& driver, double tid, int& poolSz) {
-	if (driver.empty() && poolSz==0) return ;
+void nextTarget(driver_nnt_t& driver, int& poolSz) {
+	#ifdef LOCAL_DEBUG
+  assert(!(driver.empty() && poolSz==0));
+  #endif
 
 	// direct fetch from the orderPool
 	if (driver.empty()) {
 		int orderId = NN(driver.pos, poolSz);
 		driver.appendId(orderId);
-		driver.curTime = tid;
+    driver.swap(0, driver.poolSize()-1);
 		--poolSz;
 	} else if (driver.full()) {
 		int idx = driver.getNearestId();
@@ -165,8 +167,16 @@ void nextTarget(driver_nnt_t& driver, double tid, int& poolSz) {
 	}
 }
 
+void nextFromPool(driver_nnt_t& driver, int& poolSz) {
+  int orderId = NN(driver.pos, poolSz);
+  driver.appendId(orderId);
+  driver.swap(0, driver.poolSize()-1);
+  driver.curTime = max(driver.curTime, (double)orders[orderId].tid);
+  --poolSz;
+}
+
 double nextTargetTime(const driver_nnt_t& driver) {
-	if (driver.empty()) return -1.0;
+	if (driver.empty()) return driver.curTime;
 	int orderId = driver.deliverPool[0];
 	position_t curPos = driver.pos;
 	position_t nextPos = (orderId > 0) ? points[orders[orderId].sid] : points[orders[-orderId].eid];
@@ -174,73 +184,99 @@ double nextTargetTime(const driver_nnt_t& driver) {
 	return ret;
 }
 
-void updateAllDriver(int& poolSz, double tid) {
-	int driverId;
-	position_t curPos, nextPos;
-	
-	while (Q.top().first < tid)	{
-		pdi p = Q.top();
-		Q.pop();
-		driver_nnt_t& driver = drivers[p.second];
-		if (driver.empty()) {
-			
-		} else {
-			
-		}
-	}
-	
-	while (Q.top().first <= tid) {
-		pdi p = Q.top();
-		Q.pop();
-		driver_nnt_t& driver = drivers[p.second];
-		if (driver.empty()) {
-			nextTarget(driver, tid, poolSz);
-		} else {
-			// update the order
-			int orderId = driver.deliverPool[0];
-			if (orderId < 0) {
-				deliverTime[-orderId] = p.first;
-				// update the driver
-				driver.curTime = p.first;
-				driver.pos = points[orders[-orderId].eid];
-				driver.removeId(0);
-			} else {
-				driver.curTime = p.first;
-				driver.pos = points[orders[orderId].sid];
-				driver.deliverPool[0] = -orderId;
-			}
-			nextTarget(driver, tid, poolSz);
-			
-			if (!driver.empty()) {
-				double t = nextTargetTime(driver);
-				Q.push(make_pair(t, driverId));
-			} else {
-				Q.push(make_pair(tid, driverId));
-			}
-		}
-	}
+void updateDriverBefore(int& poolSz, double preTime, double nextTime) {
+  while (Q.top().first < nextTime) {
+    pdi p = Q.top();
+    Q.pop();
+    int driverId = p.second;
+    driver_nnt_t& driver = drivers[driverId];
+    // update the current movement
+    if (!driver.empty()) {
+  		int orderId = driver.deliverPool[0];
+  		if (orderId < 0) {
+  			deliverTime[-orderId] = p.first;
+  			// update the driver
+  			driver.curTime = p.first;
+  			driver.pos = points[orders[-orderId].eid];
+  			driver.removeId(0);
+  		} else {
+  			driver.curTime = p.first;
+  			driver.pos = points[orders[orderId].sid];
+  			driver.deliverPool[0] = -orderId;
+  		}
+    } else {
+      driver.curTime = p.first;
+    }
+    // update the next movement
+    if (driver.empty()) {
+      if (poolSz ==0) {
+        driver.curTime = nextTime;
+      } else {
+        nextFromPool(driver, poolSz);
+      }
+    } else {
+      nextTarget(driver, poolSz);
+    }
+    // update the next arriveTime
+    double t = nextTargetTime(driver);
+    Q.push(make_pair(t, driverId));
+  }
+}
+
+void udpateDriverAfter(int& poolSz) {
+  #ifdef LOCAL_DEBUG
+  assert(poolSz == 0);
+  #endif
+  while (!Q.empty()) {
+    pdi p = Q.top();
+    Q.pop();
+    int driverId = p.second;
+    driver_nnt_t& driver = drivers[driverId];
+    if (drivers[driverId].empty()) continue;
+
+    int orderId = driver.deliverPool[0];
+    if (orderId < 0) {
+      deliverTime[-orderId] = p.first;
+      // update the driver
+      driver.curTime = p.first;
+      driver.pos = points[orders[-orderId].eid];
+      driver.removeId(0);
+    } else {
+      driver.curTime = p.first;
+      driver.pos = points[orders[orderId].sid];
+      driver.deliverPool[0] = -orderId;
+    }
+
+    if (drivers[driverId].empty()) continue;
+
+    nextTarget(driver, poolSz);
+    // update the next arriveTime
+    double t = nextTargetTime(driver);
+    Q.push(make_pair(t, driverId));
+  }
 }
 
 // a.k.a Next Nearest Target
 void NNT() {
 	int driverId, orderId = 1;
-	double curTime = 0;
+	double curTime = 0, preTime = 0.0;
 	int poolSz = 0;
 
 	while (orderId <= M) {
-		double orderTid = orders[orderId].tid;
-		while (orderId<=M && orders[orderId].tid<=orderTid) {
+    curTime = orders[orderId].tid;
+    updateDriverBefore(poolSz, preTime, curTime);
+		while (orderId<=M && orders[orderId].tid<=curTime) {
 			orderPool[poolSz++] = orderId;
 			++orderId;
 		}
-		pdi p = Q.top();
-		if (p.first > orderTid) continue;
-		updateAllDriver(poolSz, orderTid);
+    preTime = curTime;
 	}
 
 	while (poolSz > 0) {
-		updateAllDriver(poolSz, inf);
+    updateDriverBefore(poolSz, preTime, inf);
 	}
+
+  udpateDriverAfter(poolSz);
 }
 
 double calcResult() {

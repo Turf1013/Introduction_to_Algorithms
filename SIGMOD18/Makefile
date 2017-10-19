@@ -7,7 +7,7 @@ LIBS = -lrt
 CFLAGS = -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: gi
+all: gi newsjf newfifo hybrid mft nnt staticsjf staticfifo staticdd srhstfifo srhstsjf srrndfifo srrndsjf
 gi: input.h output.h greedyInsert.cpp monitor.h
 	$(CXX) $(CFLAGS) -o gi greedyInsert.cpp $(LIBS)
 
@@ -53,8 +53,21 @@ mft: mft.cpp input.h output.h monitor.h global.h
 nnt: nnt.cpp input.h output.h monitor.h global.h
 	$(CXX) $(CFLAGS) -o nnt nnt.cpp $(LIBS)
 
+srhstfifo: staticRoute_hstInit_fifo.cpp input.h output.h monitor.h
+	$(CXX) $(CFLAGS) -o srhstfifo staticRoute_hstInit_fifo.cpp $(LIBS)
+
+srhstsjf: staticRoute_hstInit_sjf.cpp input.h output.h monitor.h
+	$(CXX) $(CFLAGS) -o srhstsjf staticRoute_hstInit_sjf.cpp $(LIBS)
+
+srrndfifo: staticRoute_randomInit_fifo.cpp input.h output.h monitor.h
+	$(CXX) $(CFLAGS) -o srrndfifo staticRoute_randomInit_fifo.cpp $(LIBS)
+
+srrndsjf: staticRoute_randInit_sjf.cpp input.h output.h monitor.h
+	$(CXX) $(CFLAGS) -o srrndsjf staticRoute_randInit_sjf.cpp $(LIBS)
+
 .PHONY: clean
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm hst gi giM fifo fifoM sjf sjfM 2> /dev/null || true
 		-@rm newsjf newfifo hybrid mft nnt staticfifo staticsjf staticdd 2> /dev/null || true
+		-@rm srhstfifo srhstsjf srrndfifo srrndsjf 2> /dev/null || true
