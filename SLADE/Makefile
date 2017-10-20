@@ -51,4 +51,4 @@ opqeM: monitor.h input.h output.h global.h opqe.cpp
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm greedy greedyM opq opqM opqe opqe2 opqeM base baseM 2> /dev/null || true
-		-@rm sopq sopqe sgreedy 2> /dev/null || true
+		-@rm sopq sopqe sgreedy cip 2> /dev/null || true

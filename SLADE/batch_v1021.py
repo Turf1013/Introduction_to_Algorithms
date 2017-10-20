@@ -60,5 +60,5 @@ if __name__ == "__main__":
     dataSetN, nprocess = 30, 16
     cmdLine = "rm -rf ../result_SLADE"
     commands.getoutput(cmdLine)
-    #exp0(dataSetN, nprocess)
+    exp0(dataSetN, nprocess)
     exp1(dataSetN, nprocess)
