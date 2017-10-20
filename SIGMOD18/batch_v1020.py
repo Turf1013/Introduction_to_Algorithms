@@ -51,12 +51,16 @@ def exp0(dataSetN, nprocess, srcFilePath, desFilePath):
 	
 def exp1(dataSetN=10, nprocess=12):
 	srcFilePathList = [
-		"../dataSet_SIGMOD",
+		"../dataSet_SIGMOD_0",
 		"../dataSet_SIGMOD_1",
+		"../dataSet_SIGMOD_2",
+		"../dataSet_SIGMOD_3",
 	]
 	desFilePathList = [
-		"../result_SIGMOD",
+		"../result_SIGMOD_0",
 		"../result_SIGMOD_1",
+		"../result_SIGMOD_2",
+		"../result_SIGMOD_3",
 	]
 	for i in xrange(len(srcFilePathList)):
 		srcFilePath = srcFilePathList[i]

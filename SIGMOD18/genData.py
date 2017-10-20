@@ -304,7 +304,7 @@ def batchDataSet2(desFilePath, nV = 50, dataSetId = 2):
 	# V, N, C, M, Tmax = nV, 1, 8, 200, 120
 
 def exp1():
-	desFilePath = "../dataSet_SIGMOD"
+	desFilePath = "../dataSet_SIGMOD_0"
 	desFilePath_1 = "../dataSet_SIGMOD_1"
 	if not os.path.exists(desFilePath):
 		os.mkdir(desFilePath)

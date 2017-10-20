@@ -105,7 +105,7 @@ def newLoc(xrng, yrng, st):
 	return None
 		
 def genLoc(n, low, high):
-	r0 = (int)ceil(CFDs.r)
+	r0 = int(ceil(CFDS.r))
 	uN = n / 4
 	ret = []
 	st = set()
@@ -114,7 +114,7 @@ def genLoc(n, low, high):
 		ret.append(tu)
 		st.add(tu)
 		if i==uN-1:
-			vN = n - (uN-1)*4
+			vN = n - (uN-1)*4 - 1
 		else:
 			vN = 3
 		for j in xrange(vN):
@@ -130,7 +130,8 @@ def inTheRange(ta, tb):
 	l = ((ta[0]-tb[0])**2 + (ta[1]-tb[1])**2) ** 0.5
 	return l <= CFDS.r
 	
-def genOrder(n, V):
+def genOrders(points, n):
+	V = len(points)
 	uList,vList = [], []
 	aDict = dict()
 	for i in xrange(V):
@@ -138,10 +139,10 @@ def genOrder(n, V):
 		for j in xrange(V):
 			if i==j:
 				continue
-			if inTheRange(V[i], V[j]):
-				tmpList.append(j)
+			if inTheRange(points[i], points[j]):
+				tmpList.append(j+1)
 		if len(tmpList) > 0:
-			aDict[i] = tmpList
+			aDict[i+1] = tmpList
 	srcList = aDict.keys()
 	for i in xrange(n):
 		srcId = randint(0, len(srcList)-1)
@@ -216,11 +217,7 @@ def batchDataSet(desFilePath, nV = 50, dataSetId = 2):
 	points = genLoc(V, 0, 100)
 	rng.setMx(Tmax)
 	bigTids = rng.gen(Mmax)
-	rng.setMx(V)
-	bigSids,bigEids = genOrders(V, Mmax)
-
-	if not os.path.exists(desFilePath):
-		os.mkdir(desFilePath)
+	bigSids,bigEids = genOrders(points, Mmax)
 
 	# varying of workerN
 	workerNList = [10, 20, 30, 40, 50]
@@ -278,13 +275,8 @@ def batchDataSet2(desFilePath, nV = 50, dataSetId = 2):
 	points = genLoc(V, 0, 100)
 	rng.setMx(Tmax)
 	bigTids = rng.gen(Mmax)
-	rng.setMx(V)
-	bigSids = rng.gen(Mmax)
-	bigEids = rng.gen(Mmax)
+	bigSids,bigEids = genOrders(points, Mmax)
 	tids, sids, eids = sampleOrder(bigTids, bigSids, bigEids, M)
-
-	if not os.path.exists(desFilePath):
-		os.mkdir(desFilePath)
 
 	# varying of capacity
 	capacityList = range(1, 16)
@@ -316,8 +308,8 @@ def batchDataSet2(desFilePath, nV = 50, dataSetId = 2):
 	V, N, C, M, Tmax = nV, 1, 8, 200, 120
 
 def exp1():
-	desFilePath = "../dataSet_SIGMOD"
-	desFilePath_1 = "../dataSet_SIGMOD_1"
+	desFilePath = "../dataSet_SIGMOD_2"
+	desFilePath_1 = "../dataSet_SIGMOD_3"
 	if not os.path.exists(desFilePath):
 		os.mkdir(desFilePath)
 	if not os.path.exists(desFilePath_1):
@@ -333,7 +325,26 @@ def exp1():
 		for dataSetId in xrange(dataSetN):
 			batchDataSet2(tmpFilePath, nV, dataSetId)
 
-
+def exp2():
+	Mmax = 3000
+	desFilePath = "F:/tmp/tmpData"
+	if not os.path.exists(desFilePath):
+		os.mkdir(desFilePath)
+	for nV in [100, 500, 1000, 2000]:
+		points = genLoc(nV, 0, 100)
+		bigSids,bigEids = genOrders(points, Mmax)
+		desFileName = os.path.join(desFilePath, "nv_%d.txt" % (nV))
+		print "nv_%d.txt %d\n" % (nV, len(points))
+		with open(desFileName, "w") as fout:
+			fout.write("%d\n" % (nV))
+			for i in xrange(nV):
+				line = "%s %s\n" % (points[i][0], points[i][1])
+				fout.write(line)
+			fout.write("%d %.3lf\n" % (Mmax, CFDS.r))
+			for i in xrange(Mmax):
+				line = "%s %s\n" % (bigSids[i], bigEids[i])
+				fout.write(line)
+			
 if __name__ == "__main__":
 	exp1()
-	# exp3()
+	# exp2()
