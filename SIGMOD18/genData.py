@@ -239,13 +239,13 @@ def batchDataSet(desFilePath, nV = 50, dataSetId = 2):
 		# genDataSet(V, N, C, M, points, _tids, sids, eids, desFileName)
 	# V, N, C, M, Tmax = 50, 30, 8, 1000, 120
 
-def batchDataSet2(desFilePath, nV = 50, dataSetId = 2, locRang=100):
+def batchDataSet2(desFilePath, nV = 50, dataSetId = 2):
 	if not os.path.exists(desFilePath):
 		os.mkdir(desFilePath)
 	Mmax = 500
 	V, N, C, M, Tmax = nV, 1, 8, 200, 120
 	rng = randomGenerator(Tmax)
-	points = genLoc(V, 0, 20)
+	points = genLoc(V, 0, 100)
 	rng.setMx(Tmax)
 	bigTids = rng.gen(Mmax)
 	rng.setMx(V)
@@ -304,24 +304,24 @@ def batchDataSet2(desFilePath, nV = 50, dataSetId = 2, locRang=100):
 	# V, N, C, M, Tmax = nV, 1, 8, 200, 120
 
 def exp1():
-	desFilePath = "F:/tmp/dataSet_SIGMOD"
-	desFilePath_1 = "F:/tmp/dataSet_SIGMOD_1"
+	desFilePath = "../dataSet_SIGMOD"
+	desFilePath_1 = "../dataSet_SIGMOD_1"
 	if not os.path.exists(desFilePath):
 		os.mkdir(desFilePath)
 	if not os.path.exists(desFilePath_1):
 		os.mkdir(desFilePath_1)
-	dataSetN = 2 
+	dataSetN = 2
 	nVs = [100, 500, 1000, 2000]
 	for nV in nVs:
 		tmpFileName = "nV_%d" % (nV)
 		tmpFilePath = os.path.join(desFilePath, tmpFileName)
-		for dataSetId in xrange(dataSetN):	
+		for dataSetId in xrange(dataSetN):
 		 	batchDataSet(tmpFilePath, nV, dataSetId)
 		tmpFilePath = os.path.join(desFilePath_1, tmpFileName)
 		for dataSetId in xrange(dataSetN):
 			batchDataSet2(tmpFilePath, nV, dataSetId)
-	
-	
+
+
 if __name__ == "__main__":
 	exp1()
 	# exp3()
