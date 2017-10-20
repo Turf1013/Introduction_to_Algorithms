@@ -17,6 +17,9 @@ sopq: opq_sky.cpp
 sopqe: opqe_sky.cpp
 	$(CXX) $(CFLAGS) -o sopqe opqe_sky.cpp $(LIBS)
 
+cip: monitor.h input.h output.h global.h CIP.cpp
+	$(CXX) $(CFLAGS) -o cip CIP.cpp $(LIBS) -lglpk
+
 base: monitor.h input.h output.h global.h baseline.cpp
 	$(CXX) $(CFLAGS) -o base baseline.cpp $(LIBS) -lglpk
 
