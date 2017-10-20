@@ -129,6 +129,23 @@ def genData(V, N, C, M, desFileName):
 			fout.write(line)
 
 
+def exp1(dataSetN = 5):
+	desFilePath = "f:/tmp/smallDataSet"
+	if not os.path.exists(desFilePath):
+		os.mkdir(desFilePath)
+	V = 100
+	N = 20
+	C = 12
+	M = 500
+	for i in xrange(dataSetN):
+		V = randint(5, 10)
+		N = randint(2, 6)
+		C = randint(3, 5)
+		M = randint(10, 20)
+		desFileName = "data_%02d.txt" % (i)
+		desFileName = os.path.join(desFilePath, desFileName)
+		genData(V, N, C, M, desFileName)
+
 def genDataSet(V, N, C, M, points, tids, sids, eids, desFileName):
 	with open(desFileName, "w") as fout:
 		line = "%s %s %s %s\n" % (V, N, C, M)
@@ -159,11 +176,11 @@ def sampleOrder(_tids, _sids, _eids, M):
 	return tids, sids, eids
 
 
-def batchDataSet(desFilePath, nV = 50, dataSetId = 2, locRang=100):
+def batchDataSet(desFilePath, dataSetId = 2):
 	Mmax = 3000
-	V, N, C, M, Tmax = nV, 30, 8, 1000, 120
+	V, N, C, M, Tmax = 50, 30, 8, 1000, 120
 	rng = randomGenerator(Tmax)
-	points = genLoc(V, 0, locRang)
+	points = genLoc(V, 0, 50)
 	rng.setMx(Tmax)
 	bigTids = rng.gen(Mmax)
 	rng.setMx(V)
@@ -184,13 +201,14 @@ def batchDataSet(desFilePath, nV = 50, dataSetId = 2, locRang=100):
 		desFileName = "data_%02d.txt" % (dataSetId)
 		desFileName = os.path.join(tmpFilePath, desFileName)
 		if os.path.exists(desFileName):
+			print "1"
 			continue
 		genDataSet(V, N, C, M, points, tids, sids, eids, desFileName)
-	V, N, C, M, Tmax = nV, 30, 8, 1000, 120
+	V, N, C, M, Tmax = 50, 30, 8, 1000, 120
 
 
 	# varying of capacity
-	capacityList = range(1, 16)
+	capacityList = [2, 4, 8, 16, 32]
 	for C in capacityList:
 		tmpFilePath = genTmpFileName(N, C, M, Tmax)
 		tmpFilePath = os.path.join(desFilePath, tmpFilePath)
@@ -199,9 +217,10 @@ def batchDataSet(desFilePath, nV = 50, dataSetId = 2, locRang=100):
 		desFileName = "data_%02d.txt" % (dataSetId)
 		desFileName = os.path.join(tmpFilePath, desFileName)
 		if os.path.exists(desFileName):
+			print "2"
 			continue
 		genDataSet(V, N, C, M, points, tids, sids, eids, desFileName)
-	V, N, C, M, Tmax = nV, 30, 8, 1000, 120
+	V, N, C, M, Tmax = 50, 30, 8, 1000, 120
 
 
 	# varying of orderN
@@ -214,31 +233,33 @@ def batchDataSet(desFilePath, nV = 50, dataSetId = 2, locRang=100):
 		desFileName = "data_%02d.txt" % (dataSetId)
 		desFileName = os.path.join(tmpFilePath, desFileName)
 		if os.path.exists(desFileName):
+			print "3"
 			continue
 		_tids, _sids, _eids = sampleOrder(bigTids, bigSids, bigEids, M)
 		genDataSet(V, N, C, M, points, _tids, _sids, _eids, desFileName)
-	V, N, C, M, Tmax = nV, 30, 8, 1000, 120
+	V, N, C, M, Tmax = 50, 30, 8, 1000, 120
 
 	# varying of denisty
-	# TmaxList = [30, 60, 120, 180, 240]
-	# for Tmax in TmaxList:
-		# rng.setMx(Tmax)
-		# _tids = rng.gen(M)
-		# _tids.sort()
-		# tmpFilePath = genTmpFileName(N, C, M, Tmax)
-		# tmpFilePath = os.path.join(desFilePath, tmpFilePath)
-		# if not os.path.exists(tmpFilePath):
-			# os.mkdir(tmpFilePath)
-		# desFileName = "data_%02d.txt" % (dataSetId)
-		# desFileName = os.path.join(tmpFilePath, desFileName)
-		# if os.path.exists(desFileName):
-			# continue
-		# genDataSet(V, N, C, M, points, _tids, sids, eids, desFileName)
-	# V, N, C, M, Tmax = 50, 30, 8, 1000, 120
+	TmaxList = [30, 60, 120, 180, 240]
+	for Tmax in TmaxList:
+		rng.setMx(Tmax)
+		_tids = rng.gen(M)
+		_tids.sort()
+		tmpFilePath = genTmpFileName(N, C, M, Tmax)
+		tmpFilePath = os.path.join(desFilePath, tmpFilePath)
+		if not os.path.exists(tmpFilePath):
+			os.mkdir(tmpFilePath)
+		desFileName = "data_%02d.txt" % (dataSetId)
+		desFileName = os.path.join(tmpFilePath, desFileName)
+		if os.path.exists(desFileName):
+			print "4"
+			continue
+		genDataSet(V, N, C, M, points, _tids, sids, eids, desFileName)
+	V, N, C, M, Tmax = 50, 30, 8, 1000, 120
 
-def batchDataSet2(desFilePath, nV = 50, dataSetId = 2, locRang=100):
+def batchDataSet2(desFilePath, dataSetId = 2):
 	Mmax = 500
-	V, N, C, M, Tmax = nV, 1, 8, 200, 120
+	V, N, C, M, Tmax = 20, 1, 8, 200, 120
 	rng = randomGenerator(Tmax)
 	points = genLoc(V, 0, 20)
 	rng.setMx(Tmax)
@@ -252,7 +273,7 @@ def batchDataSet2(desFilePath, nV = 50, dataSetId = 2, locRang=100):
 		os.mkdir(desFilePath)
 
 	# varying of capacity
-	capacityList = range(1, 16)
+	capacityList = [2, 4, 8, 16, 32]
 	for C in capacityList:
 		tmpFilePath = genTmpFileName(N, C, M, Tmax)
 		tmpFilePath = os.path.join(desFilePath, tmpFilePath)
@@ -261,9 +282,10 @@ def batchDataSet2(desFilePath, nV = 50, dataSetId = 2, locRang=100):
 		desFileName = "data_%02d.txt" % (dataSetId)
 		desFileName = os.path.join(tmpFilePath, desFileName)
 		if os.path.exists(desFileName):
+			print "2"
 			continue
 		genDataSet(V, N, C, M, points, tids, sids, eids, desFileName)
-	V, N, C, M, Tmax = nV, 1, 8, 200, 120
+	V, N, C, M, Tmax = 20, 1, 8, 200, 120
 
 	# varying of orderN
 	orderNList = [50, 100, 200, 300, 500]
@@ -275,30 +297,44 @@ def batchDataSet2(desFilePath, nV = 50, dataSetId = 2, locRang=100):
 		desFileName = "data_%02d.txt" % (dataSetId)
 		desFileName = os.path.join(tmpFilePath, desFileName)
 		if os.path.exists(desFileName):
+			print "3"
 			continue
 		_tids, _sids, _eids = sampleOrder(bigTids, bigSids, bigEids, M)
 		genDataSet(V, N, C, M, points, _tids, _sids, _eids, desFileName)
-	V, N, C, M, Tmax = nV, 1, 8, 200, 120
+	V, N, C, M, Tmax = 20, 1, 8, 200, 120
 
 	# varying of denisty
-	# TmaxList = [30, 60, 120, 180, 240]
-	# for Tmax in TmaxList:
-		# rng.setMx(Tmax)
-		# _tids = rng.gen(M)
-		# _tids.sort()
-		# tmpFilePath = genTmpFileName(N, C, M, Tmax)
-		# tmpFilePath = os.path.join(desFilePath, tmpFilePath)
-		# if not os.path.exists(tmpFilePath):
-			# os.mkdir(tmpFilePath)
-		# desFileName = "data_%02d.txt" % (dataSetId)
-		# desFileName = os.path.join(tmpFilePath, desFileName)
-		# if os.path.exists(desFileName):
-			# print "4"
-			# continue
-		# genDataSet(V, N, C, M, points, _tids, sids, eids, desFileName)
-	# V, N, C, M, Tmax = nV, 1, 8, 200, 120
+	TmaxList = [30, 60, 120, 180, 240]
+	for Tmax in TmaxList:
+		rng.setMx(Tmax)
+		_tids = rng.gen(M)
+		_tids.sort()
+		tmpFilePath = genTmpFileName(N, C, M, Tmax)
+		tmpFilePath = os.path.join(desFilePath, tmpFilePath)
+		if not os.path.exists(tmpFilePath):
+			os.mkdir(tmpFilePath)
+		desFileName = "data_%02d.txt" % (dataSetId)
+		desFileName = os.path.join(tmpFilePath, desFileName)
+		if os.path.exists(desFileName):
+			print "4"
+			continue
+		genDataSet(V, N, C, M, points, _tids, sids, eids, desFileName)
+	V, N, C, M, Tmax = 20, 1, 8, 200, 120
 
-def exp1():
+def exp2():
+	desFilePath = "../dataSet_SIGMOD"
+	dataSetN = 20
+	for dataSetId in xrange(dataSetN):
+		batchDataSet(desFilePath, dataSetId)
+
+def exp3():
+	desFilePath = "../dataSet_SIGMOD_2"
+	dataSetN = 20
+	for dataSetId in xrange(dataSetN):
+		batchDataSet2(desFilePath, dataSetId)
+
+
+def exp4():
 	desFilePath = "../dataSet_SIGMOD"
 	desFilePath_1 = "../dataSet_SIGMOD_1"
 	dataSetN = 20
@@ -307,12 +343,11 @@ def exp1():
 		tmpFileName = "nV=%d" % (nV)
 		tmpFilePath = os.path.join(desFilePath, tmpFilePath)
 		for dataSetId in xrange(dataSetN):	
-			batchDataSet(tmpFilePath, nV, dataSetId)
+			batchDataSet(tmpFilePath, dataSetId)
 		tmpFilePath = os.path.join(desFilePath_1, tmpFilePath)
 		for dataSetId in xrange(dataSetN):
-			batchDataSet2(tmpFilePath, nV, data)
-	
-	
+			batchDataSet2(tmpFilePath, data)
+		
 if __name__ == "__main__":
-	exp1()
+	exp4()
 	# exp3()
