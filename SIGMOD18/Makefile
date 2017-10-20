@@ -52,18 +52,18 @@ mft: mft.cpp input.h output.h monitor.h global.h
 
 nnt: nnt.cpp input.h output.h monitor.h global.h
 	$(CXX) $(CFLAGS) -o nnt nnt.cpp $(LIBS)
-
+           
 srhstfifo: staticRoute_hstInit_fifo.cpp input.h output.h monitor.h
 	$(CXX) $(CFLAGS) -o srhstfifo staticRoute_hstInit_fifo.cpp $(LIBS)
 
 srhstsjf: staticRoute_hstInit_sjf.cpp input.h output.h monitor.h
 	$(CXX) $(CFLAGS) -o srhstsjf staticRoute_hstInit_sjf.cpp $(LIBS)
 
-srrndfifo: staticRoute_randomInit_fifo.cpp input.h output.h monitor.h
-	$(CXX) $(CFLAGS) -o srrndfifo staticRoute_randomInit_fifo.cpp $(LIBS)
-
-srrndsjf: staticRoute_randInit_sjf.cpp input.h output.h monitor.h
-	$(CXX) $(CFLAGS) -o srrndsjf staticRoute_randInit_sjf.cpp $(LIBS)
+srrndfifo: staticRoutes_randomInit_fifo.cpp input.h output.h monitor.h
+	$(CXX) $(CFLAGS) -o srrndfifo staticRoutes_randomInit_fifo.cpp $(LIBS)
+		  
+srrndsjf: staticRoutes_randomInit_sjf.cpp input.h output.h monitor.h
+	$(CXX) $(CFLAGS) -o srrndsjf staticRoutes_randomInit_sjf.cpp $(LIBS)
 
 .PHONY: clean
 clean:

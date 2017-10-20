@@ -39,7 +39,7 @@ def batch(desFilePath, srcFilePath, dataSetN, nprocess=12):
 	pool.join()
 	
 	
-def exp0(dataSetN=10, nprocess=12, srcFilePath, desFilePath):
+def exp0(dataSetN, nprocess, srcFilePath, desFilePath):
 	if not os.path.exists(desFilePath):
 		os.mkdir(desFilePath)
 	tmpFileNames = os.listdir(srcFilePath)
@@ -49,7 +49,7 @@ def exp0(dataSetN=10, nprocess=12, srcFilePath, desFilePath):
 		batch(tmpDesFilePath, tmpSrcFilePath, dataSetN, nprocess)
 	
 	
-def exp2(dataSetN=10, nprocess=12):
+def exp1(dataSetN=10, nprocess=12):
 	srcFilePathList = [
 		"../dataSet_SIGMOD",
 		"../dataSet_SIGMOD_1",
