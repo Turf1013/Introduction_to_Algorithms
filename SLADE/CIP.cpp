@@ -171,8 +171,8 @@ double solve(string progName) {
   glp_smcp parm;
   glp_init_smcp(&parm);
   parm.msg_lev = GLP_MSG_ERR;
-  parm.tol_bnd = 5e-6;
-  parm.it_lim = 5e5;
+  parm.tol_bnd = 5e-5;
+  parm.it_lim = 2e5;
   // parm.msg_lev = GLP_MSG_ALL;
   // parm.meth = GLP_PRIMAL;
   // parm.pricing = GLP_PT_PSE;
