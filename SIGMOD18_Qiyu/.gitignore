@@ -7,3 +7,4 @@ greedy
 cnt*
 *.csv
 *.in
+*.pyc

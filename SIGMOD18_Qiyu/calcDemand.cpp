@@ -216,10 +216,12 @@ void count() {
 		stream << items[itemSize-2] << ' ' << items[itemSize-1];
 		stream >> xpos >> ypos;
 		int id = findNN(xpos, ypos);
+		if (id == 0)
+			continue;
 		string dateStr;
 		int tid;
 		parseDateStr(items[itemSize-3], dateStr, tid);
-		printf("%s %d %d\n", dateStr.c_str(), tid, 1);
+		printf("%s %d %d\n", dateStr.c_str(), tid, id);
 	}
 }
 

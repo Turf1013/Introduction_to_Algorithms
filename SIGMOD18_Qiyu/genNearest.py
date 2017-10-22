@@ -45,10 +45,11 @@ def handleAllData(srcFilePath, desFilePath, nprocess=16):
 	pool.join()
 
 
-def exp0():
-	nprocess = 24
+def exp0(timeWindow=300, radius=1000, nprocess=24):
+	CFGN.timeWindow = timeWindow
+	CFGN.radius = radius
 	srcFilePath = "../trajectory"
-	desFilePath = "../nearest"
+	desFilePath = "../nearest_%05d_%05d" % (timeWindow, radius)
 	handleAllData(srcFilePath, desFilePath, nprocess)
 
 
