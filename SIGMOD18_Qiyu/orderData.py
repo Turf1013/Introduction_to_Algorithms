@@ -4,7 +4,7 @@ import os
 import sys
 import commands
 import multiprocessing
-
+import utm
 
 class constForOrderData:
 	MAX_X = 31 + 10
@@ -21,7 +21,7 @@ def getDate(s):
 	t0, t1 = s.split(' ')[:2]
 	year,month,day = map(int, t0.split('-'))
 	return year,month,day
-	
+
 
 def strToDateTime(s):
 	if '.' in s:
@@ -30,8 +30,8 @@ def strToDateTime(s):
 	year,month,day = map(int, t0.split('-'))
 	hour,minute,second = map(int, t1.split(':'))
 	return datetime(year, month, day, hour, minute, second)
-	
-	
+
+
 def strToTimestamp(s):
 	if '.' in s:
 		s = s[:s.rindex('.')]
@@ -40,7 +40,7 @@ def strToTimestamp(s):
 	hour,minute,second = map(int, t1.split(':'))
 	return second + minute*60 + hour*3600 + day*24*3600 + month*31*24*3600
 
-	
+
 def checkEntry(fileName, line):
 	itemList = line.split(',')
 	if len(itemList) < 4:
@@ -58,8 +58,8 @@ def checkEntry(fileName, line):
 	if year != 2016:
 		return False
 	return True
-	
-	
+
+
 def orderFile(srcFileName, desFileName):
 	print srcFileName
 	d = dict()
@@ -73,7 +73,10 @@ def orderFile(srcFileName, desFileName):
 			try:
 				carId, timeStr, xPos, yPos = line.split(',')
 				ts = strToTimestamp(timeStr)
-				d[ts] = line + "\n"
+				xPos, yPos = utm.from_latlon(float(xPos), float(yPos))[:2]
+				newLine = ','.join([timeStr, str(xPos), str(yPos)])
+				#print newLine
+				d[ts] = newLine + "\n"
 			except:
 				continue
 	with open(desFileName, "w") as fout:
@@ -81,13 +84,13 @@ def orderFile(srcFileName, desFileName):
 		for ts in tsList:
 			line = d[ts]
 			fout.write(line)
-			
-			
-def orderAllData(srcFilePath, desFilePath, nprocess=16):			
+
+
+def orderAllData(srcFilePath, desFilePath, nprocess=16):
 	pool = multiprocessing.Pool(processes = nprocess)
 	if not os.path.exists(desFilePath):
 		os.mkdir(desFilePath)
-		
+
 	dirNames = filter(lambda x:x.startswith('S'), os.listdir(srcFilePath))
 	for dirName in dirNames:
 		tmpFilePath = os.path.join(desFilePath, dirName)
@@ -101,17 +104,24 @@ def orderAllData(srcFilePath, desFilePath, nprocess=16):
 				continue
 			srcFileName = os.path.join(srcFilePath, dirName, dataName)
 			pool.apply_async(orderFile, (srcFileName, desFileName, ))
-			
+
 	pool.close()
 	pool.join()
-		
-		
+
+
 def exp0():
 	nprocess = 24
 	srcFilePath = "../rawTrajectory"
 	desFilePath = "../trajectory"
-	orderAllData(srcFilePath, desFilePath, nprocess)		
-			
-			
+	nprocess = 4
+	srcFilePath = "./rawTrajectory"
+	desFilePath = "./trajectory"
+	orderAllData(srcFilePath, desFilePath, nprocess)
+
+def exp1():
+	srcFileName = "S013355.csv"
+	desFileName = "data.in"
+	orderFile(srcFileName, desFileName)
+
 if __name__ == "__main__":
 	exp0()

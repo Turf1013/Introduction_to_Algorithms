@@ -1,0 +1,9 @@
+dataSet/
+nearest/
+trajectory/
+rawTrajectory/
+base
+greedy
+cnt*
+*.csv
+*.in
