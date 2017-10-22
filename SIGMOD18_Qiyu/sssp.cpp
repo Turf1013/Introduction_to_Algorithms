@@ -83,8 +83,13 @@ void dijkstra() {
 }
 
 void dump() {
-	for (int i=1; i<=nV; ++i)
+	for (int i=1; i<=nV; ++i) {
+		#ifdef LOCAL_DEBUG
 		printf("%.6lf\n", dis[i]);
+		#else
+		printf("%.6lf ", dis[i]);	
+		#endif
+	}
 	putchar('\n');
 	fflush(stdout);
 }
