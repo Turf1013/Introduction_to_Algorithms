@@ -113,9 +113,9 @@ def exp0():
 	nprocess = 24
 	srcFilePath = "../rawTrajectory"
 	desFilePath = "../trajectory"
-	nprocess = 4
-	srcFilePath = "./rawTrajectory"
-	desFilePath = "./trajectory"
+	# nprocess = 4
+	# srcFilePath = "./rawTrajectory"
+	# desFilePath = "./trajectory"
 	orderAllData(srcFilePath, desFilePath, nprocess)
 
 def exp1():

@@ -46,9 +46,9 @@ def handleAllData(srcFilePath, desFilePath, nprocess=16):
 
 
 def exp0():
-	nprocess = 4
-	srcFilePath = "./trajectory"
-	desFilePath = "./nearest"
+	nprocess = 24
+	srcFilePath = "../trajectory"
+	desFilePath = "../nearest"
 	handleAllData(srcFilePath, desFilePath, nprocess)
 
 
