@@ -87,7 +87,10 @@ void dump() {
 		#ifdef LOCAL_DEBUG
 		printf("%.6lf\n", dis[i]);
 		#else
-		printf("%.6lf ", dis[i]);	
+		if (dis[i] >= inf)
+			printf("-1 ");
+		else
+			printf("%.6lf ", dis[i]);	
 		#endif
 	}
 	putchar('\n');

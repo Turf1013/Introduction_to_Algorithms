@@ -1,4 +1,5 @@
 dataSet/
+figure/*.png
 greedy
 greedyM
 opq

@@ -22,7 +22,7 @@ def calc(srcFilePath):
 			for fileName in fileNames:
 				try:
 					dataSetId = int(fileName[5:7])
-					if dataSetId >= 6:
+					if dataSetId >= 10:
 						continue
 				except:
 					continue
@@ -69,18 +69,18 @@ def gao(d):
 def getALGO(s):
 	if s=='opq':
 		return 'OPQ'
-	elif s=='opqe':
+	elif s=='opqe' or s=='opqe2':
 		return 'OPQ_Extended'
-	elif s=='base':
+	elif s=='cip':
 		return 'Baseline'
 	elif s=='greedy':
 		return 'Greedy'
 	else:
 		return 'None'
 	
-def findResult(d, arr):
+def findResult(algoNames, d, arr):
 	itemN = 3
-	algoNames = ["base", "greedy", "opqe", "opq"]
+	# algoNames = ["cip", "greedy", "opqe", "opq"]
 	tmpDict = dict()
 	if arr not in d:
 		for algoName in algoNames:
@@ -95,8 +95,8 @@ def findResult(d, arr):
 	return tmpDict
 	
 	
-def turnToLine(d, id):	
-	algoNames = ["base", "greedy", "opqe", "opq"]
+def turnToLine(algoNames, d, id):	
+	# algoNames = ["cip", "greedy", "opqe", "opq"]
 	aDict = dict()
 	bDict = dict()
 	algoNames = list(set(algoNames) & set(d.keys()))
@@ -116,103 +116,150 @@ def turnToLine(d, id):
 	for algoName in algoNames:
 		preName = getALGO(algoName)
 		tmpName = preName + str(id+1)
-		ret += "%-14s = %s;\n" % (tmpName, gao(bDict[algoName]))
+		if algoName=='cip':
+			ret += "%-14s = 5 * %s;\n" % (tmpName, gao(bDict[algoName]))
+		else:
+			ret += "%-14s = %s;\n" % (tmpName, gao(bDict[algoName]))
 	return ret
-			
-def getResult(aDict):
+	
+def getHomoName(binN, taskN, relia):
+	return "%02d_%05d_%.02f" % (binN, taskN, relia)
+	
+def getResult_Heter(aDict):
+	algoNames = ["cip", "greedy", "opqe2"]
 	resDict = dict()
 	idx = 1
 	line = ""
 	taskN = 10 ** 4
 	
-	# varying of binN
-	binList = [1,2,4,6,8,10,15,20,25,30,40,50]
-	for binN in binList:
-		tmpFilePath = "evarying_binN_%02d" % (binN)
-		tmpDict = findResult(aDict, tmpFilePath)
+	# varying of distribution of threshold(normal)
+	muList = [0.88, 0.90, 0.92, 0.94, 0.96]
+	sigma = 0.03
+	for mu in muList:
+		tmpFilePath = "varying_nmu_%.02f" % (mu)
+		tmpDict = findResult(algoNames, aDict, tmpFilePath)
 		for algoName,tmpList in tmpDict.iteritems():
 			if algoName not in resDict:
 				resDict[algoName] = []
 			resDict[algoName].append(tmpList)
-	line += turnToLine(resDict, idx)
+	line += turnToLine(algoNames, resDict, idx)
 	idx += 2
 	resDict = dict()
 	
-	# varying of binN
-	binList = [1,2,4,6,8,10,15,20,25,30,40,50]
-	for binN in binList:
-		tmpFilePath = "varying_binN_%02d" % (binN)
-		tmpDict = findResult(aDict, tmpFilePath)
+	sigmaList = [0.01, 0.02, 0.03, 0.04, 0.05]
+	mu = 0.92
+	for sigma in sigmaList:
+		tmpFilePath = "varying_nsigma_%.02f" % (sigma)
+		tmpDict = findResult(algoNames, aDict, tmpFilePath)
 		for algoName,tmpList in tmpDict.iteritems():
 			if algoName not in resDict:
 				resDict[algoName] = []
 			resDict[algoName].append(tmpList)
-	line += turnToLine(resDict, idx)
+	line += turnToLine(algoNames, resDict, idx)
 	idx += 2
 	resDict = dict()
 	
 	# varying of distribution of threshold(uniform)
-	binN = 20
 	meanList = [0.88, 0.90, 0.92, 0.94, 0.96]
 	for mean in meanList:
 		tmpFilePath = "varying_umean_%.02f" % (mean)
-		tmpDict = findResult(aDict, tmpFilePath)
+		tmpDict = findResult(algoNames, aDict, tmpFilePath)
 		for algoName,tmpList in tmpDict.iteritems():
 			if algoName not in resDict:
 				resDict[algoName] = []
 			resDict[algoName].append(tmpList)
-	line += turnToLine(resDict, idx)
-	idx += 2
-	resDict = dict()
-	
-	# varying of distribution of threshold(heavy tailed)
-	binN = 20
-	meanList = [0.88, 0.90, 0.92, 0.94, 0.96]
-	for mean in meanList:
-		tmpFilePath = "varying_emean_%.02f" % (mean)
-		tmpDict = findResult(aDict, tmpFilePath)
-		for algoName,tmpList in tmpDict.iteritems():
-			if algoName not in resDict:
-				resDict[algoName] = []
-			resDict[algoName].append(tmpList)
-	line += turnToLine(resDict, idx)
-	idx += 2
-	resDict = dict()
-	
-	
-	
-	# varying of distribution of threshold(uniform)
-	muList = [0.88, 0.90, 0.92, 0.94, 0.96]
-	for mu in muList:
-		tmpFilePath = "varying_nmu_%.02f" % (mu)
-		tmpDict = findResult(aDict, tmpFilePath)
-		for algoName,tmpList in tmpDict.iteritems():
-			if algoName not in resDict:
-				resDict[algoName] = []
-			resDict[algoName].append(tmpList)
-	line += turnToLine(resDict, idx)
+	line += turnToLine(algoNames, resDict, idx)
 	idx += 2
 	resDict = dict()
 
-	# varying of distribution of threshold(uniform)
-	sigmaList = [0.01, 0.02, 0.03, 0.04, 0.05]
-	for sigma in sigmaList:
-		tmpFilePath = "varying_nsigma_%.02f" % (sigma)
-		tmpDict = findResult(aDict, tmpFilePath)
+	# varying of distribution of threshold(heavy tailed)
+	meanList = [0.88, 0.90, 0.92, 0.94, 0.96]
+	for mean in meanList:
+		tmpFilePath = "varying_emean_%.02f" % (mean)
+		tmpDict = findResult(algoNames, aDict, tmpFilePath)
 		for algoName,tmpList in tmpDict.iteritems():
 			if algoName not in resDict:
 				resDict[algoName] = []
 			resDict[algoName].append(tmpList)
-	line += turnToLine(resDict, idx)
+	line += turnToLine(algoNames, resDict, idx)
 	idx += 2
 	resDict = dict()
 	
 	with open("F:/tmp/tmp2.txt", "w") as fout:
 		fout.writelines(line)
 
+def getResult_Home(aDict):
+	algoNames = ["cip", "greedy", "opq"]
+	resDict = dict()
+	idx = 1
+	line = ""
+	binN,relia,taskN = 20,0.9,10**4
+	
+	# varying of relia
+	reliaList = [0.88, 0.90, 0.92, 0.94, 0.96]
+	for relia in reliaList:
+		tmpFilePath = getHomoName(binN, taskN, relia)
+		tmpDict = findResult(algoNames, aDict, tmpFilePath)
+		for algoName,tmpList in tmpDict.iteritems():
+			if algoName not in resDict:
+				resDict[algoName] = []
+			resDict[algoName].append(tmpList)
+	line += turnToLine(algoNames, resDict, idx)
+	idx += 2
+	resDict = dict()
+	binN,relia,taskN = 20,0.9,10**4
+	
+	# varying of binN
+	binList = [2,4,6,8,10,15,20,25,30,35,40]
+	for binN in binList:
+		tmpFilePath = getHomoName(binN, taskN, relia)
+		tmpDict = findResult(algoNames, aDict, tmpFilePath)
+		for algoName,tmpList in tmpDict.iteritems():
+			if algoName not in resDict:
+				resDict[algoName] = []
+			resDict[algoName].append(tmpList)
+	line += turnToLine(algoNames, resDict, idx)
+	idx += 2
+	resDict = dict()
+	binN,relia,taskN = 20,0.9,10**4
+	
+	# varying of scalability
+	taskNList = [10000, 20000, 30000, 50000, 75000, 100000]
+	for taskN in taskNList:
+		tmpFilePath = getHomoName(binN, taskN, relia)
+		tmpDict = findResult(algoNames, aDict, tmpFilePath)
+		for algoName,tmpList in tmpDict.iteritems():
+			if algoName not in resDict:
+				resDict[algoName] = []
+			resDict[algoName].append(tmpList)
+	line += turnToLine(algoNames, resDict, idx)
+	idx += 2
+	resDict = dict()
+	binN,relia,taskN = 20,0.9,10**4
+	
+	with open("F:/tmp/tmp2.txt", "w") as fout:
+		fout.writelines(line)
 		
-if __name__ == "__main__":
-	srcFilePath = "F:/tmp/result_SLADE/"
+	
+def exp_Heter():
+	srcFilePath = "F:/tmp/result_SLADE_Fetch/Heter"
 	aDict = calc(srcFilePath)
-	getResult(aDict)
+	getResult_Heter(aDict)
+	
+def exp_Jelly():
+	srcFilePath = "F:/tmp/result_SLADE_Fetch/Jelly"
+	aDict = calc(srcFilePath)
+	getResult_Home(aDict)
+
+def exp_SMIC():
+	srcFilePath = "F:/tmp/result_SLADE_Fetch/SMIC"
+	aDict = calc(srcFilePath)
+	getResult_Home(aDict)	
+	
+	
+if __name__ == "__main__":
+	# exp_Heter()
+	# exp_Jelly()
+	exp_SMIC()
+	
 	
