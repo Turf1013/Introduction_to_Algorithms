@@ -39,6 +39,7 @@ void freeMem() {
 	delete[] bins;
 	delete[] thetas;
 	delete[] ranks;
+	delete[] ranks_;
 }
 
 void mySort(int c) {
