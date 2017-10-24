@@ -57,7 +57,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x1);
 set(gca, 'XLim', [min(x1), max(x1)]);
 xlabel('\mu of reliability threshold(Normal)', 'FontSize', 14);
 ylabel('Cost(USD)', 'FontSize', 14);
-h_legend = legend('Greedy',  'OPQ-Extend', 'Baseline', 'Location','SouthEast');
+h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location','SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -81,7 +81,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x2);
 set(gca, 'XLim', [min(x2), max(x2)]);
 xlabel('\mu of reliability threshold(Normal)', 'FontSize', 14);
 ylabel('Time(seconds)', 'FontSize', 14);
-h_legend = legend('Greedy',  'OPQ-Extend', 'Baseline', 'Location','SouthEast');
+h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location','SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -109,7 +109,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x4);
 
 xlabel('\sigma of reliability threshold(Normal)', 'FontSize', 14);
 ylabel('Cost(USD)', 'FontSize', 14);
-h_legend = legend('Greedy',  'OPQ-Extend', 'Baseline', 'Location', 'SouthEast');
+h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -134,7 +134,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x5);
 set(gca, 'XLim', [min(x5), max(x5)]);
 xlabel('\sigma of reliability threshold(Normal)', 'FontSize', 14);
 ylabel('Time(seconds)', 'FontSize', 14);
-h_legend = legend('Greedy',  'OPQ-Extend', 'Baseline', 'Location', 'SouthEast');
+h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -160,7 +160,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x7);
 set(gca, 'XLim', [min(x7), max(x7)]);
 xlabel('mean of reliability threshold(Uniform)', 'FontSize', 14);
 ylabel('Cost(USD)', 'FontSize', 14);
-h_legend = legend('Greedy',  'OPQ-Extend', 'Baseline', 'Location', 'SouthEast');
+h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -185,7 +185,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x8);
 set(gca, 'XLim', [min(x8), max(x8)]);
 xlabel('mean of reliability threshold(Uniform)', 'FontSize', 14);
 ylabel('Time(seconds)', 'FontSize', 14);
-h_legend = legend('Greedy',  'OPQ-Extend', 'Baseline', 'Location', 'SouthEast');
+h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -213,7 +213,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x10);
 
 xlabel('\lambda^{-1} of reliability threshold(Exponential)', 'FontSize', 14);
 ylabel('Cost(USD)', 'FontSize', 14);
-h_legend = legend('Greedy',  'OPQ-Extend', 'Baseline', 'Location', 'SouthEast');
+h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;
@@ -238,7 +238,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x11);
 set(gca, 'XLim', [min(x11), max(x11)]);
 xlabel('\lambda^{-1} of reliability threshold(Exponential)', 'FontSize', 14);
 ylabel('Time(seconds)', 'FontSize', 14);
-h_legend = legend('Greedy',  'OPQ-Extend', 'Baseline', 'Location', 'SouthEast');
+h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
 hold off;

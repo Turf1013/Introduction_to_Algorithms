@@ -1,6 +1,7 @@
 dataSet/
 figure/*.png
 greedy
+greedyf
 greedyM
 opq
 opqM

@@ -1,7 +1,7 @@
 /**
 	1. program name
 	2. \author: Trasier
-	3. \date:   2017.10.5
+	3. \date:   2017.10.24
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -19,6 +19,7 @@ double* threshs;
 bin_t* bins;
 double* thetas;
 pdi* ranks;
+pdi* ranks_;
 
 void initial() {
 	thetas = new double[taskN];
@@ -30,6 +31,7 @@ void initial() {
 		ranks[i] = make_pair(thetas[i], i);
 	}
 	sort(ranks, ranks+taskN, greater<pdi>());
+	ranks_ = new pdi[taskN];
 }
 
 void freeMem() {
@@ -37,6 +39,25 @@ void freeMem() {
 	delete[] bins;
 	delete[] thetas;
 	delete[] ranks;
+}
+
+void mySort(int c) {
+	pdi* p = ranks_, *q = ranks;
+
+	for (int i=0; i<taskN; ++i)
+		p[i] = q[i];
+
+	int i = 0, j = c, k = 0;
+
+	while (i<c && j<taskN) {
+		if (p[i] >= p[j]) {
+			q[k++] = p[i++];
+		} else {
+			q[k++] = p[j++];
+		}
+	}
+	while (i < c) 		q[k++] = p[i++];
+	while (j < taskN)	q[k++] = p[j++];
 }
 
 double solve() {
@@ -60,18 +81,21 @@ double solve() {
 			}
 		}
 		ret += bins[bestIdx].c;
+		int mid = 0;
 		for (int i=0; i<taskN&&i<bins[bestIdx].l; ++i) {
 			ranks[i].first -= (-log(1.0 - bins[bestIdx].r));
 			if (ranks[i].first < 0) ranks[i].first = 0;
+			++mid;
 		}
-		sort(ranks, ranks+taskN, greater<pdi>());
+		// sort(ranks, ranks+taskN, greater<pdi>());
+		mySort(mid);
 	}
 
 	return ret;
 }
 
 int main(int argc, char **argv) {
-	string execName = "greedy";
+	string execName = "greedyf";
 	double result, usedTime = -1;
 	int usedMem = -1;
 

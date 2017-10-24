@@ -29,6 +29,9 @@ baseM: monitor.h input.h output.h global.h baseline.cpp
 greedy: monitor.h input.h output.h global.h greedy.cpp
 	$(CXX) $(CFLAGS) -o greedy greedy.cpp $(LIBS)
 
+greedyf: monitor.h input.h output.h global.h greedyFast.cpp
+	$(CXX) $(CFLAGS) -o greedyf greedyFast.cpp $(LIBS)	
+	
 greedyM: monitor.h input.h output.h global.h greedy.cpp
 	$(CXX) $(CFLAGS) -o greedy greedy.cpp $(LIBS) -D WATCH_MEM
 
@@ -50,5 +53,5 @@ opqeM: monitor.h input.h output.h global.h opqe.cpp
 .PHONY: clean
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
-		-@rm greedy greedyM opq opqM opqe opqe2 opqeM base baseM 2> /dev/null || true
+		-@rm greedy greedyf greedyM opq opqM opqe opqe2 opqeM base baseM 2> /dev/null || true
 		-@rm sopq sopqe sgreedy cip 2> /dev/null || true
