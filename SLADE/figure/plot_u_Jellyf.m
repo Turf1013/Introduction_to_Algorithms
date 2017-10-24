@@ -28,6 +28,10 @@ OPQ6           = [0.001, 0.003, 0.005, 0.007, 0.012, 0.020];
 Greedy6        = [3.676, 10.111, 22.148, 65.218, 153.305, 275.998];
 
 
+Greedy2        = [0.339, 0.469, 0.471, 0.487, 0.476];
+Greedy4        = [0.866, 0.680, 0.634, 0.656, 0.589, 0.464, 0.469, 0.402, 0.386, 0.364, 0.290];
+Greedy6        = [0.469, 1.849, 4.189, 11.459, 26.117, 48.755];
+
 
 %1---------------------------------------------------------
 figure;
@@ -69,7 +73,7 @@ plot(x2, OPQ2, 's-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize',
 plot(x2, Baseline2, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 
 set( gca(), 'XTickLabel', x2 );
-% set(gca, 'YScale', 'log');
+set(gca, 'YScale', 'log');
 rotateXLabels( gca(), 60 );
 set(gca, 'FontSize', fontsize, 'Xtick', x2);
 set(gca, 'XLim', [min(x2), max(x2)]);
@@ -123,7 +127,7 @@ plot(x5, OPQ4, 's-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize',
 plot(x5, Baseline4, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 
 set( gca(), 'XTickLabel', x4 );
-% set(gca, 'YScale', 'log');
+set(gca, 'YScale', 'log');
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x5);
 set(gca, 'XLim', [min(x5), max(x5)]);

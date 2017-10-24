@@ -73,7 +73,7 @@ def getALGO(s):
 		return 'OPQ_Extended'
 	elif s=='cip':
 		return 'Baseline'
-	elif s=='greedy':
+	elif s=='greedy' or s=='greedyf':
 		return 'Greedy'
 	else:
 		return 'None'
@@ -258,8 +258,8 @@ def exp_SMIC():
 	
 	
 if __name__ == "__main__":
-	# exp_Heter()
+	exp_Heter()
 	# exp_Jelly()
-	exp_SMIC()
+	# exp_SMIC()
 	
 	

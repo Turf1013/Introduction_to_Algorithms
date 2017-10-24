@@ -102,7 +102,7 @@ set(gca, 'XLim', [min(x4_), max(x4_)]);
 set(gca, 'FontSize', fontsize, 'Xtick', x4_);
 %
 
-xlabel('Max. Cardinality', 'FontSize', 14);
+xlabel('maximum cardinality', 'FontSize', 14);
 ylabel('Cost(USD)', 'FontSize', 14);
 h_legend = legend('Greedy',  'OPQ', 'Baseline', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
@@ -128,7 +128,7 @@ set( gca(), 'XTickLabel', x4 );
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x5);
 set(gca, 'XLim', [min(x5), max(x5)]);
-xlabel('Max. Cardinality', 'FontSize', 14);
+xlabel('maximum cardinality', 'FontSize', 14);
 ylabel('Time(seconds)', 'FontSize', 14);
 h_legend = legend('Greedy',  'OPQ', 'Baseline', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
@@ -158,7 +158,7 @@ set(gca, 'FontSize', fontsize, 'Xtick', x7_);
 %
 set(gca, 'XLim', [min(x7_), max(x7_)]);
 % set(gca, 'ylim', [2500, 33619]);
-xlabel('number of atomic tasks(Scalability \times 10^3)', 'FontSize', 14);
+xlabel('number of atomic tasks(\times 10^3)', 'FontSize', 14);
 ylabel('Cost(USD)', 'FontSize', 14);
 h_legend = legend('Greedy',  'OPQ', 'Baseline', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
@@ -184,7 +184,7 @@ set(gca, 'YScale', 'log')
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x8);
 set(gca, 'XLim', [min(x8), max(x8)]);
-xlabel('number of atomic tasks(Scalability \times 10^3)', 'FontSize', 14);
+xlabel('number of atomic tasks(\times 10^3)', 'FontSize', 14);
 ylabel('Time(seconds)', 'FontSize', 14);
 h_legend = legend('Greedy',  'OPQ', 'Baseline', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);

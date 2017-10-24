@@ -33,6 +33,10 @@ OPQ_Extended8  = [0.010, 0.010, 0.011, 0.011, 0.009];
 Baseline8      = 5 * [6.878, 6.903, 6.930, 6.899, 6.952];
 Greedy8        = [3.860, 3.745, 3.820, 3.763, 4.041];
 
+Greedy2        = [0.088, 0.123, 0.158, 0.224, 0.299];
+Greedy4        = [0.177, 0.192, 0.201, 0.212, 0.213];
+Greedy6        = [0.160, 0.191, 0.208, 0.279, 0.333];
+Greedy8        = [0.364, 0.370, 0.373, 0.410, 0.398];
 
 %1---------------------------------------------------------
 % varying of distribution of threshold(normal)
@@ -75,6 +79,7 @@ plot(x2, OPQ_Extended2, 's-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'Mar
 plot(x2, Baseline2, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 
 set( gca(), 'XTickLabel', x2 )
+set(gca, 'YScale', 'log');
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x2);
 set(gca, 'XLim', [min(x2), max(x2)]);
@@ -128,6 +133,7 @@ plot(x5, OPQ_Extended4, 's-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'Mar
 plot(x5, Baseline4, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 
 set( gca(), 'XTickLabel', x5 )
+set(gca, 'YScale', 'log');
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x5);
 set(gca, 'XLim', [min(x5), max(x5)]);
@@ -179,6 +185,7 @@ plot(x8, OPQ_Extended6, 's-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'Mar
 plot(x8, Baseline6, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 
 set( gca(), 'XTickLabel', x8 )
+set(gca, 'YScale', 'log');
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x8);
 set(gca, 'XLim', [min(x8), max(x8)]);
@@ -232,6 +239,7 @@ plot(x11, OPQ_Extended8, 's-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'Ma
 plot(x11, Baseline8, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
 
 set( gca(), 'XTickLabel', x11 )
+set(gca, 'YScale', 'log');
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x11);
 set(gca, 'XLim', [min(x11), max(x11)]);
