@@ -115,7 +115,7 @@ double calc_rho(const station_t& station, const vector<point_t>& points);
 double calc_ws(const station_t& station, const vector<point_t>& points);
 double calc_costt(const plan_t& plan, const vector<point_t>& points);
 double calc_costb(const plan_t& plan, const vector<point_t>& points);
-double calc_costa(int v, const station_t& plan, const vector<point_t>& points);
+double calc_costa(int v, const station_t& station, const vector<point_t>& points);
 vector<int> stationSeeking(const plan_t& plan, const vector<point_t>& points);
 
 vector<int> calc_yvs(const plan_t& plan, const vector<point_t>& points);

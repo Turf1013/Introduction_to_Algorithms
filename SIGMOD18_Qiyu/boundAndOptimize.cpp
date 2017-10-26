@@ -9,6 +9,9 @@ using namespace std;
 #include "input.h"
 
 double calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& points);
+double calc_ubgv(int v, const plan_t& plan, const station_t& station, const vector<point_t>& points);
+double calc_deltaBenefit(const station_t& station, const vector<point_t>& points);
+double calc_deltaCost(int v, const plan_t& plan, const station_t& station, const vector<point_t>& points);
 
 plan_t bndAndOpt() {
 	plan_t P;
@@ -26,6 +29,54 @@ plan_t bndAndOpt() {
 int main(int argc, char **argv) {
 	
 	return 0;
+}
+
+int calc_I1starS(const station_t& station, const vector<point_t>& points) {
+	int ret = 0;
+	
+	for (int i=0; i<points.size(); ++i) {
+		for (calc_distance(station.p, points[i]) <= rmax)
+			++ret;
+	}
+	
+	return ret;
+}
+
+double calc_deltaBenefit(const station_t& station, const vector<point_t>& points) {
+	double ret;
+	int I1starS = calc_I1starS(station, points);
+	int I2S = calc_I2S(station);
+	double ws = calc_ws(station, points);
+	
+	ret = 2.0 / (1.0 + exp(-ws * (I1starS - I2S))) - 1.0;
+	return ret;
+}
+
+double calc_deltaCost(int v, const plan_t& plan, const station_t& station, const vector<point_t>& points) {
+	double ret = 0.0;
+	plan_t newPlan = plan;
+	newPlan.push_back(station);
+	vector<int> yvs = stationSeeking(newPlan, pints);
+	
+	for (int i=0; i<newPlan.size(); ++i) {
+		for (int j=0; j<yvs.size(); ++j) {
+			if (yvs[j] == newPlan[i].id) {
+				ret += points[j].d * calc_costa(j, newPlan[i], points);
+			}
+		}
+	}
+	
+	return ret;
+}
+
+double calc_ubgv(int v, const plan_t& plan, const station_t& station, const vector<point_t>& points) {
+	double ret;
+	double deltaBenefit = calc_deltaBenefit(station, points);
+	double deltaCost = calc_deltaCost(v, station, points);
+	double estatePrice = station.fs();
+	
+	ret = (lambda*deltaBenefit - (1.0-lambda)*deltaCost) / estatePrice;
+	return ret;
 }
 
 double calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& points) {
