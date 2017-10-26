@@ -92,14 +92,13 @@ def dumpData(cntDict, desFileName, nV):
         s = (s + c - 1) / c
         tmpDict[vid] = s
     with open(desFileName, "w") as fout:
+		fout.write("%d\n" % (nV))
         for vid in xrange(1, nV+1):
             if vid in tmpDict:
                 s = tmpDict[vid]
             else:
                 s = 0
-            if s>0:
-                print vid, s
-            line = "%d %d\n" % (vid, s)
+            line = "%d\n" % (s)
             fout.write(line)
 
 

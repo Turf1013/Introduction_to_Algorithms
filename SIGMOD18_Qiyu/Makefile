@@ -16,9 +16,12 @@ cnt0: calcDemand_v0.cpp
 	
 sssp: sssp.cpp
 	$(CXX) $(CFLAGS) -o sssp sssp.cpp $(LIBS)
+	
+bao: boundAndOptimize.cpp input.h input.cpp global.h global.cpp
+	$(CXX) $(CFLAGS) -o bao boundAndOptimize.cpp $(LIBS)
 
 .PHONY: clean
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm cnt cnt0 sssp 2> /dev/null || true
-		-@rm greedy base 2> /dev/null || true
+		-@rm greedy base bao 2> /dev/null || true

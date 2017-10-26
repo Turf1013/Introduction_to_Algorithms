@@ -24,6 +24,7 @@ def merge(srcFilePath, desFileName, nV):
 		print "miss %d files" % (nV - len(fileNames))
 		return 
 	with open(desFileName, "w") as fout:
+		fout.write("%d\n" % (nV))
 		for vid in xrange(1, nV+1):
 			fileName = "%05d.txt" % (vid)
 			if fileName not in tmpSet:
