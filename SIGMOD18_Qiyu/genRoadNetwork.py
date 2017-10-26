@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import math
 
-import math
 
 class constForGenRoadNetwork():
 	EARTH_RADIUS = 6378137

@@ -4,7 +4,7 @@ import sys
 import os
 import commands
 import multiprocessing
-import utm
+
 
 global cntDict
 cntDict = dict()
