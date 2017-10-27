@@ -20,7 +20,7 @@ void update_covered(const station_t& station, const vector<point_t>& points) {
 	double rs = calc_rs(station);
 	
 	for (int i=0; i<points.size(); ++i) {
-		for (calc_distance(station.p, points[i]) <= rs)
+		if (calc_distance(station.id, i) <= rs)
 			covered[i].insert(station.id);
 	}
 }
@@ -29,7 +29,7 @@ void update_covered(const plan_t& plan, const vector<point_t>& points) {
 	for (int i=0; i<covered.size(); ++i)
 		covered[i].clear();
 	for (int i=0; i<plan.size(); ++i) {
-		update_covered(plan[io], points);
+		update_covered(plan[i], points);
 	}
 }
 
@@ -38,7 +38,7 @@ int calc_I1S(const station_t& station, const vector<point_t>& points) {
 	double rs = calc_rs(station);
 	
 	for (int i=0; i<points.size(); ++i) {
-		for (calc_distance(station.p, points[i]) <= rs)
+		if (calc_distance(station.p, points[i]) <= rs)
 			++ret;
 	}
 	
@@ -58,7 +58,7 @@ int calc_I2S(const station_t& station) {
 
 double calc_benefit(const station_t& station, const vector<point_t>& points) {
 	double i1s = calc_I1S(station, points), i2s = calc_I2S(station);
-	point_t p = points[station.id]
+	point_t p = points[station.id];
 	return 2.0 / (1.0 + exp(-p.w * (i1s - i2s))) - 1.0;
 }
 
@@ -167,7 +167,7 @@ double calc_social(const plan_t& plan, const vector<point_t>& points) {
 
 double calc_costa(int v, const station_t& station, const vector<point_t>& points) {
 	double ret;
-	double dist_vs = distance(v, station.id);
+	double dist_vs = calc_distance(v, station.id);
 	double ws = calc_ws(station, points);
 	double cs = station.cs();
 	double dv = points[v].d;
@@ -184,7 +184,7 @@ vector<int> stationSeeking(const plan_t& plan, const vector<point_t>& points) {
 		double mnVal = inf;
 		int& sid = ret[v];
 		for (int j=0; j<plan.size(); ++j) {
-			double costa = calc_costa(v, plan, points);
+			double costa = calc_costa(v, plan[j], points);
 			if (costa < mnVal) {
 				mnVal = costa;
 				sid = j;

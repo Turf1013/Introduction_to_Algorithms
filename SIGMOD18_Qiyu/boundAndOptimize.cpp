@@ -35,7 +35,7 @@ int calc_I1starS(const station_t& station, const vector<point_t>& points) {
 	int ret = 0;
 	
 	for (int i=0; i<points.size(); ++i) {
-		for (calc_distance(station.p, points[i]) <= rmax)
+		if (calc_distance(station.p, points[i]) <= rmax)
 			++ret;
 	}
 	
@@ -56,7 +56,7 @@ double calc_deltaCost(int v, const plan_t& plan, const station_t& station, const
 	double ret = 0.0;
 	plan_t newPlan = plan;
 	newPlan.push_back(station);
-	vector<int> yvs = stationSeeking(newPlan, pints);
+	vector<int> yvs = stationSeeking(newPlan, points);
 	
 	for (int i=0; i<newPlan.size(); ++i) {
 		for (int j=0; j<yvs.size(); ++j) {
@@ -72,7 +72,7 @@ double calc_deltaCost(int v, const plan_t& plan, const station_t& station, const
 double calc_ubgv(int v, const plan_t& plan, const station_t& station, const vector<point_t>& points) {
 	double ret;
 	double deltaBenefit = calc_deltaBenefit(station, points);
-	double deltaCost = calc_deltaCost(v, station, points);
+	double deltaCost = calc_deltaCost(v, plan, station, points);
 	double estatePrice = station.fs();
 	
 	ret = (lambda*deltaBenefit - (1.0-lambda)*deltaCost) / estatePrice;
@@ -83,7 +83,7 @@ double calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& po
 	plan.push_back(station);
 	double social_ps = calc_social(plan, points);
 	plan.pop_back();
-	double social_p = calc_social(plan, pointds);
+	double social_p = calc_social(plan, points);
 	double fs = station.fs();
 	
 	return (social_ps - social_p) / fs;

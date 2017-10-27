@@ -89,7 +89,7 @@ void read_chargers(istream& fin, int& chargerN, vector<charger_t>& chargers) {
 	}
 }
 
-void read_chargers(string fileName, int& chargerN, vctor<charger_t>& chargers) {
+void read_chargers(string fileName, int& chargerN, vector<charger_t>& chargers) {
 	ifstream fin(fileName.c_str(), ios::in);
 	if (!fin.is_open()) {
 		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
@@ -134,7 +134,7 @@ void read_input(string fileName, double& lambda, double& alpha, double& rmax, do
 		exit(1);
 	}
 
-	read_input(fin, lambda, alpha, rmax);
+	read_input(fin, lambda, alpha, rmax, B);
 	
 	fin.close();
 }

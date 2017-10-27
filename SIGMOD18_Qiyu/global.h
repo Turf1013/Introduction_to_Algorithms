@@ -17,6 +17,7 @@ int chargerN;
 double rmax;
 double alpha;
 double lambda;
+double B;
 
 struct point_t {
 	double x, y;
@@ -43,6 +44,7 @@ struct charger_t {
 	charger_t(double f=0., double p=0.):
 		f(f), p(p) {}
 };
+vector<charger_t> chargers;
 
 struct station_t {
 	int id;
@@ -53,8 +55,7 @@ struct station_t {
 		x.resize(0, chargerN);
 	}
 	
-	station_t(int id=0, point_t p_):id(id) {
-		p = p_;
+	station_t(int id=0, point_t p_=point_t(0.,0.)):id(id),p(p_) {
 		x.resize(0, chargerN);
 	}
 	
@@ -66,7 +67,7 @@ struct station_t {
 		return ret;
 	}
 	
-	double reset() {
+	void reset() {
 		for (int i=0; i<chargerN; ++i)
 			x[i] = 0;
 	}
@@ -100,7 +101,6 @@ struct plan_t {
 	}
 };
 
-vector<charger_t> chargers;
 vector<set<int> > covered;
 vector<vector<double> > dists;
 vector<point_t> points;
@@ -124,6 +124,6 @@ int calc_I1S(const station_t& station, const vector<point_t>& points);
 int calc_I2S(const station_t& station);
 void update_covered(const plan_t& plan, const vector<point_t>& points);
 void update_covered(const station_t& station, const vector<point_t>& points);
-void calc_benefit(const station_t& station, const vector<point_t>& points);
+double calc_benefit(const station_t& station, const vector<point_t>& points);
 
 #endif

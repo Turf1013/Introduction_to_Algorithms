@@ -16,7 +16,7 @@ void read_shortEdges(string fileName, int& nV, vector<vector<double> >& dists);
 void read_ruralDegree(istream& fin, int& nV, vector<double>& degs);
 void read_ruralDegree(string fileName, int& nV, vector<double>& degs);
 void read_chargers(istream& fin, int& chargerN, vector<charger_t>& chargers);
-void read_chargers(string fileName, int& chargerN, vctor<charger_t>& chargers);
+void read_chargers(string fileName, int& chargerN, vector<charger_t>& chargers);
 void read_demands(istream& fin, int& nV, vector<int>& demands);
 void read_demands(string fileName, int& nV, vector<int>& demands);
 void read_input(istream& fin, double& lambda, double& alpha, double& rmax, double& B);
