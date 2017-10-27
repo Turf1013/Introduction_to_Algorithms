@@ -19,6 +19,9 @@ extern double alpha;
 extern double lambda;
 extern double B;
 extern int K;
+extern int nV, nE;
+extern double usedTime;
+extern int usedMemory;
 
 struct point_t {
 	double x, y;
@@ -38,6 +41,7 @@ struct point_t {
 			return id < oth.id;
 	}
 };
+extern vector<point_t> points;
 
 struct charger_t {
 	double f, p;
@@ -104,7 +108,6 @@ struct plan_t {
 
 extern vector<set<int> > covered;
 extern vector<vector<double> > dists;
-extern vector<point_t> points;
 
 double calc_distance(const point_t& a, const point_t& b);
 double calc_rs(const station_t& station);
@@ -127,4 +130,5 @@ void update_covered(const plan_t& plan, const vector<point_t>& points);
 void update_covered(const station_t& station, const vector<point_t>& points);
 double calc_benefit(const station_t& station, const vector<point_t>& points);
 
+void dumpResult(string execName, double result);
 #endif

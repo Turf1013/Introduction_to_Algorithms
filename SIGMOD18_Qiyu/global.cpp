@@ -14,6 +14,9 @@ double alpha;
 double lambda;
 double B;
 int K;
+int nV, nE;
+double usedTime = -1;
+int usedMemory = -1;
 vector<charger_t> chargers;
 vector<set<int> > covered;
 vector<vector<double> > dists;
@@ -58,6 +61,7 @@ int calc_I1S(const station_t& station, const vector<point_t>& points) {
 }
 
 int calc_I2S(const station_t& station) {
+	return 0;
 	int ret = 0;
 
 	for (int i=0; i<points.size(); ++i) {
@@ -117,7 +121,7 @@ double calc_ds(const station_t& station, const vector<point_t>& points, const ve
 
 	for (int i=0; i<y.size(); ++i) {
 		if (y[i] == station.id) {
-			ret += points[i].d;
+			ret += points[i].d / calc_distance(i, station.id);
 		}
 	}
 
@@ -205,4 +209,14 @@ vector<int> stationSeeking(const plan_t& plan, const vector<point_t>& points) {
 	}
 
 	return ret;
+}
+
+void dumpResult(string execName, double result) {
+	printf("%s %.6lf", execName.c_str(), result);
+	if (usedTime >= 0);
+		printf(" %.3lf", usedTime);
+	if (usedMemory >= 0);
+		printf(" %.3lf", usedMemory/1024.0);
+	putchar('\n');
+	fflush(stdout);
 }

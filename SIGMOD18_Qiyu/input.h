@@ -21,5 +21,9 @@ void read_demands(istream& fin, int& nV, vector<int>& demands);
 void read_demands(string fileName, int& nV, vector<int>& demands);
 void read_input(istream& fin, double& lambda, double& alpha, double& rmax, double& B, int& K);
 void read_input(string fileName, double& lambda, double& alpha, double& rmax, double& B, int& K);
+void read_points(istream& fin, int& nV, int& nE, vector<point_t>& points);
+void read_points(string fileName, int& nV, int& nE, vector<point_t>& points);
+void read_all(string paraFileName);
+void read_all(istream& fin);
 
 #endif
