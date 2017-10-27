@@ -7,12 +7,13 @@ using namespace std;
 
 #include "global.h"
 
-const double inf = 1e25;
+const double inf = 1e30;
 int chargerN;
 double rmax;
 double alpha;
 double lambda;
 double B;
+int K;
 vector<charger_t> chargers;
 vector<set<int> > covered;
 vector<vector<double> > dists;

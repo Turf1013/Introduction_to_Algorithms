@@ -18,6 +18,7 @@ extern double rmax;
 extern double alpha;
 extern double lambda;
 extern double B;
+extern int K;
 
 struct point_t {
 	double x, y;

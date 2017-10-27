@@ -8,7 +8,7 @@ void read_roadNetwork(istream& fin, int& nV, int& nE, vector<pdd>& positions, ve
 	double x, y;
 	int u, v;
 	double w;
-	
+
 	fin >> nV >> nE;
 	positions.clear();
 	edges.clear();
@@ -30,7 +30,7 @@ void read_roadNetwork(string fileName, int& nV, int& nE, vector<pdd>& positions,
 	}
 
 	read_roadNetwork(fin, nV, nE, positions, edges);
-	
+
 	fin.close();
 }
 
@@ -53,7 +53,7 @@ void read_shortEdges(string fileName, int& nV, vector<vector<double> >& dists) {
 	}
 
 	read_shortEdges(fin, nV, dists);
-	
+
 	fin.close();
 }
 
@@ -75,7 +75,7 @@ void read_ruralDegree(string fileName, int& nV, vector<double>& degs) {
 	}
 
 	read_ruralDegree(fin, nV, degs);
-	
+
 	fin.close();
 }
 
@@ -97,7 +97,7 @@ void read_chargers(string fileName, int& chargerN, vector<charger_t>& chargers) 
 	}
 
 	read_chargers(fin, chargerN, chargers);
-	
+
 	fin.close();
 }
 
@@ -119,22 +119,22 @@ void read_demands(string fileName, int& nV, vector<int>& demands) {
 	}
 
 	read_demands(fin, nV, demands);
-	
+
 	fin.close();
 }
 
-void read_input(istream& fin, double& lambda, double& alpha, double& rmax, double& B) {
-	fin >> lambda >> alpha >> rmax >> B;
+void read_input(istream& fin, double& lambda, double& alpha, double& rmax, double& B, int& K) {
+	fin >> lambda >> alpha >> rmax >> B >> K;
 }
 
-void read_input(string fileName, double& lambda, double& alpha, double& rmax, double& B) {
+void read_input(string fileName, double& lambda, double& alpha, double& rmax, double& B, int& K) {
 	ifstream fin(fileName.c_str(), ios::in);
 	if (!fin.is_open()) {
 		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
 		exit(1);
 	}
 
-	read_input(fin, lambda, alpha, rmax, B);
-	
+	read_input(fin, lambda, alpha, rmax, B, K);
+
 	fin.close();
 }
