@@ -253,3 +253,78 @@ void read_all(istream& fin) {
 	*/
 	read_input(fin, lambda, alpha, rmax, B, K);
 }
+
+void read_incremental(string fileName, vector<double>& bs) {
+	ifstream fin(fileName.c_str(), ios::in);
+	if (!fin.is_open()) {
+		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
+		exit(1);
+	}
+
+	read_incremental(fin, bs);
+
+	fin.close();
+}
+
+void read_incremental(istream& fin, vector<double>& bs) {
+	string fileName;
+
+	/**
+		\step 0: parameter
+	*/
+	fileName = "./roadNetwork.txt";
+	read_points(fileName, nV, nE, points);
+
+	/**
+		\step 1: read short edges
+	*/
+	fileName = "./shortEdges.txt";
+	read_shortEdges(fileName, nV, dists);
+
+	/**
+		\step 2: read rural degree
+	*/
+	fileName = "./ruralDegrees.txt";
+	vector<double> degs;
+	read_ruralDegree(fileName, nV, degs);
+	for (int i=0; i<nV; ++i) {
+		points[i].w = degs[i];
+	}
+
+	/**
+		\step 3: read demand
+	*/
+	fileName = "./demands.txt";
+	vector<int> demands;
+	read_demands(fileName, nV, demands);
+	for (int i=0; i<nV; ++i) {
+		points[i].d = demands[i];
+	}
+
+	/**
+		\step 4: read prices
+	*/
+	fileName = "./estatePrice.txt";
+	vector<double> prices;
+	read_prices(fileName, nV, prices);
+	for (int i=0; i<nV; ++i) {
+		points[i].ep = prices[i];
+	}
+
+	/**
+		\step 5: read charger
+	*/
+	fileName = "./chargers.txt";
+	read_chargers(fileName, chargerN, chargers);
+
+	fin >> lambda >> alpha >> rmax >> B >> K;
+	int nB;
+	fin >> nB;
+	bs.clear();
+	bs.push_back(B);
+	double budget;
+	for (int i=0; i<nB; ++i) {
+		fin >> budget;
+		bs.push_back(budget);
+	}
+}

@@ -27,5 +27,7 @@ void read_points(istream& fin, int& nV, int& nE, vector<point_t>& points);
 void read_points(string fileName, int& nV, int& nE, vector<point_t>& points);
 void read_all(string paraFileName);
 void read_all(istream& fin);
+void read_incremental(string fileName, vector<double>& bs);
+void read_incremental(istream& fin, vector<double>& bs);
 
 #endif

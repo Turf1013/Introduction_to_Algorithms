@@ -25,12 +25,16 @@ input.o: input.h input.cpp global.h
 
 bao: boundAndOptimize.cpp input.h input.cpp global.h global.cpp input.o global.o
 	$(CXX) $(CFLAGS) -o bao input.o global.o boundAndOptimize.cpp $(LIBS)
-	
+
 base: baseline.cpp input.h input.cpp global.h global.cpp input.o global.o
 	$(CXX) $(CFLAGS) -o base input.o global.o baseline.cpp $(LIBS)
+
+ibase: ibaseline.cpp input.h input.cpp global.h global.cpp input.o global.o
+	$(CXX) $(CFLAGS) -o ibase input.o global.o ibaseline.cpp $(LIBS)
+
 
 .PHONY: clean
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm cnt cnt0 sssp 2> /dev/null || true
-		-@rm greedy base bao 2> /dev/null || true
+		-@rm greedy ibase base bao 2> /dev/null || true
