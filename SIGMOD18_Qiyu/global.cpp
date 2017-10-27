@@ -7,6 +7,17 @@ using namespace std;
 
 #include "global.h"
 
+const double inf = 1e25;
+int chargerN;
+double rmax;
+double alpha;
+double lambda;
+double B;
+vector<charger_t> chargers;
+vector<set<int> > covered;
+vector<vector<double> > dists;
+vector<point_t> points;
+
 double calc_distance(const point_t& a, const point_t& b) {
 	return sqrt((a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y));
 }
@@ -18,7 +29,7 @@ double calc_rs(const station_t& station) {
 
 void update_covered(const station_t& station, const vector<point_t>& points) {
 	double rs = calc_rs(station);
-	
+
 	for (int i=0; i<points.size(); ++i) {
 		if (calc_distance(station.id, i) <= rs)
 			covered[i].insert(station.id);
@@ -36,24 +47,24 @@ void update_covered(const plan_t& plan, const vector<point_t>& points) {
 int calc_I1S(const station_t& station, const vector<point_t>& points) {
 	int ret = 0;
 	double rs = calc_rs(station);
-	
+
 	for (int i=0; i<points.size(); ++i) {
 		if (calc_distance(station.p, points[i]) <= rs)
 			++ret;
 	}
-	
+
 	return ret;
 }
 
 int calc_I2S(const station_t& station) {
 	int ret = 0;
-	
+
 	for (int i=0; i<points.size(); ++i) {
 		if (covered[i].count(station.id)>0 && covered[i].size()>1)
 			++ret;
 	}
-	
-	return ret; 
+
+	return ret;
 }
 
 double calc_benefit(const station_t& station, const vector<point_t>& points) {
@@ -64,12 +75,12 @@ double calc_benefit(const station_t& station, const vector<point_t>& points) {
 
 double calc_benefit(const plan_t& plan, const vector<point_t>& points) {
 	double ret = 0.0;
-	
+
 	update_covered(plan, points);
 	for (int i=0; i<plan.size(); ++i) {
 		ret += calc_benefit(plan[i], points);
 	}
-	
+
 	return ret;
 }
 
@@ -80,7 +91,7 @@ double calc_distance(int a, int b) {
 double calc_costt(const plan_t& plan, const vector<point_t>& points) {
 	double ret = 0.0;
 	vector<int> y;
-	
+
 	y = calc_yvs(plan, points);
 	for (int i=0; i<plan.size(); ++i) {
 		for (int j=0; j<y.size(); ++j) {
@@ -89,7 +100,7 @@ double calc_costt(const plan_t& plan, const vector<point_t>& points) {
 			}
 		}
 	}
-	
+
 	return ret;
 }
 
@@ -102,25 +113,25 @@ vector<int> calc_yvs(const plan_t& plan, const vector<point_t>& points) {
 
 double calc_ds(const station_t& station, const vector<point_t>& points, const vector<int>& y) {
 	double ret = 0.0;
-	
+
 	for (int i=0; i<y.size(); ++i) {
 		if (y[i] == station.id) {
 			ret += points[i].d;
 		}
 	}
-	
+
 	return ret;
 }
 
 double calc_rho(const station_t& station, const vector<point_t>& points) {
 	double rho = 0.0;
-	
+
 	for (int i=0; i<points.size(); ++i) {
 		if (calc_distance(i, station.id) <= rmax) {
 			rho += points[i].d;
 		}
 	}
-	
+
 	return rho / station.cs();
 }
 
@@ -133,7 +144,7 @@ double calc_ws(const station_t& station, const vector<point_t>& points) {
 double calc_costb(const plan_t& plan, const vector<point_t>& points) {
 	double ret = 0.0;
 	vector<int> y = calc_yvs(plan, points);
-	
+
 	for (int i=0; i<plan.size(); ++i) {
 		station_t station = plan[i];
 		double ds = calc_ds(station, points, y);
@@ -141,7 +152,7 @@ double calc_costb(const plan_t& plan, const vector<point_t>& points) {
 		double cs = station.cs();
 		ret += ds * (ws + 1.0 / cs);
 	}
-	
+
 	return ret;
 }
 
@@ -149,19 +160,19 @@ double calc_cost(const plan_t& plan, const vector<point_t>& points) {
 	double ret;
 	double costt = calc_costt(plan, points);
 	double costb = calc_costb(plan, points);
-	
+
 	ret = alpha * costt + (1.0 - alpha) * costb;
-	
+
 	return ret;
-} 
+}
 
 double calc_social(const plan_t& plan, const vector<point_t>& points) {
 	double ret;
 	double benefit = calc_benefit(plan, points);
 	double cost = calc_cost(plan, points);
-	
+
 	ret = lambda * benefit - (1.0 - lambda) * cost;
-	
+
 	return ret;
 }
 
@@ -171,15 +182,15 @@ double calc_costa(int v, const station_t& station, const vector<point_t>& points
 	double ws = calc_ws(station, points);
 	double cs = station.cs();
 	double dv = points[v].d;
-	
-	ret = dv * (alpha * dist_vs + (1.0-alpha) * (ws + 1.0/cs));	
-	
+
+	ret = dv * (alpha * dist_vs + (1.0-alpha) * (ws + 1.0/cs));
+
 	return ret;
 }
 
 vector<int> stationSeeking(const plan_t& plan, const vector<point_t>& points) {
 	vector<int> ret(-1, points.size());
-	
+
 	for (int v=0; v<points.size(); ++v) {
 		double mnVal = inf;
 		int& sid = ret[v];
@@ -191,6 +202,6 @@ vector<int> stationSeeking(const plan_t& plan, const vector<point_t>& points) {
 			}
 		}
 	}
-	
+
 	return ret;
 }
