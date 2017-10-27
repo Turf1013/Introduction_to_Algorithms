@@ -37,7 +37,7 @@ void read_roadNetwork(string fileName, int& nV, int& nE, vector<pdd>& positions,
 void read_shortEdges(istream& fin, int& nV, vector<vector<double> >& dists) {
 	fin >> nV;
 	dists.clear();
-	vector<double> vtmp(0.0, nV);
+	vector<double> vtmp(nV, 0.0);
 	for (int i=0; i<nV; ++i) {
 		for (int j=0; j<nV; ++j)
 			fin >> vtmp[j];
@@ -123,6 +123,28 @@ void read_demands(string fileName, int& nV, vector<int>& demands) {
 	fin.close();
 }
 
+void read_prices(istream& fin, int& nV, vector<double>& prices) {
+	prices.clear();
+	double tmp;
+	fin >> nV;
+	for (int i=0; i<nV; ++i) {
+		fin >> tmp;
+		prices.push_back(tmp);
+	}
+}
+
+void read_prices(string fileName, int& nV, vector<double>& prices) {
+	ifstream fin(fileName.c_str(), ios::in);
+	if (!fin.is_open()) {
+		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
+		exit(1);
+	}
+
+	read_prices(fin, nV, prices);
+
+	fin.close();
+}
+
 void read_input(istream& fin, double& lambda, double& alpha, double& rmax, double& B, int& K) {
 	fin >> lambda >> alpha >> rmax >> B >> K;
 }
@@ -203,7 +225,7 @@ void read_all(istream& fin) {
 	/**
 		\step 3: read demand
 	*/
-	fileName = "./demand.txt";
+	fileName = "./demands.txt";
 	vector<int> demands;
 	read_demands(fileName, nV, demands);
 	for (int i=0; i<nV; ++i) {
@@ -211,13 +233,23 @@ void read_all(istream& fin) {
 	}
 
 	/**
-		\step 4: read charger
+		\step 4: read prices
+	*/
+	fileName = "./estatePrice.txt";
+	vector<double> prices;
+	read_prices(fileName, nV, prices);
+	for (int i=0; i<nV; ++i) {
+		points[i].ep = prices[i];
+	}
+
+	/**
+		\step 5: read charger
 	*/
 	fileName = "./chargers.txt";
 	read_chargers(fileName, chargerN, chargers);
 
 	/**
-		step 5: read input
+		step 6: read input
 	*/
 	read_input(fin, lambda, alpha, rmax, B, K);
 }

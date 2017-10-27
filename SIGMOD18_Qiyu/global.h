@@ -57,14 +57,10 @@ struct station_t {
 	point_t p;
 	vector<int> x;
 
-	station_t(int id=0):id(id) {
-		x.resize(0, chargerN);
+	station_t(int id=0, point_t p_=point_t(0.,0.)):id(id),p(p_) {
+		x.resize(chargerN, 0);
 	}
 
-	station_t(int id=0, point_t p_=point_t(0.,0.)):id(id),p(p_) {
-		x.resize(0, chargerN);
-	}
-	
 	bool hasCharger() const {
 		for (int i=0; i<x.size(); ++i) {
 			if (x[i] > 0)

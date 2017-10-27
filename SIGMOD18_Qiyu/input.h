@@ -19,6 +19,8 @@ void read_chargers(istream& fin, int& chargerN, vector<charger_t>& chargers);
 void read_chargers(string fileName, int& chargerN, vector<charger_t>& chargers);
 void read_demands(istream& fin, int& nV, vector<int>& demands);
 void read_demands(string fileName, int& nV, vector<int>& demands);
+void read_prices(istream& fin, int& nV, vector<double>& prices);
+void read_prices(string fileName, int& nV, vector<double>& prices);
 void read_input(istream& fin, double& lambda, double& alpha, double& rmax, double& B, int& K);
 void read_input(string fileName, double& lambda, double& alpha, double& rmax, double& B, int& K);
 void read_points(istream& fin, int& nV, int& nE, vector<point_t>& points);

@@ -41,6 +41,7 @@ void update_covered(const station_t& station, const vector<point_t>& points) {
 }
 
 void update_covered(const plan_t& plan, const vector<point_t>& points) {
+	return ;
 	for (int i=0; i<covered.size(); ++i)
 		covered[i].clear();
 	for (int i=0; i<plan.size(); ++i) {
@@ -210,9 +211,9 @@ vector<int> stationSeeking(const plan_t& plan, const vector<point_t>& points) {
 
 void dumpResult(string execName, double result) {
 	printf("%s %.6lf", execName.c_str(), result);
-	if (usedTime >= 0);
+	if (usedTime >= 0)
 		printf(" %.3lf", usedTime);
-	if (usedMemory >= 0);
+	if (usedMemory >= 0)
 		printf(" %.3lf", usedMemory/1024.0);
 	putchar('\n');
 	fflush(stdout);
