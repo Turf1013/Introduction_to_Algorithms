@@ -23,10 +23,14 @@ void planCharger(station_t& station, double budget) {
 		if (c==0 || budget<=0)
 			break;
 	}
+
+	if (calc_rho(station, points) > 1)
+		station.reset();
 }
 
 bool cmpCharger(const charger_t& a, const charger_t& b) {
-	return (a.p*b.f) > (b.p*a.f);
+	//return (a.p*b.f) > (b.p*a.f);
+	return a.p > b.p;
 }
 
 bool cmpDemand(const int& a, const int& b) {
@@ -58,6 +62,7 @@ double solve() {
 			continue;
 		planCharger(station, budget);
 		if (station.hasCharger()) {
+			station.p = points[i];
 			budget -= calc_fs(station, points);
 			plan.push_back(station);
 		}

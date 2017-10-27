@@ -54,7 +54,7 @@ int calc_I1S(const station_t& station, const vector<point_t>& points) {
 	double rs = calc_rs(station);
 
 	for (int i=0; i<points.size(); ++i) {
-		if (calc_distance(station.p, points[i]) <= rs)
+		if (calc_distance(station.id, i) <= rs)
 			++ret;
 	}
 
