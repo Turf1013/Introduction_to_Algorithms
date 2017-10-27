@@ -7,7 +7,7 @@ LIBS = -lrt
 CFLAGS = -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: cnt sssp input.o global.o bao
+all: cnt sssp input.o global.o bao base
 cnt: calcDemand.cpp
 	$(CXX) $(CFLAGS) -o cnt calcDemand.cpp $(LIBS)
 
@@ -25,6 +25,9 @@ input.o: input.h input.cpp global.h
 
 bao: boundAndOptimize.cpp input.h input.cpp global.h global.cpp input.o global.o
 	$(CXX) $(CFLAGS) -o bao input.o global.o boundAndOptimize.cpp $(LIBS)
+	
+base: baseline.cpp input.h input.cpp global.h global.cpp input.o global.o
+	$(CXX) $(CFLAGS) -o base input.o global.o baseline.cpp $(LIBS)
 
 .PHONY: clean
 clean:

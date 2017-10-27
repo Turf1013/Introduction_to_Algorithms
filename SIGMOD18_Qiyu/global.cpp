@@ -109,9 +109,6 @@ double calc_costt(const plan_t& plan, const vector<point_t>& points) {
 	return ret;
 }
 
-/**
-	\TODO: finish the calc yvs
-*/
 vector<int> calc_yvs(const plan_t& plan, const vector<point_t>& points) {
 	return stationSeeking(plan, points);
 }
@@ -219,4 +216,12 @@ void dumpResult(string execName, double result) {
 		printf(" %.3lf", usedMemory/1024.0);
 	putchar('\n');
 	fflush(stdout);
+}
+
+double calc_estatePrice(const station_t& station, const vector<point_t>& points) {
+	return points[station.id].ep;
+}
+
+double calc_fs(const station_t& station, const vector<point_t>& points) {
+	return station.fs() + calc_estatePrice(station, points);
 }

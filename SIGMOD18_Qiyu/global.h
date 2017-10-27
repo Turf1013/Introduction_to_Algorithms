@@ -28,9 +28,10 @@ struct point_t {
 	int id;
 	double w;
 	int d;
+	double ep;
 
-	point_t(double x=0., double y=0., int id=0, double w=0., int d=0.):
-		x(x), y(y),id(id),w(w),d(d) {}
+	point_t(double x=0., double y=0., int id=0, double w=0., int d=0., double ep=0.):
+		x(x), y(y),id(id),w(w),d(d),ep(ep) {}
 
 	bool operator< (const point_t& oth) const {
 		if (x != oth.x)
@@ -62,6 +63,14 @@ struct station_t {
 
 	station_t(int id=0, point_t p_=point_t(0.,0.)):id(id),p(p_) {
 		x.resize(0, chargerN);
+	}
+	
+	bool hasCharger() const {
+		for (int i=0; i<x.size(); ++i) {
+			if (x[i] > 0)
+				return true;
+		}
+		return false;
 	}
 
 	double cs() const {
@@ -120,6 +129,8 @@ double calc_ws(const station_t& station, const vector<point_t>& points);
 double calc_costt(const plan_t& plan, const vector<point_t>& points);
 double calc_costb(const plan_t& plan, const vector<point_t>& points);
 double calc_costa(int v, const station_t& station, const vector<point_t>& points);
+double calc_estatePrice(const station_t& station, const vector<point_t>& points);
+double calc_fs(const station_t& station, const vector<point_t>& points);
 vector<int> stationSeeking(const plan_t& plan, const vector<point_t>& points);
 
 vector<int> calc_yvs(const plan_t& plan, const vector<point_t>& points);

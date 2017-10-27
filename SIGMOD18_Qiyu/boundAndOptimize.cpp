@@ -46,6 +46,8 @@ int main(int argc, char **argv) {
 	if (argc > 2) {
 		freopen(argv[2], "w", stdout);
 	}
+	
+	read_all(cin);
 
 	clock_t begTime, endTime;
 	begTime = clock();
@@ -102,7 +104,7 @@ double calc_ubgv(int v, const plan_t& plan, const station_t& station, const vect
 	double ret;
 	double deltaBenefit = calc_deltaBenefit(station, points);
 	double deltaCost = calc_deltaCost(v, plan, station, points);
-	double estatePrice = station.fs();
+	double estatePrice = calc_estatePrice(station, points);
 
 	ret = (lambda*deltaBenefit - (1.0-lambda)*deltaCost) / estatePrice;
 	return ret;
@@ -113,7 +115,7 @@ double calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& po
 	double social_ps = calc_social(plan, points);
 	plan.pop_back();
 	double social_p = calc_social(plan, points);
-	double fs = station.fs();
+	double estatePrice = calc_estatePrice(station, points);
 
-	return (social_ps - social_p) / fs;
+	return (social_ps - social_p) / estatePrice;
 }
