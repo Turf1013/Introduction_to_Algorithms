@@ -239,7 +239,7 @@ bool planStation(station_t& station, plan_t& plan, double budget) {
 }
 
 int main(int argc, char **argv) {
-	string execName("bao");
+	string execName("ibao");
 
 	if (argc > 1) {
 		freopen(argv[1], "r", stdin);

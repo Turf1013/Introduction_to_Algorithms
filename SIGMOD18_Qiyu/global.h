@@ -12,6 +12,7 @@ typedef pair<double,double> pdd;
 typedef pair<int,double> pid;
 typedef pair<double,int> pdi;
 
+extern const double eps;
 extern const double inf;
 extern int chargerN;
 extern double rmax;
@@ -45,9 +46,10 @@ struct point_t {
 extern vector<point_t> points;
 
 struct charger_t {
-	double f, p;
+	double f;
+	int p;
 
-	charger_t(double f=0., double p=0.):
+	charger_t(double f=0., int p=0.):
 		f(f), p(p) {}
 };
 extern vector<charger_t> chargers;
@@ -114,6 +116,7 @@ struct plan_t {
 extern vector<set<int> > covered;
 extern vector<vector<double> > dists;
 
+int dcmp(double x);
 double calc_distance(const point_t& a, const point_t& b);
 double calc_rs(const station_t& station);
 double calc_social(const plan_t& plan, const vector<point_t>& points);
@@ -127,6 +130,7 @@ double calc_costb(const plan_t& plan, const vector<point_t>& points);
 double calc_costa(int v, const station_t& station, const vector<point_t>& points);
 double calc_estatePrice(const station_t& station, const vector<point_t>& points);
 double calc_fs(const station_t& station, const vector<point_t>& points);
+int calc_demands(const station_t& station, const vector<point_t>& points);
 vector<int> stationSeeking(const plan_t& plan, const vector<point_t>& points);
 
 vector<int> calc_yvs(const plan_t& plan, const vector<point_t>& points);

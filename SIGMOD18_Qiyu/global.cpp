@@ -7,6 +7,7 @@ using namespace std;
 
 #include "global.h"
 
+const double eps = 1e-6;
 const double inf = 1e30;
 int chargerN;
 double rmax;
@@ -21,6 +22,12 @@ vector<charger_t> chargers;
 vector<set<int> > covered;
 vector<vector<double> > dists;
 vector<point_t> points;
+
+int dcmp(double x) {
+	if (fabs(x) < eps)
+		return 0;
+	return x > 0 ? 1 : -1;
+}
 
 double calc_distance(const point_t& a, const point_t& b) {
 	return sqrt((a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y));
@@ -126,16 +133,22 @@ double calc_ds(const station_t& station, const vector<point_t>& points, const ve
 	return ret;
 }
 
-double calc_rho(const station_t& station, const vector<point_t>& points) {
-	double rho = 0.0;
+int calc_demands(const station_t& station, const vector<point_t>& points) {
+	int ret = 0;
 
 	for (int i=0; i<points.size(); ++i) {
 		if (calc_distance(i, station.id) <= rmax) {
-			rho += points[i].d;
+			ret += points[i].d;
 		}
 	}
 
-	return rho / station.cs();
+	return ret;
+}
+
+double calc_rho(const station_t& station, const vector<point_t>& points) {
+	int sumDemands = calc_demands(station, points);
+
+	return sumDemands*1.0 / station.cs();
 }
 
 double calc_ws(const station_t& station, const vector<point_t>& points) {
