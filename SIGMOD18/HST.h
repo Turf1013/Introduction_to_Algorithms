@@ -14,10 +14,11 @@ using namespace std;
 
 struct treeNode_t {
 	int dep, sz, id;
+	treeNode_t *fa;
 	vector<treeNode_t*> sons;
 
-	treeNode_t(int dep=0, int sz=0, int id=0):
-		dep(dep), sz(sz), id(id) {}
+	treeNode_t(int dep=0, int sz=0, int id=0, treeNode_t* fa=NULL):
+		dep(dep), sz(sz), id(id), fa(fa) {}
 
 	void addSon(treeNode_t *son) {
 		// treeNode_t* tmp = new treeNode_t[sz];
@@ -122,7 +123,7 @@ void HST_Construction(int V, position_t* points, treeNode_t*& root) {
 		cids[1][i] = -1;
 		vids[1][i] = -1;
 	}
-	root = new treeNode_t(0, 0, 0);
+	root = new treeNode_t(delta, 0, 0, NULL);
 	nodes[0][0] = root;
 
 	int p = 0, q = 1;
@@ -153,7 +154,7 @@ void HST_Construction(int V, position_t* points, treeNode_t*& root) {
 				}
 				// add a node, maybe a leaf
 				if (c > 0) {
-					nodes[q][clusterN] = new treeNode_t(nodes[p][cid]->dep+1, 0, vids[q][idx-1]);
+					nodes[q][clusterN] = new treeNode_t(nodes[p][cid]->dep-1, 0, vids[q][idx-1], nodes[p][cid]);
 					nodes[p][cid]->addSon(nodes[q][clusterN]);
 					bids[q][clusterN] = idx;
 					++clusterN;
