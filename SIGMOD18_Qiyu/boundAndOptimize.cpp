@@ -18,13 +18,12 @@ double calc_ubgv(int v, const plan_t& plan, const station_t& station, const vect
 double calc_deltaBenefit(const station_t& station, const vector<point_t>& points);
 double calc_deltaCost(int v, const plan_t& plan, const station_t& station, const vector<point_t>& points);
 bool planStation(station_t& station, plan_t& plan, double budget);
+plan_t bndAndOpt(double budget);
 
-plan_t bndAndOpt() {
+plan_t bndAndOpt(double budget) {
 	plan_t plan;
 	station_t station;
-	double budget = B;
 
-	visit.resize(points.size(), false);
 	while (budget > 0) {
 		double mxVal = -inf, tmp;
 		int v = -1;
@@ -59,6 +58,7 @@ void init() {
 		maxp = max(maxp, chargers[i].p);
 		minf = min(minf, chargers[i].f);
 	}
+	visit.resize(points.size(), false);
 }
 
 double solve() {
@@ -66,7 +66,7 @@ double solve() {
 
 	double ret = 0.0;
 
-	plan_t plan = bndAndOpt();
+	plan_t plan = bndAndOpt(B);
 	ret = calc_benefit(plan, points);
 
 	return ret;

@@ -73,6 +73,7 @@ plan_t planOnce(double budget) {
 	return plan;
 }
 
+clock_t begTime, endTime;
 double solve() {
 	init();
 
@@ -80,6 +81,7 @@ double solve() {
 	plan_t plan;
 	double budget;
 
+	begTime = clock();
 	for (int i=0; i<bs.size(); ++i) {
 		budget = bs[i];
 		plan_t tmp = planOnce(budget);
@@ -87,6 +89,8 @@ double solve() {
 			plan.push_back(tmp[j]);
 			visit[tmp[j].id] = true;
 		}
+		if (i == 0)
+			begTime = clock();
 	}
 
 	ret = calc_benefit(plan, points);
@@ -105,9 +109,6 @@ int main(int argc, char **argv) {
 	}
 
 	read_incremental(cin, bs);
-
-	clock_t begTime, endTime;
-	begTime = clock();
 
 	double ans = solve();
 
