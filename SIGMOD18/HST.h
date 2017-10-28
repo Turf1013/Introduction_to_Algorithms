@@ -44,7 +44,7 @@ void HST_Construction(int V, position_t* points, treeNode_t*& root);
 void HST_delete(treeNode_t*& root);
 treeNode_t HST_LCA(treeNode_t* a, treeNode_t* b);
 double HST_distance(treeNode_t* a, treeNode_t* b);
-void pointToLeaf(treeNode_t* p, vector<treeNode_t*>& match);
+void HST_pointToLeaf(treeNode_t* p, vector<treeNode_t*>& match);
 
 void genRandomPermu(int V, int*& permu) {
 	if (permu == NULL)
@@ -285,7 +285,7 @@ double HST_distance(treeNode_t* a, treeNode_t* b) {
 	return ret;
 }
 
-void pointToLeaf(treeNode_t* rt, vector<treeNode_t*>& match) {
+void HST_pointToLeaf(treeNode_t* rt, vector<treeNode_t*>& match) {
 	if (rt == NULL) return ;
 
 	int sz = rt->sz;
@@ -294,7 +294,7 @@ void pointToLeaf(treeNode_t* rt, vector<treeNode_t*>& match) {
 		match->[rt->id] = rt;
 	} else {
 		for (int i=0; i<sz; ++i)
-			pointToLeaf(rt->son[i], match);
+			HST_pointToLeaf(rt->son[i], match);
 	}
 }
 

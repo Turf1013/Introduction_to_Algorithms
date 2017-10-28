@@ -6,13 +6,19 @@
 
 #define LOCAL_DEBUG
 
+struct myDriver_t {
+	int vid;
+	position_t pos;
+	double curTime;
+};
+
 int V, N, C, M;
 myTreeNode_t* root = NULL;
-vector<myTreeNode_t*> 
+vector<myTreeNode_t*> leafs;
 set<myTreeNode_t*> knodes;
 position_t* points = NULL;
 order_t* orders = NULL;
-driver_t* drivers;
+myDriver_t* drivers;
 double *pickTime;
 double *deliverTime;
 
@@ -24,12 +30,16 @@ void init() {
 	for (int i=0; i<M; ++i) {
 		pickTime[i] = deliverTime[i] = inf;
 	}
-	drivers = new driver_t[N];
+	drivers = new myDriver_t[N];
 	for (int i=0; i<N; ++i) {
 		int idx = 0; //rand() % N;
 		drivers[i].pos = points[idx];
 	}
 	HST_construction(V, points, root);
+	for (int i=0; i<V; ++i) {
+		leafs.push_back(NULL);
+	}
+	HST_pointToLeaf(V, root, leafs);
 
 	#ifdef LOCAL_DEBUG
 	printf("V = %d, N = %d, C = %d, M = %d\n", V, N, C, M);
@@ -45,9 +55,39 @@ void FreeMem() {
 	HST_delete(root);
 }
 
-void LNF() {
-	for (int i=0; i<M; ++i) {
+position_t getEndPosition(myDriver_t& driver) {
+	return driver.pos;
+}
 
+double assign(double curTime, int driverId) {
+	myDriver_t& driver = drivers[driverId];
+	position_t pos = getEndPosition(driver);
+	double ret = curTime;
+
+	vector<int> korders = HST_getKorders();
+
+	return ret;
+}
+
+void LNF() {
+	typedef pair<double,int> pdi;
+	double curTime = 0.0;
+	priority_queue<pdi, vector<pdi>, greater<pdi> > Q;
+
+	for (int i=0; i<N; ++i) {
+		Q.push(make_pair(curTime, i));
+	}
+
+	for (int i=0; i<M; ++i) {
+		order_t& order = orders[i];
+		while (Q.top().first < order.tid) {
+			pdi p = Q.top();
+			Q.pop();
+			double finishTime = assign(p.first, p.second);
+			if (finishTime < 0)
+				finishTime = order.tid;
+			Q.push(make_pair(finishTime, p.second));
+		}
 	}
 }
 
@@ -139,8 +179,4 @@ void updateNode(myTreeNode_t* leaf, int delta) {
 		}
 		p = p->fa;
 	}
-}
-
-void updateNode(myTreeNode_t* leaf, int delta) {
-
 }
