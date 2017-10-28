@@ -263,20 +263,20 @@ void NNT() {
 	int poolSz = 0;
 
 	while (orderId <= M) {
-    curTime = orders[orderId].tid;
-    updateDriverBefore(poolSz, preTime, curTime);
+	    curTime = orders[orderId].tid;
+	    updateDriverBefore(poolSz, preTime, curTime);
 		while (orderId<=M && orders[orderId].tid<=curTime) {
 			orderPool[poolSz++] = orderId;
 			++orderId;
 		}
-    preTime = curTime;
+    	preTime = curTime;
 	}
 
 	while (poolSz > 0) {
-    updateDriverBefore(poolSz, preTime, inf);
+    	updateDriverBefore(poolSz, preTime, inf);
 	}
 
-  udpateDriverAfter(poolSz);
+  	udpateDriverAfter(poolSz);
 }
 
 double calcResult() {

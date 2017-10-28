@@ -52,7 +52,10 @@ mft: mft.cpp input.h output.h monitor.h global.h
 
 nnt: nnt.cpp input.h output.h monitor.h global.h
 	$(CXX) $(CFLAGS) -o nnt nnt.cpp $(LIBS)
-           
+
+lnf: LNF.cpp LNF.h input.h output.h monitor.h global.h
+	$(CXX) $(CFLAGS) -o lnf LNF.cpp $(LIBS)
+
 srhstfifo: staticRoute_hstInit_fifo.cpp input.h output.h monitor.h
 	$(CXX) $(CFLAGS) -o srhstfifo staticRoute_hstInit_fifo.cpp $(LIBS)
 
@@ -61,7 +64,7 @@ srhstsjf: staticRoute_hstInit_sjf.cpp input.h output.h monitor.h
 
 srrndfifo: staticRoutes_randomInit_fifo.cpp input.h output.h monitor.h
 	$(CXX) $(CFLAGS) -o srrndfifo staticRoutes_randomInit_fifo.cpp $(LIBS)
-		  
+
 srrndsjf: staticRoutes_randomInit_sjf.cpp input.h output.h monitor.h
 	$(CXX) $(CFLAGS) -o srrndsjf staticRoutes_randomInit_sjf.cpp $(LIBS)
 
@@ -70,4 +73,4 @@ clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm hst gi giM fifo fifoM sjf sjfM 2> /dev/null || true
 		-@rm newsjf newfifo hybrid mft nnt staticfifo staticsjf staticdd 2> /dev/null || true
-		-@rm srhstfifo srhstsjf srrndfifo srrndsjf 2> /dev/null || true
+		-@rm srhstfifo srhstsjf srrndfifo srrndsjf lnf 2> /dev/null || true

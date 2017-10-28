@@ -34,7 +34,17 @@ struct treeNode_t {
 	void setId(int _id) {
 		id = _id;
 	}
+
+	bool isLeaf() const {
+		return sz==0;
+	}
 };
+
+void HST_Construction(int V, position_t* points, treeNode_t*& root);
+void HST_delete(treeNode_t*& root);
+treeNode_t HST_LCA(treeNode_t* a, treeNode_t* b);
+double HST_distance(treeNode_t* a, treeNode_t* b);
+void pointToLeaf(treeNode_t* p, vector<treeNode_t*>& match);
 
 void genRandomPermu(int V, int*& permu) {
 	if (permu == NULL)
@@ -225,6 +235,66 @@ void HST_dump(treeNode_t* root) {
 			}
 		}
 		fflush(stdout);
+	}
+}
+
+treeNode_t *HST_LCA(treeNode_t* a, treeNode_t* b) {
+	if (a == NULL) return b;
+	if (b == NULL) return a;
+
+	while (a->dep < b->dep)
+		a = a->fa;
+	while (b->dep < a->dep)
+		b = b->fa;
+
+	while (a != b) {
+		a = a->fa;
+		b = b->fa;
+	}
+
+	return a;
+}
+
+double HST_distance(treeNode_t* a, treeNode_t* b) {
+	if (a == NULL) return -1.0;
+	if (b == NULL) return -1.0;
+	if (a == b) return 0.0;
+	double ret = 0.0, l;
+
+	l = exp2(a->dep + 1);
+	while (a->dep < b->dep) {
+		a = a->fa;
+		ret += l;
+		l *= 2.0;
+	}
+	l = exp2(b->dep + 1);
+	while (b->dep < a->dep) {
+		b = b->fa;
+		ret += l;
+		l *= 2.0;
+	}
+
+	l = exp2(a->dep + 1);
+	while (a != b) {
+		a = a->fa;
+		b = b->fa;
+		ret += l * 2.0;
+		l *= 2.0;
+	}
+
+	return ret;
+}
+
+void pointToLeaf(treeNode_t* rt, vector<treeNode_t*>& match) {
+	if (rt == NULL) return ;
+
+	int sz = rt->sz;
+
+	if (sz == 0) {
+		match->[rt->id] = rt;
+	} else {
+		for (int i=0; i<sz; ++i)
+			pointToLeaf(rt->son[i], match);
 	}
 }
 
