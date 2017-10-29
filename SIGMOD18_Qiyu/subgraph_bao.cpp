@@ -1,6 +1,6 @@
 /**
 	\author:	Trasier
-	\date:		2017.10.27
+	\date:		2017.10.29
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -18,7 +18,7 @@ double calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& po
 double calc_ubgv(int v, const plan_t& plan, const station_t& station, const vector<point_t>& points);
 double calc_deltaBenefit(const station_t& station, const vector<point_t>& points);
 double calc_deltaCost(int v, const plan_t& plan, const station_t& station, const vector<point_t>& points);
-bool planStation(plan_t& plan, station_t& station, double budget);
+bool planStation(station_t& station, plan_t& plan, double budget);
 plan_t bndAndOpt(double budget);
 
 plan_t bndAndOpt(double budget) {
@@ -119,7 +119,7 @@ double _calc_ws(const station_t& station, const vector<point_t>& points) {
 double calc_deltaBenefit(const station_t& station, const vector<point_t>& points) {
 	double ret;
 	int I1starS = calc_I1starS(station, points);
-	int I2S = calc_I2S(station, points);
+	int I2S = calc_I2S(station);
 	double ws = _calc_ws(station, points);
 
 	ret = 2.0 / (1.0 + exp(-ws * (I1starS - I2S))) - 1.0;
@@ -220,7 +220,7 @@ double KnapsackBasedOpt(station_t& station) {
 	return mnVal;
 }
 
-bool planStation(plan_t& plan, station_t& station, double budget) {
+bool planStation(station_t& station, plan_t& plan, double budget) {
 	double price = KnapsackBasedOpt(station);
 
 	if (price > budget)

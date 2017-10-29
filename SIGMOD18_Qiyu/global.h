@@ -23,6 +23,8 @@ extern int K;
 extern int nV, nE;
 extern double usedTime;
 extern int usedMemory;
+extern vector<int> vecSumDemands;
+extern vector<int> yIndicator;
 
 struct point_t {
 	double x, y;
@@ -136,10 +138,16 @@ vector<int> stationSeeking(const plan_t& plan, const vector<point_t>& points);
 vector<int> calc_yvs(const plan_t& plan, const vector<point_t>& points);
 double calc_distance(int a, int b);
 int calc_I1S(const station_t& station, const vector<point_t>& points);
-int calc_I2S(const station_t& station);
+int calc_I2S(const station_t& station, const vector<point_t>& points);
 void update_covered(const plan_t& plan, const vector<point_t>& points);
 void update_covered(const station_t& station, const vector<point_t>& points);
 double calc_benefit(const station_t& station, const vector<point_t>& points);
+
+void init_global(vector<int>& vecSumDemands, vector<int>& yIndicator, const vector<point_t>& points);
+void init_global_sumDemands(vector<int>& vecSumDemands, const vector<point_t>& points);
+void init_global_yIndicator(vector<int>& yIndicator, const vector<point_t>& points);
+void update_yIndicator(plan_t& plan, const station_t& station, const vector<point_t>& points);
+void restore_yIndicator(plan_t& plan, const station_t& station, const vector<point_t>& points);
 
 void dumpResult(string execName, double result);
 #endif
