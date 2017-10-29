@@ -234,7 +234,7 @@ double calc_costa(int v, const station_t& station, const vector<point_t>& points
 }
 
 vector<int> stationSeeking(const plan_t& plan, const vector<point_t>& points) {
-	vector<int> ret(-1, points.size());
+	vector<int> ret(points.size(), -1);
 
 	for (int v=0; v<points.size(); ++v) {
 		double mnVal = inf;
