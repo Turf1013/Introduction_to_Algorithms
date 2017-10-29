@@ -180,8 +180,8 @@ double calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& po
 double KnapsackBasedOpt(station_t& station) {
 	int sumDemands = calc_demands(station, points);
 	int bound = sumDemands + maxp;
-	vector<double> dp(inf, bound+5);
-	vector<int> dps(-1, bound+5);
+	vector<double> dp(bound+5, inf);
+	vector<int> dps(bound+5, -1);
 
 	dp[0] = 0.0;
 	for (int i=0; i<chargers.size(); ++i) {
