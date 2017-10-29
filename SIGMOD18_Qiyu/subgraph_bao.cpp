@@ -65,13 +65,15 @@ plan_t bndAndOpt(int clusterId, double& budget) {
 	plan_t plan;
 	station_t station;
 	vector<int>& pointIds = clusters[clusterId];
-	
+
 	while (budget > 0) {
 		double mxVal = -inf, tmp;
 		int v = -1;
 		station.reset();
 		for (int i=0; i<pointIds.size(); ++i) {
 			int pointId = pointIds[i];
+			if (visit[pointId])
+				continue;
 			station.id = pointId;
 			tmp = calc_ubgv(pointId, plan, station, points);
 			if (tmp > mxVal) {
@@ -99,7 +101,7 @@ plan_t bndAndOpt(int clusterId, double& budget) {
 
 void init_subgraph() {
 	int n;
-	
+
 	cin >> ksub;
 	for (int i=0; i<ksub; ++i) {
 		cin >> n;
@@ -130,7 +132,7 @@ void init() {
 				++sum;
 		}
 	}
-	
+
 	init_subgraph();
 }
 
@@ -140,13 +142,13 @@ void mergeTwoPlan(plan_t& des, plan_t& src) {
 }
 
 double solve() {
+	init();
 	double budget = 0.0, budget_ = B / ksub, tmp;
 	plan_t plan;
-	init();
 
 	for (int i=0; i<ksub; ++i) {
 		tmp = budget_;
-		plan_t tmpPlan = bndAndOpt(tmp);
+		plan_t tmpPlan = bndAndOpt(i, tmp);
 		mergeTwoPlan(plan, tmpPlan);
 		budget += tmp;
 	}
@@ -154,9 +156,9 @@ double solve() {
 		plan_t tmpPlan = bndAndOpt(budget);
 		mergeTwoPlan(plan, tmpPlan);
 	}
-	
+
 	double ret = calc_benefit(plan, points);
-		
+
 	return ret;
 }
 
