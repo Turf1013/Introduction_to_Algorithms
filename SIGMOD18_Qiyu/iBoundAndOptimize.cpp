@@ -24,7 +24,7 @@ double calc_deltaBenefit(const station_t& station, const vector<point_t>& points
 double calc_deltaCost(int v, const plan_t& plan, const station_t& station, const vector<point_t>& points);
 bool planStation(plan_t& plan, station_t& station, double budget);
 
-plan_t bndAndOpt(double budget) {
+plan_t bndAndOpt(double& budget) {
 	plan_t plan;
 	station_t station;
 
@@ -45,11 +45,15 @@ plan_t bndAndOpt(double budget) {
 		if (v < 0)
 			break;
 
-		visit[v] = true;
 		station.id = v;
 		station.p = points[v];
 		if (planStation(plan, station, budget)) {
+			visit[v] = true;
 			plan.push_back(station);
+			budget -= calc_fs(station, points);
+			#ifdef LOCAL_DEBUG
+			assert(budget >= 0);
+			#endif
 		}
 	}
 
