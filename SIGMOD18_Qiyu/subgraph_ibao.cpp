@@ -1,6 +1,6 @@
 /**
 	\author:	Trasier
-	\date:		2017.10.29
+	\date:		2017.10.27
 */
 #include <bits/stdc++.h>
 using namespace std;
@@ -10,21 +10,25 @@ using namespace std;
 
 #define LOCAL_DEBUG
 
-clock_t begTime, endTime;
 vector<bool> visit;
+vector<bool> mark;
 vector<int> vecI1starS;
+vector<vector<int> > clusters;
 vector<double> bs;
+int ksub;
 int maxp;
 double minf;
-
+clock_t begTime, endTime;
 
 double calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& points);
 double calc_ubgv(int v, const plan_t& plan, const station_t& station, const vector<point_t>& points);
 double calc_deltaBenefit(const station_t& station, const vector<point_t>& points);
 double calc_deltaCost(int v, const plan_t& plan, const station_t& station, const vector<point_t>& points);
 bool planStation(plan_t& plan, station_t& station, double budget);
+plan_t bndAndOpt(double& budget);
+plan_t bndAndOpt(int clusterId, double& budget);
 
-plan_t bndAndOpt(double budget) {
+plan_t bndAndOpt(double& budget) {
 	plan_t plan;
 	station_t station;
 
@@ -45,14 +49,71 @@ plan_t bndAndOpt(double budget) {
 		if (v < 0)
 			break;
 
-		visit[v] = true;
 		station.id = v;
 		station.p = points[v];
-		if (planStation(plan, station, budget))
+		if (planStation(plan, station, budget)) {
+			visit[v] = true;
 			plan.push_back(station);
+			budget -= calc_fs(station, points);
+			#ifdef LOCAL_DEBUG
+			assert(budget >= 0);
+			#endif
+		}
 	}
 
 	return plan;
+}
+
+plan_t bndAndOpt(int clusterId, double& budget) {
+	plan_t plan;
+	station_t station;
+	vector<int>& pointIds = clusters[clusterId];
+
+	while (budget > 0) {
+		double mxVal = -inf, tmp;
+		int v = -1;
+		station.reset();
+		for (int i=0; i<pointIds.size(); ++i) {
+			int pointId = pointIds[i];
+			if (visit[pointId])
+				continue;
+			station.id = pointId;
+			tmp = calc_ubgv(pointId, plan, station, points);
+			if (tmp > mxVal) {
+				mxVal = tmp;
+				v = pointId;
+			}
+		}
+		if (v < 0)
+			break;
+
+		station.id = v;
+		station.p = points[v];
+		if (planStation(plan, station, budget)) {
+			plan.push_back(station);
+			budget -= calc_fs(station, points);
+			visit[v] = true;
+			#ifdef LOCAL_DEBUG
+			assert(budget >= 0);
+			#endif
+		}
+	}
+
+	return plan;
+}
+
+void init_subgraph() {
+	int n;
+
+	cin >> ksub;
+	for (int i=0; i<ksub; ++i) {
+		cin >> n;
+		vector<int> vtmp(n, -1);
+		for (int j=0; j<n; ++j) {
+			cin >> vtmp[j];
+		}
+		clusters.push_back(vtmp);
+	}
 }
 
 void init() {
@@ -65,6 +126,7 @@ void init() {
 		minf = min(minf, chargers[i].f);
 	}
 	visit.resize(points.size(), false);
+	mark.resize(points.size(), false);
 
 	vecI1starS.resize(points.size(), 0);
 	for (int j=0; j<points.size(); ++j) {
@@ -74,14 +136,53 @@ void init() {
 				++sum;
 		}
 	}
+
+	init_subgraph();
+}
+
+void mergeTwoPlan(plan_t& des, plan_t& src) {
+	for (int i=0; i<src.size(); ++i)
+		des.push_back(src[i]);
+}
+
+plan_t planOnce(double totBudget) {
+	double budget = 0.0, budget_ = totBudget / ksub, tmp;
+	plan_t plan;
+
+	for (int i=0; i<ksub; ++i) {
+		tmp = budget_;
+		plan_t tmpPlan = bndAndOpt(i, tmp);
+		mergeTwoPlan(plan, tmpPlan);
+		budget += tmp;
+	}
+	if (budget > 0) {
+		plan_t tmpPlan = bndAndOpt(budget);
+		mergeTwoPlan(plan, tmpPlan);
+	}
+
+	return plan;
 }
 
 double solve() {
 	init();
 
 	double ret = 0.0;
+	plan_t plan;
+	double budget;
 
-	plan_t plan = bndAndOpt(B);
+	for (int i=0; i<bs.size(); ++i) {
+		for (int j=0; j<visit.size(); ++j)
+			visit[j] = mark[j];
+		budget = bs[i];
+		plan_t tmp = planOnce(budget);
+		for (int j=0; j<tmp.size(); ++j) {
+			plan.push_back(tmp[j]);
+			mark[tmp[j].id] = true;
+		}
+		if (i == 0)
+			begTime = clock();
+	}
+
 	ret = calc_benefit(plan, points);
 
 	return ret;
@@ -182,8 +283,8 @@ double calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& po
 double KnapsackBasedOpt(station_t& station) {
 	int sumDemands = calc_demands(station, points);
 	int bound = sumDemands + maxp;
-	vector<double> dp(inf, bound+5);
-	vector<int> dps(-1, bound+5);
+	vector<double> dp(bound+5, inf);
+	vector<int> dps(bound+5, -1);
 
 	dp[0] = 0.0;
 	for (int i=0; i<chargers.size(); ++i) {
@@ -257,7 +358,7 @@ bool planStation(plan_t& plan, station_t& station, double budget) {
 }
 
 int main(int argc, char **argv) {
-	string execName("ibao");
+	string execName("isbao");
 
 	if (argc > 1) {
 		freopen(argv[1], "r", stdin);
