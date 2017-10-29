@@ -11,7 +11,7 @@ using namespace std;
 #define LOCAL_DEBUG
 
 clock_t begTime, endTime;
-vector<bool> visit;
+vector<bool> visit, mark;
 vector<int> vecI1starS;
 vector<double> bs;
 int maxp;
@@ -48,8 +48,9 @@ plan_t bndAndOpt(double budget) {
 		visit[v] = true;
 		station.id = v;
 		station.p = points[v];
-		if (planStation(plan, station, budget))
+		if (planStation(plan, station, budget)) {
 			plan.push_back(station);
+		}
 	}
 
 	return plan;
@@ -65,6 +66,7 @@ void init() {
 		minf = min(minf, chargers[i].f);
 	}
 	visit.resize(points.size(), false);
+	mark.resize(points.size(), false);
 
 	vecI1starS.resize(points.size(), 0);
 	for (int j=0; j<points.size(); ++j) {
@@ -80,8 +82,22 @@ double solve() {
 	init();
 
 	double ret = 0.0;
+	plan_t plan;
+	double budget;
 
-	plan_t plan = bndAndOpt(B);
+	for (int i=0; i<bs.size(); ++i) {
+		for (int j=0; j<visit.size(); ++j)
+			visit[j] = mark[j];
+		budget = bs[i];
+		plan_t tmp = bndAndOpt(budget);
+		for (int j=0; j<tmp.size(); ++j) {
+			plan.push_back(tmp[j]);
+			mark[tmp[j].id] = true;
+		}
+		if (i == 0)
+			begTime = clock();
+	}
+
 	ret = calc_benefit(plan, points);
 
 	return ret;
@@ -182,8 +198,8 @@ double calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& po
 double KnapsackBasedOpt(station_t& station) {
 	int sumDemands = calc_demands(station, points);
 	int bound = sumDemands + maxp;
-	vector<double> dp(inf, bound+5);
-	vector<int> dps(-1, bound+5);
+	vector<double> dp(bound+5, inf);
+	vector<int> dps(bound+5, -1);
 
 	dp[0] = 0.0;
 	for (int i=0; i<chargers.size(); ++i) {
