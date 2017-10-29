@@ -57,6 +57,32 @@ void read_shortEdges(string fileName, int& nV, vector<vector<double> >& dists) {
 	fin.close();
 }
 
+void read_shortEdges(string fileName, int& nV, map<pii, double>& dists) {
+	ifstream fin(fileName.c_str(), ios::in);
+	if (!fin.is_open()) {
+		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
+		exit(1);
+	}
+
+	read_shortEdges(fin, nV, dists);
+
+	fin.close();
+}
+
+void read_shortEdges(istream& fin, int& nV, map<pii, double>& dists) {
+	fin >> nV;
+	dists.clear();
+	double w;
+	
+	for (int i=0; i<nV; ++i) {
+		for (int j=0; j<nV; ++j) {
+			fin >> w;
+			if (w >= 0)
+				dists[make_pair(i,j)] = w;
+		}
+	}
+}
+
 void read_ruralDegree(istream& fin, int& nV, vector<double>& degs) {
 	double tmp;
 	degs.clear();
@@ -84,7 +110,7 @@ void read_chargers(istream& fin, int& chargerN, vector<charger_t>& chargers) {
 	chargers.clear();
 	fin >> chargerN;
 	for (int i=0; i<chargerN; ++i) {
-		fin >> charger.f >> charger.p;
+		fin >> charger.p >> charger.f;
 		chargers.push_back(charger);
 	}
 }
@@ -185,19 +211,19 @@ void read_points(istream& fin, int& nV, int& nE, vector<point_t>& points) {
 	}
 }
 
-void read_all(string paraFileName) {
+void read_all(string paraFileName, string priceFileName) {
 	ifstream fin(paraFileName.c_str(), ios::in);
 	if (!fin.is_open()) {
 		fprintf(stderr, "FILE %s is invalid.", paraFileName.c_str());
 		exit(1);
 	}
 
-	read_all(fin);
+	read_all(fin, priceFileName);
 
 	fin.close();
 }
 
-void read_all(istream& fin) {
+void read_all(istream& fin, string priceFileName) {
 	string fileName;
 
 	/**
@@ -210,7 +236,7 @@ void read_all(istream& fin) {
 		\step 1: read short edges
 	*/
 	fileName = "./shortEdges.txt";
-	read_shortEdges(fileName, nV, dists);
+	// read_shortEdges(fileName, nV, dists);
 
 	/**
 		\step 2: read rural degree
@@ -235,7 +261,7 @@ void read_all(istream& fin) {
 	/**
 		\step 4: read prices
 	*/
-	fileName = "./estatePrice.txt";
+	fileName = priceFileName;
 	vector<double> prices;
 	read_prices(fileName, nV, prices);
 	for (int i=0; i<nV; ++i) {
@@ -254,19 +280,19 @@ void read_all(istream& fin) {
 	read_input(fin, lambda, alpha, rmax, B, K);
 }
 
-void read_incremental(string fileName, vector<double>& bs) {
+void read_incremental(string fileName, string priceFileName, vector<double>& bs) {
 	ifstream fin(fileName.c_str(), ios::in);
 	if (!fin.is_open()) {
 		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
 		exit(1);
 	}
 
-	read_incremental(fin, bs);
+	read_incremental(fin, priceFileName, bs);
 
 	fin.close();
 }
 
-void read_incremental(istream& fin, vector<double>& bs) {
+void read_incremental(istream& fin, string priceFileName, vector<double>& bs) {
 	string fileName;
 
 	/**
@@ -304,7 +330,7 @@ void read_incremental(istream& fin, vector<double>& bs) {
 	/**
 		\step 4: read prices
 	*/
-	fileName = "./estatePrice.txt";
+	fileName = priceFileName;
 	vector<double> prices;
 	read_prices(fileName, nV, prices);
 	for (int i=0; i<nV; ++i) {

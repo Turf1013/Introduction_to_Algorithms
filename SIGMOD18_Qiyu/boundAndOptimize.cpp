@@ -260,7 +260,7 @@ bool planStation(plan_t& plan, station_t& station, double budget) {
 }
 
 int main(int argc, char **argv) {
-	string execName("bao");
+	string execName("base"), priceFileName("./estatePrice.txt");
 
 	if (argc > 1) {
 		freopen(argv[1], "r", stdin);
@@ -268,8 +268,12 @@ int main(int argc, char **argv) {
 	if (argc > 2) {
 		freopen(argv[2], "w", stdout);
 	}
+	if (argc > 3) {
+		priceFileName = string(argv[3]);
+	}
 
-	read_all(cin);
+
+	read_all(cin, priceFileName);
 
 	clock_t begTime, endTime;
 	begTime = clock();

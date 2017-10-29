@@ -8,6 +8,9 @@ CFLAGS = -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
 all: input.o global.o base ibase bao ibao sbao isbao
+prepareData: prepareData.cpp
+	$(CXX) $(CFLAGS) -o prepareData prepareData.cpp $(LIBS)
+
 cnt: calcDemand.cpp
 	$(CXX) $(CFLAGS) -o cnt calcDemand.cpp $(LIBS)
 

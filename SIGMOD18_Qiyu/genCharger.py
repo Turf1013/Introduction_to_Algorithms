@@ -4,12 +4,13 @@ import sys
 import commands
 
 class constForCharger:
-    chargers = [
-        [7.3, 10],
-        [16.5, 12],
-        [50, 15],
-        [120, 30],
-    ]
+	chargers = [
+		[50, 1000],
+		[100,  2300],
+		[1230, 26000],
+		[2780, 60000],
+		[4760, 130000],
+	]
 
 class CFC(constForCharger):
     pass
@@ -20,7 +21,7 @@ def genChargerData(desFileName):
         fout.write("%d\n" % (chargerN))
         for item in CFC.chargers:
             power,price = item[:2]
-            fout.write("%.02f %d\n" % (1.0/power, price))
+            fout.write("%d %d\n" % (power, price))
 
 def exp0():
     desFileName = "chargers.txt"
