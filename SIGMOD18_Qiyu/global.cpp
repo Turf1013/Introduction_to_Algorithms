@@ -45,7 +45,7 @@ void init_global_yIndicator(vector<int>& yIndicator, const vector<point_t>& poin
 
 void init_global(vector<int>& vecSumDemands, vector<int>& yIndicator, const vector<point_t>& points) {
 	init_global_sumDemands(vecSumDemands, points);
-	init_global_yIndicator(yDicator, points);
+	init_global_yIndicator(yIndicator, points);
 }
 
 int dcmp(double x) {
@@ -108,8 +108,8 @@ int calc_I2S(const station_t& station, const vector<point_t>& points) {
 double calc_benefit(const station_t& station, const vector<point_t>& points) {
 	// double i1s = calc_I1S(station, points), i2s = calc_I2S(station, points);
 	double i1s = calc_I1S(station, points);
-	point_t& p = points[station.id];
-	return 2.0 / (1.0 + exp(-p.w * i1s))) - 1.0;
+	const point_t& p = points[station.id];
+	return 2.0 / (1.0 + exp(-p.w * i1s)) - 1.0;
 }
 
 double calc_benefit(const plan_t& plan, const vector<point_t>& points) {
@@ -160,9 +160,9 @@ double calc_ds(const station_t& station, const vector<point_t>& points, const ve
 }
 
 int calc_demands(const station_t& station, const vector<point_t>& points) {
-	if (vecSumDemands.size() == nV) 
+	if (vecSumDemands.size() == nV)
 		return vecSumDemands[station.id];
-	
+
 	int ret = 0;
 
 	for (int i=0; i<points.size(); ++i) {
@@ -271,19 +271,17 @@ double calc_fs(const station_t& station, const vector<point_t>& points) {
 
 void update_yIndicator(plan_t& plan, const station_t& station, const vector<point_t>& points) {
 	int sid = station.id;
-	
+
 	yIndicator_bk = yIndicator;
 	for (int v=0; v<points.size(); ++v) {
 		if (yIndicator[v] == -1) {
-			vIndicator[v] = sid;
+			yIndicator[v] = sid;
 			continue;
 		}
-		double mnVal = calc_costa(v, plan, points);
-		plan.push_back(station);
-		double curVal = calc_costa(v, plan, points);
-		plan.pop_back();
+		double mnVal = calc_costa(v, plan[yIndicator[v]], points);
+		double curVal = calc_costa(v, station, points);
 		if (curVal < mnVal) {
-			vIndicator[v] = plan.size();
+			yIndicator[v] = plan.size();
 		}
 	}
 }

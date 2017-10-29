@@ -7,7 +7,7 @@ LIBS = -lrt
 CFLAGS = -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
 TARGET = ./all
 
-all: cnt sssp input.o global.o bao base ibao
+all: input.o global.o base ibase bao ibao sbao isbao
 cnt: calcDemand.cpp
 	$(CXX) $(CFLAGS) -o cnt calcDemand.cpp $(LIBS)
 
@@ -35,9 +35,14 @@ base: baseline.cpp input.h input.cpp global.h global.cpp input.o global.o
 ibase: ibaseline.cpp input.h input.cpp global.h global.cpp input.o global.o
 	$(CXX) $(CFLAGS) -o ibase input.o global.o ibaseline.cpp $(LIBS)
 
+sbao: subgraph_bao.cpp input.h input.cpp global.h global.cpp input.o global.o
+	$(CXX) $(CFLAGS) -o bao input.o global.o subgraph_bao.cpp $(LIBS)
+
+isbao: subgraph_ibao.cpp input.h input.cpp global.h global.cpp input.o global.o
+	$(CXX) $(CFLAGS) -o ibao input.o global.o subgraph_ibao.cpp $(LIBS)
 
 .PHONY: clean
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm cnt cnt0 sssp 2> /dev/null || true
-		-@rm greedy ibase base bao ibao 2> /dev/null || true
+		-@rm greedy ibase base bao ibao sbao isbao 2> /dev/null || true

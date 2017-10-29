@@ -11,6 +11,8 @@ using namespace std;
 #define LOCAL_DEBUG
 #define RANDOM_SELECT
 
+vector<int> permu;
+
 void planCharger(station_t& station, double budget) {
 	int i, j, k, c=K;
 
@@ -37,9 +39,14 @@ bool cmpDemand(const int& a, const int& b) {
 	return points[a].d > points[b].d;
 }
 
-vector<int> permu;
-double solve() {
+void init() {
+	init_global(vecSumDemands, yIndicator, points);
+
 	sort(chargers.begin(), chargers.end(), cmpCharger);
+}
+
+double solve() {
+	init();
 
 	double ret = 0.0;
 	plan_t plan;

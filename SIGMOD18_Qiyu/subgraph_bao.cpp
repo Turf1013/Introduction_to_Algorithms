@@ -9,6 +9,7 @@ using namespace std;
 #include "input.h"
 
 #define LOCAL_DEBUG
+
 vector<bool> visit;
 vector<int> vecI1starS;
 int maxp;
@@ -18,7 +19,7 @@ double calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& po
 double calc_ubgv(int v, const plan_t& plan, const station_t& station, const vector<point_t>& points);
 double calc_deltaBenefit(const station_t& station, const vector<point_t>& points);
 double calc_deltaCost(int v, const plan_t& plan, const station_t& station, const vector<point_t>& points);
-bool planStation(station_t& station, plan_t& plan, double budget);
+bool planStation(plan_t& plan, station_t& station, double budget);
 plan_t bndAndOpt(double budget);
 
 plan_t bndAndOpt(double budget) {
@@ -45,7 +46,7 @@ plan_t bndAndOpt(double budget) {
 		visit[v] = true;
 		station.id = v;
 		station.p = points[v];
-		if (planStation(station, plan, budget))
+		if (planStation(plan, station, budget))
 			plan.push_back(station);
 	}
 
@@ -53,6 +54,8 @@ plan_t bndAndOpt(double budget) {
 }
 
 void init() {
+	init_global(vecSumDemands, yIndicator, points);
+
 	maxp = INT_MIN;
 	minf = inf;
 	for (int i=0; i<chargers.size(); ++i) {
@@ -60,7 +63,7 @@ void init() {
 		minf = min(minf, chargers[i].f);
 	}
 	visit.resize(points.size(), false);
-	
+
 	vecI1starS.resize(points.size(), 0);
 	for (int j=0; j<points.size(); ++j) {
 		int& sum = vecI1starS[j];
@@ -85,7 +88,7 @@ double solve() {
 int calc_I1starS(const station_t& station, const vector<point_t>& points) {
 	if (vecI1starS.size() == points.size())
 		return vecI1starS[station.id];
-	
+
 	int ret = 0;
 
 	for (int i=0; i<points.size(); ++i) {
@@ -119,7 +122,7 @@ double _calc_ws(const station_t& station, const vector<point_t>& points) {
 double calc_deltaBenefit(const station_t& station, const vector<point_t>& points) {
 	double ret;
 	int I1starS = calc_I1starS(station, points);
-	int I2S = calc_I2S(station);
+	int I2S = calc_I2S(station, points);
 	double ws = _calc_ws(station, points);
 
 	ret = 2.0 / (1.0 + exp(-ws * (I1starS - I2S))) - 1.0;
@@ -220,7 +223,7 @@ double KnapsackBasedOpt(station_t& station) {
 	return mnVal;
 }
 
-bool planStation(station_t& station, plan_t& plan, double budget) {
+bool planStation(plan_t& plan, station_t& station, double budget) {
 	double price = KnapsackBasedOpt(station);
 
 	if (price > budget)

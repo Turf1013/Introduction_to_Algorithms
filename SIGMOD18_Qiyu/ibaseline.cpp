@@ -42,6 +42,8 @@ vector<int> permu;
 vector<bool> visit;
 
 void init() {
+	init_global(vecSumDemands, yIndicator, points);
+
 	for (int i=0; i<nV; ++i) {
 		permu.push_back(i);
 		visit.push_back(false);
@@ -81,7 +83,6 @@ double solve() {
 	plan_t plan;
 	double budget;
 
-	begTime = clock();
 	for (int i=0; i<bs.size(); ++i) {
 		budget = bs[i];
 		plan_t tmp = planOnce(budget);
@@ -109,6 +110,8 @@ int main(int argc, char **argv) {
 	}
 
 	read_incremental(cin, bs);
+
+	begTime = clock();
 
 	double ans = solve();
 

@@ -9,6 +9,7 @@ using namespace std;
 #include "input.h"
 
 #define LOCAL_DEBUG
+
 vector<bool> visit;
 vector<int> vecI1starS;
 int maxp;
@@ -45,7 +46,7 @@ plan_t bndAndOpt(double budget) {
 		visit[v] = true;
 		station.id = v;
 		station.p = points[v];
-		if (planStation(station, plan, budget))
+		if (planStation(plan, station, budget))
 			plan.push_back(station);
 	}
 
@@ -53,6 +54,8 @@ plan_t bndAndOpt(double budget) {
 }
 
 void init() {
+	init_global(vecSumDemands, yIndicator, points);
+
 	maxp = INT_MIN;
 	minf = inf;
 	for (int i=0; i<chargers.size(); ++i) {
@@ -60,7 +63,7 @@ void init() {
 		minf = min(minf, chargers[i].f);
 	}
 	visit.resize(points.size(), false);
-	
+
 	vecI1starS.resize(points.size(), 0);
 	for (int j=0; j<points.size(); ++j) {
 		int& sum = vecI1starS[j];
@@ -85,7 +88,7 @@ double solve() {
 int calc_I1starS(const station_t& station, const vector<point_t>& points) {
 	if (vecI1starS.size() == points.size())
 		return vecI1starS[station.id];
-	
+
 	int ret = 0;
 
 	for (int i=0; i<points.size(); ++i) {
