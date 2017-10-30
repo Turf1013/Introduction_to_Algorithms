@@ -38,11 +38,14 @@ ibase: ibaseline.cpp input.h input.cpp global.h global.cpp input.o global.o
 	$(CXX) $(CFLAGS) -o ibase input.o global.o ibaseline.cpp $(LIBS)
 
 sbao: subgraph_bao.cpp input.h input.cpp global.h global.cpp input.o global.o
-	$(CXX) $(CFLAGS) -o bao input.o global.o subgraph_bao.cpp $(LIBS)
+	$(CXX) $(CFLAGS) -o sbao input.o global.o subgraph_bao.cpp $(LIBS)
 
 isbao: subgraph_ibao.cpp input.h input.cpp global.h global.cpp input.o global.o
-	$(CXX) $(CFLAGS) -o ibao input.o global.o subgraph_ibao.cpp $(LIBS)
+	$(CXX) $(CFLAGS) -o isbao input.o global.o subgraph_ibao.cpp $(LIBS)
 
+voroni: voroni.cpp voroni.h
+	$(CXX) $(CFLAGS) -o voroni voroni.cpp $(LIBS)
+	
 .PHONY: clean
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true

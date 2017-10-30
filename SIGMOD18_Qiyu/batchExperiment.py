@@ -3,11 +3,12 @@ import os
 import sys
 import commands
 import multiprocessing
-from genDataSet import genDesFileName
+from genDataSet import genDesFileName, genDataName
+from genDataSet import constForGenDataSet
 
-class constForBatchExperiment:
+class constForBatchExperiment(constForGenDataSet):
 	dataSetN = 1
-	nprocess = 4
+	nprocess = 8
 
 class CFBE(constForBatchExperiment):
 	pass
@@ -52,6 +53,25 @@ def batchWithPool(execNames, dataSetN, nprocess, srcFilePath, desFilePath):
 				if os.path.exists(desFileName):
 					continue
 				pool.apply_async(run, (execName, srcFileName, desFileName, muFileName, ))
+				
+				
+	# varying of distribution
+	lambda_,alpha,rmax,B,K,mu = CFBE.defaultValue
+	dataName = genDataName(lambda_,alpha,rmax,B,K,mu)
+	for dataSetId in xrange(dataSetN):
+		fileName = genDesFileName(dataSetId)
+		srcFileName = os.path.join(srcFilePath, dataName, fileName)
+		for mu in CFBE.muList:
+			muFileName = "prices_%d.txt" % (mu)
+			muFileName = os.path.join(srcFilePath, muFileName)
+			for execName in execNames:
+				tmpFilePath = os.path.join(desFilePath, execName, "mu_%d" % (mu))
+				if not os.path.exists(tmpFilePath):
+					os.mkdir(tmpFilePath)
+				desFileName = os.path.join(tmpFilePath, fileName)
+				# if os.path.exists(desFileName):
+						# continue
+				pool.apply_async(run, (execName, srcFileName, desFileName, muFileName, ))
 
 	pool.close()
 	pool.join()
@@ -59,12 +79,13 @@ def batchWithPool(execNames, dataSetN, nprocess, srcFilePath, desFilePath):
 
 def exp0():
 	dataSetN, nprocess = CFBE.dataSetN, CFBE.nprocess
-	execNames = ["base"]
+	execNames = ["base", "bao", "sbao"]
 	srcFilePath = "../dataSet_Qiyu"
 	desFilePath = "../result_Qiyu"
 	cmdLine = "rm -rf %s" % (desFilePath)
-	commands.getoutput(cmdLine)
-	batchWithPool(execNames, dataSetN, nprocess, srcFilePath, desFilePath)
+	# commands.getoutput(cmdLine)
+	batchWithPool(execNames[-1:], dataSetN, nprocess, srcFilePath, desFilePath)
+	
 
 if __name__ == "__main__":
 	exp0()

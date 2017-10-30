@@ -7,7 +7,7 @@
 
 #define GLOBAL_DEBUG
 
-#define MAXN 5005
+#define MAXN 21005
 
 // #define USE_MAP
 #define USE_ARRAY
@@ -199,6 +199,8 @@ void update_yIndicator(plan_t& plan, const station_t& station, const vector<poin
 void restore_yIndicator(plan_t& plan, const station_t& station, const vector<point_t>& points);
 void update_yIndicator(plan_t& plan, const vector<point_t>& points);
 void restore_yIndicator(plan_t& plan, const vector<point_t>& points);
+void mergeTwoPlan(plan_t& des, plan_t& src);
 
 void dumpResult(string execName, double result);
+void dumpResult(const plan_t& plan, const vector<point_t>& points);
 #endif

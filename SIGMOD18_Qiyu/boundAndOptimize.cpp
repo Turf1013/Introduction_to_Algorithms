@@ -8,7 +8,7 @@ using namespace std;
 #include "global.h"
 #include "input.h"
 
-#define LOCAL_DEBUG
+// #define LOCAL_DEBUG
 
 vector<bool> visit;
 vector<int> vecI1starS;
@@ -47,7 +47,7 @@ plan_t bndAndOpt(double& budget) {
 		station.id = v;
 		station.p = points[v];
 		station.reset();
-		if (planStation(plan, station, budget)) {
+		if (planStation(plan, station, budget) && station.hasCharger()) {
 			plan.push_back(station);
 			budget -= calc_fs(station, points);
 			#ifdef LOCAL_DEBUG
@@ -93,6 +93,8 @@ double solve() {
 	plan_t plan = bndAndOpt(budget);
 	update_yIndicator(plan, points);
 	ret = calc_social(plan, points);
+	
+	dumpResult(plan, points);
 
 	return ret;
 }
@@ -122,7 +124,13 @@ inline double _calc_cs() {
 double _calc_rho(const station_t& station, const vector<point_t>& points) {
 	int sumDemands = calc_demands(station, points);
 
-	return sumDemands*1.0 / _calc_cs();
+	double ret = sumDemands*1.0 / _calc_cs();
+	if (ret >= 1.0)
+		ret = 0.999999;
+	#ifdef LOCAL_DEBUG
+	assert(ret < 1.0);
+	#endif
+	return ret;
 }
 
 double _calc_ws(const station_t& station, const vector<point_t>& points) {
@@ -134,10 +142,10 @@ double _calc_ws(const station_t& station, const vector<point_t>& points) {
 double calc_deltaBenefit(const station_t& station, const vector<point_t>& points) {
 	double ret;
 	int I1starS = calc_I1starS(station, points);
-	int I2S = calc_I2S(station, points);
+	// int I2S = calc_I2S(station, points);
 	double ws = _calc_ws(station, points);
 
-	ret = 2.0 / (1.0 + exp(-ws * (I1starS - I2S))) - 1.0;
+	ret = 2.0 / (1.0 + exp(-ws * I1starS)) - 1.0;
 	return ret;
 }
 
@@ -180,12 +188,14 @@ double calc_ubgv(int v, const plan_t& plan, const station_t& station, const vect
 }
 
 pdd calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& points, double social_p) {
-	plan.push_back(station);
+	if (station.hasCharger())
+		plan.push_back(station);
 
 	update_yIndicator(plan, points);
 	double social_ps = calc_social(plan, points);
 	double fs = calc_fs(station, points);
-	plan.pop_back();
+	if (station.hasCharger())
+		plan.pop_back();
 	// double social_p = calc_social(plan, points);
 
 	double ret = (social_ps - social_p) / fs;
@@ -255,8 +265,10 @@ double KnapsackBasedOpt(station_t& station) {
 bool planStation(plan_t& plan, station_t& station, double budget) {
 	double price = KnapsackBasedOpt(station);
 
-	if (price > budget)
+	if (price > budget) {
+		station.reset();
 		return false;
+	}
 
 	int c = station.getChargerNum();
 	budget -= price;

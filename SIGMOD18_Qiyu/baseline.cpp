@@ -8,7 +8,7 @@ using namespace std;
 #include "global.h"
 #include "input.h"
 
-#define LOCAL_DEBUG
+// #define LOCAL_DEBUG
 // #define RANDOM_SELECT
 
 vector<int> permu;
@@ -110,6 +110,8 @@ double solve() {
 	
 	update_yIndicator(plan, points);
 	ret = calc_social(plan, points);
+	
+	dumpResult(plan, points);
 
 	return ret;
 }

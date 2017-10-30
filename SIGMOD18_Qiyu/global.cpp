@@ -118,7 +118,11 @@ double calc_benefit(const station_t& station, const vector<point_t>& points) {
 	// double i1s = calc_I1S(station, points), i2s = calc_I2S(station, points);
 	double i1s = calc_I1S(station, points);
 	const point_t& p = points[station.id];
-	//printf("rs = %.12lf, i1s = %.0lf, p.w = %.12lf\n", calc_rs(station), i1s, p.w);
+	
+	#ifdef GLOBAL_DEBUG
+	printf("rs = %.12lf, i1s = %.0lf, p.w = %.12lf\n", calc_rs(station), i1s, p.w);
+	#endif
+	
 	return 2.0 / (1.0 + exp(-p.w * i1s)) - 1.0;
 }
 
@@ -129,9 +133,9 @@ double calc_benefit(const plan_t& plan, const vector<point_t>& points) {
 	for (int i=0; i<plan.size(); ++i) {
 		tmp = calc_benefit(plan[i], points);
 		ret += tmp;
-		// #ifdef GLOBAL_DEBUG
-		// printf("calc_benefit %d: tmp = %.12lf, ret = %.12lf\n", plan[i].id, tmp, ret);
-		// #endif
+		#ifdef GLOBAL_DEBUG
+		printf("calc_benefit %d: tmp = %.12lf, ret = %.12lf\n", plan[i].id, tmp, ret);
+		#endif
 	}
 
 	return ret;
@@ -205,7 +209,10 @@ double calc_rho(const station_t& station, const vector<point_t>& points) {
 	if (cs == 0) return 2.0;
 	int sumDemands = calc_demands(station, points);
 
-	return sumDemands*1.0 / station.cs();
+	double ret = sumDemands*1.0 / station.cs();
+	if (ret >= 1.0)
+		ret = 0.999999;
+	return ret;
 }
 
 double calc_ws(const station_t& station, const vector<point_t>& points) {
@@ -219,10 +226,12 @@ double calc_costb(const plan_t& plan, const vector<point_t>& points) {
 	vector<int>& y = yIndicator;
 
 	for (int i=0; i<plan.size(); ++i) {
-		station_t station = plan[i];
+		const station_t& station = plan[i];
 		double ds = calc_ds(station, points, y);
 		double ws = calc_ws(station, points);
 		double cs = station.cs();
+		// if (cs <= 0)
+			// cs = 0.00001;
 		ret += ds * (ws + 1.0 / cs);
 	}
 
@@ -287,6 +296,16 @@ vector<int> stationSeeking(const plan_t& plan, const vector<point_t>& points) {
 	return ret;
 }
 
+void dumpResult(const plan_t& plan, const vector<point_t>& points) {
+	double costt = calc_costt(plan, points);
+	double costb = calc_costb(plan, points);
+	double benefit = calc_benefit(plan, points);
+	double cost = alpha * costt / 1e9 + (1.0 - alpha) * costb;
+	
+	printf("costt = %.12lf, costb = %.12lf, benefit = %.12lf, cost = %.12lf\n", costt, costb, benefit, cost);
+	fflush(stdout);
+}
+
 void dumpResult(string execName, double result) {
 	printf("%s %.6lf", execName.c_str(), result);
 	if (usedTime >= 0)
@@ -333,4 +352,9 @@ void restore_yIndicator(plan_t& plan, const vector<point_t>& points) {
 void update_yIndicator(plan_t& plan, const vector<point_t>& points) {
 	yIndicator_bk = yIndicator;
 	yIndicator = stationSeeking(plan, points);
+}
+
+void mergeTwoPlan(plan_t& des, plan_t& src) {
+	for (int i=0; i<src.size(); ++i)
+		des.push_back(src[i]);
 }
