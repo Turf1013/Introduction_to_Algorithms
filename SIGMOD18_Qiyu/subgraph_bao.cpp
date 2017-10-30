@@ -8,7 +8,7 @@ using namespace std;
 #include "global.h"
 #include "input.h"
 
-#define LOCAL_DEBUG
+//#define LOCAL_DEBUG
 
 vector<bool> visit;
 vector<int> vecI1starS;
@@ -51,7 +51,7 @@ plan_t bndAndOpt(double& budget) {
 		station.id = v;
 		station.p = points[v];
 		station.reset();
-		if (planStation(plan, station, budget) && station.hasCharger()) {
+		if (planStation(plan, station, budget)) {
 			plan.push_back(station);
 			budget -= calc_fs(station, points);
 			#ifdef LOCAL_DEBUG
@@ -91,7 +91,7 @@ plan_t bndAndOpt(int clusterId, double& budget) {
 		station.id = v;
 		station.p = points[v];
 		station.reset();
-		if (planStation(plan, station, budget) && station.hasCharger()) {
+		if (planStation(plan, station, budget)) {
 			plan.push_back(station);
 			budget -= calc_fs(station, points);
 			#ifdef LOCAL_DEBUG
@@ -129,6 +129,11 @@ void init() {
 		minEstate = min(minEstate, points[i].ep);
 }
 
+void mergeTwoPlan(plan_t& des, plan_t& src) {
+	for (int i=0; i<src.size(); ++i)
+		des.push_back(src[i]);
+}
+
 double solve() {
 	init();
 	double budget = 0.0, budget_ = B / ksub, tmp;
@@ -151,6 +156,7 @@ double solve() {
 	
 	update_yIndicator(plan, points);
 	double ret = calc_social(plan, points);
+	dumpResult(plan, points);
 
 	return ret;
 }
@@ -244,14 +250,12 @@ double calc_ubgv(int v, const plan_t& plan, const station_t& station, const vect
 }
 
 pdd calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& points, double social_p) {
-	if (station.hasCharger())
-		plan.push_back(station);
+	plan.push_back(station);
 
 	update_yIndicator(plan, points);
 	double social_ps = calc_social(plan, points);
 	double fs = calc_fs(station, points);
-	if (station.hasCharger())
-		plan.pop_back();
+	plan.pop_back();
 	// double social_p = calc_social(plan, points);
 
 	double ret = (social_ps - social_p) / fs;
@@ -321,10 +325,8 @@ double KnapsackBasedOpt(station_t& station) {
 bool planStation(plan_t& plan, station_t& station, double budget) {
 	double price = KnapsackBasedOpt(station);
 
-	if (price > budget) {
-		station.reset();
+	if (price > budget)
 		return false;
-	}
 
 	int c = station.getChargerNum();
 	budget -= price;
