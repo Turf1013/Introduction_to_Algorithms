@@ -4,8 +4,8 @@ import sys
 import commands
 
 class constForRegen:
-	desFilePath = "./testData"
-	demandBound = 30
+	desFilePath = "./smallData"
+	demandBound = 6
 	nV = 78560
 	
 class CFR(constForRegen):

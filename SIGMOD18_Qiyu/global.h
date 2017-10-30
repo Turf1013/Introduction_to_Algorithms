@@ -7,7 +7,7 @@
 
 #define GLOBAL_DEBUG
 
-#define MAXN 805
+#define MAXN 5005
 
 // #define USE_MAP
 #define USE_ARRAY
@@ -91,6 +91,14 @@ struct station_t {
 		int ret = 0;
 		for (int i=0; i<chargerN; ++i) {
 			ret += x[i] * chargers[i].p;
+		}
+		return ret;
+	}
+
+	int getChargerNum() const {
+		int ret = 0;
+		for (int i=0; i<chargerN; ++i) {
+			ret += x[i];
 		}
 		return ret;
 	}
@@ -190,6 +198,7 @@ void init_global_yIndicator(vector<int>& yIndicator, const vector<point_t>& poin
 void update_yIndicator(plan_t& plan, const station_t& station, const vector<point_t>& points);
 void restore_yIndicator(plan_t& plan, const station_t& station, const vector<point_t>& points);
 void update_yIndicator(plan_t& plan, const vector<point_t>& points);
+void restore_yIndicator(plan_t& plan, const vector<point_t>& points);
 
 void dumpResult(string execName, double result);
 #endif

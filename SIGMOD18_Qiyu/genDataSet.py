@@ -13,7 +13,7 @@ class constForGenDataSet:
 	rmaxList	= [500, 1000, 1500, 2000, 2500]
 	bList		= [x*10**4 for x in [5000, 10000, 15000, 20000, 25000]]
 	kList		= [2, 4, 6, 8, 10] # add 50
-	muList		= [x*40 for x in [40000, 45000, 50000, 55000, 60000]]
+	muList		= [x*40 for x in [20000, 25000, 30000, 35000, 40000]]
 	sigma		= 10000 * 40
 	# estate price normal
 	defaultValue = [

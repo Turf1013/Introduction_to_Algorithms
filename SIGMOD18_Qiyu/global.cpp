@@ -8,9 +8,8 @@ using namespace std;
 #include "global.h"
 
 
-
 const double eps = 1e-6;
-const double inf = 1e30;
+const double inf = 1e25;
 const double infw = 1.25e5;
 int chargerN;
 double rmax;
@@ -130,7 +129,9 @@ double calc_benefit(const plan_t& plan, const vector<point_t>& points) {
 	for (int i=0; i<plan.size(); ++i) {
 		tmp = calc_benefit(plan[i], points);
 		ret += tmp;
-		printf("calc_benefit %d: tmp = %.12lf\n", plan[i].id, tmp);
+		// #ifdef GLOBAL_DEBUG
+		// printf("calc_benefit %d: tmp = %.12lf, ret = %.12lf\n", plan[i].id, tmp, ret);
+		// #endif
 	}
 
 	return ret;
@@ -233,7 +234,11 @@ double calc_cost(const plan_t& plan, const vector<point_t>& points) {
 	double costt = calc_costt(plan, points);
 	double costb = calc_costb(plan, points);
 
-	ret = alpha * costt + (1.0 - alpha) * costb;
+	#ifdef GLOBAL_DEBUG
+	printf("costt = %.12lf, costb = %.12lf\n", costt, costb);
+	#endif
+
+	ret = alpha * costt / 1e9 + (1.0 - alpha) * costb;
 
 	return ret;
 }
@@ -243,12 +248,11 @@ double calc_social(const plan_t& plan, const vector<point_t>& points) {
 	double benefit = calc_benefit(plan, points);
 	double cost = calc_cost(plan, points);
 
-	// if (plan.size() >= 180) {
-		// plan.print();
+	#ifdef GLOBAL_DEBUG
 		printf("calc_social: benefit = %.8lf, cost = %.8lf\n", benefit, cost);
-	// }
+	#endif
 
-	ret = lambda * benefit * 1.5e8 - (1.0 - lambda) * cost;
+	ret = lambda * benefit - (1.0 - lambda) * cost;
 
 	return ret;
 }
@@ -307,7 +311,7 @@ void update_yIndicator(plan_t& plan, const station_t& station, const vector<poin
 	yIndicator_bk = yIndicator;
 	for (int v=0; v<points.size(); ++v) {
 		if (yIndicator[v] == -1) {
-			yIndicator[v] = sid;
+			yIndicator[v] = plan.size();
 			continue;
 		}
 		double mnVal = calc_costa(v, plan[yIndicator[v]], points);
@@ -319,6 +323,10 @@ void update_yIndicator(plan_t& plan, const station_t& station, const vector<poin
 }
 
 void restore_yIndicator(plan_t& plan, const station_t& station, const vector<point_t>& points) {
+	yIndicator = yIndicator_bk;
+}
+
+void restore_yIndicator(plan_t& plan, const vector<point_t>& points) {
 	yIndicator = yIndicator_bk;
 }
 
