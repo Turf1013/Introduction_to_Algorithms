@@ -16,7 +16,7 @@ vector<int> permu;
 void planCharger(station_t& station, double budget) {
 	#ifdef LOCAL_DEBUG
 	printf("id = %d, budget = %.2lf, estatPrice = %.2lf\n", station.id, budget, calc_estatePrice(station, points));
-	fflush(stdout);
+	//fflush(stdout);
 	#endif
 	int i, j, k, c=K;
 
@@ -100,12 +100,12 @@ double solve() {
 		}
 		#ifdef LOCAL_DEBUG
 		printf("%d: plan.size() = %d, plan.cs()= %d\n", i, plan.size(), plan.cs());
-		fflush(stdout);
+		//fflush(stdout);
 		#endif
 	}
 	#ifdef LOCAL_DEBUG
 	plan.print();
-	fflush(stdout);
+	//fflush(stdout);
 	#endif
 	
 	update_yIndicator(plan, points);
@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
 	}
 	putchar('\n');
 	#endif
-	fflush(stdout);
+	//fflush(stdout);
 
 	return 0;
 }

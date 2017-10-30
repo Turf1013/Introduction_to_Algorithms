@@ -7,7 +7,7 @@
 
 #define GLOBAL_DEBUG
 
-#define MAXN 10005
+#define MAXN 805
 
 // #define USE_MAP
 #define USE_ARRAY
@@ -27,6 +27,7 @@ typedef pair<double,int> pdi;
 #endif
 extern const double eps;
 extern const double inf;
+extern const double infw;
 extern int chargerN;
 extern double rmax;
 extern double alpha;

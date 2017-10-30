@@ -5,7 +5,7 @@ import commands
 
 class constForRegen:
 	desFilePath = "./testData"
-	demandBound = 26
+	demandBound = 30
 	nV = 78560
 	
 class CFR(constForRegen):
@@ -76,6 +76,7 @@ def regenEdges(nodeSet, srcFileName):
 	desFileName = os.path.join(CFR.desFilePath, srcFileName)
 	nV = len(nodeSet)
 	nodeList = sorted(list(nodeSet))
+	# print nodeList
 	itemList = [0.0] * nV
 	with open(desFileName, "w") as fout:
 		with open(srcFileName, "r") as fin:
@@ -83,12 +84,14 @@ def regenEdges(nodeSet, srcFileName):
 				if i==0:
 					fout.write("%d\n" % (nV))
 				else:
-					vid = i - 1
-					if vid in nodeSet:
+					uid = i - 1
+					if uid in nodeSet:
 						tmpList = line.strip().split(' ')
 						for j,vid in enumerate(nodeList):
 							itemList[j] = tmpList[vid]
-						line = " ".join(tmpList)
+							# if uid==vid:
+								# print itemList[j]	
+						line = " ".join(itemList)
 						fout.write("%s\n" % (line))
 				if i>=CFR.nV:
 					break

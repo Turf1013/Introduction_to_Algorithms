@@ -47,7 +47,7 @@ void read_shortEdges(istream& fin, int& nV, vector<vector<double> >& dists) {
 		for (int j=0; j<nV; ++j) {
 			fin >> vtmp[j];
 			if (vtmp[j] < 0)
-				vtmp[j] = inf;
+				vtmp[j] = infw;
 		}
 		dists.push_back(vtmp);
 	}
@@ -419,7 +419,7 @@ void read_shortEdges(istream& fin, int& nV, double dists[][MAXN]) {
 		for (int j=0; j<nV; ++j) {
 			fin >> w;
 			//*((double *)(dists + i*MAXN + j)) = w;
-			if (w <= 0) w = inf;
+			if (w < 0) w = infw;
 			dists[i][j] = w;
 		}
 	}

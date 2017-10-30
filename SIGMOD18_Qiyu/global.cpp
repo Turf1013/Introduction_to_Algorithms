@@ -11,6 +11,7 @@ using namespace std;
 
 const double eps = 1e-6;
 const double inf = 1e30;
+const double infw = 1.25e5;
 int chargerN;
 double rmax;
 double alpha;
@@ -95,7 +96,7 @@ int calc_I1S(const station_t& station, const vector<point_t>& points) {
 	double rs = calc_rs(station);
 
 	for (int i=0; i<points.size(); ++i) {
-		if (calc_distance(station.id, i) <= rs)
+		if (calc_distance(i, station.id) <= rs)
 			++ret;
 	}
 
@@ -118,7 +119,7 @@ double calc_benefit(const station_t& station, const vector<point_t>& points) {
 	// double i1s = calc_I1S(station, points), i2s = calc_I2S(station, points);
 	double i1s = calc_I1S(station, points);
 	const point_t& p = points[station.id];
-	printf("rs = %.12lf, i1s = %.0lf, p.w = %.12lf\n", calc_rs(station), i1s, p.w);
+	//printf("rs = %.12lf, i1s = %.0lf, p.w = %.12lf\n", calc_rs(station), i1s, p.w);
 	return 2.0 / (1.0 + exp(-p.w * i1s)) - 1.0;
 }
 
@@ -144,7 +145,7 @@ double calc_distance(int a, int b) {
 		if (dists.count(p) > 0)
 			return dists[p];
 		else
-			return 130000.0;
+			return infw;
 		#endif
 	#endif
 }
@@ -153,7 +154,7 @@ double calc_costt(const plan_t& plan, const vector<point_t>& points) {
 	double ret = 0.0;
 	vector<int>& y = yIndicator;
 
-	y = calc_yvs(plan, points);
+	//y = calc_yvs(plan, points);
 	for (int i=0; i<plan.size(); ++i) {
 		for (int j=0; j<y.size(); ++j) {
 			if (y[j] == i) {
@@ -170,11 +171,13 @@ vector<int> calc_yvs(const plan_t& plan, const vector<point_t>& points) {
 }
 
 double calc_ds(const station_t& station, const vector<point_t>& points, const vector<int>& y) {
-	double ret = 0.0;
+	double ret = 0.0, l;
 
 	for (int i=0; i<y.size(); ++i) {
 		if (y[i] == station.id) {
-			ret += points[i].d / calc_distance(i, station.id);
+			l = calc_distance(i, station.id);
+			l = max(l, 1.0);
+			ret += points[i].d / l;
 		}
 	}
 
@@ -245,7 +248,7 @@ double calc_social(const plan_t& plan, const vector<point_t>& points) {
 		printf("calc_social: benefit = %.8lf, cost = %.8lf\n", benefit, cost);
 	// }
 
-	ret = lambda * benefit - (1.0 - lambda) * cost;
+	ret = lambda * benefit * 1.5e8 - (1.0 - lambda) * cost;
 
 	return ret;
 }
