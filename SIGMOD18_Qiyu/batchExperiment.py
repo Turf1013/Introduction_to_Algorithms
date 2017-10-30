@@ -8,7 +8,7 @@ from genDataSet import constForGenDataSet
 
 class constForBatchExperiment(constForGenDataSet):
 	dataSetN = 1
-	nprocess = 8
+	nprocess = 12
 
 class CFBE(constForBatchExperiment):
 	pass

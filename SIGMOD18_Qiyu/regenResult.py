@@ -6,7 +6,7 @@ from genDataSet import constForGenDataSet
 
 class constForRegenResult(constForGenDataSet):
 	dataSetN = 1
-	nprocess = 8
+	nprocess = 12
 
 class CFRR(constForRegenResult):
 	pass
