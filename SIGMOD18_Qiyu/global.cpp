@@ -7,6 +7,8 @@ using namespace std;
 
 #include "global.h"
 
+
+
 const double eps = 1e-6;
 const double inf = 1e30;
 int chargerN;
@@ -20,13 +22,14 @@ double usedTime = -1;
 int usedMemory = -1;
 vector<charger_t> chargers;
 vector<set<int> > covered;
-#ifdef	USE_ARRAY
-	vector<vector<double> > dists;
-#else
-	#ifndef USE_SQL
-	map<pii,double> dists;
-	#endif
-#endif
+// #ifdef	USE_ARRAY
+	// vector<vector<double> > dists;
+	double dists[50][50];
+// #else
+	// #ifndef USE_SQL
+	// map<pii,double> dists;
+	// #endif
+// #endif
 vector<point_t> points;
 vector<int> vecSumDemands;
 vector<int> yIndicator;
@@ -115,15 +118,18 @@ double calc_benefit(const station_t& station, const vector<point_t>& points) {
 	// double i1s = calc_I1S(station, points), i2s = calc_I2S(station, points);
 	double i1s = calc_I1S(station, points);
 	const point_t& p = points[station.id];
+	printf("rs = %.12lf, i1s = %.0lf, p.w = %.12lf\n", calc_rs(station), i1s, p.w);
 	return 2.0 / (1.0 + exp(-p.w * i1s)) - 1.0;
 }
 
 double calc_benefit(const plan_t& plan, const vector<point_t>& points) {
-	double ret = 0.0;
+	double ret = 0.0, tmp;
 
 	// update_covered(plan, points);
 	for (int i=0; i<plan.size(); ++i) {
-		ret += calc_benefit(plan[i], points);
+		tmp = calc_benefit(plan[i], points);
+		ret += tmp;
+		printf("calc_benefit %d: tmp = %.12lf\n", plan[i].id, tmp);
 	}
 
 	return ret;
@@ -234,10 +240,10 @@ double calc_social(const plan_t& plan, const vector<point_t>& points) {
 	double benefit = calc_benefit(plan, points);
 	double cost = calc_cost(plan, points);
 	
-	if (plan.size() >= 180) {
-		plan.print();
+	// if (plan.size() >= 180) {
+		// plan.print();
 		printf("calc_social: benefit = %.8lf, cost = %.8lf\n", benefit, cost);
-	}
+	// }
 
 	ret = lambda * benefit - (1.0 - lambda) * cost;
 

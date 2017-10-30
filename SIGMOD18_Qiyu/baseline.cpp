@@ -68,8 +68,6 @@ void init() {
 	init_global(vecSumDemands, yIndicator, points);
 
 	sort(chargers.begin(), chargers.end(), cmpCharger);
-	
-	dists.clear();
 }
 
 double solve() {

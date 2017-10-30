@@ -6,20 +6,25 @@
 #define GLOBAL_H
 
 #define GLOBAL_DEBUG
-// #define USE_SQL
+
+// #define MAXN 78565
+
+// #define USE_MAP
+// #define USE_ARRAY
 
 typedef pair<int,int> pii;
 typedef pair<double,double> pdd;
 typedef pair<int,double> pid;
 typedef pair<double,int> pdi;
 
-#ifdef	USE_ARRAY
-	extern vector<vector<double> > dists;
-#else
-	#ifndef USE_SQL
-	extern map<pii,double> dists;
-	#endif
-#endif
+// #ifdef	USE_ARRAY
+	// extern vector<vector<double> > dists;
+	extern double dists[50][50];
+// #else
+	// #ifdef USE_MAP
+	// extern map<pii,double> dists;
+	// #endif
+// #endif
 extern const double eps;
 extern const double inf;
 extern int chargerN;

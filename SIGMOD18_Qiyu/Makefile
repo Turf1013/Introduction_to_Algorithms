@@ -4,8 +4,7 @@
 CC = gcc
 CXX = g++
 LIBS = -lrt
-CFLAGS = -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3
-TARGET = ./all
+CFLAGS = -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3 -mcmodel=medium
 
 all: input.o global.o base ibase bao ibao sbao isbao
 prepareData: prepareData.cpp
