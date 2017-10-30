@@ -16,10 +16,10 @@ void read_roadNetwork(istream& fin, int& nV, int& nE, vector<pdd>& positions, ve
 		fin >> x >> y;
 		positions.push_back(make_pair(x, y));
 	}
-	for (int i=0; i<nE; ++i) {
-		fin >> u >> v >> w;
-		edges.push_back(make_pair(make_pair(u, v), w));
-	}
+	// for (int i=0; i<nE; ++i) {
+		// fin >> u >> v >> w;
+		// edges.push_back(make_pair(make_pair(u, v), w));
+	// }
 }
 
 void read_roadNetwork(string fileName, int& nV, int& nE, vector<pdd>& positions, vector<pair<pii,double> >& edges) {
@@ -44,8 +44,11 @@ void read_shortEdges(istream& fin, int& nV, vector<vector<double> >& dists) {
 	dists.clear();
 	vector<double> vtmp(nV, 0.0);
 	for (int i=0; i<nV; ++i) {
-		for (int j=0; j<nV; ++j)
+		for (int j=0; j<nV; ++j) {
 			fin >> vtmp[j];
+			if (vtmp[j] < 0)
+				vtmp[j] = inf;
+		}
 		dists.push_back(vtmp);
 	}
 // #ifdef GLOBAL_DEBUG
@@ -416,6 +419,7 @@ void read_shortEdges(istream& fin, int& nV, double dists[][MAXN]) {
 		for (int j=0; j<nV; ++j) {
 			fin >> w;
 			//*((double *)(dists + i*MAXN + j)) = w;
+			if (w <= 0) w = inf;
 			dists[i][j] = w;
 		}
 	}

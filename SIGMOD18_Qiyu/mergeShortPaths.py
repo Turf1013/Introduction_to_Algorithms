@@ -4,7 +4,7 @@ import os
 import commands
 
 class constForMergeSP:
-	srcFileName = "./Shanghai_roadnetwork.txt"
+	srcFileName = "./roadNetwork.txt"
 	desFileName = "./shortEdges.txt"
 	
 class CFMS(constForMergeSP):

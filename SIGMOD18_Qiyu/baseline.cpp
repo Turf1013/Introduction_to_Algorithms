@@ -108,7 +108,7 @@ double solve() {
 	fflush(stdout);
 	#endif
 	
-	// update_yIndicator(plan, points);
+	update_yIndicator(plan, points);
 	ret = calc_social(plan, points);
 
 	return ret;

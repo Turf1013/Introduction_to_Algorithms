@@ -151,7 +151,7 @@ double calc_distance(int a, int b) {
 
 double calc_costt(const plan_t& plan, const vector<point_t>& points) {
 	double ret = 0.0;
-	vector<int> y;
+	vector<int>& y = yIndicator;
 
 	y = calc_yvs(plan, points);
 	for (int i=0; i<plan.size(); ++i) {
@@ -212,7 +212,7 @@ double calc_ws(const station_t& station, const vector<point_t>& points) {
 
 double calc_costb(const plan_t& plan, const vector<point_t>& points) {
 	double ret = 0.0;
-	vector<int> y = calc_yvs(plan, points);
+	vector<int>& y = yIndicator;
 
 	for (int i=0; i<plan.size(); ++i) {
 		station_t station = plan[i];

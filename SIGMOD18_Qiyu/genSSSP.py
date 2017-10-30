@@ -8,7 +8,7 @@ import utm
 
 class constForGenSSSP:
 	execName = "./sssp"
-	srcFileName = "./Shanghai_roadnetwork.txt"
+	srcFileName = "./roadNetwork.txt"
 
 class CFGS(constForGenSSSP):
 	pass

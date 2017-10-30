@@ -13,8 +13,8 @@ class constForGenDataSet:
 	rmaxList	= [500, 1000, 1500, 2000, 2500]
 	bList		= [x*10**4 for x in [5000, 10000, 15000, 20000, 25000]]
 	kList		= [2, 4, 6, 8, 10] # add 50
-	muList		= [40000, 45000, 50000, 55000, 60000] 
-	sigma		= 10000
+	muList		= [x*40 for x in [40000, 45000, 50000, 55000, 60000]]
+	sigma		= 10000 * 40
 	# estate price normal
 	defaultValue = [
 		lambdaList[len(lambdaList)/2-1],
@@ -136,7 +136,13 @@ def genDataSet(desFilePath, dataSetN, nprocess):
 			fout.write("%d\n" % (nV))
 			for price in prices:
 				fout.write("%.2lf\n" % (price))
-		
+				
+	mu = CFGD.muList[len(CFGD.muList)/2]
+	desFileName = "prices_%d.txt" % (mu)
+	desFileName = os.path.join(desFilePath, desFileName)
+	cmdLine = "cp %s ./prices.txt" % (desFileName)
+	commands.getoutput(cmdLine)
+	
 
 def exp0(dataSetN=1, nprocess=4):
 	desFilePath = "../dataSet_Qiyu"

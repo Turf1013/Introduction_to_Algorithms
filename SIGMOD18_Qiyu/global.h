@@ -7,7 +7,7 @@
 
 #define GLOBAL_DEBUG
 
-#define MAXN 55
+#define MAXN 10005
 
 // #define USE_MAP
 #define USE_ARRAY

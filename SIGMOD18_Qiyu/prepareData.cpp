@@ -7,6 +7,9 @@ using namespace std;
 
 const double inf = 1e30;
 typedef pair<double,double> pdd;
+
+const int maxn = 78565;
+double g[maxn];
 	
 double Length(pdd& a, pdd& b) {
 	return sqrt((a.first-b.first)*(a.first-b.first) + (a.second-b.second)*(a.second-b.second));
@@ -38,17 +41,33 @@ int main() {
 		demands.push_back(x);
 	}
 	
+	freopen("shortEdges.txt", "r", stdin);
+	double mxg = -inf, mng = inf;
+	cin >> nV;
 	for (int i=0; i<nV; ++i) {
+		for (int j=0; j<nV; ++j) {
+			cin >> g[j];
+			if (g[j] < 0)
+				g[j] = inf;
+			if (i != j && g[j]<inf) {
+				mxg = max(mxg, g[j]);
+				mng = min(mng, g[j]);
+			}
+		}
+		
 		tmp = 0;
 		for (int j=0; j<nV; ++j) {
-			if (Length(points[i], points[j]) <= rmax) {
+			if (g[j] <= rmax) {
 				tmp += demands[j];
 			}
 		}
+		
 		sum += tmp;
 		mxVal = max(mxVal, tmp);
 		mnVal = min(mnVal, tmp);
 	}
+	printf("mxg = %.12lf, mng = %.12lf\n", mxg, mng);
+	
 	avg = sum / nV;
 	
 	printf("sum = %.2lf, avg = %.2lf, mx = %.2lf, mn = %.2lf\n", sum, avg, mxVal, mnVal);
