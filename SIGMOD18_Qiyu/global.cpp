@@ -22,14 +22,14 @@ double usedTime = -1;
 int usedMemory = -1;
 vector<charger_t> chargers;
 vector<set<int> > covered;
-// #ifdef	USE_ARRAY
+#ifdef	USE_ARRAY
 	// vector<vector<double> > dists;
-	double dists[50][50];
-// #else
-	// #ifndef USE_SQL
-	// map<pii,double> dists;
-	// #endif
-// #endif
+	double dists[MAXN][MAXN];
+#else
+	#ifndef USE_SQL
+	map<pii,double> dists;
+	#endif
+#endif
 vector<point_t> points;
 vector<int> vecSumDemands;
 vector<int> yIndicator;
@@ -239,7 +239,7 @@ double calc_social(const plan_t& plan, const vector<point_t>& points) {
 	double ret;
 	double benefit = calc_benefit(plan, points);
 	double cost = calc_cost(plan, points);
-	
+
 	// if (plan.size() >= 180) {
 		// plan.print();
 		printf("calc_social: benefit = %.8lf, cost = %.8lf\n", benefit, cost);

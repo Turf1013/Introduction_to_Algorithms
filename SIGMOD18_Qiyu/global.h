@@ -7,24 +7,24 @@
 
 #define GLOBAL_DEBUG
 
-// #define MAXN 78565
+#define MAXN 55
 
 // #define USE_MAP
-// #define USE_ARRAY
+#define USE_ARRAY
 
 typedef pair<int,int> pii;
 typedef pair<double,double> pdd;
 typedef pair<int,double> pid;
 typedef pair<double,int> pdi;
 
-// #ifdef	USE_ARRAY
+#ifdef	USE_ARRAY
 	// extern vector<vector<double> > dists;
-	extern double dists[50][50];
-// #else
-	// #ifdef USE_MAP
-	// extern map<pii,double> dists;
-	// #endif
-// #endif
+	extern double dists[MAXN][MAXN];
+#else
+	#ifdef USE_MAP
+	extern map<pii,double> dists;
+	#endif
+#endif
 extern const double eps;
 extern const double inf;
 extern int chargerN;
@@ -106,7 +106,7 @@ struct station_t {
 		}
 		return ret;
 	}
-	
+
 	void print() const {
 		putchar('[');
 		for (int i=0; i<chargerN; ++i) {
@@ -139,15 +139,15 @@ struct plan_t {
 	void push_back(const station_t& station) {
 		stations.push_back(station);
 	}
-	
+
 	void print() const {
-		printf("plan with %d stations\n", stations.size());
+		printf("plan with %d stations\n", (int)stations.size());
 		for (int i=0; i<stations.size(); ++i) {
 			printf("station_%d: ", i);
 			stations[i].print();
 		}
 	}
-	
+
 	int cs() const {
 		int ret = 0;
 		for (int i=0; i<stations.size(); ++i)

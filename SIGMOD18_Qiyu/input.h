@@ -15,8 +15,6 @@ void read_shortEdges(istream& fin, int& nV, vector<vector<double> >& dists);
 void read_shortEdges(string fileName, int& nV, vector<vector<double> >& dists);
 void read_shortEdges(istream& fin, int& nV, map<pii, double>& dists);
 void read_shortEdges(string fileName, int& nV, map<pii, double>& dists);
-void read_shortEdges(istream& fin, int& nV, double** dists);
-void read_shortEdges(string fileName, int& nV, double** dists);
 void read_ruralDegree(istream& fin, int& nV, vector<double>& degs);
 void read_ruralDegree(string fileName, int& nV, vector<double>& degs);
 void read_chargers(istream& fin, int& chargerN, vector<charger_t>& chargers);
@@ -33,5 +31,10 @@ void read_all(string paraFileName, string priceFileName);
 void read_all(istream& fin, string priceFileName);
 void read_incremental(string fileName, string priceFileName, vector<double>& bs);
 void read_incremental(istream& fin, string priceFileName, vector<double>& bs);
+
+#ifdef USE_ARRAY
+void read_shortEdges(istream& fin, int& nV, double dists[][MAXN]);
+void read_shortEdges(string fileName, int& nV, double dists[][MAXN]);
+#endif
 
 #endif

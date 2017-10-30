@@ -39,7 +39,7 @@ void read_shortEdges(istream& fin, int& nV, vector<vector<double> >& dists) {
 	//printf("begin read shortEdges.\n");
 	// fflush(stdout);
 // #endif
-	
+
 	fin >> nV;
 	dists.clear();
 	vector<double> vtmp(nV, 0.0);
@@ -82,7 +82,7 @@ void read_shortEdges(istream& fin, int& nV, map<pii, double>& dists) {
 	fin >> nV;
 	dists.clear();
 	double w;
-	
+
 	for (int i=0; i<nV; ++i) {
 		for (int j=0; j<nV; ++j) {
 			fin >> w;
@@ -107,7 +107,7 @@ void read_ruralDegree(string fileName, int& nV, vector<double>& degs) {
 	//printf("begin read degrees.\n");
 	//fflush(stdout);
 	// #endif
-	
+
 	ifstream fin(fileName.c_str(), ios::in);
 	if (!fin.is_open()) {
 		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
@@ -117,7 +117,7 @@ void read_ruralDegree(string fileName, int& nV, vector<double>& degs) {
 	read_ruralDegree(fin, nV, degs);
 
 	fin.close();
-	
+
 	// #ifdef GLOBAL_DEBUG
 	//printf("begin read degrees.\n");
 	//fflush(stdout);
@@ -139,7 +139,7 @@ void read_chargers(string fileName, int& chargerN, vector<charger_t>& chargers) 
 	//printf("begin read chargers.\n");
 	//fflush(stdout);
 	//#endif
-	
+
 	ifstream fin(fileName.c_str(), ios::in);
 	if (!fin.is_open()) {
 		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
@@ -149,7 +149,7 @@ void read_chargers(string fileName, int& chargerN, vector<charger_t>& chargers) 
 	read_chargers(fin, chargerN, chargers);
 
 	fin.close();
-	
+
 	//#ifdef GLOBAL_DEBUG
 	//printf("begin read chargers.\n");
 	//fflush(stdout);
@@ -166,12 +166,12 @@ void read_demands(istream& fin, int& nV, vector<int>& demands) {
 	}
 }
 
-void read_demands(string fileName, int& nV, vector<int>& demands) 
+void read_demands(string fileName, int& nV, vector<int>& demands) {
 //#ifdef GLOBAL_DEBUG
 	//printf("begin read demmands.\n");
 	//fflush(stdout);
 	//#endif
-	
+
 	ifstream fin(fileName.c_str(), ios::in);
 	if (!fin.is_open()) {
 		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
@@ -181,7 +181,7 @@ void read_demands(string fileName, int& nV, vector<int>& demands)
 	read_demands(fin, nV, demands);
 
 	fin.close();
-	
+
 	//#ifdef GLOBAL_DEBUG
 	//printf("begin read demmands.\n");
 	//fflush(stdout);
@@ -203,7 +203,7 @@ void read_prices(string fileName, int& nV, vector<double>& prices) {
 	//printf("begin read prices.\n");
 	//fflush(stdout);
 	//#endif
-	
+
 	ifstream fin(fileName.c_str(), ios::in);
 	if (!fin.is_open()) {
 		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
@@ -213,7 +213,7 @@ void read_prices(string fileName, int& nV, vector<double>& prices) {
 	read_prices(fin, nV, prices);
 
 	fin.close();
-	
+
 	//#ifdef GLOBAL_DEBUG
 	//printf("begin read prices.\n");
 	//fflush(stdout);
@@ -404,22 +404,27 @@ void read_incremental(istream& fin, string priceFileName, vector<double>& bs) {
 	}
 }
 
-void read_shortEdges(istream& fin, int& nV, double** dists) {
+#ifdef USE_ARRAY
+void read_shortEdges(istream& fin, int& nV, double dists[][MAXN]) {
 	//printf("begin read shortEdges.\n");
 	//fflush(stdout);
-	
+
+	double w;
+
 	fin >> nV;
-	dists.clear();
 	for (int i=0; i<nV; ++i) {
-		for (int j=0; j<nV; ++j)
-			fin >> dists[i][j];
+		for (int j=0; j<nV; ++j) {
+			fin >> w;
+			//*((double *)(dists + i*MAXN + j)) = w;
+			dists[i][j] = w;
+		}
 	}
-	
+
 	//printf("begin read shortEdges.\n");
 	//fflush(stdout);
 }
 
-void read_shortEdges(string fileName, int& nV, double** dists) {
+void read_shortEdges(string fileName, int& nV, double dists[][MAXN]) {
 	ifstream fin(fileName.c_str(), ios::in);
 	if (!fin.is_open()) {
 		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
@@ -430,3 +435,4 @@ void read_shortEdges(string fileName, int& nV, double** dists) {
 
 	fin.close();
 }
+#endif
