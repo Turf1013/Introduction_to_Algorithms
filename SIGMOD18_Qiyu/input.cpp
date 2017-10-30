@@ -440,3 +440,30 @@ void read_shortEdges(string fileName, int& nV, double dists[][MAXN]) {
 	fin.close();
 }
 #endif
+
+void read_subgraph(istream& fin, int& ksub, vector<vector<int> >& clusters) {
+	int n;
+	
+	clusters.clear();
+	fin >> ksub;
+	for (int i=0; i<ksub; ++i) {
+		fin >> n;
+		vector<int> vtmp(n, -1);
+		for (int j=0; j<n; ++j) {
+			fin >> vtmp[j];
+		}
+		clusters.push_back(vtmp);
+	}
+}
+
+void read_subgraph(string fileName, int& ksub, vector<vector<int> >& clusters) {
+	ifstream fin(fileName.c_str(), ios::in);
+	if (!fin.is_open()) {
+		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
+		exit(1);
+	}
+
+	read_subgraph(fin, ksub, clusters);
+
+	fin.close();
+}

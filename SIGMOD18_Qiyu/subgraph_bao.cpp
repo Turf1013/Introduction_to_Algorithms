@@ -16,6 +16,7 @@ vector<vector<int> > clusters;
 int ksub;
 int maxp;
 double minf;
+double minEstate;
 
 double calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& points);
 double calc_ubgv(int v, const plan_t& plan, const station_t& station, const vector<point_t>& points);
@@ -29,12 +30,12 @@ plan_t bndAndOpt(double& budget) {
 	plan_t plan;
 	station_t station;
 
-	while (budget > 0) {
+	while (budget >= minEstate) {
 		double mxVal = -inf, tmp;
 		int v = -1;
 		station.reset();
 		for (int i=0; i<points.size(); ++i) {
-			if (visit[i])
+			if (visit[i] || budget<points[i].ep)
 				continue;
 			station.id = i;
 			tmp = calc_ubgv(i, plan, station, points);
@@ -46,15 +47,17 @@ plan_t bndAndOpt(double& budget) {
 		if (v < 0)
 			break;
 
+		visit[v] = true;
 		station.id = v;
 		station.p = points[v];
+		station.reset();
 		if (planStation(plan, station, budget)) {
-			visit[v] = true;
 			plan.push_back(station);
 			budget -= calc_fs(station, points);
 			#ifdef LOCAL_DEBUG
 			assert(budget >= 0);
 			#endif
+			update_yIndicator(plan, points);
 		}
 	}
 
@@ -66,13 +69,13 @@ plan_t bndAndOpt(int clusterId, double& budget) {
 	station_t station;
 	vector<int>& pointIds = clusters[clusterId];
 
-	while (budget > 0) {
+	while (budget >= minEstate) {
 		double mxVal = -inf, tmp;
 		int v = -1;
 		station.reset();
 		for (int i=0; i<pointIds.size(); ++i) {
 			int pointId = pointIds[i];
-			if (visit[pointId])
+			if (visit[pointId] || budget<points[pointId].ep)
 				continue;
 			station.id = pointId;
 			tmp = calc_ubgv(pointId, plan, station, points);
@@ -84,33 +87,21 @@ plan_t bndAndOpt(int clusterId, double& budget) {
 		if (v < 0)
 			break;
 
+		visit[v] = true;
 		station.id = v;
 		station.p = points[v];
+		station.reset();
 		if (planStation(plan, station, budget)) {
 			plan.push_back(station);
 			budget -= calc_fs(station, points);
-			visit[v] = true;
 			#ifdef LOCAL_DEBUG
 			assert(budget >= 0);
 			#endif
+			update_yIndicator(plan, points);
 		}
 	}
 
 	return plan;
-}
-
-void init_subgraph() {
-	int n;
-
-	cin >> ksub;
-	for (int i=0; i<ksub; ++i) {
-		cin >> n;
-		vector<int> vtmp(n, -1);
-		for (int j=0; j<n; ++j) {
-			cin >> vtmp[j];
-		}
-		clusters.push_back(vtmp);
-	}
 }
 
 void init() {
@@ -132,8 +123,10 @@ void init() {
 				++sum;
 		}
 	}
-
-	init_subgraph();
+	
+	minEstate = inf;
+	for (int i=0; i<points.size(); ++i)
+		minEstate = min(minEstate, points[i].ep);
 }
 
 void mergeTwoPlan(plan_t& des, plan_t& src) {
@@ -151,13 +144,15 @@ double solve() {
 		plan_t tmpPlan = bndAndOpt(i, tmp);
 		mergeTwoPlan(plan, tmpPlan);
 		budget += tmp;
+		update_yIndicator(plan, points);
 	}
 	if (budget > 0) {
 		plan_t tmpPlan = bndAndOpt(budget);
 		mergeTwoPlan(plan, tmpPlan);
 	}
-
-	double ret = calc_benefit(plan, points);
+	
+	update_yIndicator(plan, points);
+	double ret = calc_social(plan, points);
 
 	return ret;
 }
@@ -219,7 +214,7 @@ double calc_deltaCost(int v, const plan_t& plan, const station_t& station, const
 	double ret = 0.0;
 	plan_t newPlan = plan;
 	newPlan.push_back(station);
-	vector<int> yvs = stationSeeking(newPlan, points);
+	vector<int>& yvs = yIndicator;
 
 	for (int i=0; i<newPlan.size(); ++i) {
 		for (int j=0; j<yvs.size(); ++j) {
@@ -244,60 +239,77 @@ double calc_ubgv(int v, const plan_t& plan, const station_t& station, const vect
 	return ret;
 }
 
-double calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& points) {
+pdd calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& points, double social_p) {
 	plan.push_back(station);
-	double social_ps = calc_social(plan, points);
-	plan.pop_back();
-	double social_p = calc_social(plan, points);
-	double fs = calc_fs(station, points);
 
-	return (social_ps - social_p) / fs;
+	update_yIndicator(plan, points);
+	double social_ps = calc_social(plan, points);
+	double fs = calc_fs(station, points);
+	plan.pop_back();
+	// double social_p = calc_social(plan, points);
+
+	double ret = (social_ps - social_p) / fs;
+
+	restore_yIndicator(plan, points);
+
+	return make_pair(ret, social_ps);
 }
 
+/**
+	dp[i][j][k] = min{dp[i][j-chargers[i].p][k-1]}
+*/
 double KnapsackBasedOpt(station_t& station) {
 	int sumDemands = calc_demands(station, points);
 	int bound = sumDemands + maxp;
-	vector<double> dp(bound+5, inf);
-	vector<int> dps(bound+5, -1);
+	vector<vector<double> > dp(K+1, vector<double>(bound+5, inf));
+	vector<vector<int> > dps(K+1, vector<int>(bound+5, -1));
 
-	dp[0] = 0.0;
+	dp[0][0] = 0.0;
 	for (int i=0; i<chargers.size(); ++i) {
-		for (int j=chargers[i].p; j<=bound; ++j) {
-			if (dp[j-chargers[i].p] >= inf)
-				continue;
-			double tmp = dp[j-chargers[i].p]+chargers[i].f;
-			if (tmp < dp[j]) {
-				dp[j] = tmp;
-				dps[j] = i;
+		for (int k=K; k>=1; --k) {
+			for (int j=chargers[i].p; j<=bound; ++j) {
+				if (dp[k-1][j-chargers[i].p] >= inf)
+					continue;
+				double tmp = dp[k-1][j-chargers[i].p]+chargers[i].f;
+				if (tmp < dp[k][j]) {
+					dp[k][j] = tmp;
+					dps[k][j] = i;
+				}
 			}
 		}
 	}
 
 	double mnVal = inf;
-	int w = -1, v;
-	for (int i=sumDemands; i<=bound; ++i) {
-		if (dp[i] < mnVal) {
-			mnVal = dp[i];
-			w = i;
+	int ii = -1, kk = -1;
+	for (int k=1; k<=K; ++k) {
+		for (int i=sumDemands; i<=bound; ++i) {
+			if (dp[k][i] < mnVal) {
+				mnVal = dp[k][i];
+				ii = i;
+				kk = k;
+			}
 		}
 	}
-	if (w == -1) return inf;
+	if (ii==-1 || kk==-1) return inf;
+
+	int v;
 
 	station.reset();
-	while (w > 0) {
-		v = dps[w];
+	while (ii > 0) {
+		v = dps[kk][ii];
 		station.x[v]++;
-		w -= chargers[v].p;
+		ii -= chargers[v].p;
+		--kk;
 		#ifdef LOCAL_DEBUG
-		assert(w>=0 && w<=bound);
+		assert(ii>=0 && ii<=bound);
 		#endif
 	}
 	#ifdef LOCAL_DEBUG
-	assert(w == 0);
+	assert(ii == 0);
 	assert(dcmp(station.fs() - mnVal) == 0);
 	#endif
 
-	return mnVal;
+	return mnVal + calc_estatePrice(station, points);
 }
 
 bool planStation(plan_t& plan, station_t& station, double budget) {
@@ -306,16 +318,20 @@ bool planStation(plan_t& plan, station_t& station, double budget) {
 	if (price > budget)
 		return false;
 
-	int c = station.cs();
+	int c = station.getChargerNum();
 	budget -= price;
-	while (c <= K) {
-		double gs0 = calc_gs(plan, station, points), mxVal = 0, tmp;
+	while (c<=K && budget>=0) {
+		double social0 = calc_social(plan, points);
+		pdd dtmp = calc_gs(plan, station, points, social0);
+		double gs0 = dtmp.first, mxVal = 0, tmp;
+
 		int v = -1;
 		for (int j=0; j<chargers.size(); ++j) {
 			if (budget < chargers[j].f)
 				continue;
 			station.x[j]++;
-			tmp = calc_gs(plan, station, points) - gs0;
+			dtmp = calc_gs(plan, station, points, social0);
+			tmp = dtmp.first - gs0;
 			if (tmp > mxVal) {
 				mxVal = tmp;
 				v =j;
@@ -332,7 +348,7 @@ bool planStation(plan_t& plan, station_t& station, double budget) {
 }
 
 int main(int argc, char **argv) {
-	string execName("base"), priceFileName("./estatePrice.txt");
+	string execName("sbao"), priceFileName("./prices.txt");
 
 	if (argc > 1) {
 		freopen(argv[1], "r", stdin);
@@ -346,6 +362,9 @@ int main(int argc, char **argv) {
 
 
 	read_all(cin, priceFileName);
+	// read subgraph
+	string clusterFileName("clusters.txt");
+	read_subgraph(clusterFileName, ksub, clusters);
 
 	clock_t begTime, endTime;
 	begTime = clock();
