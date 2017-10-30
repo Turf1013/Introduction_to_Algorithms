@@ -7,6 +7,8 @@ using namespace std;
 
 #include "global.h"
 
+
+
 const double eps = 1e-6;
 const double inf = 1e30;
 int chargerN;
@@ -20,7 +22,14 @@ double usedTime = -1;
 int usedMemory = -1;
 vector<charger_t> chargers;
 vector<set<int> > covered;
-vector<vector<double> > dists;
+// #ifdef	USE_ARRAY
+	// vector<vector<double> > dists;
+	double dists[50][50];
+// #else
+	// #ifndef USE_SQL
+	// map<pii,double> dists;
+	// #endif
+// #endif
 vector<point_t> points;
 vector<int> vecSumDemands;
 vector<int> yIndicator;
@@ -109,22 +118,35 @@ double calc_benefit(const station_t& station, const vector<point_t>& points) {
 	// double i1s = calc_I1S(station, points), i2s = calc_I2S(station, points);
 	double i1s = calc_I1S(station, points);
 	const point_t& p = points[station.id];
+	printf("rs = %.12lf, i1s = %.0lf, p.w = %.12lf\n", calc_rs(station), i1s, p.w);
 	return 2.0 / (1.0 + exp(-p.w * i1s)) - 1.0;
 }
 
 double calc_benefit(const plan_t& plan, const vector<point_t>& points) {
-	double ret = 0.0;
+	double ret = 0.0, tmp;
 
 	// update_covered(plan, points);
 	for (int i=0; i<plan.size(); ++i) {
-		ret += calc_benefit(plan[i], points);
+		tmp = calc_benefit(plan[i], points);
+		ret += tmp;
+		printf("calc_benefit %d: tmp = %.12lf\n", plan[i].id, tmp);
 	}
 
 	return ret;
 }
 
 double calc_distance(int a, int b) {
-	return dists[a][b];
+	#ifdef USE_ARRAY
+		return dists[a][b];
+	#else
+		#ifndef USE_SQL
+		pii p = make_pair(a, b);
+		if (dists.count(p) > 0)
+			return dists[p];
+		else
+			return 130000.0;
+		#endif
+	#endif
 }
 
 double calc_costt(const plan_t& plan, const vector<point_t>& points) {
@@ -134,7 +156,7 @@ double calc_costt(const plan_t& plan, const vector<point_t>& points) {
 	y = calc_yvs(plan, points);
 	for (int i=0; i<plan.size(); ++i) {
 		for (int j=0; j<y.size(); ++j) {
-			if (y[j] == plan[i].id) {
+			if (y[j] == i) {
 				ret += points[j].d * calc_distance(j, plan[i].id);
 			}
 		}
@@ -175,6 +197,8 @@ int calc_demands(const station_t& station, const vector<point_t>& points) {
 }
 
 double calc_rho(const station_t& station, const vector<point_t>& points) {
+	int cs = station.cs();
+	if (cs == 0) return 2.0;
 	int sumDemands = calc_demands(station, points);
 
 	return sumDemands*1.0 / station.cs();
@@ -215,6 +239,11 @@ double calc_social(const plan_t& plan, const vector<point_t>& points) {
 	double ret;
 	double benefit = calc_benefit(plan, points);
 	double cost = calc_cost(plan, points);
+	
+	// if (plan.size() >= 180) {
+		// plan.print();
+		printf("calc_social: benefit = %.8lf, cost = %.8lf\n", benefit, cost);
+	// }
 
 	ret = lambda * benefit - (1.0 - lambda) * cost;
 
@@ -288,4 +317,9 @@ void update_yIndicator(plan_t& plan, const station_t& station, const vector<poin
 
 void restore_yIndicator(plan_t& plan, const station_t& station, const vector<point_t>& points) {
 	yIndicator = yIndicator_bk;
+}
+
+void update_yIndicator(plan_t& plan, const vector<point_t>& points) {
+	yIndicator_bk = yIndicator;
+	yIndicator = stationSeeking(plan, points);
 }

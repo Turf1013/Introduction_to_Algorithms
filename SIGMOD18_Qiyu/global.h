@@ -7,11 +7,24 @@
 
 #define GLOBAL_DEBUG
 
+// #define MAXN 78565
+
+// #define USE_MAP
+// #define USE_ARRAY
+
 typedef pair<int,int> pii;
 typedef pair<double,double> pdd;
 typedef pair<int,double> pid;
 typedef pair<double,int> pdi;
 
+// #ifdef	USE_ARRAY
+	// extern vector<vector<double> > dists;
+	extern double dists[50][50];
+// #else
+	// #ifdef USE_MAP
+	// extern map<pii,double> dists;
+	// #endif
+// #endif
 extern const double eps;
 extern const double inf;
 extern int chargerN;
@@ -73,8 +86,8 @@ struct station_t {
 		return false;
 	}
 
-	double cs() const {
-		double ret = 0;
+	int cs() const {
+		int ret = 0;
 		for (int i=0; i<chargerN; ++i) {
 			ret += x[i] * chargers[i].p;
 		}
@@ -92,6 +105,19 @@ struct station_t {
 			ret += x[i] * chargers[i].f;
 		}
 		return ret;
+	}
+	
+	void print() const {
+		putchar('[');
+		for (int i=0; i<chargerN; ++i) {
+			if (i == 0) {
+				printf("%d", x[i]);
+			} else {
+				printf(", %d", x[i]);
+			}
+		}
+		putchar(']');
+		putchar('\n');
 	}
 };
 
@@ -113,10 +139,24 @@ struct plan_t {
 	void push_back(const station_t& station) {
 		stations.push_back(station);
 	}
+	
+	void print() const {
+		printf("plan with %d stations\n", stations.size());
+		for (int i=0; i<stations.size(); ++i) {
+			printf("station_%d: ", i);
+			stations[i].print();
+		}
+	}
+	
+	int cs() const {
+		int ret = 0;
+		for (int i=0; i<stations.size(); ++i)
+			ret += stations[i].cs();
+		return ret;
+	}
 };
 
 extern vector<set<int> > covered;
-extern vector<vector<double> > dists;
 
 int dcmp(double x);
 double calc_distance(const point_t& a, const point_t& b);
@@ -148,6 +188,7 @@ void init_global_sumDemands(vector<int>& vecSumDemands, const vector<point_t>& p
 void init_global_yIndicator(vector<int>& yIndicator, const vector<point_t>& points);
 void update_yIndicator(plan_t& plan, const station_t& station, const vector<point_t>& points);
 void restore_yIndicator(plan_t& plan, const station_t& station, const vector<point_t>& points);
+void update_yIndicator(plan_t& plan, const vector<point_t>& points);
 
 void dumpResult(string execName, double result);
 #endif
