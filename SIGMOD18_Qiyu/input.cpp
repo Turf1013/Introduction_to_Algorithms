@@ -394,13 +394,51 @@ void read_incremental(istream& fin, string priceFileName, vector<double>& bs) {
 	*/
 	fileName = "./chargers.txt";
 	read_chargers(fileName, chargerN, chargers);
-
+	
+	/**
+		step 6: read input
+	*/
+	read_input(fin, lambda, alpha, rmax, B, K);
+	
+	/**
+		step 6: read incremental
+	*/
+	fileName = "./increments.txt";
+	read_incremental(fileName, bs);
+	
+	/*
 	fin >> lambda >> alpha >> rmax >> B >> K;
 	int nB;
 	fin >> nB;
 	bs.clear();
 	bs.push_back(B);
 	double budget;
+	for (int i=0; i<nB; ++i) {
+		fin >> budget;
+		bs.push_back(budget);
+	}
+	*/
+}
+
+void read_incremental(string fileName, vector<double>& bs) {
+	ifstream fin(fileName.c_str(), ios::in);
+	if (!fin.is_open()) {
+		fprintf(stderr, "FILE %s is invalid.", fileName.c_str());
+		exit(1);
+	}
+
+	read_incremental(fin, bs);
+
+	fin.close();
+}
+
+void read_incremental(istream& fin, vector<double>& bs) {
+	int nB;
+	double budget;
+	
+	fin >> nB;
+	bs.clear();
+	bs.push_back(B);
 	for (int i=0; i<nB; ++i) {
 		fin >> budget;
 		bs.push_back(budget);

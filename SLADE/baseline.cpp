@@ -30,7 +30,7 @@ void initial() {
 	for (int i=0; i<taskN; ++i) {
     thetas[i] = -log(1.0 - threshs[i]);
 	}
-	sort(thetas, thetas+taskN);
+	// sort(thetas, thetas+taskN);
   vals = new double[taskN+1];
   inds = new int[taskN+1];
   for (int i=0; i<=taskN; ++i) {

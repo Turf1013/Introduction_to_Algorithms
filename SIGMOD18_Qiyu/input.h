@@ -31,6 +31,8 @@ void read_all(string paraFileName, string priceFileName);
 void read_all(istream& fin, string priceFileName);
 void read_incremental(string fileName, string priceFileName, vector<double>& bs);
 void read_incremental(istream& fin, string priceFileName, vector<double>& bs);
+void read_incremental(string fileName, vector<double>& bs);
+void read_incremental(istream& fin, vector<double>& bs);
 void read_subgraph(istream& fin, int& ksub, vector<vector<int> >& clusters);
 void read_subgraph(string fileName, int& ksub, vector<vector<int> >& clusters);
 

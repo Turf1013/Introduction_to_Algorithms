@@ -5,7 +5,7 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-#define GLOBAL_DEBUG
+// #define GLOBAL_DEBUG
 
 #define MAXN 21005
 

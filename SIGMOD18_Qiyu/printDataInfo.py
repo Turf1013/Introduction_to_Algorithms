@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 def printMinMax():
-    with open("Shanghai_roadnetwork.txt", "r") as fin:
+    with open("./bigData/roadNetwork.txt", "r") as fin:
         lines = fin.readlines()
         nV, nE = map(int, lines[0].strip().split(' '))[:2]
         X, Y = [0.0]*nV,[0.0]*nV

@@ -23,6 +23,15 @@ def run(execName, srcFileName, desFileName, muFileName):
 		# fout.write(line)
 
 
+def check(fileName):
+	return True
+	lines = []
+	with open(fileName, "r") as fin:
+		lines = fin.readlines()
+	lines = filter(lambda s:len(s.strip())>0, lines)
+	return len(lines) >= 10
+	
+
 def batchWithPool(execNames, dataSetN, nprocess, srcFilePath, desFilePath):
 	if not os.path.exists(desFilePath):
 		os.mkdir(desFilePath)
@@ -50,7 +59,7 @@ def batchWithPool(execNames, dataSetN, nprocess, srcFilePath, desFilePath):
 			for execName in execNames:
 				srcFileName = os.path.join(srcFilePath, dataName, fileName)
 				desFileName = os.path.join(desFilePath, execName, dataName, fileName)
-				if os.path.exists(desFileName):
+				if os.path.exists(desFileName) and check(desFileName):
 					continue
 				pool.apply_async(run, (execName, srcFileName, desFileName, muFileName, ))
 				
@@ -69,7 +78,7 @@ def batchWithPool(execNames, dataSetN, nprocess, srcFilePath, desFilePath):
 				if not os.path.exists(tmpFilePath):
 					os.mkdir(tmpFilePath)
 				desFileName = os.path.join(tmpFilePath, fileName)
-				if os.path.exists(desFileName):
+				if os.path.exists(desFileName) and check(desFileName):
 						continue
 				pool.apply_async(run, (execName, srcFileName, desFileName, muFileName, ))
 

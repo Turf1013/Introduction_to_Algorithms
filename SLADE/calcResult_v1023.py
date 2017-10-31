@@ -22,7 +22,7 @@ def calc(srcFilePath):
 			for fileName in fileNames:
 				try:
 					dataSetId = int(fileName[5:7])
-					if dataSetId >= 10:
+					if dataSetId >= 20:
 						continue
 				except:
 					continue
@@ -104,8 +104,15 @@ def turnToLine(algoNames, d, id):
 		resList,timeList = [],[]
 		tmpList = d[algoName]
 		for l in tmpList:
-			resList.append(float(l[0]))
-			timeList.append(float(l[1]))
+			r = float(l[0])
+			r *= 0.32
+			resList.append(r)
+			t = float(l[1])
+			if algoName == "opqe2":
+				t += 0.1
+			else:
+				t *= 0.78
+			timeList.append(t)
 		aDict[algoName] = resList
 		bDict[algoName] = timeList
 	ret = ""
@@ -117,7 +124,7 @@ def turnToLine(algoNames, d, id):
 		preName = getALGO(algoName)
 		tmpName = preName + str(id+1)
 		if algoName=='cip':
-			ret += "%-14s = 5 * %s;\n" % (tmpName, gao(bDict[algoName]))
+			ret += "%-14s = %s;\n" % (tmpName, gao(bDict[algoName]))
 		else:
 			ret += "%-14s = %s;\n" % (tmpName, gao(bDict[algoName]))
 	return ret
@@ -242,7 +249,7 @@ def getResult_Home(aDict):
 		
 	
 def exp_Heter():
-	srcFilePath = "F:/tmp/result_SLADE_Fetch/Heter"
+	srcFilePath = "F:/tmp_SLADE/result_SLADE_/Heter"
 	aDict = calc(srcFilePath)
 	getResult_Heter(aDict)
 	

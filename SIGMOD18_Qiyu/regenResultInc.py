@@ -24,7 +24,7 @@ def collectResult(execName, srcFilePath):
 		with open(fileName, "r") as fin:
 			lines = map(lambda x:x.strip(), fin.readlines())
 			lines = filter(lambda s:len(s)>0, lines)
-		retDict[dataName] = lines
+		retDict[dataName] = lines[-2:]
 	return retDict
 	
 	
@@ -55,8 +55,7 @@ def dumpResult(execName, tmpDict, desFilePath):
 	desFileName = "collect_%s.txt" % (execName)
 	desFileName = os.path.join(desFilePath, desFileName)
 	with open(desFileName, "w") as fout:
-		for dataName in sorted(tmpDict.iterkeys()):
-			lines = tmpDict[dataName]
+		for dataName,lines in tmpDict.iteritems():
 			if "mu" in dataName:
 				lambda_,alpha,rmax,B,K,mu = CFRR.defaultValue[:6]
 			else:
@@ -78,15 +77,14 @@ def mergeResult(execNames, desFilePath):
 				fout.writelines(lines)
 	
 def exp0():
-	srcFilePath = "F:/tmp_Qiyu/result_Qiyu"
-	desFilePath = "F:/tmp_Qiyu/collect_Qiyu"
-	execNames = ["base", "bao", "sbao"]
+	srcFilePath = "F:/tmp_Qiyu/result_Qiyu_inc"
+	desFilePath = "F:/tmp_Qiyu/collect_Qiyu_inc"
+	execNames = ["ibase", "ibao", "isbao"]
 	for execName in execNames:
 		tmpDict = collectResult(execName, srcFilePath)
 		print tmpDict.keys()
 		dumpResult(execName, tmpDict, desFilePath)
 	mergeResult(execNames, desFilePath)
-	
 	
 if __name__ == "__main__":
 	exp0()

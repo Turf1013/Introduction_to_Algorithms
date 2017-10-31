@@ -8,7 +8,7 @@ using namespace std;
 #include "global.h"
 #include "input.h"
 
-#define LOCAL_DEBUG
+//#define LOCAL_DEBUG
 
 vector<bool> visit;
 vector<int> vecI1starS;
