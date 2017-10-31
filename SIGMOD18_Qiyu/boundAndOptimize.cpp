@@ -312,11 +312,10 @@ int main(int argc, char **argv) {
 		priceFileName = string(argv[3]);
 	}
 
-
-	read_all(cin, priceFileName);
-
 	clock_t begTime, endTime;
 	begTime = clock();
+
+	read_all(cin, priceFileName);
 
 	double ans = solve();
 

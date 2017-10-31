@@ -29,7 +29,7 @@ def collectResult(execName, srcFilePath):
 	
 	
 def parseDataName(s):
-	lambda_, alpha, rmax, B, K, mu = s.split(' ')[:6]
+	lambda_, alpha, rmax, B, K, mu = s.split('_')[:6]
 	lambda_, alpha = float(lambda_), float(alpha)
 	rmax, B, K, mu = int(rmax), int(B), int(K), int(mu)
 	return lambda_,alpha,rmax,B,K,mu
@@ -57,20 +57,22 @@ def dumpResult(execName, tmpDict, desFilePath):
 	with open(desFileName, "w") as fout:
 		for dataName,lines in tmpDict.iteritems():
 			if "mu" in dataName:
-				lambda_,alpha,rmax,B,K,mu = CFBE.defaultValue
+				lambda_,alpha,rmax,B,K,mu = CFRR.defaultValue
 			else:
 				lambda_,alpha,rmax,B,K,mu = parseDataName(dataName)
+			# print execName,dataName,lines
 			costt, costb, benefit, cost = parseLine1(lines[0])
-			line = "%s %.03f %.03f %s %s %s %s %s\n" % (dataName, lambda_, alpha, costtt, costb, benefit, cost, line)
-			
+			line = "%s %.03f %.03f %s %s %s %s %s\n" % (dataName, lambda_, alpha, costt, costb, benefit, cost, lines[1])
+			fout.write(line)
 	
 def exp0():
-	srcFilePath = "./result_Qiyu"
-	desFilePath = "./collect_Qiyu"
+	srcFilePath = "F:/tmp_Qiyu/result_Qiyu"
+	desFilePath = "F:/tmp_Qiyu/collect_Qiyu"
 	execNames = ["base", "bao", "sbao"]
 	for execName in execNames:
 		tmpDict = collectResult(execName, srcFilePath)
-		dumpResult(execName, tmpDict)
+		print tmpDict.keys()
+		dumpResult(execName, tmpDict, desFilePath)
 	
 	
 if __name__ == "__main__":

@@ -129,11 +129,6 @@ void init() {
 		minEstate = min(minEstate, points[i].ep);
 }
 
-void mergeTwoPlan(plan_t& des, plan_t& src) {
-	for (int i=0; i<src.size(); ++i)
-		des.push_back(src[i]);
-}
-
 double solve() {
 	init();
 	double budget = 0.0, budget_ = B / ksub, tmp;
@@ -370,14 +365,13 @@ int main(int argc, char **argv) {
 		priceFileName = string(argv[3]);
 	}
 
+	clock_t begTime, endTime;
+	begTime = clock();
 
 	read_all(cin, priceFileName);
 	// read subgraph
 	string clusterFileName("clusters.txt");
 	read_subgraph(clusterFileName, ksub, clusters);
-
-	clock_t begTime, endTime;
-	begTime = clock();
 
 	double ans = solve();
 
