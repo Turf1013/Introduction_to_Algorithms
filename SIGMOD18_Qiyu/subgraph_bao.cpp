@@ -51,7 +51,7 @@ plan_t bndAndOpt(double& budget) {
 		station.id = v;
 		station.p = points[v];
 		station.reset();
-		if (planStation(plan, station, budget)) {
+		if (planStation(plan, station, budget) && station.hasCharger()) {
 			plan.push_back(station);
 			budget -= calc_fs(station, points);
 			#ifdef LOCAL_DEBUG
@@ -91,7 +91,7 @@ plan_t bndAndOpt(int clusterId, double& budget) {
 		station.id = v;
 		station.p = points[v];
 		station.reset();
-		if (planStation(plan, station, budget)) {
+		if (planStation(plan, station, budget) && station.hasCharger()) {
 			plan.push_back(station);
 			budget -= calc_fs(station, points);
 			#ifdef LOCAL_DEBUG
@@ -245,12 +245,14 @@ double calc_ubgv(int v, const plan_t& plan, const station_t& station, const vect
 }
 
 pdd calc_gs(plan_t& plan, const station_t& station, const vector<point_t>& points, double social_p) {
-	plan.push_back(station);
+	if (station.hasCharger())
+		plan.push_back(station);
 
 	update_yIndicator(plan, points);
 	double social_ps = calc_social(plan, points);
 	double fs = calc_fs(station, points);
-	plan.pop_back();
+	if (station.hasCharger())
+		plan.pop_back();
 	// double social_p = calc_social(plan, points);
 
 	double ret = (social_ps - social_p) / fs;
@@ -320,8 +322,10 @@ double KnapsackBasedOpt(station_t& station) {
 bool planStation(plan_t& plan, station_t& station, double budget) {
 	double price = KnapsackBasedOpt(station);
 
-	if (price > budget)
+	if (price > budget) {
+		station.reset();
 		return false;
+	}
 
 	int c = station.getChargerNum();
 	budget -= price;

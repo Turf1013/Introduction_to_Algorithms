@@ -147,10 +147,10 @@ int main(int argc, char **argv) {
 	if (argc > 3) {
 		priceFileName = string(argv[3]);
 	}
+	
+	begTime = clock();
 
 	read_incremental(cin, priceFileName, bs);
-
-	begTime = clock();
 
 	double ans = solve();
 
