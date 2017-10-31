@@ -60,7 +60,7 @@ def dumpResult(execName, tmpDict, desFilePath):
 				lambda_,alpha,rmax,B,K,mu = CFRR.defaultValue
 			else:
 				lambda_,alpha,rmax,B,K,mu = parseDataName(dataName)
-			# print execName,dataName,lines
+			print execName,dataName,lines
 			costt, costb, benefit, cost = parseLine1(lines[0])
 			line = "%s %.03f %.03f %s %s %s %s %s\n" % (dataName, lambda_, alpha, costt, costb, benefit, cost, lines[1])
 			fout.write(line)

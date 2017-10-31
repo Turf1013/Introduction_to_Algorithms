@@ -13,7 +13,7 @@ class constForGenDataSet:
 	rmaxList	= [500, 1000, 1500, 2000, 2500]
 	bList		= [x*10**6 for x in [30, 35, 40, 45, 50]]
 	kList		= [2, 4, 6, 8, 10] # add 50
-	muList		= [x*40 for x in [20000, 25000, 30000, 35000, 40000]]
+	muList		= [x*10**4 for x in [120, 130, 140, 150, 160]]
 	sigma		= 10000 * 40
 	# estate price normal
 	defaultValue = [
@@ -22,7 +22,7 @@ class constForGenDataSet:
 		rmaxList[len(rmaxList)/2],
 		bList[len(bList)/2],
 		kList[len(kList)/2],
-		muList[len(muList)/2],
+		muList[0],
 	]
 
 class CFGD(constForGenDataSet):
