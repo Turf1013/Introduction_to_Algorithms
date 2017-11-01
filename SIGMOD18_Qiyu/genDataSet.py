@@ -24,6 +24,7 @@ class constForGenDataSet:
 		kList[len(kList)/2],
 		muList[0],
 	]
+	
 
 class CFGD(constForGenDataSet):
 	pass

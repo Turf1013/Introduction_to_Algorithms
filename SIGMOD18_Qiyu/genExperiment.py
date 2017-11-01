@@ -169,10 +169,10 @@ def genExperiment(srcFilePath, desFileName, algoNames):
 		fout.write(line)
 
 def exp0():
-	srcFilePath = "F:/tmp_Qiyu/result_Qiyu_inc"
+	srcFilePath = "F:/tmp_Qiyu/result_Qiyu"
 	desFileName = "F:/tmp/tmp.txt"
-	algoNames = ["ibase", "ibao", "isbao"]
-	# algoNames = ["base", "bao", "sbao"]
+	# algoNames = ["ibase", "ibao", "isbao"]
+	algoNames = ["base", "bao", "sbao"]
 	genExperiment(srcFilePath, desFileName, algoNames)
 
 if __name__ == "__main__":

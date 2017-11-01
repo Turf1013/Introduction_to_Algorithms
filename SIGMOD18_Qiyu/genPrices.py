@@ -5,12 +5,10 @@ import os
 import commands
 import multiprocessing
 import numpy as np
+from genDataSet import constForGenDataSet
 
-global cntDict
-cntDict = dict()
-
-class constForGenPrice:
-	mu, sigma = 1600000, 100000
+class constForGenPrice(constForGenDataSet):
+	pass
 
 class CFGP(constForGenPrice):
 	pass
@@ -23,13 +21,23 @@ def readNV(srcFileName):
 	return None
 
 
-def genPrice(nV, desFileName):
-	prices = np.random.normal(CFGP.mu, CFGP.sigma, nV)
+def genPrice(nV, desFileName, mu, sigma=CFGP.sigma):
+	prices = np.random.normal(mu, sigma, nV)
 	with open(desFileName, "w") as fout:
 		fout.write("%d\n" % (nV))
 		for i in xrange(nV):
 			fout.write("%.4f\n" % (prices[i]))
 
+			
+def genAll(nV, desFilePath):		
+	if not os.path.exists(desFilePath):
+		os.mkdir(desFilePath)
+	for mu in CFGP.muList:
+		desFileName = "prices_%d.txt" % (mu)
+		desFileName = os.path.join(desFilePath, desFileName)
+		genPrice(nV, desFileName, mu)
+		
+			
 if __name__ == "__main__":
-	desFileName = "F:/prices_1600000.txt"
-	genPrice(20337, desFileName)
+	genAll(20337, "F:/tmp_Qiyu/prices")
+	
