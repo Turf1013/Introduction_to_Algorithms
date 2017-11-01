@@ -22,7 +22,7 @@ def calc(srcFilePath):
 			for fileName in fileNames:
 				try:
 					dataSetId = int(fileName[5:7])
-					if dataSetId >= 20:
+					if dataSetId >= 1:
 						continue
 				except:
 					continue

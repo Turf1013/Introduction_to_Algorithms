@@ -32,7 +32,11 @@ def select(srcFilePath, desFilePath, execNames):
 	dirNames = os.listdir(os.path.join(srcFilePath, execNames[0]))
 	with open("F:/tmp/tmp.txt", "w") as fout:
 		for dirName in dirNames:
-			tmpList = fetch(srcFilePath, dirName, execNames[:2])
+			tmpList1 = fetch(srcFilePath, dirName, execNames[:2])
+			tmpList2 = fetch(srcFilePath, dirName, execNames[1:])
+			# print tmpList, tmpList2
+			print set(tmpList1) & set(tmpList2)
+			tmpList = list(set(tmpList1) & set(tmpList2))
 			line = "%20s %d %s\n" % (dirName, len(tmpList), tmpList)
 			fout.write(line)
 			
@@ -57,8 +61,10 @@ def select(srcFilePath, desFilePath, execNames):
 			
 			
 if __name__ == "__main__":
-	srcFilePath = "F:/tmp_SLADE/result_SLADE_tmp/Heter"
+	if not os.path.exists("F:/tmp_SLADE/result_SLADE_"):
+		os.mkdir("F:/tmp_SLADE/result_SLADE_")
+	srcFilePath = "F:/tmp_SLADE/result_SLADE/Heter"
 	desFilePath = "F:/tmp_SLADE/result_SLADE_/Heter"
-	execNames = ["greedy", "cip", "opqe"]
+	execNames = ["opqe2", "greedy", "cip"]
 	# execNames = ["opqe2", "greedy", "cip"]
 	select(srcFilePath, desFilePath, execNames)

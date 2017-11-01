@@ -197,7 +197,7 @@ def genDataSet_Hete(binFilePath, desFilePath, dataSetId = 0):
 	binN,relia,taskN = 20,0.9,10**4
 
 	# varying of distribution of threshold(normal)
-	muList = [0.88, 0.90, 0.92, 0.94, 0.96]
+	muList = [0.87, 0.9, 0.92, 0.95, 0.97]
 	sigma = 0.03
 	for mu in muList:
 		tmpFilePath = "normal_%.02f_%.02f" % (mu, sigma)
@@ -224,11 +224,11 @@ def genDataSet_Hete(binFilePath, desFilePath, dataSetId = 0):
 		if os.path.exists(desFileName):
 			continue
 		threshGrt = normalGenerator(mu, sigma)
-		tasks = threshGrt.gen(taskN, 0.80, 0.999)
+		tasks = threshGrt.gen(taskN, 0.65, 0.999)
 		genData(desFileName, taskN, tasks, binN, bins)
 
 	# varying of distribution of threshold(uniform)
-	meanList = [0.88, 0.90, 0.92, 0.94, 0.96]
+	meanList = [0.87, 0.9, 0.92, 0.95, 0.97]
 	for mean in meanList:
 		tmpFilePath = "uniform_%.02f" % (mean)
 		tmpFilePath = os.path.join(desFilePath, tmpFilePath)
@@ -241,11 +241,11 @@ def genDataSet_Hete(binFilePath, desFilePath, dataSetId = 0):
 		low = 2*mean - 0.999
 		high = 0.999
 		threshGrt = uniformGenerator(low, high)
-		tasks = threshGrt.gen(taskN, 0.80, 0.999)
+		tasks = threshGrt.gen(taskN, 0.65, 0.999)
 		genData(desFileName, taskN, tasks, binN, bins)
 
 	# varying of distribution of threshold(heavy tailed)
-	meanList = [0.88, 0.90, 0.92, 0.94, 0.96]
+	meanList = [0.87, 0.9, 0.92, 0.95, 0.97]
 	for mean in meanList:
 		tmpFilePath = "exp_%.02f" % (mean)
 		tmpFilePath = os.path.join(desFilePath, tmpFilePath)
@@ -256,7 +256,7 @@ def genDataSet_Hete(binFilePath, desFilePath, dataSetId = 0):
 		if os.path.exists(desFileName):
 			continue
 		threshGrt = expGenerator(mean)
-		tasks = threshGrt.gen(taskN, 0.80, 0.999)
+		tasks = threshGrt.gen(taskN, 0.65, 0.999)
 		genData(desFileName, taskN, tasks, binN, bins)
 
 

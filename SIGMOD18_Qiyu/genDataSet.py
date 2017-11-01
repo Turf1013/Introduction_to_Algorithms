@@ -8,17 +8,17 @@ from random import randint, gauss
 
 class constForGenDataSet:
 	# desired EVC [100, 2000] 106,437,465 100,000,000
-	lambdaList	= [0.0, 0.1, 0.2, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-	alphaList	= [0.0, 0.1, 0.2, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+	lambdaList	= [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+	alphaList	= [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 	rmaxList	= [500, 1000, 1500, 2000, 2500]
 	bList		= [x*10**6 for x in [30, 35, 40, 45, 50]]
 	kList		= [2, 4, 6, 8, 10] # add 50
 	muList		= [x*10**4 for x in [120, 130, 140, 150, 160]]
-	sigma		= 10000 * 40
+	sigma		= 10000 * 10
 	# estate price normal
 	defaultValue = [
-		lambdaList[len(lambdaList)/2-1],
-		alphaList[len(alphaList)/2-1],
+		lambdaList[len(lambdaList)/2],
+		alphaList[len(alphaList)/2],
 		rmaxList[len(rmaxList)/2],
 		bList[len(bList)/2],
 		kList[len(kList)/2],
@@ -137,7 +137,7 @@ def genDataSet(desFilePath, dataSetN, nprocess):
 			for price in prices:
 				fout.write("%.2lf\n" % (price))
 				
-	mu = CFGD.muList[len(CFGD.muList)/2]
+	mu = CFGD.defaultValue[-1]
 	desFileName = "prices_%d.txt" % (mu)
 	desFileName = os.path.join(desFilePath, desFileName)
 	cmdLine = "cp %s ./prices.txt" % (desFileName)
