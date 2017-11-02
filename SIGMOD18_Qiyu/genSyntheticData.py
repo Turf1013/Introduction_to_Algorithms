@@ -7,7 +7,8 @@ import numpy as np
 class constForGenData:
     nV = 10
     nE = nV * (nV - 1)
-    mu,sigma = 200,20
+    mu,sigma = 140*10**4,10*10**4
+	rmax = 1500
     chargers = [
         [7.3, 10],
         [16.5, 12],

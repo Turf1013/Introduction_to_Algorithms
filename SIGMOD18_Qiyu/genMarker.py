@@ -9,9 +9,9 @@ for line in lines:
 	line = line.strip()
 	if len(line) <= 0:
 		continue
-	# x, y = map(float, line.split(' '))[:2]
-	# x, y = utm.to_latlon(x, y, 51, 'R')[:2]
 	x, y = map(float, line.split(' '))[:2]
+	x, y = utm.to_latlon(x, y, 51, 'R')[:2]
+	# x, y = map(float, line.split(' '))[:2]
 	
 	ix, iy = int(x*10), int(y*10)
 	t = (ix*10+int((x*100-ix*10)/5), iy*10+int((y*100-iy*10)/5))

@@ -33,114 +33,19 @@ OPQ_Extended8  = [0.510, 0.651, 0.810, 0.920, 1.200];
 Baseline8      = [5.087, 5.756, 6.380, 6.764, 7.247];
 Greedy8        = [1.883, 2.042, 2.328, 2.517, 2.963];
 
+% OPQ_Extended6  = OPQ_Extended6(end:-1:1);
+% Baseline6 = Baseline6(end:-1:1);
+% Greedy6 = Greedy6(end:-1:1);
+% OPQ_Extended5  = OPQ_Extended5(end:-1:1);
+% Baseline5 = Baseline5(end:-1:1);
+% Greedy5 = Greedy5(end:-1:1);
+% OPQ_Extended7  = OPQ_Extended7(end:-1:1);
+% Baseline7 = Baseline7(end:-1:1);
+% Greedy7 = Greedy7(end:-1:1);
+% OPQ_Extended8  = OPQ_Extended8(end:-1:1);
+% Baseline8 = Baseline8(end:-1:1);
+% Greedy8 = Greedy8(end:-1:1);
 
-
-
-
-
-%1---------------------------------------------------------
-% varying of distribution of threshold(normal)
-figure;
-hold on;
-
-figuresize(5, 4, 'inches');
-
-box on;
-x1 = [0.87, 0.90, 0.92, 0.95, 0.97];
-mpdc5 = distinguishable_colors(5);
-plot(x1, Greedy1, '^-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-plot(x1, OPQ_Extended1, 's-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-plot(x1, Baseline1, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-% 1:blue, 2:red, 3:green
-%旋转
-set( gca(), 'XTickLabel', x1 )
-rotateXLabels( gca(), 60 )
-set(gca, 'FontSize', fontsize, 'Xtick', x1);
-%
-set(gca, 'XLim', [min(x1), max(x1)]);
-xlabel('\mu of reliability threshold(normal)', 'FontSize', 14);
-ylabel('Cost(USD)', 'FontSize', 14);
-h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location','SouthEast');
-set(h_legend, 'FontSize', legendsize);
-
-hold off;
-
-%2---------------------------------------------------------
-figure;
-hold on;
-
-figuresize(5, 4, 'inches');
-
-box on;
-x2 = x1;
-mpdc5 = distinguishable_colors(5);
-plot(x2, Greedy2, '^-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-plot(x2, OPQ_Extended2, 's-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-plot(x2, Baseline2, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-
-set( gca(), 'XTickLabel', x2 )
-rotateXLabels( gca(), 60 )
-set(gca, 'FontSize', fontsize, 'Xtick', x2);
-set(gca, 'XLim', [min(x2), max(x2)]);
-xlabel('\mu of reliability threshold(normal)', 'FontSize', 14);
-ylabel('Time(seconds)', 'FontSize', 14);
-h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location','SouthEast');
-set(h_legend, 'FontSize', legendsize);
-
-hold off;
-
-
-%3---------------------------------------------------------
-figure;
-hold on;
-
-figuresize(5, 4, 'inches');
-
-box on;
-x4 = [0.01, 0.02, 0.03, 0.04, 0.05];
-mpdc5 = distinguishable_colors(5);
-
-plot(x4, Greedy3, '^-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-plot(x4, OPQ_Extended3, 's-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-plot(x4, Baseline3, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-%旋转
-set( gca(), 'XTickLabel', x4 )
-rotateXLabels( gca(), 60 )
-set(gca, 'XLim', [min(x4), max(x4)]);
-set(gca, 'FontSize', fontsize, 'Xtick', x4);
-%
-
-xlabel('\sigma of reliability threshold(normal)', 'FontSize', 14);
-ylabel('Cost(USD)', 'FontSize', 14);
-h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location', 'SouthEast');
-set(h_legend, 'FontSize', legendsize);
-
-hold off;
-
-%4---------------------------------------------------------
-figure;
-hold on;
-
-figuresize(5, 4, 'inches');
-
-box on;
-x5 = x4;
-mpdc5 = distinguishable_colors(5);
-
-plot(x5, Greedy4, '^-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-plot(x5, OPQ_Extended4, 's-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-plot(x5, Baseline4, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
-
-set( gca(), 'XTickLabel', x5 )
-rotateXLabels( gca(), 60 )
-set(gca, 'FontSize', fontsize, 'Xtick', x5);
-set(gca, 'XLim', [min(x5), max(x5)]);
-xlabel('\sigma of reliability threshold(normal)', 'FontSize', 14);
-ylabel('Time(seconds)', 'FontSize', 14);
-h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location', 'SouthEast');
-set(h_legend, 'FontSize', legendsize);
-
-hold off;
 
 %5---------------------------------------------------------
 figure;
@@ -149,7 +54,8 @@ hold on;
 figuresize(5, 4, 'inches');
 
 box on;
-x7 = [0.87, 0.90, 0.92, 0.95, 0.97];
+x7 = [0.87, 0.90, 0.92, 0.95, 0.97]
+x7 = x7(end:-1:1);
 mpdc5 = distinguishable_colors(5);
 
 plot(x7, Greedy5, '^-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
@@ -158,10 +64,10 @@ plot(x7, Baseline5, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerS
 %旋转
 set( gca(), 'XTickLabel', x7 )
 rotateXLabels( gca(), 60 )
-set(gca, 'FontSize', fontsize, 'Xtick', x7);
+set(gca, 'FontSize', fontsize, 'Xtick', x7(end:-1:1));
 %
-set(gca, 'XLim', [min(x7), max(x7)]);
-xlabel('mean of reliability threshold(uniform)', 'FontSize', 14);
+% set(gca, 'XLim', [min(x7), max(x7)]);
+xlabel('mean of Reliability Threshold t_i(uniform)', 'FontSize', 14);
 ylabel('Cost(USD)', 'FontSize', 14);
 h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
@@ -184,9 +90,9 @@ plot(x8, Baseline6, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerS
 
 set( gca(), 'XTickLabel', x8 )
 rotateXLabels( gca(), 60 )
-set(gca, 'FontSize', fontsize, 'Xtick', x8);
-set(gca, 'XLim', [min(x8), max(x8)]);
-xlabel('mean of reliability threshold(uniform)', 'FontSize', 14);
+set(gca, 'FontSize', fontsize, 'Xtick', x8(end:-1:1));
+% set(gca, 'XLim', [min(x8), max(x8)]);
+xlabel('mean of Reliability Threshold t_i(uniform)', 'FontSize', 14);
 ylabel('Time(seconds)', 'FontSize', 14);
 h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
@@ -201,6 +107,7 @@ figuresize(5, 4, 'inches');
 
 box on;
 x10 = [0.87, 0.90, 0.92, 0.95, 0.97];
+x10 = x10(end:-1:1);
 mpdc5 = distinguishable_colors(5);
 
 plot(x10, Greedy7, '^-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
@@ -210,11 +117,11 @@ plot(x10, Baseline7, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'Marker
 %旋转
 set( gca(), 'XTickLabel', x10 )
 rotateXLabels( gca(), 60 )
-set(gca, 'XLim', [min(x10), max(x10)]);
-set(gca, 'FontSize', fontsize, 'Xtick', x10);
+% set(gca, 'XLim', [min(x10), max(x10)]);
+set(gca, 'FontSize', fontsize, 'Xtick', x10(end:-1:1));
 %
 
-xlabel('\lambda^{-1} of reliability threshold(exponential)', 'FontSize', 14);
+xlabel('\lambda^{-1} of Reliability Threshold t_i(exponential)', 'FontSize', 14);
 ylabel('Cost(USD)', 'FontSize', 14);
 h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
@@ -237,9 +144,9 @@ plot(x11, Baseline8, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'Marker
 
 set( gca(), 'XTickLabel', x11 )
 rotateXLabels( gca(), 60 )
-set(gca, 'FontSize', fontsize, 'Xtick', x11);
-set(gca, 'XLim', [min(x11), max(x11)]);
-xlabel('\lambda^{-1} of reliability threshold(exponential)', 'FontSize', 14);
+set(gca, 'FontSize', fontsize, 'Xtick', x11(end:-1:1));
+% set(gca, 'XLim', [min(x11), max(x11)]);
+xlabel('\lambda^{-1} of Reliability Threshold t_i(exponential)', 'FontSize', 14);
 ylabel('Time(seconds)', 'FontSize', 14);
 h_legend = legend('Greedy',  'OPQ-Extended', 'Baseline', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);

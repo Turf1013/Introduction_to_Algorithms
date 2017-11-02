@@ -25,6 +25,9 @@ global.o: global.h global.cpp
 input.o: input.h input.cpp global.h
 	$(CXX) $(CFLAGS) -c input.cpp $(LIBS)
 
+opt: OPT.cpp input.h input.cpp global.h global.cpp input.o global.o
+	$(CXX) $(CFLAGS) -o opt input.o global.o OPT.cpp $(LIBS)	
+	
 bao: boundAndOptimize.cpp input.h input.cpp global.h global.cpp input.o global.o
 	$(CXX) $(CFLAGS) -o bao input.o global.o boundAndOptimize.cpp $(LIBS)
 
@@ -50,4 +53,4 @@ voroni: voroni.cpp voroni.h
 clean:
 		-@rm *.o *.gcno *~ 2> /dev/null || true
 		-@rm cnt cnt0 sssp 2> /dev/null || true
-		-@rm greedy ibase base bao ibao sbao isbao 2> /dev/null || true
+		-@rm greedy ibase base bao ibao sbao isbao opt 2> /dev/null || true
