@@ -2,6 +2,9 @@ dataSet/
 nearest/
 trajectory/
 rawTrajectory/
+figure/*.pdf
+figure/static/*.pdf
+figure/incremental/*.pdf
 cnt*
 *.csv
 *.in

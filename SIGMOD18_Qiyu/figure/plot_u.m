@@ -92,7 +92,7 @@ rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x2);
 set(gca, 'XLim', [min(x2), max(x2)]);
 xlabel('\lambda', 'FontSize', 14);
-ylabel('Time', 'FontSize', 14);
+ylabel('Time(seconds)', 'FontSize', 14);
 h_legend = legend('Baseline',  'B&O', 'RP', 'Location','SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
@@ -145,7 +145,7 @@ rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x4);
 set(gca, 'XLim', [min(x4), max(x4)]);
 xlabel('\alpha', 'FontSize', 14);
-ylabel('Time', 'FontSize', 14);
+ylabel('Time(seconds)', 'FontSize', 14);
 h_legend = legend('Baseline',  'B&O', 'RP', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
@@ -196,7 +196,7 @@ rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x6);
 set(gca, 'XLim', [min(x6), max(x6)]);
 xlabel('r_{max}', 'FontSize', 14);
-ylabel('Time', 'FontSize', 14);
+ylabel('Time(seconds)', 'FontSize', 14);
 h_legend = legend('Baseline',  'B&O', 'RP', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
@@ -223,7 +223,7 @@ set(gca, 'XLim', [min(x7), max(x7)]);
 set(gca, 'FontSize', fontsize, 'Xtick', x7);
 %
 
-xlabel('Budget(\times 10^4)', 'FontSize', 14);
+xlabel('B(\times 10^4)', 'FontSize', 14);
 ylabel('Social', 'FontSize', 14);
 h_legend = legend('Baseline',  'B&O', 'RP', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
@@ -248,8 +248,8 @@ set( gca(), 'XTickLabel', x8 )
 rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x8);
 set(gca, 'XLim', [min(x8), max(x8)]);
-xlabel('Budget(\times 10^4)', 'FontSize', 14);
-ylabel('Time', 'FontSize', 14);
+xlabel('B(\times 10^4)', 'FontSize', 14);
+ylabel('Time(seconds)', 'FontSize', 14);
 h_legend = legend('Baseline',  'B&O', 'RP', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
@@ -300,7 +300,7 @@ rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x10);
 set(gca, 'XLim', [min(x10), max(x10)]);
 xlabel('K', 'FontSize', 14);
-ylabel('Time', 'FontSize', 14);
+ylabel('Time(seconds)', 'FontSize', 14);
 h_legend = legend('Baseline',  'B&O', 'RP', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
@@ -353,7 +353,7 @@ rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x12);
 set(gca, 'XLim', [min(x12), max(x12)]);
 xlabel('\mu of estate\_price(\times 10^4)', 'FontSize', 14);
-ylabel('Time', 'FontSize', 14);
+ylabel('Time(seconds)', 'FontSize', 14);
 h_legend = legend('Baseline',  'B&O', 'RP', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
 
