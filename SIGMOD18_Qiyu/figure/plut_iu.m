@@ -43,7 +43,12 @@ isbao11    = [7.3596645, 7.4561355, 6.7798345, 6.7798335000000005, 6.617637];
 ibase12    = [1.0, 1.0, 0.965, 0.97, 0.97];
 ibao12     = [7.26, 6.46, 5.51, 5.275, 5.24];
 isbao12    = [3.31, 3.245, 3.155, 3.185, 3.09];
-
+ibase13    = [4.095144, 5.011467984, 7.048387153, 7.872583014, 8.728026822];
+ibao13     = [8.5429805, 8.537481827, 9.306868074, 9.338390675, 10.08180802];
+isbao13    = [6.7798345, 7.20872776, 7.746509393, 8.554530897, 9.245999789];
+ibase14    = [1.0, 0.980, 1.020, 1.010, 0.97];
+ibao14     = [7.245, 7.700, 8.030, 9.550, 9.74];
+isbao14    = [3.535, 4.210, 4.940, 5.520, 6.09];
 
 
 %1---------------------------------------------------------
@@ -352,6 +357,59 @@ rotateXLabels( gca(), 60 )
 set(gca, 'FontSize', fontsize, 'Xtick', x12);
 set(gca, 'XLim', [min(x12), max(x12)]);
 xlabel('\mu of estate\_price(\times 10^4)', 'FontSize', 14);
+ylabel('Time(seconds)', 'FontSize', 14);
+h_legend = legend('Baseline',  'B&O', 'RP', 'Location', 'SouthEast');
+set(h_legend, 'FontSize', legendsize);
+
+hold off;
+
+%13---------------------------------------------------------
+figure;
+hold on;
+
+figuresize(5, 4, 'inches');
+
+box on;
+x13 = [100, 200, 300, 400, 500];
+mpdc5 = distinguishable_colors(5);
+
+plot(x13, ibase13, '^-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
+plot(x13, ibao13, 's-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
+plot(x13, isbao13, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
+
+%旋转
+set( gca(), 'XTickLabel', x13 )
+rotateXLabels( gca(), 60 )
+set(gca, 'XLim', [min(x13), max(x13)]);
+set(gca, 'FontSize', fontsize, 'Xtick', x13);
+%
+
+xlabel('Incremental Budget(\times 10^4)', 'FontSize', 14);
+ylabel('Social', 'FontSize', 14);
+h_legend = legend('Baseline',  'B&O', 'RP', 'Location', 'SouthEast');
+set(h_legend, 'FontSize', legendsize);
+
+hold off;
+
+%12---------------------------------------------------------
+figure;
+hold on;
+
+figuresize(5, 4, 'inches');
+
+box on;
+x14 = x13;
+mpdc5 = distinguishable_colors(5);
+
+plot(x14, ibase14, '^-', 'Color', mpdc5(1, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
+plot(x14, ibao14, 's-', 'Color', mpdc5(2, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
+plot(x14, isbao14, 'p-', 'Color', mpdc5(3, :), 'LineWidth', linewidth, 'MarkerSize', markersize);
+
+set( gca(), 'XTickLabel', x14 )
+rotateXLabels( gca(), 60 )
+set(gca, 'FontSize', fontsize, 'Xtick', x14);
+set(gca, 'XLim', [min(x14), max(x14)]);
+xlabel('Incremental Budget(\times 10^4)', 'FontSize', 14);
 ylabel('Time(seconds)', 'FontSize', 14);
 h_legend = legend('Baseline',  'B&O', 'RP', 'Location', 'SouthEast');
 set(h_legend, 'FontSize', legendsize);
